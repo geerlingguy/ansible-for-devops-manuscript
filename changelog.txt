@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - TODO
+  - Expanded chapter 11 (security).
 
 ## Version 0.42 (2014-03-25)
 
