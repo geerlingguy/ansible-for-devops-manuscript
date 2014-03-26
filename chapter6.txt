@@ -1,0 +1,37 @@
+# Chapter 6 - Playbook Organization - Roles and Includes
+
+TODO.
+
+## Includes
+
+TODO.
+
+## Roles
+
+TODO:
+
+  - http://docs.ansible.com/intro_configuration.html#roles-path
+
+## Ansible Galaxy
+
+TODO:
+
+  - [Ansible Galaxy](https://galaxy.ansible.com/)
+  - [Using Ansible Galaxy](https://servercheck.in/blog/using-ansible-galaxy)
+  - [Ansible Galaxy is now available](http://blog.ansibleworks.com/2013/12/19/ansibleworks-galaxy-is-now-available/)
+
+## Summary
+
+TODO.
+
+{lang="text",linenos=off}
+     _________________________________________
+    / When the only tool you own is a hammer, \
+    | every problem begins to resemble a      |
+    \ nail. (Abraham Maslow)                  /
+     -----------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

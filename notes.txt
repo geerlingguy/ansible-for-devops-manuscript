@@ -1,0 +1,35 @@
+# Notes
+
+## Interesting articles / links:
+
+  - [Tags (for debugging)](https://coderwall.com/p/ur8qnw)
+  - [Testing Playbooks](https://raymii.org/s/tutorials/Ansible_-_Playbook_Testing.html)
+  - [Quick Ansible Debugging tip](http://nigelb.me/2014-01-07-quick-tip-ansible.html)
+  - [Ops School Curriculum](https://ops-school.readthedocs.org/en/latest/introduction.html)
+  - [Hands on Ansible tutorial](http://blog.dhananjaynene.com/2013/10/hands-on-ansible-tutorial/)
+
+## Competition / Similar works:
+
+  - [Taste Test - Puppet - Chef - Salt - Ansible](http://devopsu.com/books/taste-test-puppet-chef-salt-stack-ansible.html)
+  - [Ansible Configuration Management](http://www.packtpub.com/ansible-configuration-management/book)
+
+## Todo before final publication:
+
+  - Delete (or rewrite?) section in beginning of book about how you can improve this book during writing.
+  - Search for "that" in text.
+  - Search for `...` in code examples and make it consistent.
+  - Ensure cowsay is in every chapter summary.
+  - Look through all code samples and fix line-wrapped lines.
+  - Search for "—" (em-dash) in entire book and replace with `---`.
+  - Search for "its" and "it's" and ensure proper grammatical usage.
+
+## Cowsay
+
+  - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
+  - "Do or do not. There is no try. (Yoda)" (Used in 0.38 email 4/11/14)
+  - "A pint of sweat saves a gallon of blood. (General Patton)"
+  - "Fool me once, shame on you. Fool me twice, prepare to die. (Klingon Proverb)"
+  - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
+  - "Any sufficiently advanced technology is indistinguishable from magic. (Arthur C. Clarke)"
+  - "One machine can do the work of fifty ordinary men. No machine can do the work of one extraordinary man. (Elbert Hubbard)"
+  - "The first rule of any technology used in a business is that automation applied to an efficient operation will magnify the efficiency. The second is that automation applied to an inefficient operation will magnify the inefficiency. (Bill Gates)"

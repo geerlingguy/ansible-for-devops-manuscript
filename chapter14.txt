@@ -1,0 +1,19 @@
+# Chapter 14 - Etc...
+
+This chapter is a placeholder for further topics, including those in the list below. Some of these topics may be broken out into individual chapters, or integrated into other prior chapters.
+
+TODO:
+
+  - Ansible configuration (`/etc/ansible/ansible.cfg`)
+  - Best Practices (and 'real world' scenarios)
+  - Looping (if not covered in-depth earlier)
+  - Ansible Vault
+  - Asynchronous actions, Polling, distributed Ansible
+  - Testing/Debugging Ansible playbooks and Check mode
+    - `debug`, `assert` (1.5), etc.
+    - `ansible-playbook --syntax-check`
+    - `ansible-playbook --check`
+    - [Ansible lint](https://github.com/willthames/ansible-lint)
+    - [server-spec](http://serverspec.org/)
+  - Error handling
+  - Server security with Ansible (especially SSH agent/key auth configuration)

@@ -1,0 +1,364 @@
+# Chapter 5 - Ansible Playbooks - Beyond the Basics
+
+The playbooks and simple playbook organization we used in the previous chapter cover many common use cases, but when discussing the breadth of system administration needs, there are thousands more little features of Ansible that you need to know.
+
+We'll cover things like how to run plays with more granularity, how to organize your plays and playbooks for simplicity and usability, and other advanced playbook topics that will help you manage your infrastructure with even more confidence.
+
+## Environment variables
+
+Ansible allows you to work with environment variables in a variety of ways. First of all, if you simply need to set some environment variables for your remote user account, you can do that by adding lines to the remote user's `.bash_profile`, like so:
+
+{lang="yaml",linenos=off}
+    - name: Add an environment variable to the remote user's shell.
+      lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
+
+All subsequent plays would then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further plays, it's recommended you use a play's `register` option to store the environment variable in a variable Ansible can use later, for example:
+
+{lang="yaml"}
+    - name: Add an environment variable to the remote user's shell.
+      lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
+    
+    - name: Get the value of the environment variable we just added.
+      shell: 'source ~/.bash_profile && echo $ENV_VAR'
+      register: foo
+    
+    - name: Print the value of the environment variable.
+      debug: msg="The variable is {{ foo.stdout }}"
+
+We use `source ~/.bash_profile` in line 4 because Ansible needs to make sure it's using the latest environment configuration for the remote user. In some situations, the plays all run over a persistent or quasi-cached SSH session, over which `$ENV_VAR` wouldn't yet be defined.
+
+(This is also the first time the `debug` module has made an appearance. It will be explored more in-depth along with other debugging techniques later.).
+
+I> Why `~/.bash_profile`? There are many different places you can store environment variables, including `.bashrc`, `.profile`, and `.bash_profile` in a user's home folder. In our case, since we want the environment variable to be available to Ansible, which runs a pseudo-TTY shell session, in which case `.bash_profile` is used to configure the environment. You can read more about shell session configuration and these dotfiles here: [Configuring your login sessions with dotfiles](http://mywiki.wooledge.org/DotFiles).
+
+Linux will also read global environment variables added to `/etc/environment`, so you can add your variable there:
+
+{lang="yaml",linenos=off}
+    - name: Add a global environment variable.
+      lineinfile: dest=/etc/environment regexp=^ENV_VAR= line=ENV_VAR=value
+      sudo: yes
+
+In any case, it's pretty simple to manage environment variables on the server with `lineinfile`. If your application requires many environment variables (as is the case in many Java applications), you might consider using `copy` or `template` with a local file instead of using `lineinfile` with a large list of items.
+
+### Per-play environment variables
+
+You can also set the environment for just one play, using the `environment` option for that play. As an example, let's say you need to set an http proxy for a certain file download. This can be done with:
+
+{lang="yaml",linenos=off}
+    - name: Download a file, using example-proxy as a proxy.
+      get_url: url=http://www.example.com/file.tar.gz dest=~/Downloads/
+      environment:
+        http_proxy: http://example-proxy:80/
+
+That could be rather cumbersome, though, especially if you have many plays that require a proxy or some other environment variable. In this case, you can pass an environment in via a variable in your playbook's `vars` section (or via an included variables file), like so:
+
+{lang="yaml",linenos=off}
+    vars:
+      var_proxy:
+        http_proxy: http://example-proxy:80/
+        https_proxy: https://example-proxy:443/
+        [etc...]
+    
+    tasks:
+    - name: Download a file, using example-proxy as a proxy.
+      get_url: url=http://www.example.com/file.tar.gz dest=~/Downloads/
+      environment: var_proxy
+
+If a proxy needs to be set system-wide (as is the case behind many corporate firewalls), I like to do so using the global `/etc/environment` file:
+
+{lang="yaml"}
+    # In the 'vars' section of the playbook (set to 'absent' to disable proxy):
+    proxy_state: present
+    
+    # In the 'tasks' section of the playbook:
+    - name: Configure the proxy.
+      lineinfile: >
+        dest=/etc/environment
+        regexp={{ item.regexp }}
+        line={{ item.line }}
+        state={{ proxy_state }}
+      with_items:
+      - { regexp: "^http_proxy=", line: "http_proxy=http://example-proxy:80/" }
+      - { regexp: "^https_proxy=", line: "https_proxy=https://example-proxy:443/" }
+      - { regexp: "^ftp_proxy=", line: "ftp_proxy=http://example-proxy:80/" }
+
+Doing it this way allows me to configure whether the proxy is enabled per-server (using the `proxy_state` variable), and with one play, set the http, https, and ftp proxies. You can use a similar kind of play for any other types of environment variables you need to set system-wide.
+
+T> You can test remote environment variables using the `ansible` command: `ansible test -m shell -a 'echo $TEST'`. When doing so, be careful with your use of quotes and escaping---you might end up using double quotes where you meant to use single quotes, or vice-versa, and end up printing a local environment variable instead of one from the remote server!
+
+## Variables
+
+Variables in Ansible work just like variables in most other systems. Variables always begin with a letter (`[A-Za-z]`), and can include any number of underscores (`_`) or numbers (`[0-9]`).
+
+Valid variable names include `foo`, `foo_bar`, `foo_bar_5`, and `fooBar`, though the standard is to use all lowercase letters, and typically avoid numbers in variable names (no `camelCase` or `UpperCamelCase`).
+
+Invalid variable names include `_foo`, `foo-bar`, `5_foo_bar`, `foo.bar` and `foo bar`.
+
+In an inventory file, a variable's value is assigned using an equals sign, like so:
+
+{lang="text",linenos=off}
+    foo=bar
+
+In a playbook or variables include file, a variable's value is assigned using a colon, like so:
+
+{lang="text",linenos=off}
+    foo: bar
+
+### Playbook Variables
+
+There are many different ways you can define variables to use in plays.
+
+Variables can be passed in via the command line, when calling `ansible-playbook`, with the `--extra-vars` option:
+
+{lang="text",linenos=off}
+    ansible-playbook example.yml --extra-vars "foo=bar"
+
+You can also pass in extra variables using quoted JSON, YAML, or even by passing a JSON or YAML file directly, like `--extra-vars "@even_more_vars.json"` or `--extra-vars "@even_more_vars.yml`, but at this point, you might be better off using one of the other methods below.
+
+Variables may be included inline with the rest of a playbook, in a `vars` section:
+
+{lang="yaml"}
+    ---
+    - hosts: example
+      vars:
+        foo: bar
+      tasks:
+        # Prints "Variable 'foo' is set to bar".
+        - debug: msg="Variable 'foo' is set to {{ foo }}"
+
+Variables may also be included in a separate file, using the `vars_files` section:
+
+{lang="yaml"}
+    ---
+    # Main playbook file.
+    - hosts: example
+      vars_files:
+        - vars.yml
+      tasks:
+        - debug: msg="Variable 'foo' is set to {{ foo }}"
+
+{lang="yaml"}
+    ---
+    # Variables file 'vars.yml' in the same folder as the playbook.
+    foo: bar
+
+Notice how the variables are all at the root level of the YAML file. They don't need to be under any kind of `vars` heading when they are included as a standalone file.
+
+Variable files can also be imported conditionally. Say, for instance, you have one set of variables for your CentOS servers (where the Apache service is named `httpd`), and another for your Debian servers (where the Apache service is named `apache2`). In this case, you could use a conditional `vars_files` include:
+
+{lang="yaml"}
+    ---
+    - hosts: example
+      vars_files:
+        - [ "apache_{{ ansible_os_family }}.yml", "apache_default.yml" ]
+      tasks:
+        - service: name={{ apache }} state=running
+
+Then, add two files in the same folder as your example playbook, `apache_CentOS.yml`, and `apache_default.yml`. Define the variable `apache: httpd` in the CentOS file, and `apache: apache2` in the default file.
+
+As long as your remote server has `facter` or `ohai` installed, Ansible will be able to read the OS of the server, translate that to a variable (`ansible_os_family`), and include the vars file with the resulting name. If ansible can't find a file with that name, it will use the second option (`apache_default.yml`). So, on a Debian or Ubuntu server, Ansible would correctly use `apache2` as the service name, even though there is no `apache_Debian.yml` or `apache_Ubuntu.yml` file available.
+
+### Inventory variables
+
+Variables may also be added via Ansible inventory files, either inline with a host definition, or after a group:
+
+{lang="text"}
+    # Host-specific variables (defined inline).
+    [washington]
+    app1.example.com proxy_state=present
+    app2.example.com proxy_state=absent
+    
+    # Variables defined for the entire group.
+    [washington:vars]
+    cdn_host=washington.static.example.com
+    api_version=3.0.1
+
+If you need to define more than a few variables, especially variables that apply to more than one or two hosts, inventory files can be cumbersome. In fact, Ansible's documentation recommends *not* storing variables within the inventory. Instead, you can use `group_vars` and `host_vars` YAML variable files within a specific path, and Ansible will assign them to individual hosts and groups defined in your inventory.
+
+For example, to apply a set of variables to the host `app1.example.com`, create a blank file named `app1.example.com` at the location `/etc/ansible/host_vars/app1.example.com`, and add variables as you would in an included `vars_files` YAML file:
+
+{lang="yaml",linenos=off}
+    ---
+    foo: bar
+    baz: qux
+
+To apply a set of variables to the entire `washington` group, create a similar file in the location `/etc/ansible/group_vars/washington` (substitute `washington` for whatever group name's variables you're defining).
+
+You can also put these files (named the same way) in `host_vars` or `group_vars` directories in your playbook's directory. Ansible will use the variables defined in the inventory `/etc/ansible/[host|group]_vars` directory first (if the appropriate files exist), then it will use variables defined in the playbook directories.
+
+Another alternative to using `host_vars` and `group_vars` is to use conditional variable file imports, as was mentioned above.
+
+### Registered Variables
+
+TODO.
+
+### Accessing and Filtering Variables
+
+TODO:
+
+  - How to access arrays and deeper elements (`.`/`[]`).
+  - Jinja2 filters.
+
+### Complex variable structures
+
+TODO.
+
+### Facts (Variables derived from system information)
+
+TODO.
+
+#### Local Facts (Facts.d)
+
+TODO.
+
+### Variable Precedence
+
+TODO.
+
+## If/then/when - Conditionals
+
+Many plays need only be run in certain circumstances. Some plays use modules with built-in idempotence (as is the case when ensuring a yum or apt package is installed), and you usually don't need to define further conditional behaviors for these plays.
+
+However, there are many plays---especially those using Ansible's `command` or `shell` modules---which require further input as to when they're supposed to run, whether they've changed anything after they've been run, or when they've failed to run.
+
+We'll cover all the main conditionals behaviors you can apply to Ansible plays, as well as how you can tell Ansible when a play has done something to a server or failed.
+
+### Jinja2 Expressions and Logic
+
+Before discussing all the different uses of conditionals in Ansible, it's worthwhile to at least quickly cover a small part of Jinja2 (the syntax Ansible uses both for templates and for conditionals)---expressions. Ansible uses expressions with `when`, `changed_when`, and `failed_when` so you can describe these things to ansible with as much precision as possible.
+
+Jinja2 allows the definition of literals like strings (`"string"`), integers (`42`), floats (`42.33`), lists (`[1, 2, 3]`), tuples (like lists, but can't be modified) dictionaries (`{key: value, key2: value2}`), and booleans (`true` or `false`).
+
+Jinja2 also allows basic math operations, like addition, subtraction, multiplication and division, and comparisons (`==` for equality, `!=` for inequality, `>=` for greater than or equal to, etc.). Logical operators are `and`, `or`, and `not`, and you can group expressions by placing them within parenthesis.
+
+If you're familiar with almost any programming language, you will probably pick up basic usage of Jinja2 expressions in Ansible very quickly.
+
+For example:
+
+{lang="text",linenos=off}
+    # The following expressions evaluate to 'true':
+    1 in [1, 2, 3]
+    'see' in 'Can you see me?'
+    foo != bar
+    (1 < 2) and ('a' not in 'best')
+    
+    # The following expressions evaluate to 'false':
+    4 in [1, 2, 3]
+    foo == bar
+    (foo != foo) or (a in [1, 2, 3])
+
+Jinja2 also offers a helpful set of 'tests' you can use to test a given object. For example, if you define the variable `foo` for only a certain group of servers, but not others, you can use the expression `foo is defined` with a conditional to evaluate to 'true' if the variable is defined, or false if not.
+
+There are many other checks you can perform as well, like `undefined` (the opposite of `defined`), `equalto` (works like `==`), `even` (returns true if the variable is an even number), `iterable` (if you can iterate over the object). We'll cover the full gamut later in the book, but for now, know that you can use Ansible conditionals with Jinja2 expressions to do some powerful things!
+
+### `register`
+
+In Ansible, any play can 'register' a variable, and once registered, that variable will be available to all subsequent plays. Registered variables work just like normal variables or host facts.
+
+Many times, you may need the output (stdout or stderr) of a shell command, and you can get that in a variable using the following syntax:
+
+{lang="yaml",linenos=off}
+    - shell: my_command_here
+      register: my_command_result
+
+Later, you can access stdout (as a string) with `my_command_result.stdout`, and stderr with `my_command_result.stderr`.
+
+Registered facts are very helpful for many types of plays, and can be used both with conditionals (defining when and how a play runs), and in any part of the play. As an example, if you have a command that outputs a version number string like "10.0.4", and you register the output as `version`, you can use the string later when doing a code checkout by printing the variable `{{ version.stdout }}`.
+
+T> If you want to see the different properties of a particular registered variable, you can run a playbook with `-v` to inspect play output. Usually, you'll get access to values like `changed` (whether the play resulted in a change), `delta` (the time it took to run the play), `stderr` and `stdout`, etc. Some Ansible modules (like `stat`) add much more data to the registered variable, so always inspect the output with `-v` if you need to see what's inside.
+
+### `when`
+
+One of the most helpful extra keys you can add to a play is a `when` statement. Let's take a look at a simple use of `when`:
+
+{lang="yaml",linenos=off}
+    - yum: pkg=mysql-server state=present
+      when: is_db_server
+
+The above statement assumes you've defined the `is_db_server` variable as a boolean (`true` or `false`) earlier, and will run the play if the value is true, or skip the play when the value is false.
+
+If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run plays conditionally like so:
+
+{lang="yaml",linenos=off}
+    - yum: pkg=mysql-server state=present
+      when: (is_db_server is defined) and is_db_server
+
+`when` is even more powerful if used in conjunction with variables registered by previous plays. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
+
+{lang="yaml",linenos=off}
+    - command: my-app --status
+      register: myapp_result
+    
+    - command: do-something-to-my-app
+      when: "'ready' in myapp_result.stdout"
+
+These examples are a little contrived, but they illustrate basic uses of `when` in your plays. Here are some examples of uses of `when` in real-world playbooks:
+
+{lang="yaml",linenos=off}
+    # From our Node.js playbook - register a command's output, then see if the
+    # path to our app is in the output. Start the app if it's not present.
+    - command: forever list
+      register: forever_list
+    - command: forever start /path/to/app/app.js
+      when: "forever_list.stdout.find('/path/to/app/app.js') == -1"
+    
+    # Run 'ping-hosts.sh' script if 'ping_hosts' variable is true.
+    - command: /usr/local/bin/ping-hosts.sh
+      when: ping_hosts
+    
+    # Run 'git-cleanup.sh' script if a branch we're interested in is missing
+    # from git's list of branches in our project.
+    - command: chdir=/path/to/project git branch
+      register: git_branches
+    - command: /path/to/project/scripts/git-cleanup.sh
+      when: "(is_app_server == true) and ('interesting-branch' not in git_branches.stdout)"
+    
+    # Downgrade PHP version if the current version contains '5.4'.
+    - shell: php --version
+      register: php_version
+    - shell: yum -y downgrade php*
+      when: "'5.4' in php_version.stdout"
+    
+    # Copy a file to the remote server if the hosts file doesn't exist.
+    - stat: path=/etc/hosts
+      register: hosts_file
+    - copy: src=path/to/local/file dest=/path/to/remote/file
+      when: hosts_file.stat.exists == false
+
+### `changed_when` and `failed_when`
+
+TODO.
+
+### `ignore_errors`
+
+TODO.
+
+## Local Actions
+
+TODO:
+
+  - Waiting for reboots (`wait_for`).
+  - Other local actions.
+
+## Prompts
+
+TODO.
+
+## Tags
+
+TODO.
+
+## Summary
+
+TODO.
+
+{lang="text",linenos=off}
+     ____________________________________
+    / Men have become the tools of their \
+    \ tools. (Henry David Thoreau)       /
+     ------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

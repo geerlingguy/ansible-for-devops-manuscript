@@ -1,0 +1,124 @@
+# Appendix A - Using Ansible on Windows workstations {#appendix-a}
+
+Ansible works exclusively over the SSH protocol, which is supported natively by most every server, workstation, and operating system on the planet, with one exception---Microsoft's venerable Windows OS.
+
+To use SSH on Windows, you need additional software. But Ansible also requires other utilities and subsystems only present on Linux or other UNIX-like operating systems. This poses a problem for many system administrators who are either forced to use or have chosen to use Windows as their primary OS.
+
+This appendix will guide Windows users through the author's preferred method of using Ansible on a Windows workstation.
+
+## Prerequisites
+
+Our goal is to have a virtual machine running Linux running on your computer. The easiest way to do this is to download and install Vagrant and VirtualBox (both 100% free!), and then use Vagrant to install Linux, and PuTTY to connect and use Ansible. Here are the links to download these applications:
+
+  1. [Vagrant](http://www.vagrantup.com/downloads.html)
+  2. [VirtualBox](https://www.virtualbox.org/)
+  3. [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html)
+
+Once you've installed all three applications, you can use either the command prompt (`cmd`), Windows PowerShell, or a Linux terminal emulator like Cygwin to boot up a basic Linux VM with Vagrant (if you use Cygwin, which is not covered here, you could install it's SSH component and use it for SSH, and avoid using PuTTY).
+
+## Set up an Ubuntu Linux Virtual Machine
+
+Open PowerShell (open the Start Menu or go to the Windows home and type in 'PowerShell'), and change directory to a place where you will store some metadata about the virtual machine you're about to boot. I like having a 'VMs' folder in my home directory to contain all my virtual machines:
+
+{lang="text",linenos=off}
+    # Change directory to your user directory.
+    PS > cd C:/Users/[username]
+    # Make a 'VMs' directory and cd to it.
+    PS > md -Name VMs
+    PS > cd VMs
+    # Make a 'Ubuntu64' directory and cd to it.
+    PS > md -Name ubuntu-precise-64
+    PS > cd ubuntu-precise-64
+
+Now, use `vagrant` to create the scaffolding for our new virtual machine:
+
+{lang="text",linenos=off}
+    PS > vagrant init precise64 http://files.vagrantup.com/precise64.box
+
+Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Precise (12.04) 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
+
+{lang="text",linenos=off}
+    PS > vagrant up
+
+After a few minutes, the box will be downloaded and a new virtual machine set up inside VirtualBox. Vagrant will boot and configure the machine according to the defaults defined in the Vagrantfile. Once the VM is booted, and you're back at the command prompt, it's time to log into the VM.
+
+## Log into the Virtual Machine
+
+Use `vagrant ssh-config` to grab the SSH connection details, which you will then enter into PuTTY to connect to the VM.
+
+{lang="text",linenos=off}
+    PS > vagrant ssh-config
+
+It should show something like:
+
+{lang="text",linenos=off}
+    Host default
+      Hostname 127.0.0.1
+      User vagrant
+      Port 2222
+      UserKnownHostsFile /dev/null
+      StrictHostKeyChecking no
+      PasswordAuthentication no
+      IdentityFile C:/Users/[username]/.vagrant.d/insecure_private_key
+      IdentitiesOnly yes
+      LogLevel FATAL
+
+The lines we're interested in are the Hostname, User, Port, and IdentityFile.
+
+Launch PuTTY, and enter the connection details:
+
+  - **Host Name (or IP address)**: 127.0.0.1
+  - **Port**: 2222
+
+Click Open to connect (you can save the connection details by entering a name in the 'Saved Sessions' field and clicking 'Save' to save the details), and if you receive a Security Alert concerning the server's host key, click 'Yes' to tell PuTTY to trust the host.
+
+PuTTY will ask for login credentials; we'll use the default login for a Vagrant box (`vagrant` for both the username and password):
+
+{lang="text",linenos=off}
+    login as: vagrant
+    vagrant@127.0.0.1's password: vagrant
+
+You should now be connected to the virtual machine, and see the message of the day:
+
+{lang="text",linenos=off}
+    Welcome to Ubuntu 12.04 LTS (GN/Linux 3.2.0-23-generic x86_64)
+    
+      * Documentation: https://help.ubuntu.com/
+    Welcome to your Vagrant-built virtual machine.
+    Last login: <date> from <IP address>
+    vagrant@precise64:~$
+
+If you see this prompt, you're logged in, and you can start administering the VM. The next (and final) step is to install Ansible.
+
+T>This example uses PuTTY to log into the VM, but other applications like [Cygwin](http://cygwin.com/install.html) or [Git for Windows](http://git-scm.com/download/win) work just as well, and may be easier to use. Since these alternatives have built-in SSH support, you don't need to do any extra connection configuration, or even launch the apps manually; just `cd` to the same location as the Vagrantfile, and enter `vagrant ssh`!
+
+## Install Ansible
+
+Before installing Ansible, make sure your package list is up to date by updating apt-get:
+
+{lang="text",linenos=off}
+    $ sudo apt-get update
+
+Ansible can be installed in a variety of ways, but the easiest is to use `pip`, a simple Python package manager. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
+
+{lang="text",linenos=off}
+    $ sudo apt-get install -y python-pip python-dev
+
+After the installation is complete, installing Ansible is simple:
+
+{lang="text",linenos=off}
+    $ sudo pip install ansible
+
+After Ansible and all its dependencies are downloaded and installed, make sure Ansible is running and working:
+
+{lang="text",linenos=off}
+    $ ansible --version
+    ansible 1.5
+
+T>Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
+
+## Summary
+
+You should now have Ansible installed within a virtual machine running on your Windows workstation. You can control the virtual machine with Vagrant (`cd` to the location of the Vagrantfile), using `up` to boot or wake the VM, `halt` to shut down the VM, or `suspend` to sleep the VM. You can log into the VM using PuTTY and manually entering a username and password, or using Cygwin or Git's Windows shell and the `vagrant ssh` command.
+
+Use Ansible from within the virtual machine just as you would on a Linux or Mac workstation directly. If you need to share files between your Windows environment and the VM, Vagrant conveniently maps `/vagrant` on the VM to the same folder where your Vagrantfile is located. You can also connect between the two via other methods (SSH, SMB, SFTP etc.) if you so desire.

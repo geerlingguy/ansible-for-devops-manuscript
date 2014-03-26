@@ -1,0 +1,38 @@
+# Changelog
+
+This log will track changes between releases of the book. Until version 1.0, each release number will correlate to the amount complete, so 'Version 0.33' equals 33% complete. After the final, complete book, major version numbers will track editions.
+
+Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
+
+## Current Version
+
+  - TODO
+
+## Version 0.42 (2014-03-25)
+
+  - Added history of SSH section.
+  - Expanded chapter 11 (security).
+  - Many small spelling and grammar mistakes corrected.
+  - Fixed formatting of info/warning/tip asides.
+
+## Version 0.38 (2014-03-11)
+
+  - Added Appendix A - Using Ansible on Windows workstations (thanks to a reader's suggestion!).
+  - Updated Chapter 1 to include a reference to Appendix A.
+  - Clarified and expanded installation instructions for Mac and Linux in Chapter 1.
+  - Added Chapter 11 - Server Security and Ansible
+  - Updated Chapter 1 to include a reference to Chapter 11.
+  - Added notes and TODOs to a few more areas of the book (random).
+
+## Version 0.35 (2014-02-25)
+
+  - Added this changelog.
+  - Split out roles and playbook organization into its own chapter.
+  - Expanded 'Environment Variables' section in Chapter 5.
+  - Expanded 'Variables' section in Chapter 5.
+  - MORE COWBELL! (Cowsay motivational quotes at the end of every completed chapter).
+  - Fixed NTP installation examples in Chapter 2 (thanks to a reader!).
+
+## Version 0.33 (2014-02-20)
+
+  - Initial published release, up to chapter 4, part of chapter 5.

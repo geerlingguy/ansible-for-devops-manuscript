@@ -1,0 +1,209 @@
+# Chapter 11 - Server Security and Ansible {#chapter-11}
+
+One of the first configuration steps that should be performed on any new server---especially any server with any exposure (direct or indirect) to the public Internet)---is security configuration.
+
+I debated adding this chapter earlier in the book, as the importance of a secure configuration (especially when automating server configuration, application deployments, etc.) cannot be understated. But as it is, I decided to focus on Ansible's core functionality before giving a general overview of security, especially pertaining to Linux servers.
+
+There are nine basic measures that must be taken to make sure that servers are secure from unauthorized access or intercepted communications:
+
+  1. Use secure and encrypted communication.
+  2. Disable root login and use `sudo`.
+  3. Remove unused software, open only required ports.
+  4. Update the OS and installed software.
+  5. Use a properly-configured firewall.
+  6. Make sure log files are populated and rotated.
+  7. Monitor logins and block suspect IP addresses.
+  8. Use SELinux (Security-Enhanced Linux).
+
+Your infrastructure is as weak as the weakest server; in many high-profile security breaches, one poorly-secured server acts as a gateway into the rest of the network. Don't let your servers be *those* servers! Good security also helps you achieve the holy grail of system administration---100% uptime.
+
+In this chapter, you'll learn about Linux security and how Ansible can help secure your servers, following the basic topics above.
+
+### A brief history of SSH and remote access
+
+In the beginning, computers were the size of large conference rooms. A punch card reader would merrily accept pieces of paper that instructed the computer to do something, and then a printer would etch the results into another piece of paper. Thousands of mechanical parts worked harmoniously (when they *did* work) to compute relatively simple commands.
+
+As time progressed, computers became somewhat smaller, and interactive terminals became more user-friendly, but they were still wired directly into the computer being used. Mainframes came to the fore in the 1960s, originally used via typewriter and teletype interfaces, then via keyboards and small text displays. As networked computing became more mainstream in the 1970s and 1980s, remote terminal access was used to interact with the large central computers.
+
+The first remote terminal interfaces assumed a high level of trust between the central computer and all those on the network, because the small, centralized networks used were physically isolated from one another.
+
+#### Telnet
+
+In the late 1960s, the Telnet protocol was defined and started being used over TCP networks (normally on port 23) for remote control over larger private networks, and eventually the public Internet.
+
+Telnet's underlying technology (a text-based protocol to transfer data between different systems) was the basis for many foundational communications protocols in use today, including HTTP, FTP, and POP3. However, plain text streams are not secure, and even with the addition of TLS and SASL, Telnet was never very secure by default. With the advent of SSH (which we'll get to in a bit), the protocol has declined in popularity for most remote administration purposes.
+
+Telnet still has uses like configuring devices over local serial connections, or checking if a particular service is operating correctly on a remote server (like an HTTP server on port 80, mysql on port 3306, or munin on port 4949), but it is not installed by default on modern Linux distributions.
+
+W> Plain text communications over a network are only as secure as the network's weakest link. In the early days of computer networking, networks were usually isolated to a specific company or educational institution, so transmitting things like passwords or secrets in plain text using the TCP protocol wasn't such a bad idea. Every part of the network (cabling, switches, and routers) was contained inside a secured physical perimeter. When connections started moving to the public Internet, this changed.
+> 
+> TCP packets can be intercepted over the Internet, at any point between the client and server, and these packets can easily be read if not encrypted. Therefore, plain text protocols are highly insecure, and should never be used to transmit sensitive information or system control data. Even on highly secure networks with properly-configured firewalls, it's a bad idea to use insecure communication methods like plain text rlogin and telnet connections for authentication and remote control.
+> 
+> Try running `traceroute google.com` in your terminal. Look at each of the hops between you and Google's CDN. Do you know who controls each of the devices between your computer and Google? Do you trust these operators with all of your personal or corporate secrets? Probably not. Each of these connection points---and each network device and cable connecting them---is a weak point exposing you to a man-in-the-middle attack. Strong encryption is needed between your computer and the destination if you want to ensure data security.
+
+#### rlogin, rsh and rcp
+
+`rlogin` was introduced in BSD 4.2 in 1983, and has been distributed with many UNIX-like systems alongside Telnet until recently. rlogin was used widely during the 80s and much of the 90s.
+
+Just like Telnet, a user could log into the remote system with a password, but rlogin additionally allowed automatic (passwordless) logins for users on trusted remote computers. rlogin also worked better than telnet for remote administration, as it worked correctly with certain characters and commands where telnet required extra translation.
+
+However, like Telnet, rlogin still used plain text communications over TCP port 513 by default. On top of that, rlogin also didn't have many safeguards against clients spoofing their true identities. Some of rlogin's intrinsic flaws were highlighted in a 1998 report by Carnegie Mellon, [rlogin: The Untold Story](http://resources.sei.cmu.edu/asset_files/TechnicalReport/1998_005_001_16670.pdf).
+
+`rsh` ("remote shell") is a command line program used alongside rlogin to execute individual shell commands remotely, and `rcp` ("remote copy") is used for remote file copies. `rsh` and `rcp` inherited the same security problems as rlogin, since they use the same connection method (over different ports).
+
+#### SSH
+
+Secure Shell was created in 1995 by Finland native Tatu Ylönen, in response to a [password-sniffing attack](http://en.wikipedia.org/wiki/Secure_Shell#Version_1.x) at his university. Seeing the flaws in plain text communication for secure information, Tatu created Secure Shell/SSH with a strong emphasis on encryption and security.
+
+His version of SSH was developed for a few years as freeware with liberal licensing, but as his [SSH Communications Security Corporation](http://www.ssh.com/) began limiting the license and commercializing SSH, alternative forks began to gain in popularity. The most popular fork, OSSH, by Swedish programmer Bjoern Groenvall, was chosen as a starting point by some developers from the OpenBSD project.
+
+OpenBSD was (and still is!) a highly secure, free version of BSD UNIX, and the project's developers needed a secure remote communication protocol, so a few project members worked to [clean up and improve OSSH](http://www.openbsd.org/openssh/history.html) so it could be included in OpenBSD's 2.6 release in December 1999. From there, it was quickly ported and adopted for all major versions of Linux, and is now ubiquitous in the world of POSIX-compliant operating systems.
+
+How does SSH work, and what makes it better than telnet or rlogin? It starts with the basic connection. SSH connection encryption works similarly to SSL for secure HTTP connections, but it's authentication layer adds more security:
+
+  1. When you enter `ssh user@example.host` to connect to the `example.host` server as `user`, your client and the host exchange keys.
+  2. If you're connecting to a host the first time, or if the host's key has changed since last time you connected (this happens often when connecting via DNS rather than directly by IP), SSH will prompt you for your approval of the host key.
+  3. If you have a private key in your `~/.ssh` folder that matches one of the keys in `~/.ssh/authorized_keys` on the remote system, the connection will continue to step 4. Otherwise, if password authentication is allowed, SSH will prompt you for your password. There are other authentication methods as well, such as Kerberos, but they are less common and not covered in this book.
+  4. The transferred key is used to create a session key that's used for the remainder of the connection, encrypting all communication with a cipher such as AES, 3DES, Blowfish or RC4 ('arcfour').
+  5. The connection remains encrypted and persists until you exit out of the remote connection (in the case of an interactive session), or until the operation being performed (an `scp` or `sftp` file transfer, for example) is complete.
+
+SSH uses encrypted keys to identify the client and host (which adds a layer of security over `telnet` and `rlogin`'s defaults), and then sets up a per-session encrypted channel for further communication. This same connection method is used for interactive `ssh` sessions, as well as for services like:
+
+  - `scp` (secure copy), SSH's counterpart to rlogin's `rcp`.
+  - `sftp` (secure FTP), SSH's client/server file transfer protocol.
+  - SSH port forwarding (so you can run services securely over remote servers).
+  - SSH X11 forwarding (so you can use X windows securely).
+
+(A full list of features is available on OpenBSD's site: [OpenSSH Features](http://www.openbsd.org/openssh/features.html)).
+
+The full suite of SSH packages also includes helpful utilities like `ssh-keygen`, which generates public/private key pairs suitable for use when connecting via SSH. You can also install the utility `ssh-copy-id`, which speeds up the process of manually adding your identity file to a remote server.
+
+SSH is fairly secure by default---certainly more so than telnet or rlogin's default configuration---but for even greater security, there are a few extra settings you should use (all of these settings are configured in `/etc/ssh/sshd_config`, and require a restart of the `sshd` service to take effect):
+
+  1. **Disable password-based SSH authentication.** Even though passwords are sent in the clear, disabling password-based authentication makes it impossible for brute-force password attacks to even be *attempted*, even if you have the additional (and recommended) layer of something like Fail2Ban running. Set `PasswordAuthentication no` in the configuration.
+  2. **Disable root account remote login.** You shouldn't log in as the root user regardless (use `sudo` instead), but to reinforce this good habit, disable remote root user account login by setting `PermitRootLogin no` in the configuration. If you need to perform actions as root, either use `sudo` (preferred), or if it's absolutely necessary to work interactively as root, login with a normal account, then `su` to the root account.
+  3. **Explicitly allow/deny SSH for users.** You can enable or disable SSH access for particular users on your system with `AllowUsers` and `DenyUsers`. To allow only 'John' to log in, the rule would be `AllowUsers John`. To allow any user *except* John to log in, the rule would be `DenyUsers John`.
+  4. **Use a non-standard port.** You can change the default SSH port from 22 to something more obscure, like 2849, and prevent thousands of 'script kiddie' attacks that simply look for servers responding on port 22. While security through obscurity is no substitute for actually securing SSH overall, it can provide a slight extra layer of protection. To change the port, set `Port [new-port-number]` in the configuration.
+
+We'll cover how Ansible can help configure some of these particular options in SSH in the next section.
+
+#### Alternatives to SSH
+
+TODO:
+
+  - [Mosh](https://www.usenix.org/system/files/conference/atc12/atc12-final32.pdf)
+
+## Use secure and encrypted communication
+
+We spent a lot of time discussing SSH's heritage and the way it works because it is, in many ways, the foundation of a secure infrastructure---in almost every circumstance, you will allow SSH remote access for your servers, so it's important you know how it works, and how to configure it to ensure you always administer the server securely, over an encrypted connection.
+
+Let's look at the security settings configured in `/etc/ssh/sshd_config` (mentioned earlier), and how we can control them with Ansible.
+
+For our secure server, we want to disable password-based SSH authentication (make sure you can already log in via your SSH key before you do this!), disable remote root login, and change the port over which SSH operates. Let's do it!
+
+{lang="yaml"}
+    - hosts: example
+      tasks:
+        - name: Update SSH configuration to be more secure.
+          lineinfile: >
+            dest=/etc/ssh/sshd_config
+            regexp="{{ item.regexp }}"
+            line="{{ item.line }}"
+            state=present
+          with_items:
+            - { regexp: "^PasswordAuthentication", line: "PasswordAuthentication no" }
+            - { regexp: "^PermitRootLogin", line: "PermitRootLogin no" }
+            - { regexp: "^Port", line: "Port 2849" }
+          notify: restart ssh
+
+      handlers:
+        - name: restart ssh
+          service: name=ssh state=restarted
+
+In this extremely simple playbook, we set three options in SSH configuration (`PasswordAuthentication no`, `PermitRootLogin no`, and `Port 2849`) using Ansible's `lineinfile` module, then use a handler we define in the `handlers` section to restart the ssh service. (Note that the task and handler defined here would probably be in separate files in a real-world playbook).
+
+W> Note that if you change certain SSH settings, like the port for SSH, you will need to make sure Ansible's inventory is updated. You can explicitly define the SSH port for a host with the option `ansible_ssh_port`, and the local path to a private key file (identity file) with `ansible_ssh_private_key_file`, though Ansible uses keys defined by your `ssh-agent` setup, so typically a manual definition of the key file is not required.
+
+## Disable root login and use `sudo`
+
+We've already disabled root login with Ansible's `lineinfile` module in the previous section, but we'll cover a general Linux best practice here: don't use the root account if you don't absolutely need to use it.
+
+Linux's `sudo` allows you (or other users) to run certain commands with elevated privileges, ensuring you can still do the things you need to do (like use `yum` to manage packages, edit `iptables` firewall rules, or restart services), but without exposing all superuser privileges, like you do when you use the root account.
+
+Using sudo also forces you to be more explicit when performing certain actions with security implications, which is always a good thing. You don't want to accidentally delete a necessary file, or turn off a required service, which is easy to do if you're root.
+
+In Ansible, it's preferred you log into the remote server with a normal or admin-level system account, and use the `sudo` parameter with a value of `yes` with any play or playbook include that needs elevated privileges. For example, if restarting Apache requires elevated privileges, you would write the play like so:
+
+{lang="yaml",linenos=off}
+    - name: Restart Apache.
+      service: name=httpd state=restarted
+      sudo: yes
+
+You can also use Ansible to control sudo's configuration, defining who should have access to what commands and whether the user should be required to enter a password, among other things.
+
+As an example, we can set up the user `johndoe` with permission to use any command via `sudo` by adding a line in the `/etc/sudoers` file with Ansible's `lineinfile` module:
+
+{lang="yaml",linenos=off}
+    - name: Add sudo group rights for deployment user.
+      lineinfile: >
+        dest=/etc/sudoers
+        regexp='^%geerlingguy'
+        line='geerlingguy ALL=(ALL) NOPASSWD: ALL'
+        state=present
+
+If you're ever editing the sudoers file by hand, you should use `visudo`, which validates your changes and makes sure you don't break sudo when you save the changes. When using Ansible with `lineinfile`, you have to use caution when making changes, and make sure your syntax is correct.
+
+Another way of changing the sudoers file, and ensuring the integrity of the file, is to create a sudoers file locally, and copy it using Ansible's `copy` module, with a validation command, like so:
+
+{lang="yaml",linenos=off}
+    - name: Copy validated sudoers file into place.
+      copy: src=sudoers dest=/etc/sudoers validate='visudo -cf %s'
+
+The `%s` is simply a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination. The same parameter can be passed into Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
+
+T> The sudoers file syntax is very powerful and flexible, but also a bit obtuse. Read the entire [Sudoers Manual](http://www.sudo.ws/sudoers.man.html) for all the details, or check out the [sample sudoers file](http://www.sudo.ws/sudo/sample.sudoers) for some practical examples.
+
+## Remove unused software, open only required ports
+
+TODO.
+
+## Update the OS and installed software
+
+TODO.
+
+## Use a properly-configured firewall
+
+TODO.
+
+## Make sure log files are populated and rotated
+
+TODO.
+
+## Monitor logins and block suspect IP addresses
+
+TODO.
+
+## Use SELinux (Security-Enhanced Linux)
+
+TODO.
+
+## Summary and further reading
+
+This chapter contains a broad overview of some Linux security best practices, and how Ansible can help you conform to them. There is a wealth of good information on the Internet to help you secure your servers, including articles and publications like the following:
+
+  - [Linode Library: Linux Security Basics](https://library.linode.com/security/basics)
+  - [My First Five Minutes on a Server](http://plusbryan.com/my-first-5-minutes-on-a-server-or-essential-security-for-linux-servers)
+  - [20 Linux Server Hardening Security Tips](http://www.cyberciti.biz/tips/linux-security.html)
+  - [Unix and Linux System Administration Handbook](http://www.admin.com/)
+
+{lang="text",linenos=off}
+     _____________________________________
+    / Bad planning on your part does not  \
+    | constitute an emergency on my part. |
+    \ (Proverb)                           /
+     -------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||
