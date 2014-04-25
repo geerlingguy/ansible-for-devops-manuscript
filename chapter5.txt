@@ -8,13 +8,13 @@ We'll cover things like how to run plays with more granularity, how to organize 
 
 Ansible allows you to work with environment variables in a variety of ways. First of all, if you simply need to set some environment variables for your remote user account, you can do that by adding lines to the remote user's `.bash_profile`, like so:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - name: Add an environment variable to the remote user's shell.
       lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
 
 All subsequent plays would then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further plays, it's recommended you use a play's `register` option to store the environment variable in a variable Ansible can use later, for example:
 
-{lang="yaml"}
+{lang="text"}
     - name: Add an environment variable to the remote user's shell.
       lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
     
@@ -33,7 +33,7 @@ I> Why `~/.bash_profile`? There are many different places you can store environm
 
 Linux will also read global environment variables added to `/etc/environment`, so you can add your variable there:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - name: Add a global environment variable.
       lineinfile: dest=/etc/environment regexp=^ENV_VAR= line=ENV_VAR=value
       sudo: yes
@@ -44,7 +44,7 @@ In any case, it's pretty simple to manage environment variables on the server wi
 
 You can also set the environment for just one play, using the `environment` option for that play. As an example, let's say you need to set an http proxy for a certain file download. This can be done with:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - name: Download a file, using example-proxy as a proxy.
       get_url: url=http://www.example.com/file.tar.gz dest=~/Downloads/
       environment:
@@ -52,7 +52,7 @@ You can also set the environment for just one play, using the `environment` opti
 
 That could be rather cumbersome, though, especially if you have many plays that require a proxy or some other environment variable. In this case, you can pass an environment in via a variable in your playbook's `vars` section (or via an included variables file), like so:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     vars:
       var_proxy:
         http_proxy: http://example-proxy:80/
@@ -66,7 +66,7 @@ That could be rather cumbersome, though, especially if you have many plays that 
 
 If a proxy needs to be set system-wide (as is the case behind many corporate firewalls), I like to do so using the global `/etc/environment` file:
 
-{lang="yaml"}
+{lang="text"}
     # In the 'vars' section of the playbook (set to 'absent' to disable proxy):
     proxy_state: present
     
@@ -117,7 +117,7 @@ You can also pass in extra variables using quoted JSON, YAML, or even by passing
 
 Variables may be included inline with the rest of a playbook, in a `vars` section:
 
-{lang="yaml"}
+{lang="text"}
     ---
     - hosts: example
       vars:
@@ -128,7 +128,7 @@ Variables may be included inline with the rest of a playbook, in a `vars` sectio
 
 Variables may also be included in a separate file, using the `vars_files` section:
 
-{lang="yaml"}
+{lang="text"}
     ---
     # Main playbook file.
     - hosts: example
@@ -137,7 +137,7 @@ Variables may also be included in a separate file, using the `vars_files` sectio
       tasks:
         - debug: msg="Variable 'foo' is set to {{ foo }}"
 
-{lang="yaml"}
+{lang="text"}
     ---
     # Variables file 'vars.yml' in the same folder as the playbook.
     foo: bar
@@ -146,7 +146,7 @@ Notice how the variables are all at the root level of the YAML file. They don't 
 
 Variable files can also be imported conditionally. Say, for instance, you have one set of variables for your CentOS servers (where the Apache service is named `httpd`), and another for your Debian servers (where the Apache service is named `apache2`). In this case, you could use a conditional `vars_files` include:
 
-{lang="yaml"}
+{lang="text"}
     ---
     - hosts: example
       vars_files:
@@ -177,7 +177,7 @@ If you need to define more than a few variables, especially variables that apply
 
 For example, to apply a set of variables to the host `app1.example.com`, create a blank file named `app1.example.com` at the location `/etc/ansible/host_vars/app1.example.com`, and add variables as you would in an included `vars_files` YAML file:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     ---
     foo: bar
     baz: qux
@@ -257,7 +257,7 @@ In Ansible, any play can 'register' a variable, and once registered, that variab
 
 Many times, you may need the output (stdout or stderr) of a shell command, and you can get that in a variable using the following syntax:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - shell: my_command_here
       register: my_command_result
 
@@ -271,7 +271,7 @@ T> If you want to see the different properties of a particular registered variab
 
 One of the most helpful extra keys you can add to a play is a `when` statement. Let's take a look at a simple use of `when`:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - yum: pkg=mysql-server state=present
       when: is_db_server
 
@@ -279,13 +279,13 @@ The above statement assumes you've defined the `is_db_server` variable as a bool
 
 If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run plays conditionally like so:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - yum: pkg=mysql-server state=present
       when: (is_db_server is defined) and is_db_server
 
 `when` is even more powerful if used in conjunction with variables registered by previous plays. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     - command: my-app --status
       register: myapp_result
     
@@ -294,7 +294,7 @@ If you only define the `is_db_server` variable on database servers (meaning ther
 
 These examples are a little contrived, but they illustrate basic uses of `when` in your plays. Here are some examples of uses of `when` in real-world playbooks:
 
-{lang="yaml",linenos=off}
+{lang="text",linenos=off}
     # From our Node.js playbook - register a command's output, then see if the
     # path to our app is in the output. Start the app if it's not present.
     - command: forever list

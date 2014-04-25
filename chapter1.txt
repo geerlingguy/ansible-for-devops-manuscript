@@ -51,22 +51,32 @@ You could also install Ansible via Homebrew with `brew install ansible`. Either 
   1. The easiest solution would be to use a Linux virtual machine (with something like VirtualBox) to do your work. For detailed instructions, see [Appendix A - Using Ansible on Windows workstations](#appendix-a).
   2. Ansible runs (somewhat) within an appropriately-configured [Cygwin](http://cygwin.com/) environment. For setup instructions, please see my blog post [Running Ansible within Windows](https://servercheck.in/blog/running-ansible-within-windows)), and note that *running Ansible directly within Windows is unsupported and prone to breaking*.
 
-**If you're running Linux**, chances are you already have Ansible's dependencies installed, but to be certain, we'll run the commands to install Python development headers and `pip`, a Python package manager.
+**If you're running Linux**, chances are you already have Ansible's dependencies installed, but we'll cover the most common installation methods.
+
+Primarily, if you have `python-pip` and `python-devel` (`python-dev` on Debian/Ubuntu) installed, you can just use `pip` to install ansible (this assumes you also have the 'Development Tools' package installed, so you have `gcc`, `make`, etc. available):
+
+{lang="text",linenos=off}
+    $ sudo pip install ansible
+
+Using pip allows you to upgrade ansible with `pip install --upgrade ansible`.
 
 *Fedora/RHEL/CentOS:*
 
-{lang="text",linenos=off}
-    $ sudo yum -y groupinstall 'Development Tools'
-    $ sudo yum -y install python-pip python-devel
-    $ sudo pip install ansible
+The easiest way to install Ansible on a Fedora-like system is to use the official yum package, available via EPEL. Install EPEL's RPM if it's not already installed (see the info section below for instructions), then install Ansible:
 
-I> On Fedora/RHEL/CentOS systems, `python-pip` is available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `yum repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following commands:
-> 
-> `$ cd /tmp`
-> `$ wget http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm`
-> `$ sudo rpm -Uvh epel-release-6*.rpm`
+{lang="text",linenos=off}
+    $ yum -y install ansible
+
+I> On Fedora/RHEL/CentOS systems, `python-pip` and `ansible` are available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `yum repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following command:
+I>
+I> {lang="text",linenos=off}
+I> ~~~~~~~~~~~~~~~
+I> $ rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+I> ~~~~~~~~~~~~~~~
 
 *Debian/Ubuntu:*
+
+The simplest way of installing Ansible is with `pip`, though there is a PPA available for Ubuntu to make installation even easier; see [Rodney Quillo's Ansible PPA](https://launchpad.net/~rquillo/+archive/ansible).
 
 {lang="text",linenos=off}
     $ sudo apt-get update
@@ -81,7 +91,7 @@ If you run a different flavor of Linux, the steps are similar---you need the Pyt
     $ ansible --version
     ansible 1.5
 
-## Creating a basic inventory file
+## Creating a basic inventory file{#basic-inventory}
 
 Ansible uses an inventory file (basically, a list of servers) to communicate with your servers. Like a hosts file (at `/etc/hosts`) that matches IP addresses to domain names, an ansible inventory file matches servers (IP addresses or domain names) to groups. Inventory files can do a lot more, but for now, we'll just create a simple file with one server. Create a file at `/etc/ansible/hosts` (the default location for Ansible's inventory file), and add one server to it:
 

@@ -8,7 +8,7 @@ Playbooks are written in [YAML](http://docs.ansible.com/YAMLSyntax.html), a huma
 
 Ad-hoc commands alone can make Ansible a powerful tool; playbooks turn Ansible into a top-notch server provisioning and configuration management tool.
 
-What attracts most DevOps personnel to Ansible is the fact that it is easy to convert shell scripts (or one-off shell commands) directly into Ansible plays. Consider the following script, which simply installs Apache on a CentOS/Fedora server:
+What attracts most DevOps personnel to Ansible is the fact that it is easy to convert shell scripts (or one-off shell commands) directly into Ansible plays. Consider the following script, which simply installs Apache on a RHEL/CentOS server:
 
 **Shell Script**
 
@@ -22,30 +22,46 @@ What attracts most DevOps personnel to Ansible is the fact that it is easy to co
     service httpd start
     chkconfig httpd on
 
+To run the shell script (in this case, a file named `shell-script.sh` with the contents as above), you would call it directly from the command line:
+
+{lang="text",linenos=off}
+    # (From the same directory in which the shell script resides).
+    $ ./shell-script.sh
+
 **Ansible Playbook**
 
-{lang="yaml"}
+{lang="text"}
     ---
     - hosts: all
       tasks:
       - name: Install Apache.
         command: yum install --quiet -y httpd httpd-devel
       - name: Copy configuration files.
-        command: cp /path/to/config/httpd.conf /etc/httpd/conf/httpd.conf
-      - command: cp /path/to/config/httpd-vhosts.conf /etc/httpd/conf/httpd-vhosts.conf
+        command: >
+          cp /path/to/config/httpd.conf /etc/httpd/conf/httpd.conf
+      - command: >
+          cp /path/to/config/httpd-vhosts.conf /etc/httpd/conf/httpd-vhosts.conf
       - name: Start Apache and configure it to run at boot.
         command: service httpd start
       - command: chkconfig httpd on
 
+To run the Ansible Playbook (in this case, a file named `playbook.yml` with the contents as above), you would call it using the `ansible-playbook` command:
+
+{lang="text",linenos=off}
+    # (From the same directory in which the playbook resides).
+    $ ansible-playbook playbook.yml
+
 Ansible is powerful in that you can quickly transition to using playbooks if you know how to write standard shell commands---the same commands you've been using for years---and then rebuild your configuration to be more robust and take advantage of Ansible's features as you get time.
 
-In the above playbook, we are simply using the `command` module to run standard shell commands. We're also giving each play a 'name', so when we run the playbook, the play has human-readable output on the screen or in the logs. The command module has some other tricks up its sleeve (which we'll see later), but for now, you can be assured that shell scripts can be translated directly into Ansible playbooks without much hassle.
+In the above playbook, we use Ansible's `command` module to run standard shell commands. We're also giving each play a 'name', so when we run the playbook, the play has human-readable output on the screen or in the logs. The command module has some other tricks up its sleeve (which we'll see later), but for now, you can be assured that shell scripts can be translated directly into Ansible playbooks without much hassle.
+
+T> The greater-than sign (`>`) immediately following the `command:` module directive tells YAML "automatically quote the next set of indented lines as one long string, with each line separated by a space". It helps improve task readability (especially with modules which use many parameters like `copy`, `template`, or `lineinfile`, so you can place each parameter on its own line. It's easier to see what each option is doing, and your version control software is better able to identify changes on a line-by-line basis.
 
 The above playbook will perform *exactly* like the shell script, but we can improve things greatly by using some of Ansible's built-in modules to handle the heavy lifting:
 
-**Revised Ansible Playbook - Now with 100% more idempotence!**
+**Revised Ansible Playbook - Now with idempotence!**
 
-{lang="yaml"}
+{lang="text"}
     ---
     - hosts: all
       tasks:
@@ -55,10 +71,19 @@ The above playbook will perform *exactly* like the shell script, but we can impr
         - httpd
         - httpd-devel
       - name: Copy configuration files.
-        copy: src={{ item.src }} dest={{ item.dest }} owner=root group=root mode=0644
+        copy: >
+          src={{ item.src }}
+          dest={{ item.dest }}
+          owner=root group=root mode=644
         with_items:
-        - {src: "/path/to/config/httpd.conf", dest: "/etc/httpd/conf/httpd.conf"}
-        - {src: "/path/to/config/httpd-vhosts.conf", dest: "/etc/httpd/conf/httpd-vhosts.conf"}
+        - {
+          src: "/path/to/config/httpd.conf",
+          dest: "/etc/httpd/conf/httpd.conf"
+        }
+        - {
+          src: "/path/to/config/httpd-vhosts.conf",
+          dest: "/etc/httpd/conf/httpd-vhosts.conf"
+        }
       - name: Make sure Apache is started and configure it to run at boot.
         service: name=httpd state=started enabled=yes
 
@@ -80,36 +105,121 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
 
      - We use the `service` module to describe the desired state of a particular service, in this case `httpd`, Apache's http daemon. We want it to be running, so we set `state=started`, and we want it to run at system startup, so we say `enabled=yes` (the equivalent of running `chkconfig httpd on`).
 
-The great thing about the way we've reformatted this list of commands is that now, Ansible can keep track of the state of everything on all our servers. If you run the playbook the first time, it will provision the server by ensuring Apache is installed and running, and your custom configuration is in place.
+The great thing about the way we've reformatted this list of commands Ansible can keep track of the state of everything on all our servers. If you run the playbook the first time, it will provision the server by ensuring Apache is installed and running, and your custom configuration is in place.
 
-What's even more powerful is that the *second* time you run it, it won't actually do anything---besides telling you nothing has changed---as long as the server is in the correct state. So, with this one short playbook, we're able to provision and ensure the proper configuration for an Apache web server.
+Even better, the *second* time you run it, it won't actually do anything---besides telling you nothing has changed---as long as the server is in the correct state. So, with this one short playbook, we're able to provision and ensure the proper configuration for an Apache web server. Additionally, you will could run the playbook with the `--check` option (see the next section below) to ensure that the configuration matches what's defined in the playbook, without actually running the tasks on the server.
 
 If you ever want to update your configuration, or install another httpd package, you can simply update the file locally, or add the package to the `with_items` list, and run the playbook again. Whether you have one or a thousand servers, all of their configurations will be updated to match your playbook---and Ansible will tell you if anything ever changes (you're not making ad-hoc changes on individual production servers, *are you*?).
 
+## Running Playbooks with `ansible-playbook`
+
+If we run the playbooks in the examples above (which are set to run on `all` hosts), then the playbook would be run against every host defined in your Ansible inventory file (see Chapter 1's [basic inventory file example](#basic-inventory)).
+
+### Limiting playbooks to particular hosts and groups
+
+You can limit a playbook to specific groups or individual hosts by changing the `hosts:` definition. It can be set to a `all` hosts, a `group` of hosts defined in your inventory, multiple groups of hosts (e.g. `webservers,dbservers`), individual hosts (e.g. `atl.example.com`), or a mixture of hosts. You can even do wildcard matches, like `*.example.com`, to match all subdomains of a top-level domain.
+
+You can also limit the hosts on which the playbook is run via the `ansible-playbook` command:
+
+{lang="text",linenos=off}
+    $ ansible-playbook playbook.yml --limit webservers
+
+In this case (assuming your inventory file contains a `webservers` group), even if the playbook is set to `hosts: all`, or includes hosts in addition to what's defined in the `webservers` group, it will only be run on the hosts defined in `webservers`.
+
+You could also limit the playbook to one particular host:
+
+{lang="text",linenos=off}
+    $ ansible-playbook playbook.yml --limit xyz.example.com
+
+If you want to simply see a list of hosts that would be affected by your playbook before you actually run it, use `--list-hosts`:
+
+{lang="text",linenos=off}
+    $ ansible-playbook playbook.yml --list-hosts
+
+Running this should give output like:
+
+{lang="text",linenos=off}
+    playbook: playbook.yml
+    
+      play #1 (all): host count=4
+        127.0.0.1
+        192.168.24.2
+        foo.example.com
+        bar.example.com
+
+(Where `count` is the count of servers defined in your inventory, and following is a list of all the hosts defined in your inventory).
+
+### Setting user and sudo options with `ansible-playbook`
+
+If no `user` is defined alongside the `hosts` in a playbook, Ansible assumes you'll connect as the user defined in your inventory file for a particular host, and then will fall back to your local user account name. You can explicitly define a remote user to use for remote plays using the `--remote-user` (`-u`) option:
+
+{lang="text",linenos=off}
+    $ ansible-playbook playbook.yml --remote-user=johndoe
+
+In some situations, you will need to pass along your sudo password to the remote server to perform commands via `sudo`. In these situations, you'll need use the `--ask-sudo-pass` (`-K`) option. You can also explicitly force all tasks in a playbook to use sudo with `--sudo`. Finally, you can define the sudo user for tasks run via `sudo` (the default is root) with the `--sudo-user` (`-U`) option.
+
+For example, the following command will run our example playbook with sudo, performing the tasks as the sudo user `janedoe`, and Ansible will prompt you for the sudo password:
+
+{lang="text",linenos=off}
+    $ ansible-playbook playbook.yml --sudo --sudo-user=janedoe --ask-sudo-pass
+
+If you're not using key-based authentication to connect to your servers (read my warning about the security implications of doing so in Chapter 1), you can use `--ask-pass`.
+
+### Other options for `ansible-playbook`
+
+The `ansible-playbook` command also allows for some other common options:
+
+  - `--inventory=PATH` (`-i PATH`): Define a custom inventory file (default is the default Ansible inventory file, usually located at `/etc/ansible/hosts`).
+  - `--verbose` (`-v`): Verbose mode (show all output, including output from successful options). You can pass in `-vvvv` to give every minute detail.
+  - `--extra-vars=VARS` (`-e VARS`): Define variables to be used in the playbook, in `"key=value,key=value"` format.
+  - `--forks=NUM` (`-f NUM`): Number for forks (integer). Set this to a number higher than 5 to increase the number of servers on which Ansible will run tasks concurrently.
+  - `--connection=TYPE` (`-c TYPE`): The type of connection which will be used (this defaults to `ssh`; you might sometimes want to use `local` to run a playbook on your local machine, or on a remote server via cron).
+  - `--check`: Run the playbook in Check Mode ('Dry Run'); all tasks defined in the playbook will be checked against all hosts, but none will actually be run.
+
+There are some other options and configuration variables that are important to get the most out of `ansible-playbook`, but this should be enough to get you started running the playbooks in this chapter on your own servers or virtual machines.
+
+I> The rest of this chapter uses more realistic Ansible playbooks. All the examples in this chapter can be found in Jeff Geerling's [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), and you can clone that repository to your computer (or browse the code online) to follow along more easily.
+
 ## Real-world playbook: CentOS Node.js app server
 
-The above example, while being helpful for someone who might want to post a simple static web page to a clunky old Apache server, is not a good representation of a real-world scenario. I'm going to run through some more complex playbooks that do many different things, most of which are actually being used to manage production infrastructure today.
+The first example, while being helpful for someone who might want to post a simple static web page to a clunky old Apache server, is not a good representation of a real-world scenario. I'm going to run through some more complex playbooks that do many different things, most of which are actually being used to manage production infrastructure today.
 
+The first playbook will configure a CentOS server with Node.js, and install and start a simple Node.js application. The server will have a very simple architecture:
+
+{width=40%}
 ![Node.js app on CentOS.](images/4-playbook-nodejs.png)
+
+To start things off, we need to create a YAML file (`playbook.yml` in this example) to contain our playbook. Let's keep things simple:
+
+{lang="text"}
+    - hosts: all
+    
+      tasks:
+
+First, define a set of hosts (`all`) on which this playbook will be run (see the section above about limiting the playbook to particular groups and hosts), then tell ansible that what follows will be a list of tasks to run on the hosts.
 
 ### Add extra repositories
 
 Adding extra package repositories (yum or apt) is one thing many admins will do before any other work on a server to ensure that certain packages are available, or are at a later version than the ones in the base installation.
 
-In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of software like MySQL or PHP (these examples presume you're running RHEL/CentOS 6.x):
+In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL/CentOS 6.x):
 
 {lang="bash"}
     # Import EPEL GPG Key - see: https://fedoraproject.org/keys
-    wget https://fedoraproject.org/static/0608B895.txt -O /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
+    wget https://fedoraproject.org/static/0608B895.txt \
+      -O /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
     
     # Import Remi GPG key - see: http://rpms.famillecollet.com/RPM-GPG-KEY-remi
-    wget http://rpms.famillecollet.com/RPM-GPG-KEY-remi -O /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
+    wget http://rpms.famillecollet.com/RPM-GPG-KEY-remi \
+      -O /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
     
     # Install EPEL and Remi repos.
-    rpm -Uvh --quiet http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-    rpm -Uvh --quiet http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+    rpm -Uvh --quiet \
+      http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    rpm -Uvh --quiet \
+      http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
     
     # Install Node.js (npm plus all its dependencies).
     yum --enablerepo=epel install node
@@ -120,7 +230,7 @@ I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and
 
 Ansible can make things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and can work with variables other nifty Ansible features we'll discuss later:
 
-{lang="yaml"}
+{lang="text",starting-line-number=4}
     - name: Import EPEL and Remi GPG keys.
       rpm_key: key={{ item }} state=present
       with_items:
@@ -196,7 +306,7 @@ Since this little app is dependent on Express (a simple http framework for Node)
 
 Now, add the following to your playbook, to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`):
 
-{lang="yaml",starting-line-number=28}
+{lang="text",starting-line-number=31}
     - name: "Node: Ensure Node.js app folder exists."
       file: path={{ node_apps_location }} state=directory
     
@@ -220,7 +330,7 @@ We're *almost* finished! The last step is to start the app.
 
 We'll now use `forever` (which we installed earlier) to start the app.
 
-{lang="yaml",starting-line-number=36}
+{lang="text",starting-line-number=39}
     - name: "Node: Check list of Node.js apps running."
       command: forever list
       register: forever_list
@@ -243,22 +353,29 @@ Forever tracks the Node apps it manages, and we use Forever's `list` option to p
 
 At this point, you have a complete playbook that will install a simple Node.js app which responds to HTTP requests on port 80 with "Hello World!".
 
-To run the playbook on a server (in our case, we could just set up a new VirtualBox VM for testing, either via Vagrant or manually), use the following command (if you want to pass the `node_apps_location` variable via the command):
+To run the playbook on a server (in our case, we could just set up a new VirtualBox VM for testing, either via Vagrant or manually), use the following command (pass in the `node_apps_location` variable via the command):
 
 {lang="text",linenos=off}
-    $ ansible-playbook provisioning/playbook.yml -i /path/to/custom/inventory-file --extra-vars="node_apps_location=/usr/local/opt/node"
+    $ ansible-playbook playbook.yml \
+    --extra-vars="node_apps_location=/usr/local/opt/node"
 
-Simple, but very powerful. We've configured an entire Node.js application server In fewer than seventy lines of YAML!
+Once the playbook has finished configuring the server and deploying your app, visit `http://hostname/` in a browser (or use `curl` or `wget` to request the site), and you should see the following:
+
+{width=60%}
+![Node.js Application home page.](images/4-nodejs-home.png)
+
+Simple, but very powerful. We've configured an entire Node.js application server In fewer than fifty lines of YAML!
 
 ## Real-world playbook: Ubuntu LAMP server with Drupal
 
 At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu 12.04 to run a Drupal website.
 
+{width=40%}
 ![Drupal LAMP server.](images/4-playbook-drupal.png)
 
 ### Include a variables file, and discover `pre_tasks` and `handlers`
 
-For this playbook, we're going to start organizing our playbook a little more efficiently. Instead of defining any inline variables, let's begin the playbook by telling Ansible our variables will be in a separate `vars.yml` file:
+For this playbook, we're going to start organizing our playbook a little more efficiently. Instead of defining any requiring variables be passed in via the command line, let's begin the playbook by telling Ansible our variables are stored in a separate `vars.yml` file:
 
 {lang="text"}
     - hosts: all
@@ -349,21 +466,32 @@ Additionally, we need to add a VirtualHost entry to tell Apache where the site's
 
 {lang="text",starting-line-number=50}
       - name: "Apache: Enable mods required for Drupal."
-        file: src=/etc/apache2/mods-available/{{ item }} dest=/etc/apache2/mods-enabled/{{ item }} state=link
+        file: >
+          src=/etc/apache2/mods-available/{{ item }}
+          dest=/etc/apache2/mods-enabled/{{ item }}
+          state=link
         with_items:
         - rewrite.load
         notify: restart apache
       
       - name: "Apache: Add Apache virtualhost for Drupal 8 development."
-        template: src=templates/drupal.dev.conf.j2 dest=/etc/apache2/sites-available/{{ domain }}.dev.conf owner=root group=root mode=0644
+        template: >
+          src=templates/drupal.dev.conf.j2
+          dest=/etc/apache2/sites-available/{{ domain }}.dev.conf
+          owner=root group=root mode=644
         notify: restart apache
       
       - name: "Apache: Symlink Drupal virtualhost to sites-enabled."
-        file: src=/etc/apache2/sites-available/{{ domain }}.dev.conf dest=/etc/apache2/sites-enabled/{{ domain }}.dev.conf state=link
+        file: >
+          src=/etc/apache2/sites-available/{{ domain }}.dev.conf
+          dest=/etc/apache2/sites-enabled/{{ domain }}.dev.conf
+          state=link
         notify: restart apache
       
       - name: "Apache: Remove default virtualhost file."
-        file: path=/etc/apache2/sites-enabled/000-default state=absent
+        file: >
+          path=/etc/apache2/sites-enabled/000-default
+          state=absent
         notify: restart apache
 
 The first command enables all the required Apache modules by symlinking them from `/etc/apache2/mods-available` to `/etc/apache2/mods-enabled`.
@@ -377,8 +505,8 @@ Let's look at our Jinja2 template (denoted by the extra `.j2` on the end of the 
         ServerAdmin webmaster@localhost
         ServerName {{ domain }}.dev
         ServerAlias www.{{ domain }}.dev
-        DocumentRoot /var/www/drupal-{{ drupal_core_version }}-dev
-        <Directory "/var/www/drupal-{{ drupal_core_version }}-dev">
+        DocumentRoot {{ drupal_core_path }}
+        <Directory "{{ drupal_core_path }}">
             Options FollowSymLinks Indexes
             AllowOverride All
         </Directory>
@@ -386,13 +514,16 @@ Let's look at our Jinja2 template (denoted by the extra `.j2` on the end of the 
 
 This is a fairly standard Apache VirtualHost definition, but we have a few Jinja2 template variables mixed in. The syntax for printing a variable in a Jinja2 template is the same syntax we use in our Ansible playbooks---two brackets around the variable's name (like so: `{{ variable }}`).
 
-There are two variables we will need (`domain` and `drupal_core_version`), so we can add them to the empty `vars.yml` file we created earlier:
+There are three variables we will need (`drupal_core_version`, `drupal_core_path`, and `domain`), so we can add them to the empty `vars.yml` file we created earlier:
 
-{lang="yaml"}
+{lang="text"}
     ---
     # The core version you want to use (e.g. 6.x, 7.x, 8.x).
     drupal_core_version: "8.x"
-
+    
+    # The path where Drupal will be downloaded and installed.
+    drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
+    
     # The resulting domain will be [domain].dev (with .dev appended).
     domain: "drupaltest"
 
@@ -400,35 +531,34 @@ Now, when Ansible reaches the play that copies this template into place, the Jin
 
 The last two plays (lines 12-19) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
-At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't yet exist (there's no directory at `/var/www/drupal-{{ drupal_core_version }}-dev` yet!). This is why using `notify` is important---instead of adding a play after these three steps to restart Apache, which will fail the first time you run the playbook, notify will wait until after we've finished all the other steps in our main group of plays (giving us time to finish setting up the server), *then* restart Apache.
+At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't yet exist (there's no directory at `{{ drupal_core_path }}` yet!). This is why using `notify` is important---instead of adding a play after these three steps to restart Apache, which will fail the first time you run the playbook, notify will wait until after we've finished all the other steps in our main group of plays (giving us time to finish setting up the server), *then* restart Apache.
 
-### Configure PHP with `lineinfile`
+### Configure PHP with `lineinfile`{#lineinfile-php}
 
 We briefly mentioned `lineinfile` earlier in the book, when discussing file management and ad-hoc task execution. Modifying PHP's configuration is a perfect way to demonstrate `lineinfile`'s simplicity and usefulness:
 
-{lang="text",starting-line-number=70}
+{lang="text",starting-line-number=78}
       - name: "PHP: Enable upload progress via APC."
         lineinfile: >
           dest=/etc/php5/conf.d/20-apc.ini
           regexp="^apc\.rfc1867"
           line="apc.rfc1867 = 1"
+          state=present
         notify: restart apache
 
 Ansible's `lineinfile` module does a simple task: ensures that a particular line of text exists (or doesn't exist) in a file.
 
 In this example, we need to enable APC's `rfc1867` option so Drupal can use APC's file upload progress tracking (there are better ways of doing this, but for our simple server, this will suffice).
 
-First, we tell `lineinfile` the location of the file, in the `dest` parameter. Then, we give a regular expression (Python-style) to define what the line looks like (in this case, the line starts with the exact phrase "apc.rfc1867"---we had to escape the period since it is a special character in regular expressions). Finally, we tell `lineinfile` exactly how the line should look.
+First, we tell `lineinfile` the location of the file, in the `dest` parameter. Then, we give a regular expression (Python-style) to define what the line looks like (in this case, the line starts with the exact phrase "apc.rfc1867"---we had to escape the period since it is a special character in regular expressions). Next, we tell `lineinfile` exactly how the resulting line should look. Finally, we explicitly state that we want this line to be present (with the `state` parameter).
 
 Ansible will take the regular expression, and see if there's a matching line. If there is, Ansible will make sure the line matches the `line` parameter. If not, Ansible will add the line as defined in the `line` parameter. Ansible will only report a change if it had to add or change the line to match `line`.
-
-T> You may have noticed the greater-than sign (`>`) immediately following the `lineinfile:` module directive; this is a way of saying "automatically quote the next set of indented lines as if they were in one big concatenated list". It helps when you have more complex modules like `lineinfile` to format the parameters one-per-line (instead of in order on one line like `dest=/path/to/file regexp="expression" line="new line"`, for two reasons: it's easier to see what each option is doing, and your source control software is better able to identify specific changes on a line-by-line basis.
 
 ### Configure MySQL
 
 The next step is to remove MySQL's default test database, and create a database (named for the domain we specified earlier) for our Drupal installation to use.
 
-{lang="text",starting-line-number=76}
+{lang="text",starting-line-number=84}
       - name: "MySQL: Remove the MySQL test database."
         mysql_db: db=test state=absent
       
@@ -447,19 +577,29 @@ Drupal has a command-line companion in the form of Drush. Drush is developed ind
 
 We could just download Drupal and perform some setup in the browser by hand at this point, but the goal of this playbook is to have a fully-automated and idempotent Drupal installation. So, we need to install Composer, then Drush:
 
-{lang="text",starting-line-number=81}
+{lang="text",starting-line-number=89}
       - name: "Composer: Install Composer into the current directory."
-        shell: curl -sS https://getcomposer.org/installer | php creates=/usr/local/bin/composer
+        shell: >
+          curl -sS https://getcomposer.org/installer | php
+          creates=/usr/local/bin/composer
       
       - name: "Composer: Move Composer into globally-accessible location."
-        shell: mv composer.phar /usr/local/bin/composer creates=/usr/local/bin/composer
+        shell: >
+          mv composer.phar /usr/local/bin/composer
+          creates=/usr/local/bin/composer
 
 The first command runs Composer's php-based installer, which generates a 'composer.phar' PHP application archive. This archive is then copied (using the `mv` shell command) to the location `/usr/local/bin/composer` so we can use the simple `composer` command to install all of Drush's dependencies. Both commands are set to only run if the `/usr/local/bin/composer` file doesn't already exist (using the `creates` parameter).
 
+T> Why use `shell` instead of `command`? Ansible's `command` module is the preferred option for running commands on a host (when an Ansible module won't suffice), and it works in most scenarios. However, `command` doesn't run the command via the remote shell `/bin/sh`, so options like `<`, `>`, `|`, and `&`, and local environment variables like `$HOME` won't work. `shell` allows you to pipe command output to other commands, access the local environment, etc.
+T> 
+T> There are two other modules which assist in executing shell commands remotely: `script` executes shell scripts (though it's almost always a better idea to convert shell scripts into idempotent Ansible playbooks!), and `raw` executes raw commands via SSH (it should only be used in circumstances where you can't use one of the other options).
+T> 
+T> It's best to use an Ansible module for every task. If you have to resort to a regular command-line command, try the the `command` module first. If you require the options mentioned above, use `shell`. Use of `script` or `raw` should be exceedingly rare, and won't be covered in this book.
+
 Now, we'll install Drush using the latest version from GitHub:
 
-{lang="text",starting-line-number=87}
-      - name: "Drush: Check out drush master branch so it works with all Drupal versions."
+{lang="text",starting-line-number=98}
+      - name: "Drush: Check out drush master branch."
         git: repo=https://github.com/drush-ops/drush.git dest=/opt/drush
       
       - name: "Install Drush dependencies with Composer."
@@ -469,7 +609,10 @@ Now, we'll install Drush using the latest version from GitHub:
           creates=/opt/drush/vendor/autoload.php
       
       - name: "Drush: Create drush bin symlink."
-        file: src=/opt/drush/drush dest=/usr/local/bin/drush state=link
+        file: >
+          src=/opt/drush/drush
+          dest=/usr/local/bin/drush
+          state=link
 
 Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from it's repository URL on GitHub. Since we want the master branch, we simply pass in the `repo` (repository URL) and `dest` (destination path) parameters.
 
@@ -481,32 +624,39 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 
 We'll use `git` again to clone Drupal to the apache document root we defined earlier in our virtual host configuration, then we'll run Drupal's installation via drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
-{lang="text",starting-line-number=98}
+{lang="text",starting-line-number=112}
       - name: "Drupal: Check out Drupal Core to the Apache docroot."
-        git:
+        git: >
           repo=http://git.drupal.org/project/drupal.git
           version={{ drupal_core_version }}
-          dest=/var/www/drupal-{{ drupal_core_version }}-dev
+          dest={{ drupal_core_path }}
       
       - name: "Drupal: Install Drupal."
-        command:
-          drush si -y --site-name="{{ drupal_site_name }}" --account-name=admin --account-pass=admin --db-url=mysql://root@localhost/{{ domain }}
-          chdir=/var/www/drupal-{{ drupal_core_version }}-dev
-          creates=/var/www/drupal-{{ drupal_core_version }}-dev/sites/default/settings.php
+        command: >
+          drush si -y --site-name="{{ drupal_site_name }}" --account-name=admin
+          --account-pass=admin --db-url=mysql://root@localhost/{{ domain }}
+          chdir={{ drupal_core_path }}
+          creates={{ drupal_core_path }}/sites/default/settings.php
         notify: restart apache
       
       # SEE: https://drupal.org/node/2121849#comment-8413637
       - name: "Drupal: Set permissions properly on settings.php."
-        file: path=/var/www/drupal-{{ drupal_core_version }}-dev/sites/default/settings.php mode=0744
+        file: >
+          path={{ drupal_core_path }}/sites/default/settings.php
+          mode=744
       
       - name: "Drupal: Set permissions properly on files directory."
-        file: path=/var/www/drupal-{{ drupal_core_version }}-dev/sites/default/files mode=0777 state=directory recurse=yes
+        file: >
+          path={{ drupal_core_path }}/sites/default/files
+          mode=777
+          state=directory
+          recurse=yes
 
 First, we cloned Drupal's git repository, using the `version` defined in our `vars.yml` file as `drupal_core_version`. The `git` module's `version` parameter defines the branch (`master`, `8.x`, etc.), tag (`1.0.1`, `7.24`, etc.), or individual commit hash (`50a1877`, etc.) to clone.
 
 Next, we used Drush's `si` command (short for `site-install`) to run Drupal's installation (which configures the database, runs some maintenance, and sets some default configuration settings for the site). We passed in a few variables, like the `drupal_core_version` and `domain`; we also added a `drupal_site_name`, so add that variable to your `vars.yml` file:
 
-{lang="yaml",starting-line-number=7}
+{lang="text",starting-line-number=10}
     # Your Drupal site name.
     drupal_site_name: "D8 Test"
 
@@ -522,13 +672,194 @@ A similar server configuration, running Apache, MySQL, and PHP, can be used to r
 
 ## Real-world playbook: Ubuntu Apache Tomcat server with Solr
 
-TODO.
+Apache Solr is a fast and scalable search server optimized for full-text search, word highlighting, faceted search, fast indexing, and more. It's a very popular search server, and it's pretty easy to install and configure using Ansible. In the following example, we're going to set up Apache Solr using Ubuntu 12.04 and Apache Tomcat.
+
+{width=40%}
+![Apache Solr Server.](images/4-playbook-solr.png)
+
+### Include a variables file, and discover `pre_tasks` and `handlers`
+
+Just like the previous LAMP server example, we'll begin this playbook by telling Ansible our variables will be in a separate `vars.yml` file:
+
+{lang="text"}
+    - hosts: all
+    
+      vars_files:
+      - vars.yml
+
+Let's quickly create the `vars.yml` file, while we're thinking about it. Create the file in the same folder as your Solr playbook, and add the following contents:
+
+{lang="text"}
+    download_dir: /tmp
+    solr_dir: /opt/solr
+
+These two variables define two paths we'll use while downloading and installing Apache Solr.
+
+Back in our playbook, after the `vars_files`, we also need to make sure the apt cache is up to date, using `pre_tasks` like the previous example:
+
+{lang="text",starting-line-number=5}
+      pre_tasks:
+      - name: Update apt cache if needed.
+        apt: update_cache=yes cache_valid_time=3600
+
+Like the Drupal playbook, we again use `handlers` to define certain tasks that are notified by tasks in the `tasks` section. This time, we just need a handler to restart `tomcat7`, the Java servlet container that powers Apache Solr:
+
+{lang="text",starting-line-number=8}
+      handlers:
+      - name: restart tomcat
+        service: name=apache2 state=restarted
+
+We can call this handler with the option `notify: restart tomcat` in any play in our playbook.
+
+### Install Apache Tomcat 7
+
+It's easy enough to install Tomcat 7 on an Ubuntu Precise server; there are packages in the default apt repositories, so we just need to make sure they're installed, and that the `tomcat7` service is enabled and started:
+
+{lang="text",starting-line-number=11}
+      tasks:
+      - name: Install Tomcat 7.
+        apt: "pkg={{ item }} state=installed"
+        with_items:
+          - tomcat7
+          - tomcat7-admin
+      
+      - name: Ensure Tomcat 7 is started and enabled on boot.
+        service: name=tomcat7 state=started enabled=yes
+
+That was easy enough! We used the `apt` module to install two packages, `tomcat7` and `tomcat7-admin` (so we can log into Tomcat's administrative backend), then started `tomcat7` and set it to start when the system boots.
+
+### Install Apache Solr
+
+Ubuntu 12.04 includes a package for Apache Solr, but it installs a very old version, so we'll install the latest version of Solr from source. The first step is downloading the source:
+
+{lang="text",starting-line-number=20}
+    - name: Download Solr.
+      get_url: >
+        url=http://apache.osuosl.org/lucene/solr/4.7.1/solr-4.7.1.tgz
+        dest={{ download_dir }}/solr-4.7.1.tgz
+        sha256sum=4a546369a31d34b15bc4b99188984716bf4c0c158c0e337f3c1f98088aec70ee
+
+We're installing Apache Solr 4.7.1, the latest version at the time of this book's writing. When downloading files from remote servers, the `get_url` module provides more flexibility and convenience than raw `wget` or `curl` commands.
+
+You have to pass `get_url` a `url` (the source of the file to be downloaded), and a `dest` (the location where the file will be downloaded). If you pass a directory to the `dest` parameter, Ansible will place the file inside, but will always re-download the file on subsequent runs of the playbook (and overwrite the existing download if it has changed). To avoid this extra overhead, we give the full path to the downloaded file.
+
+We also use `sha256sum`, an optional parameter, for peace of mind; if you are downloading a file or archive that's critical to the functionality and security of your application, it's a good idea to check the file to make sure it is exactly what you're expecting. `sha256sum` compares a hash of the data in the downloaded file to a 256-bit hash that you specify (use `shasum -a 256 /path/to/file` to get the `sha256sum` of a file). If the checksum doesn't match the supplied hash, Ansible will fail and discard the freshly-downloaded (and invalid) file.
+
+{lang="text",starting-line-number=25}
+    - name: Expand Solr.
+      command: >
+        tar -C /tmp -xvzf {{ download_dir }}/solr-4.7.1.tgz
+        creates={{ download_dir }}/solr-4.7.1/dist/solr-4.7.1.war
+    
+    - name: Copy Solr into place.
+      command: >
+        cp -r {{ download_dir }}/solr-4.7.1 {{ solr_dir }}
+        creates={{ solr_dir }}/dist/solr-4.7.1.war
+
+We need to expand the Apache Solr archive, then copy it into place. For both of these steps, use the built-in `tar` and `cp` utilities (with the appropriate options) to do the work. Setting `creates` tells Ansible to skip these steps in subsequent runs, since the Solr war file will already be in place.
+
+{lang="text",starting-line-number=34}
+    # Use shell so commands are passed in correctly.
+    - name: Copy Solr components into place.
+      shell: >
+        cp -r {{ item.src }} {{ item.dest }}
+        creates={{ item.creates }}
+      with_items:
+        # Solr example configuration and war file.
+        - {
+          src: "{{ solr_dir }}/example/webapps/solr.war",
+          dest: "{{ solr_dir }}/solr.war",
+          creates: "{{ solr_dir }}/solr.war"
+        }
+        - {
+          src: "{{ solr_dir }}/example/solr/*",
+          dest: "{{ solr_dir }}/",
+          creates: "{{ solr_dir }}/solr.xml"
+        }
+        # Solr log4j logging configuration.
+        - {
+          src: "{{ solr_dir }}/example/lib/ext/*",
+          dest: "/var/lib/tomcat7/shared/",
+          creates: "/var/lib/tomcat7/shared/log4j-1.2.16.jar"
+        }
+        - {
+          src: "{{ solr_dir }}/example/resources/log4j.properties",
+          dest: "/var/lib/tomcat7/shared/classes",
+          creates: "/var/lib/tomcat7/shared/classes/log4j.properties"
+        }
+      notify: restart tomcat
+
+The next task copies into place certain directories and files required to run Apache Solr.
+
+Nothing too special here, but this example illustrates how you can use comments within `with_items` lists to help clarify the items in the list. We could've added each command as its own task, but doing it this way reduces the total number of Ansible tasks and allows us to move the `with_items` list to an external variable if desired.
+
+{lang="text",starting-line-number=63}
+    - name: Ensure solr example directory is absent.
+      file: >
+        path={{ solr_dir }}/example
+        state=absent
+    
+    - name: Set up solr data directory.
+      file: >
+        path={{ solr_dir }}/data
+        state=directory
+        owner=tomcat7 group=tomcat7
+
+The latest version of Apache Solr searches through all the directories inside `{{ solr_dir }}` recursively, loading any potential search configuration it finds. Since we copied over one of the examples to use as the server's default search core, Solr would see it as a duplicate of one of the examples and crash. So, we can use the `file` module with a `path` to the example directory to make sure the directory is gone (`state=absent`).
+
+After removing the example directory (and in future runs, ensuring it's still gone), we set up the data directory where Solr will store index data, ensuring it exists as a directory, and is owned by the `tomcat7` user and group.
+
+{lang="text",starting-line-number=73}
+    - name: Configure solrconfig.xml for new data directory.
+      lineinfile: >
+        dest={{ solr_dir }}/collection1/conf/solrconfig.xml
+        regexp="^.*<dataDir.+$"
+        line="<dataDir>${solr.data.dir:{{ solr_dir }}/data}</dataDir>"
+        state=present
+
+As we found [earlier](#lineinfile-php), `lineinfile` is a helpful module for ensuring consistent configuration file settings with idempotence. In this case, we need to make sure the `<dataDir>` line in our default search core's configuration file is set to a specific value.
+
+{lang="text",starting-line-number=79}
+    - name: Set permissions for solr home.
+      file: >
+        path={{ solr_dir }}
+        recurse=yes
+        owner=tomcat7 group=tomcat7
+
+To set ownership options on the entire contents of the `{{ solr_dir }}` correctly, we use the `file` module with the `recurse` parameter set to `yes`. This is equivalent to the shell command `chown -R tomcat7:tomcat7 {{ solr_dir }}`.
+
+{lang="text",starting-line-number=84}
+    - name: Add Catalina configuration for solr.
+      template: >
+        src=templates/solr.xml.j2
+        dest=/etc/tomcat7/Catalina/localhost/solr.xml
+        owner=root group=tomcat7 mode=644
+      notify: restart tomcat
+
+The final task copies a template file (`solr.xml.j2`) to the remote host, substituting variables via Jinja2 syntax, and sets the file's ownership and permissions as needed for Tomcat.
+
+Before the task can run, the local template file will need to be created. Create a 'templates' folder in the same directory as your Apache Solr playbook, and create a new file named `solr.xml.j2` inside, with the following contents:
+
+{lang="jinja"}
+    <?xml version="1.0" encoding="utf-8"?>
+    <Context docBase="{{ solr_dir }}/solr.war" debug="0" crossContext="true">
+      <Environment name="solr/home" type="java.lang.String" \
+      value="{{ solr_dir }}" override="true"/>
+    </Context>
+
+You can run the playbook with `$ ansible-playbook [playbook-name.yml]`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://example.com:8080/solr (where 'example.com' is your server's hostname or IP address).
+
+### Apache Solr server summary
+
+The configuration we used when deploying Apache Solr allows for a multicore setup, so you could add more 'search cores' via the admin interface (as long as the directories and core schema configuration is in place in the filesystem), and have multiple indexes for multiple websites and applications.
+
+A playbook similar to the one above is used as part of the infrastructure for [Hosted Apache Solr](http://hostedapachesolr.com/), a service run by the author which runs a hosted version of Apache Solr particularly for Drupal search indexes.
 
 ## Summary
 
 At this point, you should be getting comfortable with Ansible's *modus operandi*. Playbooks are the heart of Ansible's configuration management and provisioning functionality, and the same modules and similar syntax can be used with ad-hoc commands for deployments and general server management.
 
-Now that you're familiar with playbooks, we'll explore more advanced concepts in building playbooks, like organization of plays, conditionals, variables, and more.
+Now that you're familiar with playbooks, we'll explore more advanced concepts in building playbooks, like organization of plays, conditionals, variables, and more. Later, we'll explore how we can use playbooks within roles to make them infinitely more flexible, and save time setting up and configuring your infrastructure.
 
 {lang="text",linenos=off}
      _________________________________________

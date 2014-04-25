@@ -4,9 +4,29 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.49 (2014-04-24)
+
+  - Completed history of SSH in chapter 11.
+  - Clarified definition of the word 'DevOps' in Chapter 1.
+  - Added section "Testing Ansible Playbooks" in Chapter 14.
+  - Added links to [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops) in the Introduction and Chapter 4.
+
+## Version 0.47 (2014-04-13)
+
+  - Added Apache Solr example in Chapter 4.
+  - Updated VM diagrams in Chapter 4.
+  - Added information about `ansible-playbook` command in Chapter 4 (thanks to a reader's suggestion!).
+  - Clarified code example in preface.
+
+## Version 0.44 (2014-04-04)
 
   - Expanded chapter 11 (security).
+  - Fixed formatting issues in Warning/Info/Tip asides.
+  - Fixed formatting of some code examples to prevent line wrapping.
+  - Added section on Ansible Galaxy in chapter 6.
+  - Updated installation section in chapter 1 with simplified install processes.
+  - Added Appendix B - Ansible Best Practices and Conventions.
+  - Added warnings concerning faster SSH in Ansible 1.5+ (thanks to [@LeeVanSteerthem](https://twitter.com/LeeVanSteerthem)).
 
 ## Version 0.42 (2014-03-25)
 
@@ -31,7 +51,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Expanded 'Environment Variables' section in Chapter 5.
   - Expanded 'Variables' section in Chapter 5.
   - MORE COWBELL! (Cowsay motivational quotes at the end of every completed chapter).
-  - Fixed NTP installation examples in Chapter 2 (thanks to a reader!).
+  - Fixed NTP installation examples in Chapter 2 (thanks to a reader's suggestion!).
 
 ## Version 0.33 (2014-02-20)
 

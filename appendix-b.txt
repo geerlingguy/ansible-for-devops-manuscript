@@ -1,0 +1,10 @@
+# Appendix B - Ansible Best Practices and Conventions {#appendix-b}
+
+TODO:
+
+  - [Best Practices](http://docs.ansible.com/playbooks_best_practices.html)
+  - [Ansible (Real Life) Good Practices](http://www.reinteractive.net/posts/167-ansible-real-life-good-practices)
+
+## Summary
+
+TODO.

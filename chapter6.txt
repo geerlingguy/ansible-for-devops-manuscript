@@ -14,11 +14,92 @@ TODO:
 
 ## Ansible Galaxy
 
-TODO:
+Ansible roles are powerful and flexible; they allow you to encapsulate sets of configuration and deployable units of playbooks, variables, templates, and other files, so you can easily reuse them across different servers.
 
-  - [Ansible Galaxy](https://galaxy.ansible.com/)
-  - [Using Ansible Galaxy](https://servercheck.in/blog/using-ansible-galaxy)
-  - [Ansible Galaxy is now available](http://blog.ansibleworks.com/2013/12/19/ansibleworks-galaxy-is-now-available/)
+It's annoying to have to start from scratch every time, though; wouldn't it be better if people could share roles for commonly-installed applications and services? Enter [Ansible Galaxy](https://galaxy.ansible.com/).
+
+Ansible Galaxy, or just 'Galaxy', is a repository of community-contributed roles for common Ansible content. There are already hundreds of roles available which can configure and deploy common applications, and they're all available through the `ansible-galaxy` command, introduced in Ansible 1.4.2.
+
+Galaxy offers the ability to add, download, and rate roles, and you can register either using a social account or a normal account on the site (though you don't need an account to install and use roles from Galaxy).
+
+### Getting roles from Galaxy
+
+One of the primary functions of the `ansible-galaxy` command is retrieving roles from Galaxy. Roles must be downloaded before they can be used in playbooks.
+
+Remember the basic LAMP (Linux, Apache, MySQL and PHP) server we installed earlier in the book? Let's create it again, but this time, using a few roles from Galaxy:
+
+{lang="text",linenos="off"}
+    $ ansible-galaxy install geerlingguy.apache geerlingguy.mysql geerlingguy.php
+
+T> The latest version or a role will be downloaded if no version is specified. To specify a version, add the version after the role name, for example: `$ ansible-galaxy install geerlingguy.apache,1.0.0`.
+
+I> Ansible Galaxy is still evolving rapidly, and has already seen many small improvements. There are a few areas where Galaxy could use some improvement (like browsing for roles by Operating System in the online interface, or automatically downloading roles that are included in playbooks), but most of these little bugs or rough areas will be fixed in time. Please check Ansible Galaxy's [About](https://galaxy.ansible.com/intro) page and stay tuned to Ansible's blog for the latest updates.
+
+### A LAMP server in six lines of YAML
+
+Now that we have these roles installed (Apache, MySQL, and PHP), we can quickly create a LAMP server. This example assumes you already have a CentOS-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
+
+First, create an Ansible playbook named `lamp.yml` with the following contents:
+
+{lang="text"}
+    ---
+    - hosts: all
+      roles:
+        - geerlingguy.mysql
+        - geerlingguy.apache
+        - geerlingguy.php
+
+Now, run the playbook against a host:
+
+{lang="text",linenos="off"}
+    $ ansible-playbook -i path/to/custom-inventory lamp.yml
+
+After a few minutes, an entire LAMP server should be set up and running. If you add in a few variables, you can configure virtualhosts, PHP configuration options, MySQL server settings, etc.
+
+We've effectively reduced about thirty lines of YAML (from previous examples dealing with LAMP or LAMP-like servers) down to three. Obviously, the roles have extra code in them, but the power here is in abstraction. Since most companies have many servers using similar software, but with slightly different configurations, having centralized, flexible roles saves a lot of repetition.
+
+You could think of Galaxy roles (which typically install common software like Apache or MySQL) as glorified packages; they not only install software, but they configure it *exactly* how you want it, every time, with minimal manual labor. Additionally, many of these roles work across different flavors of Linux and UNIX, so you have better configuration portability!
+
+### A Solr server in six lines of YAML
+
+Let's grab a few more roles and build an Apache Solr search server, which requires Java and Apache Tomcat to be installed and configured.
+
+{lang="text",linenos="off"}
+    $ ansible-galaxy install geerlingguy.java geerlingguy.tomcat6 geerlingguy.solr
+
+Then create a playbook named `solr.yml` with the following contents:
+
+{lang="text"}
+---
+- hosts: all
+  roles:
+    - geerlingguy.java
+    - geerlingguy.tomcat6
+    - geerlingguy.solr
+
+Now we have a fully-functional Solr server, and we could add some variables to configure it exactly how we want, by using a non-default port, or changing the memory allocation for Tomcat6.
+
+I think you might get the point. Now, I could've also left out the `java` and `tomcat6` roles, since they'll be automatically picked up during installation of the `geerlingguy.solr` role (they're listed in the `solr` role's dependencies).
+
+A role's page on the Ansible Galaxy website highlights available variables for setting things like what version of Solr to install, where to install it, etc. (as an example, view the [geerlingguy.solr Galaxy page](https://galaxy.ansible.com/list#/roles/445)).
+
+Using community-maintained roles, you can build a wide variety of servers with minimal effort. Instead of having to maintain lengthy playbooks and roles unique to each server, Galaxy lets you build a list of the required roles, and a few variables that set up the servers with the proper versions and paths. Configuration management with Ansible Galaxy becomes *true* configuration management---you get to spend more time managing your server's configuration, and less time on packaging and building individual services!
+
+### Helpful Galaxy commands
+
+Some other helpful `ansible-galaxy` commands you might use from time to time:
+
+  - `ansible-galaxy list` displays a list of installed roles, with version numbers
+  - `ansible-galaxy remove [role]` removes an installed role
+  - `ansible-galaxy init` can be used to create a role template suitable for submission to Ansible Galaxy
+
+You can configure the default path where Ansible roles will be downloaded by editing your `ansible.cfg` configuration file (normally located in `/etc/ansible/ansible.cfg`), and setting a `roles_path` in the `[defaults]` section.
+
+### Contributing to Ansible Galaxy
+
+If you've been working on some useful Ansible roles, and you'd like to share them with others, all you need to do is make sure they follow Ansible Galaxy's basic template (especially within the `meta/main.yml` and `README.md` files). To get started, use `ansible-galaxy init` to generate a basic Galaxy template, and make your own role match the Galaxy template's structure.
+
+Then push your role up to a new project on GitHub (I usually name my Galaxy roles like `ansible-role-[rolename]`, so I can easily see them when browsing my repos on GitHub), and add a new role while logged into galaxy.ansible.com.
 
 ## Summary
 

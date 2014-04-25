@@ -64,7 +64,7 @@ This is a very basic configuration to simply get you started using Ansible with 
 
 Let's create the Ansible `playbook.yml` file now. Create an empty text file in the same folder as your Vagrantfile, and put in the following contents:
 
-{lang="yaml"}
+{lang="text"}
     ---
     - hosts: all
       tasks:
@@ -131,7 +131,7 @@ You can see how things start getting complex in the land of shell scripts! And t
 
 We could be even more terse (and really demonstrate Ansible's powerful simplicity) and not use Ansible's `name` module to give human-readable names to each command, resulting in the following playbook:
 
-{lang="yaml"}
+{lang="text"}
     ---
     - hosts: all
       tasks:

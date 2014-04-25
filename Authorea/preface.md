@@ -24,7 +24,7 @@ If you are interested in both development and operations, and have at least a pa
 
 Ansible uses a simple syntax (YAML) and simple command-line tools (using common POSIX conventions) for all it's powerful abilities. Code samples and commands will be highlighted throughout the book either inline (for example: `ansible [command]`), or in a code block (with or without line numbers) like:
 
-{lang="yaml"}
+{lang="text"}
     ---
     # This is the beginning of a YAML file.
 

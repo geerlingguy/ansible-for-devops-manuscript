@@ -24,9 +24,17 @@ If you are interested in both development and operations, and have at least a pa
 
 Ansible uses a simple syntax (YAML) and simple command-line tools (using common POSIX conventions) for all it's powerful abilities. Code samples and commands will be highlighted throughout the book either inline (for example: `ansible [command]`), or in a code block (with or without line numbers) like:
 
-{lang="yaml"}
+{lang="text"}
     ---
     # This is the beginning of a YAML file.
+
+Some lines of YAML and other code examples require more than 80 characters per line, resulting in the code wrapping to a new line. Wrapping code is indicated by a colored `\` at the end of the line of code. For example:
+
+{lang="text"}
+    # The line of code wraps due to the extremely long URL.
+    wget http://www.example.com/really/really/really/long/path/in/the/url/causes/the/line/to/wrap
+
+When using the code, don't copy the `\` character, and make sure you don't use a newline between the first line with the trailing `\` and the next line.
 
 Links to pertinent resources and websites are added inline, like the following link to [Ansible](http://www.ansible.com/), and can be viewed directly by clicking on them in eBook formats, or by following the URL in the footnotes.
 

@@ -9,11 +9,59 @@ TODO:
   - Looping (if not covered in-depth earlier)
   - Ansible Vault
   - Asynchronous actions, Polling, distributed Ansible
-  - Testing/Debugging Ansible playbooks and Check mode
-    - `debug`, `assert` (1.5), etc.
-    - `ansible-playbook --syntax-check`
-    - `ansible-playbook --check`
-    - [Ansible lint](https://github.com/willthames/ansible-lint)
-    - [server-spec](http://serverspec.org/)
   - Error handling
   - Server security with Ansible (especially SSH agent/key auth configuration)
+
+## Testing Ansible Playbooks
+
+At this point, you should be able to convert almost any bit of your infrastructure's configuration into Ansible playbooks, roles, and inventories. And before deploying any changes, you should be testing the changes in a non-production environment (just like you would with application releases). Manually running a playbook that configures your entire infrastructure, then making sure it does what you expect, is a good start towards order and stability.
+
+Since everything's in code, and since all you're doing is clicking "Go" and checking the result, why not automate this process?
+
+Just like application code, you should test your infrastructure code. And lucky for you, there are already many ways to do this! This section will cover different levels of infrastructure testing, and demonstrate differnent tools you can use to make sure you have thoroughly-tested everything before it goes to production.
+
+### Unit, Integration and Functional Testing
+
+When determining how you should test your infrastructure, you need to understand the different kinds of testing, and then determine the kinds of testing on which you should focus more effort.
+
+*Unit* testing, when applied to applications, is testing that applies to the smallest units of code (usually functions or class methods). In Ansible, unit testing would typically apply to individual playbooks. You could run individual playbooks in an isolated environment, but that's often not worth the effort. What *is* worth your effort is at least checking the playbook syntax, to make sure you didn't just commit a YAML file that will break an entire deployment because of a missing quotation mark, or a whitespace issue!
+
+*Integration* testing, which is definitely more valuable when it comes to Ansible, is the testing of small groupings of individual units of code, to make sure they work correctly together. Breaking your infrastructure definition into many task-specific roles and playbooks allows you to do this; if you've structured your playbooks so they have no or limited dependencies, you could test each role individually in a fresh virtual machine, before you use the role as part of a full infrastructure deployment.
+
+*Functional* testing involves the whole shebang. Basically, you set up a complete infrastructure environment, and then run tests against it to make sure *everything* was successfully installed, deployed, and configured. Ansible's own reporting is helpful in this kind of testing, and there are also external tools that can be used to test infrastructure even more deeply.
+
+It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare Workstation or Fusion. And with most cloud services providing robust control APIs and hourly billing, it's often simple, inexpensive, and just as fast to perform testing directly on cloud instances that mirror your production infrastructure!
+
+We'll begin with some of the simplest tests you can run against Ansible configuration, along with some common debugging techniques, then progress on to some more advanced, full-fledged functional testing methods using tools to fully automate the process.
+
+### Debugging and Asserting
+
+TODO:
+
+  - `debug`
+  - `assert`
+
+### Checking syntax and performing dry runs
+
+TODO:
+
+  - `ansible-playbook --syntax-check`
+  - `ansible-playbook --check`
+  - [Ansible lint](https://github.com/willthames/ansible-lint)
+
+### Automated testing on GitHub using Travis CI
+
+TODO:
+
+  - [Apache role example](https://github.com/geerlingguy/ansible-role-apache/blob/master/.travis.yml)
+  - [Testing with Travis CI](http://renemoser.net/blog/2014/01/01/test-ansible-roles-with-travis-ci/)
+
+### Automated testing with Jenkins CI
+
+TODO.
+
+### Functional testing using serverspec
+
+TODO:
+
+  - [server-spec](http://serverspec.org/)

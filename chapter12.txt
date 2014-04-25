@@ -7,3 +7,4 @@ TODO:
   - Manage load balancers (BigIP, ELB, netscaler, etc.) in [pre|post]_task.
   - `max_fail_percentage`
   - `delegate_to` / `local_action`
+  - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
