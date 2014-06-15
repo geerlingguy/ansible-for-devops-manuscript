@@ -14,9 +14,9 @@ chapter9.txt
 chapter10.txt
 chapter11.txt
 chapter12.txt
-chapter13.txt
-chapter14.txt
 backmatter.txt
 appendix-a.txt
+appendix-b.txt
+appendix-c.txt
 glossary.txt
 changelog.txt

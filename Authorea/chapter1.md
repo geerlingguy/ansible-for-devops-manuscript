@@ -79,7 +79,7 @@ If you run a different flavor of Linux, the steps are similar---you need the Pyt
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 1.5
+    ansible 1.6
 
 ## Creating a basic inventory file
 
@@ -106,7 +106,7 @@ Now that you've installed Ansible and created an inventory file, it's time to ru
 
 ...where `[username]` is the user you use to log into the server. If everything worked, you should see a message that shows `www.example.com | success >>`, then the result of your ping. If it didn't work, run the command again with ` -vvvv` on the end to see verbose output. Chances are you don't have SSH keys configured properly---if you login with `ssh username@www.example.com` and that works, the above Ansible command should work, too.
 
-W> Ansible assumes you're using passwordless (key-based) login for SSH (e.g. you login by entering `ssh username@example.com` and don't have to type a password). If you're still logging into your remote servers with a username and password, or if you need a primer on Linux remote authentication and security best practices, please read [Chapter 11 - Server Security and Ansible](#chapter-11). If you insist on using passwords, you can add the `--ask-pass` (`-k`) flag to ansible commands, but this entire book is written assuming passwordless authentication, so you'll need to keep this in mind every time you run a command or playbook.
+W> Ansible assumes you're using passwordless (key-based) login for SSH (e.g. you login by entering `ssh username@example.com` and don't have to type a password). If you're still logging into your remote servers with a username and password, or if you need a primer on Linux remote authentication and security best practices, please read [Chapter 10 - Server Security and Ansible](#chapter-10). If you insist on using passwords, you can add the `--ask-pass` (`-k`) flag to ansible commands, but this entire book is written assuming passwordless authentication, so you'll need to keep this in mind every time you run a command or playbook.
 
 Let's run a more useful command:
 

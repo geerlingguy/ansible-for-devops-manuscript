@@ -7,6 +7,11 @@
   - [Ops School Curriculum](https://ops-school.readthedocs.org/en/latest/introduction.html)
   - [Modelling credentials configuration in ansible](http://willthames.github.io/2014/04/02/modelling-credentials-configuration-in-ansible.html)
   - [Hands on Ansible tutorial](http://blog.dhananjaynene.com/2013/10/hands-on-ansible-tutorial/)
+  - [Knightmare: A DevOps Cautionary Tale](http://dougseven.com/2014/04/17/knightmare-a-devops-cautionary-tale/)
+  - [Docker + Ansible + Jenkins testing](http://blog.mist.io/post/82383668190/move-fast-and-dont-break-things-testing-with)
+  - [TDD with Ansible](http://www.slideshare.net/ItamarHassin/monitordriven-development-using-ansible-34920480)
+  - [Serverspec + Sensu](http://www.slideshare.net/m_richardson/serverspec-and-sensu-testing-and-monitoring-collide)
+  - [DevOps in Straight English – Part 2 of 2](http://developerblog.redhat.com/2014/01/29/devops-straight-english-2-of-2/)
 
 ## Competition / Similar works:
 
@@ -20,12 +25,17 @@
 ## Todo before final publication:
 
   - Delete (or rewrite?) section in beginning of book about how you can improve this book during writing.
+  - Add illustrations all over the place!
   - Search for "that" in text.
   - Search for `...` in code examples and make it consistent.
   - Ensure cowsay is in every chapter summary.
   - Look through all code samples and fix line-wrapped lines.
   - Search for "—" (em-dash) in entire book and replace with `---`.
   - Search for "its" and "it's" and ensure proper grammatical usage.
+
+## Thoughts on writing
+
+  - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)
 
 ## Cowsay
 

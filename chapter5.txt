@@ -295,8 +295,9 @@ If you only define the `is_db_server` variable on database servers (meaning ther
 These examples are a little contrived, but they illustrate basic uses of `when` in your plays. Here are some examples of uses of `when` in real-world playbooks:
 
 {lang="text",linenos=off}
-    # From our Node.js playbook - register a command's output, then see if the
-    # path to our app is in the output. Start the app if it's not present.
+    # From our Node.js playbook - register a command's output, then see
+    # if the path to our app is in the output. Start the app if it's
+    # not present.
     - command: forever list
       register: forever_list
     - command: forever start /path/to/app/app.js
@@ -306,12 +307,13 @@ These examples are a little contrived, but they illustrate basic uses of `when` 
     - command: /usr/local/bin/ping-hosts.sh
       when: ping_hosts
     
-    # Run 'git-cleanup.sh' script if a branch we're interested in is missing
-    # from git's list of branches in our project.
+    # Run 'git-cleanup.sh' script if a branch we're interested in is
+    # missing from git's list of branches in our project.
     - command: chdir=/path/to/project git branch
       register: git_branches
     - command: /path/to/project/scripts/git-cleanup.sh
-      when: "(is_app_server == true) and ('interesting-branch' not in git_branches.stdout)"
+      when: "(is_app_server == true) and ('interesting-branch' not in \
+      git_branches.stdout)"
     
     # Downgrade PHP version if the current version contains '5.4'.
     - shell: php --version

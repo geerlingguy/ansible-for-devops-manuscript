@@ -43,7 +43,7 @@ Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), 
     # -*- mode: ruby -*-
     # vi: set ft=ruby :
     
-    # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+    # Vagrantfile API/syntax version.
     VAGRANTFILE_API_VERSION = "2"
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -58,7 +58,8 @@ Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), 
         app.vm.hostname = "orc-app1.dev"
         
         app.vm.box = "centos64"
-        app.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos-64-x64-vbox4210-nocm.box"
+        app.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos\
+        -64-x64-vbox4210-nocm.box"
         
         app.vm.network :private_network, ip: "192.168.60.4"
       end
@@ -68,7 +69,8 @@ Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), 
         app.vm.hostname = "orc-app2.dev"
         
         app.vm.box = "centos64"
-        app.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos-64-x64-vbox4210-nocm.box"
+        app.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos\
+        -64-x64-vbox4210-nocm.box"
         
         app.vm.network :private_network, ip: "192.168.60.5"
       end
@@ -78,7 +80,8 @@ Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), 
         db.vm.hostname = "orc-db.dev"
         
         db.vm.box = "centos64"
-        db.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos-64-x64-vbox4210-nocm.box"
+        db.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos\
+        -64-x64-vbox4210-nocm.box"
         
         db.vm.network :private_network, ip: "192.168.60.6"
       end
@@ -331,13 +334,15 @@ Let's install MySQL, start it, and configure the server's firewall to allow acce
     $ ansible db -s -m yum -a "name=mysql-server state=present"
     $ ansible db -s -m service -a "name=mysqld state=started enabled=yes"
     $ ansible db -s -a "iptables -F"
-    $ ansible db -s -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp -m tcp --dport 3306 -j ACCEPT"
+    $ ansible db -s -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp \
+    -m tcp --dport 3306 -j ACCEPT"
 
 If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MySQL still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MySQL server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL module requires the `MySQL-python` module to be present on the managed server.
 
 {lang="text",linenos=off}
     $ ansible db -s -m yum -a "name=MySQL-python state=present"
-    $ ansible db -s -m mysql_user -a "name=django host=% password=12345 priv=*.*:ALL state=present"
+    $ ansible db -s -m mysql_user -a "name=django host=% password=12345 \
+    priv=*.*:ALL state=present"
 
 At this point, you should be able to create or deploy a Django application on the app servers, then point it at the database server with the username django and password 12345.
 
@@ -444,7 +449,8 @@ Here's how to create a directory:
 Here's how to create a symlink (set `state=link`):
 
 {lang="text",linenos=off}
-    $ ansible multi -m file -a "src=/src/symlink dest=/dest/symlink owner=root group=root state=link
+    $ ansible multi -m file -a "src=/src/symlink dest=/dest/symlink \
+    owner=root group=root state=link
 
 ### Delete directories and files
 
@@ -546,7 +552,9 @@ As a simple example, let's view the last few lines of the messages log file on e
 As stated in the caveats, if you want to filter the messages log with something like `grep`, you can't use Ansible's default `command` module, but instead, `shell`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m shell -a "tail /var/log/messages | grep ansible-command | wc -l"
+    $ ansible multi -s -m shell -a "tail /var/log/messages | \
+    grep ansible-command | wc -l"
+    
     192.168.60.5 | success | rc=0 >>
     12
     
@@ -565,7 +573,8 @@ Periodic tasks run via cron are managed by a system's crontab. Normally, to chan
 Ansible makes managing cron jobs easy with it's `cron` module. If you want to run a shell script on all the servers every day at 4 a.m., you can add the cron job with:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' hour=4 job='/path/to/daily-script.sh'
+    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
+    hour=4 job='/path/to/daily-script.sh'
 
 Ansible will assume `*` for all values you don't specify (valid values are `day`, `hour`, `minute`, `month`, and `weekday`). You could also specify special time values like `reboot`, `yearly`, or `monthly` using `special_time=[value]`. You can also set the user the job will run under via `user=[user]`, and you can create a backup of the current crontab by passing `backup=yes`.
 
@@ -587,7 +596,8 @@ In the example below, I'll assume we're running a simple application on one or t
 First, update the git checkout to the application's new version branch, 1.2.4, on all the app servers:
 
 {lang="text",linenos=off}
-    $ ansible app -s -m git -a "repo=git://example.com/path/to/repo.git dest=/opt/myapp update=yes version=1.2.4"
+    $ ansible app -s -m git -a "repo=git://example.com/path/to/repo.git \
+    dest=/opt/myapp update=yes version=1.2.4"
 
 Ansible's git module lets you specify a branch, tag, or even a specific commit with the `version` parameter (in this case, we chose to checkout tag `1.2.4`, but if you run the command again with a branch name, like `prod`, Ansible will happily do that instead). To force Ansible to update the checked-out copy, we passed in `update=yes`. The `repo` and `dest` options should be self-explanatory.
 

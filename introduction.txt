@@ -49,3 +49,5 @@ We'll explore all aspects of using Ansible to provision and manage your infrastr
   - [Getting Started with Ansible](http://www.ansible.com/get-started) - A simple guide to Ansible's community and resources.
   - [Ansible Blog](http://www.ansible.com/blog)
   - [Ansible Weekly](http://devopsu.com/newsletters/ansible-weekly-newsletter.html) - A newsletter about Ansible, including notable cowsay quotes!
+
+I'd like to especially highlight Ansible's documentation (the first resource listed above); one of Ansible's greatest strengths is it's well-written and extremely relevant documentation, containing a large number of relevant examples and continously-updated guides. Very few projects---open source or not---have documentation as thorough yet easy-to-read as Ansible's. This book is meant as a supplement to, not a replacement for, Ansible's documentation!

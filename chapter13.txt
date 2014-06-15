@@ -1,3 +1,0 @@
-# Chapter 13 - Ansible Tower
-
-TODO.

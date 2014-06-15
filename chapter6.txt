@@ -1,16 +1,182 @@
 # Chapter 6 - Playbook Organization - Roles and Includes
 
-TODO.
+So far, we've used fairly straightforward examples in this book. Most examples are ad-hoc for a particular server, and listing all tasks in one long listing makes for a fairly long playbook.
+
+Ansible is very flexible when it comes to organizing your plays in more efficient ways so you can make your playbooks more maintainable, reusable, and powerful. We'll look at two ways to split up plays more efficiently: using includes and roles. Finally, we'll explore Ansible Galaxy, a repository of some community-maintained roles that help configure common packages and applications.
 
 ## Includes
 
-TODO.
+We've already seen one of the most basic ways of including other files in Chatper 4, when `vars_files` was used to place variables into a separate `vars.yml` file instead of inline with the playbook:
+
+{lang="text",linenos=off}
+    - hosts: all
+    
+      vars_files:
+      - vars.yml
+
+Tasks can easily be included in a similar way. In the `tasks:` section of your playbook, you can add `include` directives like so:
+
+{lang="text",linenos=off}
+    tasks:
+      - include: included-playbook.yml
+
+Just like with variable include files, tasks are formatted in a flat list in the included file. As an example, the `included-playbook.yml` could look like:
+
+{lang="text",linenos=off}
+    ---
+    - name: Add profile info for user.
+      copy: >
+        src=example_profile
+        dest=/home/{{ username }}/.profile
+        owner={{ username }} group={{ username }} mode=744
+    
+    - name: Add private keys for user.
+      copy: >
+        src={{ item.src }}
+        dest=/home/.ssh/{{ item.dest }}
+        owner={{ username }} group={{ username }} mode=600
+      with_items: ssh_private_keys
+    
+    - name: Restart example service.
+      service: name=example state=restarted
+
+In this case, you'd probably want to name the file `user-config.yml`, since it's used to configure a user account and restart some service. Now, in this and any other playbook that provisions or configures a server, if you want to configure a particular user's account, add the following in your playbook's `tasks` section:
+
+{lang="text",linenos=off}
+    - include: example-app-config.yml
+
+We used `{{ username }}` and `{{ ssh_private_keys }}` variables in this include file instead of hard-coded values so we could make this include file reusable. You could define the variables in your playbook's inline variables or an included variables file, but Ansible also lets you pass variables directly into includes using normal YAML syntax. For example:
+
+{lang="text",linenos=off}
+    - { include: user-config.yml, username: johndoe, ssh_private_keys: [] }
+    - { include: user-config.yml, username: janedoe, ssh_private_keys: [] }
+
+To make the syntax more readable, you can use structured variables, like so:
+
+{lang="text",linenos=off}
+    - include: user-config.yml
+      vars:
+        username: johndoe
+        ssh_private_keys:
+          - { src: /path/to/johndoe/key1, dest: id_rsa }
+          - { src: /path/to/johndoe/key2, dest: id_rsa_2 }
+    - include: user-config.yml
+      vars:
+        username: janedoe
+        ssh_private_keys:
+          - { src: /path/to/janedoe/key1, dest: id_rsa }
+          - { src: /path/to/janedoe/key2, dest: id_rsa_2 }
+
+Include files can even include other files, so you could have something like the following:
+
+{lang="text",linenos=off}
+    tasks:
+      - include: user-config.yml
+
+*inside `user-config.yml`*
+
+{lang="text",linenos=off}
+    - include: ssh-setup.yml
+
+### Handler includes
+
+Handlers can be included just like tasks, within a playbook's `handlers` section. For example:
+
+{lang="text",linenos=off}
+    handlers:
+      - include: included-handlers.yml
+
+This can be helpful in limiting the noise in your main playbook, since handlers are usually used for things like restarting services or loading a configuration, and can distract from the playbook's primary purpose.
+
+### Playbook includes
+
+Playbooks can even be included in other playbooks, by simply using the same `include` syntax in the top level of your playbook. For example, if you have two playbooks—one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
+
+{lang="text",linenos=off}
+    - hosts: all
+      remote_user: root
+      
+      tasks:
+        ...
+      
+    - include: web.yml
+    - include: db.yml
+
+This way, you can create playbooks to configure all the servers in your entire infrastructure, then create a master playbook that includes each of the individual playbooks. When you want to initialize your entire infrastructure, make changes across your entire fleet of servers, or just check to make sure their configuration matches your playbook definitions, you can run one `ansible-playbook` command!
+
+### Complete includes example
+
+What if I told you we could remake the 137-line Drupal LAMP server playbook from Chapter 4 in just 21 lines? With includes, it's easy; just break out each of the sets of tasks into their own include files, and you'll end up with a main playbook like this:
+
+{lang="text"}
+    ---
+    - hosts: all
+    
+      vars_files:
+        - vars.yml
+    
+      pre_tasks:
+        - name: Update apt cache if needed.
+          apt: update_cache=yes cache_valid_time=3600
+    
+      handlers:
+        - include: handlers/handlers.yml
+    
+      tasks:
+        - include: tasks/common.yml
+        - include: tasks/apache.yml
+        - include: tasks/php.yml
+        - include: tasks/mysql.yml
+        - include: tasks/composer.yml
+        - include: tasks/drush.yml
+        - include: tasks/drupal.yml
+
+All you need to do is create two new folders in the same folder where you saved the Drupal `playbook.yml` file, `handlers` and `tasks`, then create files inside for each section of the playbook.
+
+For example, inside `handlers/handlers.yml`, you'd have, simply:
+
+{lang="text"}
+    ---
+    - name: restart apache
+      command: service apache2 restart
+
+And inside `tasks/drush.yml`:
+
+{lang="text"}
+    ---
+    - name: "Check out drush master branch."
+      git: repo=https://github.com/drush-ops/drush.git dest=/opt/drush
+    
+    - name: "Install Drush dependencies with Composer."
+      shell: >
+        /usr/local/bin/composer install
+        chdir=/opt/drush
+        creates=/opt/drush/vendor/autoload.php
+    
+    - name: "Create drush bin symlink."
+      file: >
+        src=/opt/drush/drush
+        dest=/usr/local/bin/drush
+        state=link
+
+Separating all the tasks into separate includes files means you'll have more files to manage for your playbook, but it helps keep the main playbook more compact (meaning it's easier to see all the installation and configuration steps the playbook contains), and also separates tasks into individual, easily-maintainable groupings. Instead of having to browse one playbook with twenty-three separate tasks, you now maintain eight included files with two to five tasks, each.
+
+It's much easier to maintain a more granular set of plays than one very long playbook. However, there's no reason to try to *start* writing a playbook with lots of individual includes. Most of the time, it's best to start with a monolithic playbook while you're working on the setup and configuration details, then move sets of tasks out to included files after you start seeing logical groupings.
+
+TODO:
+
+  - Add example including adding a tag to the include (so you can run just one set of instructions).
+
+T> You can find the entire example Drupal LAMP server playbook using include files in this book's code repository at [https://github.com/geerlingguy/ansible-for-devops](https://github.com/geerlingguy/ansible-for-devops), in the `includes` directory.
+
+W> You can't use variables for task include file names (like you could with `include_vars` directives, e.g. `include_vars: "{{ ansible_os_family }}.yml"` as a task, or with `vars_files`). There's usually a better way than conditional task includes to accomplish conditional task inclusion using a different playbook structure, or roles, which we will discuss next.
 
 ## Roles
 
 TODO:
 
   - http://docs.ansible.com/intro_configuration.html#roles-path
+  - http://docs.ansible.com/playbooks_roles.html#roles
 
 ## Ansible Galaxy
 
@@ -70,12 +236,12 @@ Let's grab a few more roles and build an Apache Solr search server, which requir
 Then create a playbook named `solr.yml` with the following contents:
 
 {lang="text"}
----
-- hosts: all
-  roles:
-    - geerlingguy.java
-    - geerlingguy.tomcat6
-    - geerlingguy.solr
+    ---
+    - hosts: all
+      roles:
+        - geerlingguy.java
+        - geerlingguy.tomcat6
+        - geerlingguy.solr
 
 Now we have a fully-functional Solr server, and we could add some variables to configure it exactly how we want, by using a non-default port, or changing the memory allocation for Tomcat6.
 

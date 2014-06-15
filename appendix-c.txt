@@ -1,0 +1,10 @@
+# Appendix C - Jinja2 and Ansible {#appendix-c}
+
+TODO:
+
+  - [Jinja2 Docs](http://jinja.pocoo.org/docs/)
+  - [Using Variables: About Jinja2](http://docs.ansible.com/playbooks_variables.html#using-variables-about-jinja2)
+
+## Summary
+
+TODO.
