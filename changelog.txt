@@ -4,9 +4,10 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.53 (2014-06-28)
 
-  - TODO.
+  - Added note about [Windows Support](http://docs.ansible.com/intro_windows.html) in appendix a.
+  - Wrote large portion of roles section in chapter 6.
 
 ## Version 0.52 (2014-06-14)
 

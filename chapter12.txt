@@ -4,6 +4,7 @@ This chapter is a placeholder for further topics, including those in the list be
 
 TODO:
 
+  - [Windows Support](http://docs.ansible.com/intro_windows.html)
   - Ansible configuration (`/etc/ansible/ansible.cfg`)
   - Best Practices (and 'real world' scenarios)
   - Looping (if not covered in-depth earlier)

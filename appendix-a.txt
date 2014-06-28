@@ -1,10 +1,12 @@
 # Appendix A - Using Ansible on Windows workstations {#appendix-a}
 
-Ansible works exclusively over the SSH protocol, which is supported natively by most every server, workstation, and operating system on the planet, with one exception---Microsoft's venerable Windows OS.
+Ansible works primarily over the SSH protocol, which is supported natively by most every server, workstation, and operating system on the planet, with one exception---Microsoft's venerable Windows OS.
 
 To use SSH on Windows, you need additional software. But Ansible also requires other utilities and subsystems only present on Linux or other UNIX-like operating systems. This poses a problem for many system administrators who are either forced to use or have chosen to use Windows as their primary OS.
 
 This appendix will guide Windows users through the author's preferred method of using Ansible on a Windows workstation.
+
+I> Ansible 1.7 and later can be used to manage Windows hosts (see Ansible's [Windows Support](http://docs.ansible.com/intro_windows.html) documentation) (but it can't be run from within Windows natively). You will still need to follow the instructions here to run the Ansible client on a Windows host, if you are stuck on Windows and want to use Ansible to manage other (Windows, Linux, Mac, etc.) hosts.
 
 ## Prerequisites
 
