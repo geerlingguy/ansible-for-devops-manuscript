@@ -4,6 +4,12 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Version 0.54 (2014-07-02)
+
+  - Finished roles section in chapter 6.
+  - Fixed a few code examples for better style in chapter 4.
+  - Fixed references to official code repository in chapters 4 and 6.
+
 ## Version 0.53 (2014-06-28)
 
   - Added note about [Windows Support](http://docs.ansible.com/intro_windows.html) in appendix a.

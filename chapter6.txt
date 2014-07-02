@@ -138,7 +138,7 @@ For example, inside `handlers/handlers.yml`, you'd have, simply:
 {lang="text"}
     ---
     - name: restart apache
-      command: service apache2 restart
+      service: name=apache2 state=restarted
 
 And inside `tasks/drush.yml`:
 
@@ -179,7 +179,7 @@ Wouldn't it be nice if there were a way to take bits of related configuration, a
 
 Ansible Roles can do all that, and more!
 
-Let's dive right into what makes an Ansible role by taking one of the playbook examples from Chapter 4 and splitting it into a more flexible structure using roles.
+Let's dive into what makes an Ansible role by taking one of the playbook examples from Chapter 4 and splitting it into a more flexible structure using roles.
 
 ### Role scaffolding
 
@@ -228,7 +228,22 @@ Create a `main.yml` file in this folder, and add the following contents (basical
     - name: Install forever module (to run our Node.js app).
       npm: name=forever global=yes state=latest
 
-You now have a complete Ansible role that you can use in your node.js server configuration playbook. Delete the same lines from the other project, and reformat the playbook so the other tasks run first (in a `pre_tasks:` section instead of `tasks:`), then the role is included, then the rest of the tasks (in the main `tasks:` section). Something like:
+The Node.js directory structure should now look like the following:
+
+{lang=text}
+    nodejs-app/
+      app/
+        app.js
+        package.json
+      playbook.yml
+      roles/
+        nodejs/
+          meta/
+            main.yml
+          tasks/
+            main.yml
+
+You now have a complete Ansible role that you can use in your node.js server configuration playbook. Delete the Node.js app installation lines from the other project, and reformat the playbook so the other tasks run first (in a `pre_tasks:` section instead of `tasks:`), then the role is included, then the rest of the tasks (in the main `tasks:` section). Something like:
 
 {lang=text,linenos="off"}
     pre_tasks:
@@ -240,7 +255,9 @@ You now have a complete Ansible role that you can use in your node.js server con
     tasks:
       # Node.js app deployment tasks...
 
-Once you have that done, you could run your playbook, and everything would run exactly the same during an `ansible-provision`, with the exception of the tasks inside the `nodejs` being prefixed with `nodejs | [Task name here]`.
+I> You can view the full example of this playbook in the [ansible-for-devops code repository](https://github.com/geerlingguy/ansible-for-devops/blob/master/nodejs-role/playbook.yml).
+
+Once you finish reformatting the main playbook, everything would run exactly the same during an `ansible-playbook`, with the exception of the tasks inside the `nodejs` role being prefixed with `nodejs | [Task name here]`.
 
 This little bit of extra data shown during playbook runs is useful because it shows you from exactly what role tasks are being run, without you having to add in descriptions as part of the `name` values of the tasks.
 
@@ -280,7 +297,7 @@ Now, if you run the playbook as-is, it will still do the exact same thing---inst
 
 When you run the playbook with this custom variable (we didn't change *anything* with our `nodejs` role), all three of the above npm modules will be installed.
 
-Hopefully you're beginning to see how this can be very powerful!
+Hopefully you're beginning to see how this can be powerful!
 
 Imagine if you had a playbook structure like:
 
@@ -296,18 +313,130 @@ Imagine if you had a playbook structure like:
 Each one of the roles would live in its own isolated world, and could be shared with other servers and groups of servers in your infrastructure.
 
   - A `yum-repo-setup` role could enable certain repositories and import their GPG keys.
-  - A `firewall` role could have options for ports and services to allow or deny.
-  - An `app-deploy` role could deploy your app to a directory (configurable per-server) and set certain app options per server or group.
+  - A `firewall` role could have per-server or per-inventory-group options for ports and services to allow or deny.
+  - An `app-deploy` role could deploy your app to a directory (configurable per-server) and set certain app options per-server or per-group.
 
 All these things become very easy to manage when you have small bits of functionality separated into different roles. Instead of managing 100+ lines of playbook tasks, and manually prefixing every `name:` with something like "Common |" or "App Deploy |", you now manage a few roles with 10-20 lines of YAML each.
 
-On top of that, when you're building your main playbooks, they can be extremely simple (like the above example), enabling you to immediately see *everything* being configured and deployed on a particular server without scrolling through dozens of tasks.
+On top of that, when you're building your main playbooks, they can be extremely simple (like the above example), enabling you to see *everything* being configured and deployed on a particular server without scrolling through dozens of included playbook files and hundreds of tasks.
 
 T> **Variable precedence**: Note that Ansible handles variables placed in included files in `defaults` with less precedence than those placed in `vars`. If you have certain variables you need to allow hosts/playbooks to easily override, you should probably put them into `defaults`. If they are common variables that should almost always be the values defined in your role, put them into `vars`. For more on variable precedence, see the aptly-named "Variable Precedence" section in the previous chapter.
 
 ### Other role parts: handlers, files, and templates
 
-TODO.
+#### Handlers
+
+In one of the prior examples, we introduced handlers---tasks that could be called via the `notify` option after any playbook task resulted in a change---and an example handler for restarting Apache was given:
+
+{lang=text}
+    handlers:
+      - name: restart apache
+        service: name=apache2 state=restarted
+
+In Ansible roles, handlers are first-class citizens, alongside tasks, variables, and other configuration. You can store handlers directly inside a `main.yml` file inside a role's `handlers` directory. So if we had a role for Apache configuration, our `handlers/main.yml` file could look like the following:
+
+{lang=text}
+    ---
+    - name: restart apache
+      command: service apache2 restart
+
+You can call handlers defined in a role's handlers folder just like you would handlers included directly in your playbooks (e.g. `notify: restart apache`).
+
+#### Files and Templates
+
+For the following examples, let's assume our role is structured with files and templates inside `files` and `templates` directories, respectively:
+
+{lang=text}
+    roles/
+      example/
+        files/
+          example.conf
+        meta/
+          main.yml
+        templates/
+          example.xml.j2
+        tasks/
+          main.yml
+
+when copying a file directly to the server, add the filename or the full path from within a role's `files` directory, like so:
+
+{lang="text",linenos="off"}
+    - name: Copy configuration file to server directly.
+      copy: >
+        src=example.conf
+        dest=/etc/myapp/example.conf
+        mode=644
+
+Similarly, when specifying a template, add the filename or the full path from within a role's `templates` directory, like so:
+
+{lang="text",linenos="off"}
+    - name: Copy configuration file to server using a template.
+      template: >
+        src=example.xml.j2
+        dest=/etc/myapp/example.xml
+        mode=644
+
+The `copy` module simply copies files from within the module's `files` folder, and the `template` module runs given template files through the Jinja2 templating engine, merging in any variables available during your playbook run before copying the file to the server.
+
+### Organizing more complex and cross-platform roles
+
+For simple package installation and configuration roles, you can get by with placing all tasks, variables, and handlers directly in the respective `main.yml` file Ansible automatically loads. But you can also *include* other files from within a role's `main.yml` files if needed.
+
+As a rule of thumb, I like to keep my playbook and role task files under 100 lines of YAML if at all possible (that way it's easier for me to keep the entire set of tasks in my head while working through any issues). If I start nearing that limit, I usually split the tasks into logical groupings, and include files from the `main.yml` file.
+
+Let's take a look at the way my `geerlingguy.apache` role is set up (it's [available on Ansible Galaxy](https://galaxy.ansible.com/list#/roles/428) and can be downloaded to your roles directory with the command `ansible-galaxy install geerlingguy.apache`; we'll discuss Ansible Galaxy itself later).
+
+Initially, the role's main `tasks/main.yml` file looked something like the following (generally speaking):
+
+{lang=text}
+    - name: Ensure Apache is installed (via apt).
+    
+    - name: Configure Apache with lineinfile.
+    
+    - name: Enable Apache modules.
+
+Soon after creating the role, though, I wanted to make the role work with both Debian and RedHat hosts. I could've simply added two sets of tasks in the `main.yml` file, resulting in twice the number of plays and a bunch of extra `when` statements:
+
+{lang=text}
+    - name: Ensure Apache is installed (via apt).
+      when: ansible_os_family == 'Debian'
+    
+    - name: Ensure Apache is installed (via yum).
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Configure Apache with lineinfile (Debian).
+      when: ansible_os_family == 'Debian'
+    
+    - name: Configure Apache with lineinfile (Redhat).
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Enable Apache modules (Debian).
+      when: ansible_os_family == 'Debian'
+    
+    - name: Other OS-agnostic tasks...
+
+If I had gone this route, and continued with the rest of the playbook tasks in one file, I would've quickly surpassed my informal 100-line limit. So I chose to use includes in my main tasks file:
+
+{lang=text}
+    - name: Include OS-specific variables.
+      include_vars: "{{ ansible_os_family }}.yml"
+    
+    - include: setup-RedHat.yml
+      when: ansible_os_family == 'RedHat'
+    
+    - include: setup-Debian.yml
+      when: ansible_os_family == 'Debian'
+    
+    - name: Other OS-agnostic tasks...
+
+Two important things to notice about this style of distribution-specific inclusion:
+
+  1. When including vars files (with `include_vars`), you can actually *use variables in the name of the file*. This is very handy for a variety of use cases, and here we're simply including a vars file in the format `distribution_name.yml`. For our purposes, since the role will be used on Debian and RedHat-based hosts, we can create `Debian.yml` and `RedHat.yml` files in our role's `defaults` and `vars` folders, and put distribution-specific variables there.
+  2. When including playbook files (with `include`), you can't use variables in the name of the file, but you can do the next best thing: include the files by name explicitly, and use a condition to tell Ansible whether to run the tasks inside (the `when` condition will be applied to every task inside the included playbook).
+
+After setting things up this way, I put RedHat and CentOS-specific tasks (like `yum` tasks) into `tasks/setup-RedHat.yml`, and Debian and Ubuntu-specific tasks (like `apt` tasks) into `tasks/setup-Debian.yml`. There are other ways of making roles work cross-platform, but using distribution-specific variables files and included playbooks is one of the simplest.
+
+Now this Apache role can be used across different distributions, and with clever usage of variables in tasks and in configuration templates, it can be used in a very wide variety of infrastructure that needs Apache installed.
 
 ## Ansible Galaxy
 
@@ -355,7 +484,7 @@ After a few minutes, an entire LAMP server should be set up and running. If you 
 
 We've effectively reduced about thirty lines of YAML (from previous examples dealing with LAMP or LAMP-like servers) down to three. Obviously, the roles have extra code in them, but the power here is in abstraction. Since most companies have many servers using similar software, but with slightly different configurations, having centralized, flexible roles saves a lot of repetition.
 
-You could think of Galaxy roles (which typically install common software like Apache or MySQL) as glorified packages; they not only install software, but they configure it *exactly* how you want it, every time, with minimal manual labor. Additionally, many of these roles work across different flavors of Linux and UNIX, so you have better configuration portability!
+You could think of Galaxy roles (which typically install and configure common software like Apache or MySQL, or set up security rules or frameworks) as glorified packages; they not only install software, but they configure it *exactly* how you want it, every time, with minimal manual labor. Additionally, many of these roles work across different flavors of Linux and UNIX, so you have better configuration portability!
 
 ### A Solr server in six lines of YAML
 

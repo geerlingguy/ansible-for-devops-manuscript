@@ -399,7 +399,7 @@ With that out of the way, we'll add another new section to our playbook, `handle
 {lang="text",starting-line-number=8}
       handlers:
       - name: restart apache
-        command: service apache2 restart
+        service: name=apache2 state=restarted
 
 `handlers` are special kinds of plays that you can run at the end of a group of plays by adding the `notify` option to any of the plays in that group. The handler will only be called if one of the plays notifying the handler makes a change to the server (and doesn't fail), and it will only be notified at the *end* of the group of plays.
 
