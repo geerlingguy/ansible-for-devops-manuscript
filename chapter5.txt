@@ -190,16 +190,91 @@ Another alternative to using `host_vars` and `group_vars` is to use conditional 
 
 ### Registered Variables
 
-TODO.
+There are many times that you will want to run a command, then use it's return code, stderr, or stdout to determine whether to run a later task. For these situations, Ansible allows you to use `register` to store the output of a particular command in a variable at runtime.
 
-### Accessing and Filtering Variables
+In the previous chapter, we used `register` to get the output of the `forever list` command, then used the output to determine whether we needed to start our Node.js app:
 
-TODO:
+{lang="text",starting-line-number=39}
+    - name: "Node: Check list of Node.js apps running."
+      command: forever list
+      register: forever_list
+      changed_when: false
+    
+    - name: "Node: Start example Node.js app."
+      command: forever start {{ node_apps_location }}/app/app.js
+      when: "forever_list.stdout.find('{{ node_apps_location}}/app/app.js') == -1"
 
-  - How to access arrays and deeper elements (`.`/`[]`).
-  - Jinja2 filters.
+In that example, we used a string function built into Python (`find`) to search for the path to our app, and if it was not present, the Node.js app was started.
 
-### Complex variable structures
+We will explore the use of `register` further later in this chapter.
+
+### Accessing Variables
+
+Simple variables (gathered by Ansible, defined in inventory files, or defined in playbook or variable files) can be used as part of a task using syntax like `{{ variable }}`. For example:
+
+{lang=text,linenos=off}
+    - command: /opt/my-app/rebuild {{ my_environment }}
+
+When the command is run, Ansible will substitute the contents of `my_environment` for `{{ my_environment }}`. So the resulting command would be something like `/opt/my-app/rebuild dev`.
+
+Many variables you will use are structured as arrays (or 'lists'), and simply accessing the array `foo` would not give you enough information to be useful (except when passing in the array in a context where Ansible will use the entire array, like when using `with_items`).
+
+If you define a list variable like so:
+
+{lang=text,linenos=off}
+    foo_list:
+      - one
+      - two
+      - three
+
+You could access the first item in that array with either of the following syntax:
+
+{lang=text,linenos=off}
+    foo[0]
+    foo|first
+
+Note that the first line uses standard Python array access syntax ('retrieve the first (0-indexed) element of the array'), whereas the second line uses a convenient *filter* provided by Jinja2. Either way is equally valid and useful, and it's really up to you whether you like the first or second technique.
+
+For larger and more structured arrays (for example, when retrieving the IP address of the server using the facts Ansible gathers from your server), you can access any part of the array by drilling through the array keys, either using bracket (`[]`) or dot (`.`) syntax. For example, if you would like to retrieve the information about the `eth0` network interface, you could first take a look at the entire array using `debug` in your playbook:
+
+{lang=text,linenos=off}
+    # In your playbook.
+    tasks:
+      - debug: var=ansible_eth0
+
+{lang=text,linenos=off}
+    TASK: [debug var=ansible_eth0] *****************************************
+    ok: [webserver] => {
+        "ansible_eth0": {
+            "active": true,
+            "device": "eth0",
+            "ipv4": {
+                "address": "10.0.2.15",
+                "netmask": "255.255.255.0",
+                "network": "10.0.2.0"
+            },
+            "ipv6": [
+                {
+                    "address": "fe80::a00:27ff:feb1:589a",
+                    "prefix": "64",
+                    "scope": "link"
+                }
+            ],
+            "macaddress": "08:00:27:b1:58:9a",
+            "module": "e1000",
+            "mtu": 1500,
+            "promisc": false,
+            "type": "ether"
+        }
+    }
+
+Now that you know the overall structure of the variable, you can use either of the following techniques to retrieve only the IPv4 address of the server:
+
+{lang=text,linenos=off}
+    {{ ansible_eth0.ipv4.address }}
+    {{ ansible_eth0['ipv4']['address'] }}
+
+### Host and Group variables
 
 TODO.
 
@@ -223,9 +298,9 @@ However, there are many plays---especially those using Ansible's `command` or `s
 
 We'll cover all the main conditionals behaviors you can apply to Ansible plays, as well as how you can tell Ansible when a play has done something to a server or failed.
 
-### Jinja2 Expressions and Logic
+### Jinja2 Expressions, Python built-ins, and Logic
 
-Before discussing all the different uses of conditionals in Ansible, it's worthwhile to at least quickly cover a small part of Jinja2 (the syntax Ansible uses both for templates and for conditionals)---expressions. Ansible uses expressions with `when`, `changed_when`, and `failed_when` so you can describe these things to ansible with as much precision as possible.
+Before discussing all the different uses of conditionals in Ansible, it's worthwhile to at least quickly cover a small part of Jinja2 (the syntax Ansible uses both for templates and for conditionals), and available Python functions (often referred to as 'built-ins'). Ansible uses expressions and built-ins with `when`, `changed_when`, and `failed_when` so you can describe these things to Ansible with as much precision as possible.
 
 Jinja2 allows the definition of literals like strings (`"string"`), integers (`42`), floats (`42.33`), lists (`[1, 2, 3]`), tuples (like lists, but can't be modified) dictionaries (`{key: value, key2: value2}`), and booleans (`true` or `false`).
 
@@ -250,6 +325,8 @@ For example:
 Jinja2 also offers a helpful set of 'tests' you can use to test a given object. For example, if you define the variable `foo` for only a certain group of servers, but not others, you can use the expression `foo is defined` with a conditional to evaluate to 'true' if the variable is defined, or false if not.
 
 There are many other checks you can perform as well, like `undefined` (the opposite of `defined`), `equalto` (works like `==`), `even` (returns true if the variable is an even number), `iterable` (if you can iterate over the object). We'll cover the full gamut later in the book, but for now, know that you can use Ansible conditionals with Jinja2 expressions to do some powerful things!
+
+TODO - Discuss [Python built-in functions](https://docs.python.org/2/library/functions.html).
 
 ### `register`
 
