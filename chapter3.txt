@@ -450,7 +450,7 @@ Here's how to create a symlink (set `state=link`):
 
 {lang="text",linenos=off}
     $ ansible multi -m file -a "src=/src/symlink dest=/dest/symlink \
-    owner=root group=root state=link
+    owner=root group=root state=link"
 
 ### Delete directories and files
 
@@ -653,7 +653,7 @@ Accelerate mode is a spiritual descendant of the now-deprecated 'Fireball' mode,
 
 ### Faster OpenSSH in Ansible 1.5+
 
-Ansible's 1.5 contains a very nice improvement to Ansible's default OpenSSH implementation.
+Ansible 1.5 and later contains a very nice improvement to Ansible's default OpenSSH implementation.
 
 Instead of copying files, running them on the remote server, then removing them, the new method of OpenSSH transfer will simply send and execute commands for most Ansible modules directly over the SSH connection.
 

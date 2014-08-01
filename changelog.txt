@@ -4,6 +4,15 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Version 0.58 (2014-08-01)
+
+  - Even more sections on variables in chapter 5 (almost finished!).
+  - Fixed a few old Ansible and Drupal version references.
+  - Added a playbook include tag example in chapter 6.
+  - Completed first draft of chapter 6.
+  - Fixed broken handler in chapter 4's Tomcat handler (thanks to Joel Shprentz!).
+  - Fixed a missing closing quotation in chapter 3 example (thanks to Jonathan Nakatsui!).
+
 ## Version 0.56 (2014-07-20)
 
   - Filled in many more sections on variables in chapter 5.

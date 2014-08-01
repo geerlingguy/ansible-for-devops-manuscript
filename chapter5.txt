@@ -276,19 +276,149 @@ Now that you know the overall structure of the variable, you can use either of t
 
 ### Host and Group variables
 
-TODO.
+Ansible conveniently lets you define or override variables on a per-host or per-group basis. As we learned earlier, your inventory file can define groups and hosts like so:
+
+{lang=text}
+    [group]
+    host1
+    host2
+
+The simplest way to define variables on a per-host or per-group basis is to do so directly within the inventory file:
+
+{lang=text}
+    [group]
+    host1 admin_user=jane
+    host2 admin_user=jack
+    host3
+    
+    [group:vars]
+    admin_user=john
+
+In this case, Ansible will use the group default variable 'john' for `{{ admin_user }}`, but for `host1` and `host2`, the admin users defined alongside the hostname will be used.
+
+This is convenient and works well when you need to define a variable or two per-host or per-group, but once you start getting into more involved playbooks, you might need to add a few (3+) host-specific variables. In these situations, you can define the variables in a different place to make maintenance and readability much easier.
+
+#### `group_vars` and `host_vars`
+
+Ansible will search within the same directory as your inventory file (or inside `/etc/ansible` if you're using the default inventory file at `/etc/ansible/hosts`) for two specific directories: `group_vars` and `host_vars`.
+
+You can place YAML files inside these directories named after the group name or hostname defined in your inventory file. Continuing our example above, let's move the specific variables into place:
+
+{lang=text}
+    ---
+    # File: /etc/ansible/group_vars/group
+    admin_user: john
+
+{lang=text}
+    ---
+    # File: /etc/ansible/host_vars/host1
+    admin_user: jane
+
+Even if you're using the default inventory file (or an inventory file outside of your playbook's root directory), Ansible will also use host and group variables files located within your playbook's own `group_vars` and `host_vars` directories. This is convenient when you want to package together your entire playbook and infrastructure configuration (including all host/group-specific configuration) into a source-control repository.
+
+You can also define a `group_vars/all` file that would apply to *all* groups, as well as a `host_vars/all` file that would apply to *all* hosts. Usually, though, it's a better idea to define sane defaults in your playbooks and roles (which will be discussed later).
+
+#### Magic variables with host and group variables and information
+
+If you ever need to retrieve a specific host's variables from another host, Ansible provides a magic `hostvars` variable containing all the defined host variables (from inventory files and any discovered YAML files inside `host_vars` directories).
+
+{lang=text,linenos=off}
+    # From any host, returns "jane".
+    {{ hostvars['host1']['admin_user'] }}
+
+There are a variety of other variables Ansible provides that you may need to use from time to time:
+
+  - `groups`: A list of all group names in the inventory.
+  - `group_names`: A list of all the groups of which the *current* host is a part.
+  - `inventory_hostname`: The hostname of the current host, according to the *inventory* (this can differ from `ansible_hostname`, which is the hostname reported by the system).
+  - `inventory_hostname_short`: The first part of `inventory_hostname`, up to the first period.
+  - `play_hosts`: All hosts on which the current play will be run.
+
+Please see [Magic Variables, and How To Access Information About Other Hosts](http://docs.ansible.com/playbooks_variables.html#magic-variables-and-how-to-access-information-about-other-hosts) in Ansible's official documentation for the latest information and further usage examples.
 
 ### Facts (Variables derived from system information)
 
-TODO.
+By default, whenever you run an Ansible playbook, Ansible first gathers information ("facts") about each host in the play. You may have noticed this whenever we ran playbooks in earlier chapters:
+
+{lang=text,linenos=off}
+    $ ansible-playbook playbook.yml
+    
+    PLAY [group] **********************************************************
+    
+    GATHERING FACTS *******************************************************
+    ok: [host1]
+    ok: [host2]
+    ok: [host3]
+
+Facts can be extremely helpful when you're running playbooks; you can use gathered information like host IP addresses, CPU type, disk space, operating system information, and network interface information to change when certain tasks are run, or change certain information used in configuration files.
+
+To get a list of every gathered fact available, you can use the `ansible` command with the `setup` module:
+
+{lang=text,linenos=off}
+    $ ansible munin -m setup
+    munin.midwesternmac.com | success >> {
+        "ansible_facts": {
+            "ansible_all_ipv4_addresses": [
+                "167.88.120.81"
+            ],
+            "ansible_all_ipv6_addresses": [
+                "2604:180::a302:9076",
+    [...]
+
+If you don't need to use facts, and would like to save a few seconds per-host when running playbooks (this can be especially helpful when running an Ansible playbook dozens or hundreds of servers), you can set `gather_facts: no` in your playbook:
+
+{lang=text,linenos=off}
+    - hosts: db
+      gather_facts: no
+
+Many of my own playbooks and roles use facts like `ansible_os_family`, `ansible_hostname`, and `ansible_memtotal_mb` to register new variables or in tandem with `when`, to determine whether to run certain tasks.
+
+I> If you have [Facter](https://tickets.puppetlabs.com/browse/FACT) or [Ohai](http://docs.getchef.com/ohai.html) installed on a remote host, Ansible will also include their gathered facts as well, prefixed by `facter_` and `ohai_` , respectively. If you're using Ansible in tandem with Puppet or Chef, and are already familiar with those system-information-gathering tools, you can conveniently use them within Ansible as well. If not, Ansible's Facts are usually sufficient for whatever you need to do, and can be made even more flexible through the use of Local Facts.
+
+T> If you run a playbook against similar servers or virtual machines (e.g. all your servers are running the same OS, same hosting provider, etc.), facts are almost always consistent in their behavior. When running playbooks against a diverse set of hosts (for example, hosts with different OSes, virtualization stacks, or hosting providers), know that some facts may contain different information than you were expecting. For [Server Check.in](https://servercheck.in/), I have servers from no less than five different hosting providers, running on vastly different hardware, so I am sure to monitor the output of my `ansible-playbook` runs for abnormalities, especially when adding new servers to the mix.
 
 #### Local Facts (Facts.d)
 
-TODO.
+Another way of defining host-specific facts is to place `.fact` file in a special directory on remote hosts, `/etc/ansible/facts.d/`. These files can be either JSON or INI files, or you could use executables that return JSON. As an example, create the file `/etc/ansible/facts.d/settings.fact` on a remote host, with the following contents:
+
+{lang=text}
+    [users]
+    admin=jane,john
+    normal=jim
+
+Next, use Ansible's `setup` module to display the new facts on the remote host:
+
+{lang=text,linenos=off}
+    $ ansible hostname -m setup -a "filter=ansible_local"
+    munin.midwesternmac.com | success >> {
+        "ansible_facts": {
+            "ansible_local": {
+                "settings": {
+                    "users": {
+                        "admin": "jane,john",
+                        "normal": "jim"
+                    }
+                }
+            }
+        },
+        "changed": false
+    }
+
+If you are using a playbook to provision a new server, and part of that playbook adds a local `.fact` file which generates local facts that are used later, you can explicitly tell Ansible to reload the local facts using a task like the following:
+
+{lang=text}
+    - name: Reload local facts.
+      setup: filter=ansible_local
+
+W> While it may be tempting to use local facts rather than host_vars or other variable definition methods, remember that it's often better to build your playbooks in a way that doesn't rely (or care about) specific details of individual hosts. Sometimes it is necessary to use local facts (especially if you are using executables in facts.d to define the facts based on changing local environments), but it's almost always better to keep configuration in a central repository, and move away from host-specific facts.
+
+W> Note that `setup` module options (like `filter`) won't work on remote Windows hosts, as of this writing.
 
 ### Variable Precedence
 
-TODO.
+TODO:
+
+  - [Variable Precedence](http://docs.ansible.com/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable)
 
 ## If/then/when - Conditionals
 
@@ -326,7 +456,16 @@ Jinja2 also offers a helpful set of 'tests' you can use to test a given object. 
 
 There are many other checks you can perform as well, like `undefined` (the opposite of `defined`), `equalto` (works like `==`), `even` (returns true if the variable is an even number), `iterable` (if you can iterate over the object). We'll cover the full gamut later in the book, but for now, know that you can use Ansible conditionals with Jinja2 expressions to do some powerful things!
 
-TODO - Discuss [Python built-in functions](https://docs.python.org/2/library/functions.html).
+For the few cases where Jinja2 doesn't provide enough power and flexibility, you can invoke Python's built-in library functions (like `string.split`, `[number].is_signed()`) to manipulate variables and determine whether a given task should be run, resulted in a change, failed, etc.
+
+As an example, I need to parse version strings from time to time, to find the major version of a particular project. Assuming the variable `software_version` is set to `4.6.1`, I can get the major version by splitting the string on the `.` character, then using the first element of the array. I can check if the major version is `4` using `when`, and choose to run (or not run) a certain task:
+
+{lang=text}
+    - name: Do something only for version 4 of the software.
+      [task here]
+      when: software_version.split('.')[0] == '4'
+
+It's generally best to stick with simpler Jinja2 filters and variables, but it's nice to be able to use Python when you're doing more advanced variable manipulation.
 
 ### `register`
 
@@ -406,11 +545,37 @@ These examples are a little contrived, but they illustrate basic uses of `when` 
 
 ### `changed_when` and `failed_when`
 
-TODO.
+Just like `when`, you can use `changed_when` and `failed_when` to influence Ansible's reporting of when a certain task results in changes or failures.
+
+It is difficult for Ansible to determine if a given command results in changes, so if you use the `command` or `shell` module without also using `changed_when`, Ansible will always report a change. Most Ansible modules report whether they resulted in changes correctly, but you can also override this behavior by invoking `changed_when` yourself.
+
+When using PHP Composer as a command to install project dependencies, it's useful to know when Composer installed something, or when nothing changed. Here's an example:
+
+{lang=text}
+    - name: Install dependencies via Composer.
+      command: "/usr/local/bin/composer global require phpunit/phpunit --prefer-dist"
+      register: composer
+      changed_when: "'Nothing to install or update' not in composer.stdout"
+
+You can see we used `register` to store the results of the command, then we checked whether a certain string was in the registered variable's stdout. Only when Composer doesn't do anything will it print "Nothing to install or update", so we use that string to tell Ansible if the task resulted in a change.
+
+Many command-line utilities print results to stderr instead of stdout, so `failed_when` can be used to tell Ansible when a task has *actually* failed and is not just reporting its results in the wrong way. Here's an example where we need to parse the stderr of a Jenkins CLI command to see if Jenkins did, in fact, fail to perform the command we requested:
+
+{lang=text}
+    - name: Import a Jenkins job via CLI.
+      shell: >
+        java -jar /opt/jenkins-cli.jar -s http://localhost:8080/
+        create-job "My Job" < /usr/local/my-job.xml
+      register: import
+      failed_when: "import.stderr and 'already exists' not in import.stderr"
+
+In this case, we only want Ansible to report a failure when the command returns an error, **and** that error doesn't contain 'already exists'. It's debatable whether the command should report a job already exists via stderr, or just print the result to stdout... but it's easy to account for whatever the command does with Ansible!
 
 ### `ignore_errors`
 
-TODO.
+Sometimes there are commands that should be run always, and they often report errors. Or there are scripts you might run that output errors left and right, and the errors don't actually indicate a problem, but they're just annoying (and they cause your playbooks to stop executing).
+
+For these situations, you can simply add `ignore_errors` to the task, and Ansible will remain blissfully unaware of any problems running a particular task. Be careful using this, though; it's usually best if you can find a way to work with and around the errors generated by tasks so playbooks *do* fail if there are actual problems.
 
 ## Local Actions
 

@@ -163,9 +163,10 @@ Separating all the tasks into separate includes files means you'll have more fil
 
 It's much easier to maintain a more granular set of plays than one very long playbook. However, there's no reason to try to *start* writing a playbook with lots of individual includes. Most of the time, it's best to start with a monolithic playbook while you're working on the setup and configuration details, then move sets of tasks out to included files after you start seeing logical groupings.
 
-TODO:
+You can also use tags (demonstrated in the previous chapter) to limit the playbook run to a certain include file. Using the above example, if you wanted to add a 'drush' tag to the included drush file (so you could run `ansible-playbook playbook.yml --tags=drush` and only run the drush tasks), you can change line 20 to the following:
 
-  - Add example including adding a tag to the include (so you can run just one set of instructions).
+{lang=text,starting-line-number=20}
+    - include: tasks/drush.yml tags=drush
 
 T> You can find the entire example Drupal LAMP server playbook using include files in this book's code repository at [https://github.com/geerlingguy/ansible-for-devops](https://github.com/geerlingguy/ansible-for-devops), in the `includes` directory.
 
@@ -529,7 +530,7 @@ Then push your role up to a new project on GitHub (I usually name my Galaxy role
 
 ## Summary
 
-TODO.
+Using includes and Ansible roles organizes Playbooks and makes them maintainable. This chapter introduced different ways of using `include`, the power and flexible structure of roles, and how you can utilize Ansible Galaxy, the community repository of configurable Ansible roles that do just about anything.
 
 {lang="text",linenos=off}
      _________________________________________
