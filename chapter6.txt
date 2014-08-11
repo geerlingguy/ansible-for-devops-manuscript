@@ -201,7 +201,7 @@ If you create a directory structure like the one shown above, with a `main.yml` 
       roles:
         - role_name
 
-Your roles (each one as it's own directory, where the directory name is used by Ansible as the name of the role) can live in a couple different places---in the default global Ansible role path (configurable in `/etc/ansible/ansible.cfg`), or in a 'roles' folder directly within the same directory as your main playbook file.
+Your roles (each one as its own directory, where the directory name is used by Ansible as the name of the role) can live in a couple different places---in the default global Ansible role path (configurable in `/etc/ansible/ansible.cfg`), or in a 'roles' folder directly within the same directory as your main playbook file.
 
 I> Another simple way to build the scaffolding for a role (complete with all the available options/directories, a README file, and a structure suitable for contributing the role to Ansible Galaxy (we'll get to Galaxy in a little bit!) so it can easily be shared), is to use the `ansible-galaxy init` command. Running the command will create an example role in the current working directory, which you can then modify to suit your needs.
 
@@ -223,7 +223,7 @@ Create a `main.yml` file in this folder, and add the following contents (basical
 
 {lang=text}
     ---
-    - name: Install Node.js (npm plus all it's dependencies).
+    - name: Install Node.js (npm plus all its dependencies).
       yum: pkg=npm state=present enablerepo=epel
     
     - name: Install forever module (to run our Node.js app).
@@ -274,7 +274,7 @@ Modify the `tasks/main.yml` file to use a list variable and iterate through the 
 
 {lang=text}
     ---
-    - name: Install Node.js (npm plus all it's dependencies).
+    - name: Install Node.js (npm plus all its dependencies).
       yum: pkg=npm state=present enablerepo=epel
     
     - name: Install npm modules required by our app.

@@ -16,7 +16,7 @@ Our goal is to have a virtual machine running Linux running on your computer. Th
   2. [VirtualBox](https://www.virtualbox.org/)
   3. [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html)
 
-Once you've installed all three applications, you can use either the command prompt (`cmd`), Windows PowerShell, or a Linux terminal emulator like Cygwin to boot up a basic Linux VM with Vagrant (if you use Cygwin, which is not covered here, you could install it's SSH component and use it for SSH, and avoid using PuTTY).
+Once you've installed all three applications, you can use either the command prompt (`cmd`), Windows PowerShell, or a Linux terminal emulator like Cygwin to boot up a basic Linux VM with Vagrant (if you use Cygwin, which is not covered here, you could install its SSH component and use it for SSH, and avoid using PuTTY).
 
 ## Set up an Ubuntu Linux Virtual Machine
 

@@ -2,6 +2,7 @@
 
 ## Interesting articles / links:
 
+  - [Ansible Training Content](https://github.com/ansible/training-content)
   - [Tags (for debugging)](https://coderwall.com/p/ur8qnw)
   - [Quick Ansible Debugging tip](http://nigelb.me/2014-01-07-quick-tip-ansible.html)
   - [Ops School Curriculum](https://ops-school.readthedocs.org/en/latest/introduction.html)
@@ -21,6 +22,9 @@
 ## Things to add
 
   - Patch management with Ansible (like Pulp? See how Puppet does it?).
+  - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
+  - Scaling Ansible to large # of nodes (100+? Using pull mode? Using local connection and git repo? Using push?)
+  - Jenkins - test playbook then run it
 
 ## Todo before final publication:
 

@@ -28,11 +28,11 @@ Ansible works by pushing changes out to all your servers (by default), and requi
 
 ### Idempotency
 
-An important feature of any provisioning or configuration management tool is it's ability to ensure the same configuration is maintained if you run it once or a thousand times. There are many operations you might incorporate into a shell script that, if you're not careful, result in the deletion of important data the second time you run it.
-
-Ansible can deploy the same configuration to a server over and over again without making any changes after the first deployment.
-
-In fact, almost every aspect of every Ansible module and command is idempotent by default, and for the few that aren't, Ansible allows you to define when the given command should be run, and what constitutes a changed or failed command, so you can easily maintain an idempotent configuration on all your servers.
+I> **Idempotence** is the ability to run an operation which produces the same result whether run once or multiple times ([source](http://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning)).
+I> 
+I> An important feature of a configuration management tool is its ability to ensure the same configuration is maintained whether you run it once or a thousand times. Many shell scripts have unintended consequences if run more than once, but Ansible can deploy the same configuration to a server over and over again without making any changes after the first deployment.
+I> 
+I> In fact, almost every aspect of Ansible modules and commands is idempotent, and for those that aren't, Ansible allows you to define when the given command should be run, and what constitutes a changed or failed command, so you can easily maintain an idempotent configuration on all your servers.
 
 ## Installing Ansible
 
@@ -86,7 +86,7 @@ The simplest way of installing Ansible is with `pip`, though there is a PPA avai
 
 If you run a different flavor of Linux, the steps are similar---you need the Python development headers and pip, then you can use `pip install ansible`.
 
-**Once Ansible is installed**, make sure ansible is working properly by entering `ansible --version` on the command line. You should see the currently-installed version:
+**Once Ansible is installed**, make sure it's working properly by entering `ansible --version` on the command line. You should see the currently-installed version:
 
 {lang="text",linenos=off}
     $ ansible --version
@@ -94,13 +94,13 @@ If you run a different flavor of Linux, the steps are similar---you need the Pyt
 
 ## Creating a basic inventory file {#basic-inventory}
 
-Ansible uses an inventory file (basically, a list of servers) to communicate with your servers. Like a hosts file (at `/etc/hosts`) that matches IP addresses to domain names, an ansible inventory file matches servers (IP addresses or domain names) to groups. Inventory files can do a lot more, but for now, we'll just create a simple file with one server. Create a file at `/etc/ansible/hosts` (the default location for Ansible's inventory file), and add one server to it:
+Ansible uses an inventory file (basically, a list of servers) to communicate with your servers. Like a hosts file (at `/etc/hosts`) that matches IP addresses to domain names, an Ansible inventory file matches servers (IP addresses or domain names) to groups. Inventory files can do a lot more, but for now, we'll just create a simple file with one server. Create a file at `/etc/ansible/hosts` (the default location for Ansible's inventory file), and add one server to it:
 
 {lang="text",linenos=off}
     $ sudo mkdir /etc/ansible
     $ sudo touch /etc/ansible/hosts
 
-Edit this hosts file with nano, vim, or whatever editor you'd like, but note you'll need to edit it with sudo/as root. Put the following into the file:
+Edit this hosts file with nano, vim, or whatever editor you'd like, but note you'll need to edit it with sudo as root. Put the following into the file:
 
 {lang="text"}
     [example]
@@ -115,7 +115,7 @@ Now that you've installed Ansible and created an inventory file, it's time to ru
 {lang="text",linenos=off}
     $ ansible example -m ping -u [username]
 
-...where `[username]` is the user you use to log into the server. If everything worked, you should see a message that shows `www.example.com | success >>`, then the result of your ping. If it didn't work, run the command again with ` -vvvv` on the end to see verbose output. Chances are you don't have SSH keys configured properly---if you login with `ssh username@www.example.com` and that works, the above Ansible command should work, too.
+...where `[username]` is the user you use to log into the server. If everything worked, you should see a message that shows `www.example.com | success >>`, then the result of your ping. If it didn't work, run the command again with `-vvvv` on the end to see verbose output. Chances are you don't have SSH keys configured properly---if you login with `ssh username@www.example.com` and that works, the above Ansible command should work, too.
 
 W> Ansible assumes you're using passwordless (key-based) login for SSH (e.g. you login by entering `ssh username@example.com` and don't have to type a password). If you're still logging into your remote servers with a username and password, or if you need a primer on Linux remote authentication and security best practices, please read [Chapter 10 - Server Security and Ansible](#chapter-10). If you insist on using passwords, you can add the `--ask-pass` (`-k`) flag to ansible commands, but this entire book is written assuming passwordless authentication, so you'll need to keep this in mind every time you run a command or playbook.
 

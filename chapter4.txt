@@ -2,7 +2,7 @@
 
 ## Power plays
 
-Like many other configuration management solutions, Ansible uses a metaphor to describe it's configuration files. They are called 'playbooks', and they list a set of tasks ('plays' in Ansible parlance) that will be run against a particular server or set of servers.
+Like many other configuration management solutions, Ansible uses a metaphor to describe its configuration files. They are called 'playbooks', and they list a set of tasks ('plays' in Ansible parlance) that will be run against a particular server or set of servers.
 
 Playbooks are written in [YAML](http://docs.ansible.com/YAMLSyntax.html), a human-readable data format that is very popular for defining configuration in a simple text format. They can be included within other playbooks, and certain metadata and options can cause different plays or playbooks to be run in different scenarios on different servers. Think of a football (American, not the game played with your feet) playbook; there are many different plays that can be run, and the coaches will pick the plays appropriate for a given situation. You will write many different plays, and you can use some on all servers, some on a few types of servers, and some on just one or two servers---as the current situation requires.
 
@@ -613,7 +613,7 @@ Now, we'll install Drush using the latest version from GitHub:
           dest=/usr/local/bin/drush
           state=link
 
-Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from it's repository URL on GitHub. Since we want the master branch, we simply pass in the `repo` (repository URL) and `dest` (destination path) parameters.
+Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the master branch, we simply pass in the `repo` (repository URL) and `dest` (destination path) parameters.
 
 After drush is downloaded to `/opt/drush`, we use Composer to install all the required dependencies. In this case, we want Ansible to run `composer install` in the directory `/opt/drush` (this is so Composer can find drush's `composer.json` file automatically), so we pass along the parameter `chdir=/opt/drush`. Once Composer is finished, the file `/opt/drush/vendor/autoload.php` will be created, so we use the `creates` parameter to tell Ansible to skip this step if the file already exists (for idempotency).
 

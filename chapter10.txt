@@ -60,7 +60,7 @@ His version of SSH was developed for a few years as freeware with liberal licens
 
 OpenBSD was (and still is!) a highly secure, free version of BSD UNIX, and the project's developers needed a secure remote communication protocol, so a few project members worked to [clean up and improve OSSH](http://www.openbsd.org/openssh/history.html) so it could be included in OpenBSD's 2.6 release in December 1999. From there, it was quickly ported and adopted for all major versions of Linux, and is now ubiquitous in the world of POSIX-compliant operating systems.
 
-How does SSH work, and what makes it better than telnet or rlogin? It starts with the basic connection. SSH connection encryption works similarly to SSL for secure HTTP connections, but it's authentication layer adds more security:
+How does SSH work, and what makes it better than telnet or rlogin? It starts with the basic connection. SSH connection encryption works similarly to SSL for secure HTTP connections, but its authentication layer adds more security:
 
   1. When you enter `ssh user@example.host` to connect to the `example.host` server as `user`, your client and the host exchange keys.
   2. If you're connecting to a host the first time, or if the host's key has changed since last time you connected (this happens often when connecting via DNS rather than directly by IP), SSH will prompt you for your approval of the host key.
@@ -281,7 +281,7 @@ Further configuration (such as packages to exclude from automatic updates) can b
 
 ### Automating updates for Debian-based systems
 
-Debian and its derivatives typically use the `unattended-upgrades` package to configure automatic updates. Like `yum-cron`, it is easy to install, and it's configuration is placed in a variety of files within `/etc/apt/apt.conf.d/`:
+Debian and its derivatives typically use the `unattended-upgrades` package to configure automatic updates. Like `yum-cron`, it is easy to install, and its configuration is placed in a variety of files within `/etc/apt/apt.conf.d/`:
 
 {lang=text}
     - name: Install unattended upgrades package.

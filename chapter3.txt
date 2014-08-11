@@ -570,7 +570,7 @@ This command shows how many ansible commands have been run on each server (the n
 
 Periodic tasks run via cron are managed by a system's crontab. Normally, to change cron job settings on a server, you would log into the server, use `crontab -e` under the account where the cron jobs reside, and type in an entry with the interval and job.
 
-Ansible makes managing cron jobs easy with it's `cron` module. If you want to run a shell script on all the servers every day at 4 a.m., you can add the cron job with:
+Ansible makes managing cron jobs easy with its `cron` module. If you want to run a shell script on all the servers every day at 4 a.m., you can add the cron job with:
 
 {lang="text",linenos=off}
     $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
@@ -610,7 +610,7 @@ Ad-hoc commands are fine for the simple deployments (like our example above), bu
 
 ## Ansible's SSH connection history
 
-One of Ansible's greatest features is it's ability to function without running any extra applications or daemons on the servers it manages. Instead of using a proprietary protocol to communicate with the servers, Ansible uses the standard and secure SSH connection that is commonly used for basic administration on almost every Linux server running today.
+One of Ansible's greatest features is its ability to function without running any extra applications or daemons on the servers it manages. Instead of using a proprietary protocol to communicate with the servers, Ansible uses the standard and secure SSH connection that is commonly used for basic administration on almost every Linux server running today.
 
 Since a stable, fast, and secure SSH connection is the heart of Ansible's communication abilities, Ansible's implementation of SSH has continually improved throughout the past few years---and is still improving today.
 

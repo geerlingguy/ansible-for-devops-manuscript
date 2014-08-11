@@ -6,7 +6,7 @@ Deploying and managing servers reliably and efficiently has been a challenge sin
 
 As data centers grew, and as the applications they hosted became more complex, administrators realized they couldn't scale their manual systems management as fast as the applications they were enabling. Thus server provisioning and configuration management tools began to flourish.
 
-Server virtualization brought large-scale infrastructure management to the fore, and the number of servers managed by one admin, or a small team of admins, has grown by an order of magnitude. Instead of deploying, patching, and destroying every server by hand, admins are expected to be able to bring up new servers either automatically, or with minimal intervention. Many large-scale IT deployments involve hundreds or thousands of servers, and in many of the largest environments, server provisioning, configuration, and decommissioning is entirely automated.
+Server virtualization brought large-scale infrastructure management to the fore, and the number of servers managed by one admin, or a small team of admins, has grown by an order of magnitude. Instead of deploying, patching, and destroying every server by hand, admins are expected to be able to bring up new servers either automatically, or with minimal intervention. Many large-scale IT deployments involve hundreds or thousands of servers, and in many of the largest environments, server provisioning, configuration, and decommissioning are entirely automated.
 
 ## Modern infrastructure management
 
@@ -36,7 +36,7 @@ Ansible also has a lighter side that gives the project a little personality. As 
 
 ## Ansible Examples
 
-There are many Ansible examples (playbooks, roles, infrastructure, configuration, etc.) throughout this book. Most of the examples are in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), so you can browse the code in it's final state while you're reading the book. Some of the line numbering may not match the book *exactly* (especially if you're reading an older version of the book!), but I will try my best to keep everything synchronized over time.
+There are many Ansible examples (playbooks, roles, infrastructure, configuration, etc.) throughout this book. Most of the examples are in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), so you can browse the code in its final state while you're reading the book. Some of the line numbering may not match the book *exactly* (especially if you're reading an older version of the book!), but I will try my best to keep everything synchronized over time.
 
 ## Other resources
 
@@ -50,4 +50,4 @@ We'll explore all aspects of using Ansible to provision and manage your infrastr
   - [Ansible Blog](http://www.ansible.com/blog)
   - [Ansible Weekly](http://devopsu.com/newsletters/ansible-weekly-newsletter.html) - A newsletter about Ansible, including notable cowsay quotes!
 
-I'd like to especially highlight Ansible's documentation (the first resource listed above); one of Ansible's greatest strengths is it's well-written and extremely relevant documentation, containing a large number of relevant examples and continously-updated guides. Very few projects---open source or not---have documentation as thorough yet easy-to-read as Ansible's. This book is meant as a supplement to, not a replacement for, Ansible's documentation!
+I'd like to especially highlight Ansible's documentation (the first resource listed above); one of Ansible's greatest strengths is its well-written and extremely relevant documentation, containing a large number of relevant examples and continously-updated guides. Very few projects---open source or not---have documentation as thorough yet easy-to-read as Ansible's. This book is meant as a supplement to, not a replacement for, Ansible's documentation!

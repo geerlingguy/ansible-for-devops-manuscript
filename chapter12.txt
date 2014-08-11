@@ -137,7 +137,7 @@ If there are any syntax errors, Travis will fail the build and output the errors
 
 #### Role success - first run
 
-The next aspect to check is whether the role runs correctly or fails on it's first run.
+The next aspect to check is whether the role runs correctly or fails on its first run.
 
 {lang=text}
     # Run the role/playbook with ansible-playbook.
