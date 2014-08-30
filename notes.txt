@@ -2,6 +2,7 @@
 
 ## Interesting articles / links:
 
+  - [Ansible Modules](http://blog.josephkahn.io/articles/ansible-modules/)
   - [Ansible Training Content](https://github.com/ansible/training-content)
   - [Tags (for debugging)](https://coderwall.com/p/ur8qnw)
   - [Quick Ansible Debugging tip](http://nigelb.me/2014-01-07-quick-tip-ansible.html)
@@ -18,6 +19,26 @@
 
   - [Taste Test - Puppet - Chef - Salt - Ansible](http://devopsu.com/books/taste-test-puppet-chef-salt-stack-ansible.html)
   - [Ansible Configuration Management](http://www.packtpub.com/ansible-configuration-management/book)
+
+## O'Reilly Book Offer
+
+  - Met Greg D. at velocityconf, want to do some Ansible content
+  - O'Reilly CTO was reading book, really liked it
+  - Lots of early-release stuff (like Manning, other publishers), starting on 2nd chapter
+  - Things they do:
+    - Video products (sell standalone tutorials, get video content for config management tools, other devops tools...)
+      - Filmed in studio, 3+ hour videos, available on Safari (owned by O'Reilly)
+    - Content on Radar blog (authors write post on blog sometimes, write about other things, video podcast stuff)
+    - Conferences (often speakers are authors/video people)
+    - Interactive content
+      - Create a useful learning environment (better than just a 'codeschool python thing')
+      - Bring over some tutorials in book to docker so people can follow examples more closely
+  - Learning Chef: Written from a dev background, reviewed by ops people
+    - Ops guys wanted "show us how to do it", less the theory/principles
+  - If interested in video, I could do a webcast as kind of a trial of how I work on video/audience...
+  - **TODO**:
+    - Provide a few examples of video tutorials and send them to Brian
+    - Fill out proposal for book and send to Brian
 
 ## Things to add
 

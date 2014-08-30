@@ -26,8 +26,6 @@ One of Ansible's greatest strengths is its ability to run regular shell commands
 
 Ansible works by pushing changes out to all your servers (by default), and requires no extra software to be installed on your servers (thus no extra memory footprint, and no extra daemon to manage), unlike most other configuration management tools.
 
-### Idempotency
-
 I> **Idempotence** is the ability to run an operation which produces the same result whether run once or multiple times ([source](http://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning)).
 I> 
 I> An important feature of a configuration management tool is its ability to ensure the same configuration is maintained whether you run it once or a thousand times. Many shell scripts have unintended consequences if run more than once, but Ansible can deploy the same configuration to a server over and over again without making any changes after the first deployment.
@@ -90,7 +88,7 @@ If you run a different flavor of Linux, the steps are similar---you need the Pyt
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 1.6.6
+    ansible 1.8.0
 
 ## Creating a basic inventory file {#basic-inventory}
 

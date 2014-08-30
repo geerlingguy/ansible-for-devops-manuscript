@@ -6,9 +6,10 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
+  - Wrote most of appendix b (Best Practices).
   - Updated definition of idempotence in chapter 1.
   - Fixed a few LeanPub-related code formatting issues.
-  - Many grammar fixes throughout the book.
+  - Many grammar fixes throughout the book (thanks to Jon Forrest!).
 
 ## Version 0.58 (2014-08-01)
 

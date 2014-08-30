@@ -1,10 +1,221 @@
 # Appendix B - Ansible Best Practices and Conventions {#appendix-b}
 
+Ansible is a simple, flexible tool, and allows for a variety of organization methods and configuration syntaxes. You might like to have many tasks in one main file, or few tasks in many files. You might prefer defining variables in group variable files, host variable files, inventories, or elsewhere, or you might try to find ways of avoiding variables in inventories altogether.
+
+There are few *universal* best practices in Ansible, but this appendix contains many helpful suggestions for organizing playbooks, writing tasks, using roles, and otherwise build infrastructure with Ansible.
+
 TODO:
 
+  - Incorporate other commonly-asked-about best practices (ongoing).
   - [Best Practices](http://docs.ansible.com/playbooks_best_practices.html)
   - [Ansible (Real Life) Good Practices](http://www.reinteractive.net/posts/167-ansible-real-life-good-practices)
 
+## Playbook Organization
+
+As playbooks are Ansible's bread and butter, it's important to organize them in a logical manner, so you can easily write, debug, and maintain them.
+
+### Write comments and use `name` liberally
+
+Many tasks you write will be fairly obvious when you write them, but less so six months later when you are making changes. Just like application code, Ansible playbooks should be documented, at least minimally, so you can spend less time familiarizing yourself with what a particular task is supposed to do, and more time fixing problems or extending your playbooks.
+
+In YAML, you can write a comment by simply starting a line with a hash (`#`). If your comment spans multiple lines, start each line with `#`.
+
+It's also a good idea to use a `name` for every task you write, besides the most trivial. If you're using the `git` module to check out a specific tag, use a `name` to indicate what repository you're using, why a tag instead of a commit hash, etc. This way, whenever your playbook is run, you'll see the comment you wrote and be assured what's going on.
+
+{lang=text,linenos=off}
+    - hosts: all
+    
+      tasks:
+    
+        # This task takes up to five minutes and is required so we will have
+        # access to the images used in our application.
+        - name: Copy the entire file repository to the application.
+          copy:
+            src: ...
+
+This advice assumes, of course, that your comments actually indicate what's happening in your playbooks! Generally, I use full sentences with a period for all comments and `name`s, but if you'd like to use a slightly different style, that's not an issue. Just try to be consistent, and remember that *bad comments are worse than no comments at all*.
+
+### Include related variables and tasks
+
+If you find yourself writing a playbook that's over 50-100 lines and configures three or four different applications or services, it may help to separate each group of tasks into a separate file, and use `include` to place them in a playbook.
+
+Additionally, variables are usually better left in their own file and included using `vars_files` rather than defined inline with a playbook.
+
+{lang=text,linenos=off}
+    - hosts: all
+    
+      vars_files:
+        - vars/main.yml
+
+      handlers:
+        - include: handlers/handlers.yml
+    
+      tasks:
+        - include: tasks/init.yml
+        - include: tasks/database.yml
+        - include: tasks/app.yml
+
+Using a more hierarchical model like this allows you to see what your playbook is doing at a higher level, and also lets you manage each portion of a configuration or deployment separately. I generally split tasks into separate files once I reach 15-20 tasks in a given file.
+
+### Use Roles to bundle logical groupings of configuration
+
+Along the same lines as using included files to better organize your playbooks and separate bits of configuration logically, Ansible roles can supercharge your ability to manage infrastructure well.
+
+Using loosely-coupled roles to configure individual components of your servers (like databases, application deployments, the networking stack, monitoring packages, etc.) allows you to write configuration once, and use it on all your servers, regardless of their role.
+
+Consider that you will probably configure something like NTP (Network Time Protocol) on every single server you manage, or at a minimum, set a timezone for the server. Instead of adding two or three tasks to every playbook you manage, set up a role (maybe call it `time` or `ntp`) that does this configuration, and use a few variables to allow different groups of servers to have customized settings.
+
+Additionally, if you learn to build roles in a generic fashion, and for multiple platforms, you could even share it on Ansible Galaxy so others can use the role and help you make it more robust and efficient!
+
+## YAML Conventions and Best Practices
+
+YAML is a human-readable, machine-parseable syntax that allows for almost any list, map, or array structure to be described using a few basic conventions, so it is a great fit for a configuration management tool. Consider the following method of defining a list (or 'collection') of widgets:
+
+{lang=text,linenos=off}
+    widget:
+      - foo
+      - bar
+      - fizz
+
+This would translate into Python (using the `PyYAML` library employed by Ansible) as the following:
+
+{lang=python,linenos=off}
+    translated_yaml = {'widget': ['foo', 'bar', 'fizz']}
+
+And what about a structured list/map in YAML?
+
+{lang=text,linenos=off}
+    widget:
+      foo: 12
+      bar: 13
+
+The Python that would result:
+
+{lang=python,linenos=off}
+    translated_yaml = {'widget': {'foo': 12, 'bar': 13}}
+
+A few things to note with both of the above examples:
+
+  - YAML will try to determine the type of an item automatically. So `foo` in the first example would be translated as a string, `true` or `false` would be a boolean, and `123` would be an integer. You can read the official documentation for further insight, but for our purposes, realize you can minimize surprises by declaring strings with quotes (`''` or `""`).
+  - Whitespace matters! YAML uses spaces (literal space characters---*not* tabs) to define structure (mappings, array lists, etc.), so set your editor to use spaces for tabs. You can technically use either a tab or a space to delimit parameters (like `apt: name=foo state=installed`---you can use either a tab or a space between parameters), but it's generally preferred to use spaces everywhere, to minimize errors and display irregularities across editors and platforms.
+  - YAML syntax is robust and well-documented. Read through the official [YAML Specification](http://www.yaml.org/spec/1.2/spec.html) and/or the [PyYAMLDocumentation](http://pyyaml.org/wiki/PyYAMLDocumentation) to dig deeper.
+
+### YAML for Ansible tasks
+
+Consider the following task:
+
+{lang=text,linenos=off}
+    - name: Install foo.
+      apt: pkg=foo state=installed
+
+All well and good, right? Well, as you get deeper into Ansible and start defining more complex configuration, you might start seeing tasks like the following:
+
+{lang=text,linenos=off}
+    - name: Copy Phergie shell script into place.
+      template: src=templates/phergie.sh.j2 dest=/opt/phergie.sh owner={{ phergie_user }} group={{ phergie_user }} mode=755
+
+The one-line syntax (which uses Ansible-specific `key=value` shorthand for defining parameters) has some positive attributes:
+
+  - Simpler tasks (like installations and copies) are compact and readable (`apt: pkg=apache2 state=installed` is just about as simple as `apt-get install -y apache2`; in this way, an Ansible playbook feels very much like a shell script.
+  - Playbooks are more compact, and more configuration can be displayed on one screen.
+  - Ansible's official documentation follows this format, as do many existing roles and playbooks.
+
+However, as highlighted in the above example, there are a few issues with this `key=value` syntax:
+
+  - Smaller monitors, terminal windows, and source control applications will either wrap or hide part of the task line.
+  - Diff viewers and source control systems generally don't highlight intra-line differences as well as full line changes.
+  - Variables and parameters are converted to strings, which may or may not be desired.
+
+Ansible's shorthand syntax can be troublesome for complicated playbooks and roles, but luckily there are other ways you can write tasks which are better for narrower displays, version control software and diffing.
+
+### Three ways to format Ansible tasks
+
+The following methods are most often used to define Ansible tasks in playbooks:
+
+#### Shorthand/one-line (`key=value`)
+
+Ansible's shorthand syntax uses `key=value` parameters after the name of a module as a key:
+
+{lang=text,linenos=off}
+    - name: Install Nginx.
+      yum: pkg=nginx state=installed
+
+For any situation where an equivalent shell command would roughly match what I'm writing in the YAML, I prefer this method, since it's immediately obvious what's happening, and it's highly unlikely any of the parameters (like `state=installed`) will change frequently during development.
+
+Ansible's official documentation generally uses this syntax, so it maps nicely to examples you'll find from Ansible, Inc. and many other sources.
+
+#### Structured map/multi-line (`key:value`)
+
+You can define a structured map of parameters (using `key: value`, with each parameter on its own line) for a task:
+
+{lang=text,linenos=off}
+    - name: Copy Phergie shell script into place.
+      template:
+        src: "templates/phergie.sh.j2"
+        dest: "/home/{{ phergie_user }}/phergie.sh"
+        owner: "{{ phergie_user }}"
+        group: "{{ phergie_user }}"
+        mode: 0755
+
+A few notes on this syntax:
+
+  - The structure is all valid YAML, and functions similarly to Ansible's shorthand syntax.
+  - Strings, booleans, integers, octals, etc. are all preserved (instead of being converted to strings).
+  - Each parameter *must* be on its own line, so you can't chain together `mode: 0755, owner: root, user: root` to save space.
+  - YAML syntax highlighting (if you have an editor that supports it) works slightly better for this format than `key=value`, since each key will be highlighted, and values will be displayed as constants, strings, etc.
+
+#### Folded scalars/multi-line (`>`)
+
+You can also use the `>` character to break up Ansible's shorthand `key=value` syntax over multiple lines.
+
+{lang=text,linenos=off}
+    - name: Copy Phergie shell script into place.
+      template: >
+        src=templates/phergie.sh.j2
+        dest=/home/{{ phergie_user }}/phergie.sh
+        owner={{ phergie_user }} group={{ phergie_user }} mode=755
+
+In YAML, the `>` character denotes a *folded scalar*, where every line that follows (as long as it's indented further than the line with the `>`) will be joined with the line above by a space. So the above YAML and the earlier `template` example will function exactly the same.
+
+This syntax allows arbitrary splitting of lines on parameters, but it does not preserve value types (`0775` would be converted to a string, for example).
+
+While this syntax is often seen in the wild, I don't recommend it except for certain situations, like tasks using the `command` and `shell` modules with extra options:
+
+{lang=text,linenos=off}
+    - name: Install Drupal.
+      command: >
+        drush si -y
+        --site-name="{{ drupal_site_name }}"
+        --account-name=admin
+        --account-pass={{ drupal_admin_pass }}
+        --db-url=mysql://root@localhost/{{ domain }}
+        chdir={{ drupal_core_path }}
+        creates={{ drupal_core_path }}/sites/default/settings.php
+
+If you can find a way to run a command without having to use `creates` and `chdir`, or very long commands (which are arguably unreadable either in single *or* multiline format!), it's better to do that instead of this monstrosity.
+
+Sometimes, though, the above is as good as you can do to keep unwieldy tasks sane.
+
+## Using `ansible-playbook`
+
+Generally, running playbooks from your own computer or a central playbook runner is preferable to running Ansible playbooks locally (using `--connection=local`), since you can avoid installing Ansible and all its dependencies on the system you're provisioning. Because of Ansible's optimized use of SSH for connecting to remote machines, there is usually minimal difference in performance running Ansible locally or from a remote workstation (barring network flakiness or a high-latency connection).
+
+## Use Ansible Tower
+
+If you are able to use Ansible Tower to run your playbooks, this is even better, as you'll have a central server running Ansible playbooks, logging output, compiling statistics, and even allowing a team to work together to build servers and deploy applications in one place.
+
+## Specify `--forks` for playbooks running on > 5 servers
+
+If you are running a playbook on a large number of servers, consider increasing the number of `forks` Ansible uses to run tasks simultaneously. The default, `5`, means Ansible will only run a given task on 5 servers at a time. Consider increasing this to 10, 15, or however many connections your local workstation and ISP can handle---this can dramatically reduce the amount of time it takes a playbook to run.
+
+## Use Ansible's Configuration file
+
+Ansible's main configuration file, in `/etc/ansible/ansible.cnf`, can contain a wealth of optimizations and customizations that help you run playbooks and ad-hoc tasks more easily, faster, or with better output than stock Ansible provides.
+
+Read through the official documentation's [Ansible Configuration File](http://docs.ansible.com/intro_configuration.html) page for details on options you can customize in `ansible.cnf`.
+
 ## Summary
 
-TODO.
+One of Ansible's strengths is its flexibility; there are often multiple 'right' ways of accomplishing your goals. I have chosen to use the methods I outlined above as they have proven to help me write and maintain a variety of playbooks and roles with minimal headaches.
+
+It's perfectly acceptable to try a different approach; as with most programming and technical things, being *consistent* is more important than following a particular set of rules, especially if that set of rules isn't universally agreed upon. Consistency is especially important when you're not working solo---if every team member used Ansible in a different way, it would become difficult to share work very quickly!
