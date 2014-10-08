@@ -78,15 +78,15 @@ If a proxy needs to be set system-wide (as is the case behind many corporate fir
     
     # In the 'tasks' section of the playbook:
     - name: Configure the proxy.
-      lineinfile: >
-        dest=/etc/environment
-        regexp={{ item.regexp }}
-        line={{ item.line }}
-        state={{ proxy_state }}
+      lineinfile:
+        dest: /etc/environment
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: "{{ proxy_state }}"
       with_items:
-      - { regexp: "^http_proxy=", line: "http_proxy=http://example-proxy:80/" }
-      - { regexp: "^https_proxy=", line: "https_proxy=https://example-proxy:443/" }
-      - { regexp: "^ftp_proxy=", line: "ftp_proxy=http://example-proxy:80/" }
+        - { regexp: "^http_proxy=", line: "http_proxy=http://example-proxy:80/" }
+        - { regexp: "^https_proxy=", line: "https_proxy=https://example-proxy:443/" }
+        - { regexp: "^ftp_proxy=", line: "ftp_proxy=http://example-proxy:80/" }
 
 Doing it this way allows me to configure whether the proxy is enabled per-server (using the `proxy_state` variable), and with one play, set the http, https, and ftp proxies. You can use a similar kind of play for any other types of environment variables you need to set system-wide.
 
@@ -164,7 +164,7 @@ Then, add two files in the same folder as your example playbook, `apache_CentOS.
 
 As long as your remote server has `facter` or `ohai` installed, Ansible will be able to read the OS of the server, translate that to a variable (`ansible_os_family`), and include the vars file with the resulting name. If ansible can't find a file with that name, it will use the second option (`apache_default.yml`). So, on a Debian or Ubuntu server, Ansible would correctly use `apache2` as the service name, even though there is no `apache_Debian.yml` or `apache_Ubuntu.yml` file available.
 
-### Inventory variables
+### Inventory variables {#inventory-variables}
 
 Variables may also be added via Ansible inventory files, either inline with a host definition, or after a group:
 
@@ -425,6 +425,7 @@ W> Note that `setup` module options (like `filter`) won't work on remote Windows
 TODO:
 
   - [Variable Precedence](http://docs.ansible.com/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable)
+  - [Variable Precedence Graph](http://i.imgur.com/7WOcL1L.png) by [drybjed](https://twitter.com/drybjed/status/463770587924426752), with caveat by [SVG](https://twitter.com/svg/status/463801958692712449)
 
 ## If/then/when - Conditionals
 

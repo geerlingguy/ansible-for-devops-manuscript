@@ -25,16 +25,20 @@ Just like with variable include files, tasks are formatted in a flat list in the
 {lang="text",linenos=off}
     ---
     - name: Add profile info for user.
-      copy: >
-        src=example_profile
-        dest=/home/{{ username }}/.profile
-        owner={{ username }} group={{ username }} mode=744
+      copy:
+        src: example_profile
+        dest: "/home/{{ username }}/.profile"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: 0744
     
     - name: Add private keys for user.
-      copy: >
-        src={{ item.src }}
-        dest=/home/.ssh/{{ item.dest }}
-        owner={{ username }} group={{ username }} mode=600
+      copy:
+        src: "{{ item.src }}"
+        dest: "/home/.ssh/{{ item.dest }}"
+        owner: "{{ username }}"
+        group: "{{ username }}"
+        mode: 0600
       with_items: ssh_private_keys
     
     - name: Restart example service.
@@ -90,7 +94,7 @@ This can be helpful in limiting the noise in your main playbook, since handlers 
 
 ### Playbook includes
 
-Playbooks can even be included in other playbooks, by simply using the same `include` syntax in the top level of your playbook. For example, if you have two playbooks—one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
+Playbooks can even be included in other playbooks, by simply using the same `include` syntax in the top level of your playbook. For example, if you have two playbooks---one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
 
 {lang="text",linenos=off}
     - hosts: all
@@ -144,20 +148,22 @@ And inside `tasks/drush.yml`:
 
 {lang="text"}
     ---
-    - name: "Check out drush master branch."
-      git: repo=https://github.com/drush-ops/drush.git dest=/opt/drush
+    - name: Check out drush master branch.
+      git:
+        repo: https://github.com/drush-ops/drush.git
+        dest: /opt/drush
     
-    - name: "Install Drush dependencies with Composer."
+    - name: Install Drush dependencies with Composer."
       shell: >
         /usr/local/bin/composer install
         chdir=/opt/drush
         creates=/opt/drush/vendor/autoload.php
     
-    - name: "Create drush bin symlink."
-      file: >
-        src=/opt/drush/drush
-        dest=/usr/local/bin/drush
-        state=link
+    - name: Create drush bin symlink.
+      file:
+        src: /opt/drush/drush
+        dest: /usr/local/bin/drush
+        state: link
 
 Separating all the tasks into separate includes files means you'll have more files to manage for your playbook, but it helps keep the main playbook more compact (meaning it's easier to see all the installation and configuration steps the playbook contains), and also separates tasks into individual, easily-maintainable groupings. Instead of having to browse one playbook with twenty-three separate tasks, you now maintain eight included files with two to five tasks, each.
 

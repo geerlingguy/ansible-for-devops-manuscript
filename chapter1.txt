@@ -75,7 +75,7 @@ I> ~~~~~~~~~~~~~~~
 
 *Debian/Ubuntu:*
 
-The simplest way of installing Ansible is with `pip`, though there is a PPA available for Ubuntu to make installation even easier; see [Rodney Quillo's Ansible PPA](https://launchpad.net/~rquillo/+archive/ansible).
+The simplest way of installing Ansible is with `pip`, though there is an [official Ansible PPA](https://launchpad.net/~ansible/+archive/ubuntu/ansible) available for Debian/Ubuntu to make installation even easier; use `ppa:ansible/ansible`.
 
 {lang="text",linenos=off}
     $ sudo apt-get update

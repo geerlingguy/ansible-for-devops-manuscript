@@ -114,11 +114,11 @@ For our secure server, we want to disable password-based SSH authentication (mak
     - hosts: example
       tasks:
         - name: Update SSH configuration to be more secure.
-          lineinfile: >
-            dest=/etc/ssh/sshd_config
-            regexp="{{ item.regexp }}"
-            line="{{ item.line }}"
-            state=present
+          lineinfile:
+            dest: /etc/ssh/sshd_config
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            state: present
           with_items:
             - {
               regexp: "^PasswordAuthentication",
@@ -165,11 +165,11 @@ As an example, we can set up the user `johndoe` with permission to use any comma
 
 {lang="text",linenos=off}
     - name: Add sudo group rights for deployment user.
-      lineinfile: >
-        dest=/etc/sudoers
-        regexp='^%johndoe'
-        line='johndoe ALL=(ALL) NOPASSWD: ALL'
-        state=present
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^%johndoe'
+        line: 'johndoe ALL=(ALL) NOPASSWD: ALL'
+        state: present
 
 If you're ever editing the sudoers file by hand, you should use `visudo`, which validates your changes and makes sure you don't break sudo when you save the changes. When using Ansible with `lineinfile`, you have to use caution when making changes, and make sure your syntax is correct.
 
@@ -177,10 +177,10 @@ Another way of changing the sudoers file, and ensuring the integrity of the file
 
 {lang="text",linenos=off}
     - name: Copy validated sudoers file into place.
-      copy: >
-        src=sudoers
-        dest=/etc/sudoers
-        validate='visudo -cf %s'
+      copy:
+        src: sudoers
+        dest: /etc/sudoers
+        validate: 'visudo -cf %s'
 
 The `%s` is simply a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination. The same parameter can be passed into Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
 
@@ -227,9 +227,11 @@ Every Ansible module that deals with files has file ownership and permission par
 
 {lang=text}
     - name: Configure the GitLab global configuration file.
-      file: >
-        path=/etc/gitlab/gitlab.rb
-        owner=root group=root mode=600
+      file:
+        path: /etc/gitlab/gitlab.rb
+        owner: root
+        group: root
+        mode: 0600
 
 I> File permissions may seem a bit obtuse, and sometimes, they may cause headaches. But in reality, using octal numbers to represent file permissions is a helpful way to encapsulate a lot of configuration in three simple numbers. The main thing to remember is the following: for each of the file's *user*, *group*, and for *everyone* (each of the three digits), use the following digits to represent permission levels:
 I>
@@ -297,10 +299,12 @@ Debian and its derivatives typically use the `unattended-upgrades` package to co
       apt: pkg=unattended-upgrades state=installed
     
     - name: Copy unattended-upgrades configuration files in place.
-      template: >
-        src=../templates/{{ item }}.j2
-        dest=/etc/apt/apt.conf.d/{{ item }}
-        owner=root group=root mode=0644
+      template:
+        src: "../templates/{{ item }}.j2"
+        dest: "/etc/apt/apt.conf.d/{{ item }}"
+        owner: root
+        group: root
+        mode: 0644
       with_items:
         - 10periodic
         - 50unattended-upgrades

@@ -6,12 +6,9 @@ TODO:
 
   - [Windows Support](http://docs.ansible.com/intro_windows.html)
   - Ansible configuration (`/etc/ansible/ansible.cfg`)
-  - Best Practices (and 'real world' scenarios)
-  - Looping (if not covered in-depth earlier)
   - Ansible Vault
-  - Asynchronous actions, Polling, distributed Ansible
+  - High Performance / Scalable Ansible: Asynchronous actions, Polling, distributed Ansible, Redis-based fact cache
   - Error handling
-  - Server security with Ansible (especially SSH agent/key auth configuration)
 
 ## Testing Ansible Playbooks
 
@@ -149,7 +146,7 @@ Ansible returns a non-zero exit code if the playbook run fails, so Travis will k
 
 #### Role idempotence
 
-Another important test is the idempotence test—does the role change anything if it runs a second time? It should not, since all tasks you perform via Ansible should be idempotent (ensuring a static/unchanging configuration on subsequent runs with the same settings).
+Another important test is the idempotence test---does the role change anything if it runs a second time? It should not, since all tasks you perform via Ansible should be idempotent (ensuring a static/unchanging configuration on subsequent runs with the same settings).
 
 {lang=text}
     # Run the role/playbook again, checking to make sure it's idempotent.
@@ -171,7 +168,7 @@ The last thing I check is whether the role actually did what it was supposed to 
 
 In this example, I'm testing a web server by loading 'localhost'; curl will exit with a 0 status (and dump the output of the web server's response) if the server responds with a 200 OK status, or will exit with a non-zero status if the server responds with an error status (like 500) or is unavailable.
 
-Taking this a step further, you could even run a deployed application or service's own automated tests after ansible is finished with the deployment, thus testing your infrastructure and application in one go—but we're getting ahead of ourselves here... that's a topic for a future post :)
+Taking this a step further, you could even run a deployed application or service's own automated tests after ansible is finished with the deployment, thus testing your infrastructure and application in one go---but we're getting ahead of ourselves here... that's a topic for later!
 
 #### Some notes about Travis CI
 
@@ -190,6 +187,12 @@ I have integrated this style of testing into many of the roles I've submitted to
   - https://github.com/geerlingguy/ansible-role-apache
   - https://github.com/geerlingguy/ansible-role-gitlab
   - https://github.com/geerlingguy/ansible-role-mysql
+
+### Automated testing with `test-runner`
+
+TODO:
+
+  - [debops/test-runner](https://github.com/debops/test-runner)
 
 ### Automated testing with Jenkins CI
 

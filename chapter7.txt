@@ -1,3 +1,194 @@
 # Chapter 7 - Inventories
 
+Earlier in the book, a basic inventory file example was given (see Chapter 1's [basic inventory file example](#basic-inventory)). For the simplest of purposes, an inventory file at the default location (`/etc/ansible/hosts`) will suffice to describe to Ansible how to reach the servers you want to manage.
+
+Later, a slightly more involved inventory file was introduced (see Chapter 3's [inventory file for multiple servers](#multiple-server-inventory)), which allowed us to tell Ansible about multiple servers, and even group them into role-related groups, so we could run certain playbooks against certain groups.
+
+Let's jump back to a basic inventory file example and build from there:
+
+{lang=text}
+    # Inventory file at /etc/ansible/hosts
+    
+    # Groups are defined using square brackets (e.g. [groupname]). Each server
+    # in the group is defined on its own line.
+    [myapp]
+    www.myapp.com
+
+If you want to run an ansible playbook on all the `myapp` servers in this inventory (so far, just one, `www.myapp.com`), you can set up the playbook like so:
+
+{lang=text,linenos=off}
+    ---
+    - hosts: myapp
+    
+      tasks:
+        [...]
+
+If you want to run an ad-hoc command against all the `myapp` servers in the inventory, you can run a command like so:
+
+{lang=text,linenos=off}
+    # Use ansible to check memory usage on all the myapp servers.
+    $ ansible myapp -a "free -m"
+
+## A real-world web application server inventory
+
+The example above might be adequate for single-server services and tiny apps or websites, but most real-world applications require many more servers, and usually separate servers per application concern (database, caching, application, queuing, etc.). Let's take a look at a real-world inventory file for a small web application that monitors server uptime, [Server Check.in](https://servercheck.in/).
+
+{lang=text}
+    # Individual Server Check.in servers.
+    [servercheck-web]
+    www1.servercheck.in
+    www2.servercheck.in
+    
+    [servercheck-web:vars]
+    ansible_ssh_user=servercheck_svc
+    
+    [servercheck-db]
+    db1.servercheck.in
+    
+    [servercheck-log]
+    log.servercheck.in
+    
+    [servercheck-backup]
+    backup.servercheck.in
+    
+    [servercheck-nodejs]
+    atl1.servercheck.in
+    atl2.servercheck.in
+    nyc1.servercheck.in
+    nyc2.servercheck.in
+    nyc3.servercheck.in
+    ned1.servercheck.in
+    ned2.servercheck.in
+    
+    [servercheck-nodejs:vars]
+    ansible_ssh_user=servercheck_svc
+    foo=bar
+    
+    # Server Check.in distribution-based groups.
+    [centos:children]
+    servercheck-web
+    servercheck-db
+    servercheck-nodejs
+    servercheck-backup
+    
+    [ubuntu:children]
+    servercheck-log
+
+This inventory may look a little overwhelming at first, but if you break it apart into simple groupings (web app servers, database servers, logging server, and node.js app servers), it describes a straightforward architecture.
+
+[TODO: Image of architecture here].
+
+Lines 1-29 describe a few groups of servers (some with only one server), so playbooks and `ansible` commands can simply refer to the group by name. Lines 6-7 and 27-29 set variables that will apply only to the servers in the group (e.g. variables below `[servercheck-nodejs:vars]` will only apply to the servers in the `servercheck-nodejs` group).
+
+Lines 31-39 describe groups of groups (using `groupname:children` to describe 'child' groups) that allow for some helpful abstractions.
+
+Describing infrastructure in such a way affords a lot of flexibility when using Ansible. Consider the task of patching a vulnerability on all your CentOS servers; instead of having to log into each of the servers, or even having to run an `ansible` command against all the groups, using the above structure allows you to easily run an ansible command or playbook against all `centos` servers.
+
+As an example, when the [Shellshock](TODO: Link here) vulnerability was disclosed in 2014, patched bash packages were released for all the major distributions within hours. To update all the Server Check.in servers, all that was needed was:
+
+{lang=text,linenos=off}
+    $ ansible centos -m yum -a "name=bash state=latest"
+
+You could even go further and create a small playbook that would patch the vulnerability, then run tests to make sure the vulnerability was no longer present, as illustrated in [this playbook](TODO: Link here). This would also allow you to run the playbook in check mode or run it through a continuous integration system to verify the fix works in a non-prod environment.
+
+This infrastructure inventory is also nice in that you could create a top-level playbook that runs certain roles or tasks against all your infrastructure, others against all servers of a certain Linux flavor, and another against all servers in your entire infrastructure.
+
+Consider, for example, this example master playbook to completely configure all the servers:
+
+{lang=text}
+    ---
+    # Set up basic, standardized components across all servers.
+    - hosts: all
+      sudo: true
+      roles:
+        - security
+        - logging
+        - firewall
+    
+    # Configure web application servers.
+    - hosts: servercheck-web
+      roles:
+        - nginx
+        - php
+        - servercheck-web
+    
+    # Configure database servers.
+    - hosts: servercheck-db
+      roles:
+        - pgsql
+        - db-tuning
+    
+    # Configure logging server.
+    - hosts: servercheck-log
+      roles:
+        - java
+        - elasticsearch
+        - logstash
+        - kibana
+    
+    # Configure backup server.
+    - hosts: servercheck-backup
+      roles:
+        - backup
+    
+    # Configure Node.js application servers.
+    - hosts: servercheck-nodejs
+      roles:
+        - servercheck-node
+
+There are a number of different ways you can structure your infrastructure-management playbooks and roles, and we'll explore some in later chapters, but for a simple infrastructure, something like this is adequate and maintainable.
+
+### Non-prod environments, separate inventory files
+
+Using the above playbook and the globally-configured Ansible inventory file is great for your production infrastructure, but what happens when you want to configure a separate but similar infrastructure for, say a development or user certification environment?
+
+In this case, it is easiest to simply use individual inventory files, rather than the central, locally-managed Ansible inventory file. For typical team-managed infrastructure, I would recommend including an inventory file for each environment in the same version-controlled repository as your Ansible playbooks, perhaps within an 'inventories' directory.
+
+For example, I could take the entire contents of `/etc/ansible/hosts` above, and stash that inside an inventory file named `inventory-prod`, then duplicate it, changing server names where appropriate (e.g. the `[servercheck-web]` group would only have `www-dev1.servercheck.in` for the development environment), and naming the files for the environments:
+
+{lang=text,linenos=off}
+    servercheck/
+      inventories/
+        inventory-prod
+        inventory-cert
+        inventory-dev
+      playbook.yml
+
+Now, when running `playbook.yml` to configure the development infrastructure, I would pass in the path to the dev inventory (assuming my current working directory is `servercheck/`):
+
+{lang=text,linenos=off}
+    $ ansible-playbook playbook.yml -i inventory-dev
+
+Using inventory variables (which will be explored further), and well-constructed roles and/or tasks that use the variables effectively, you could architect your entire infrastructure, with environment-specific configurations, simply by changing some things in your inventory files.
+
+## Inventory variables
+
+Chapter 5 introduced basic methods of managing variables for individual hosts or groups of hosts through your inventory in the [inventory variables](#inventory-variables) section, but it's worth exploring the different ways of defining and overriding variables through inventory here.
+
+TODO:
+
+  - variables inside the inventory file (not recommended for anything but the simplest use cases)
+  - `host_vars` and `group_vars` (either in inventory or playbook directory)
+
+## Ephemeral infrastructure: Dynamic inventory
+
+TODO:
+
+  - Inventory scripts included in core (AWS, Cobbler, Digital Ocean, Linode, OpenStack, etc.)
+  - Multiple inventory sources (pass a directory to `-i`, all scripts will be used)
+  - Creating custom dynamic inventories (see [developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html))
+
+## Summary
+
 TODO.
+
+{lang=text,linenos=off}
+     ___________________________________
+    / A pint of sweat saves a gallon of \
+    \ blood. (General Patton)           /
+     -----------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

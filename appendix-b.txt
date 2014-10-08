@@ -67,7 +67,7 @@ Consider that you will probably configure something like NTP (Network Time Proto
 
 Additionally, if you learn to build roles in a generic fashion, and for multiple platforms, you could even share it on Ansible Galaxy so others can use the role and help you make it more robust and efficient!
 
-## YAML Conventions and Best Practices
+## YAML Conventions and Best Practices {#yaml-best-practices}
 
 YAML is a human-readable, machine-parseable syntax that allows for almost any list, map, or array structure to be described using a few basic conventions, so it is a great fit for a configuration management tool. Consider the following method of defining a list (or 'collection') of widgets:
 

@@ -93,7 +93,7 @@ Open up a terminal window and change directory to the same folder where the Vagr
 
 While that's going on, we'll work on telling Ansible about the servers, so we can start managing them right away.
 
-## Inventory file for multiple servers
+## Inventory file for multiple servers {#multiple-server-inventory}
 
 There are many ways you can tell Ansible about the servers you manage, but the most standard, and simplest, is to add them to your system's main Ansible inventory file, which is located at `/etc/ansible/hosts`. If you didn't create the file in the previous chapter, go ahead and create the file now; make sure your user account has read permissions for the file.
 
@@ -160,7 +160,7 @@ You may have noticed that the command was not run on each server in the order yo
     192.168.60.4 | success | rc=0 >>    192.168.60.4 | success | rc=0 >>
     orc-app1.dev                        orc-app1.dev
 
-Be default, Ansible will run your commands in parallel, using multiple process forks, so the command will complete more quickly. If you're managing a few servers, this may not be much quicker than running the command serially, on one server after the other, but even managing 5-10 servers, you'll notice a dramatic speedup if you use Ansible's parallelism (which is enabled by default).
+By default, Ansible will run your commands in parallel, using multiple process forks, so the command will complete more quickly. If you're managing a few servers, this may not be much quicker than running the command serially, on one server after the other, but even managing 5-10 servers, you'll notice a dramatic speedup if you use Ansible's parallelism (which is enabled by default).
 
 Run the same command again, but this time, add the argument `-f 1` to tell Ansible to only use one fork (basically, perform the command on each server in sequence):
 
@@ -574,14 +574,14 @@ Ansible makes managing cron jobs easy with its `cron` module. If you want to run
 
 {lang="text",linenos=off}
     $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
-    hour=4 job='/path/to/daily-script.sh'
+    hour=4 job='/path/to/daily-script.sh'"
 
 Ansible will assume `*` for all values you don't specify (valid values are `day`, `hour`, `minute`, `month`, and `weekday`). You could also specify special time values like `reboot`, `yearly`, or `monthly` using `special_time=[value]`. You can also set the user the job will run under via `user=[user]`, and you can create a backup of the current crontab by passing `backup=yes`.
 
 What if we want to remove the cron job? Simple enough, use the same `cron` command, and pass the name of the cron job you want to delete, and `state=absent`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' state=absent'
+    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' state=absent'"
 
 You can also use Ansible to manage custom crontab files; use the same syntax as you used earlier, but specify the location to the cron file with: `cron_file=cron_file_name` (where `cron_file_name` is a cron file located in `/etc/cron.d`).
 

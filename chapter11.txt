@@ -1,3 +1,50 @@
-# Chapter 11 - Ansible Tower
+# Chapter 11 - Automating Your Automation with Ansible Tower
+
+Throughout this book, all the examples use Ansible's CLI to run playbooks and report back the results. For smaller teams, especially when everyone on the team is well-versed in how to use Ansible, YAML syntax, and follows security best practices with playbooks and variables files, using the CLI can be a sustainable approach.
+
+But for many organizations, there are needs that stretch basic CLI use too far:
+
+  - The business needs detailed reporting of infrastructure deployments and failures, especially for audit purposes.
+  - Team-based infrastructure management requires varying levels of involvement in playbook management, inventory management, and key and password access.
+  - A thorough visual overview of the current and historical playbook runs and server health helps identify potential issues before they affect the bottom line.
+  - Playbook scheduling can help ensure infrastructure remains in a known state.
+
+Ansible Tower checks off these items---and many more---and provides a great mechanism for team-based Ansible usage. The product is currently free for teams managing ten or fewer servers (it's basically an 'unlimited trial' mode), and has flexible pricing for teams managing dozens to thousands of servers.
+
+While this book includes a brief overview of Tower, and how you can get started with Tower, it is highly recommended that you read through Ansible, Inc's extensive [Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
+
+## Getting and Installing Ansible Tower
 
 TODO.
+
+## Using Ansible Tower
+
+TODO.
+
+## Tower Alternatives
+
+TODO:
+
+  - [Jenkins](http://jenkins-ci.org/)
+  - [Rundeck](http://rundeck.org/)
+  - [Go CI](http://www.go.cd/)
+
+## Summary
+
+TODO.
+
+{lang="text",linenos=off}
+     ________________________________________
+    / The first rule of any technology used  \
+    | in a business is that automation       |
+    | applied to an efficient operation will |
+    | magnify the efficiency. The second is  |
+    | that automation applied to an          |
+    | inefficient operation will magnify the |
+    \ inefficiency. (Bill Gates)             /
+     ----------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

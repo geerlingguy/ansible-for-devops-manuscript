@@ -2,6 +2,7 @@
 
 TODO:
 
+  - [Server Check.in](https://servercheck.in/) infrastructure walkthrough
   - Rolling Updates
   - `serial` batch size (instead of running each play in parallel on all servers) - can be defined per-play or per-playbook.
   - Manage load balancers (BigIP, ELB, netscaler, etc.) in [pre|post]_task.

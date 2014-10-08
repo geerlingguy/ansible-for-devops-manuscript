@@ -4,12 +4,21 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.62 (2014-10-07)
+
+  - Wrote a good deal of chapter 7 (Inventories).
+  - Cleaned up code examples to follow updated best practices in appendix b.
+  - Updated installation instructions to use Ansible's official PPA for Ubuntu (thanks to Rohit Bhute!).
+
+## Version 0.60 (2014-09-30)
 
   - Wrote most of appendix b (Best Practices).
   - Updated definition of idempotence in chapter 1.
   - Fixed a few LeanPub-related code formatting issues.
   - Many grammar fixes throughout the book (thanks to Jon Forrest!).
+  - Some spelling and ad-hoc command fixes (thanks to Hugo Posca!).
+  - Had a baby (thus the dearth of updates from 8/1-10/1 :-).
+  - Wrote introduction and basic structure of chapter 11 (Ansible Tower).
 
 ## Version 0.58 (2014-08-01)
 
