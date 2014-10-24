@@ -76,7 +76,8 @@ The example above might be adequate for single-server services and tiny apps or 
 
 This inventory may look a little overwhelming at first, but if you break it apart into simple groupings (web app servers, database servers, logging server, and node.js app servers), it describes a straightforward architecture.
 
-[TODO: Image of architecture here].
+{width=85%}
+![Server Check.in Infrastructure.](images/7-server-checkin-infrastructure.png)
 
 Lines 1-29 describe a few groups of servers (some with only one server), so playbooks and `ansible` commands can simply refer to the group by name. Lines 6-7 and 27-29 set variables that will apply only to the servers in the group (e.g. variables below `[servercheck-nodejs:vars]` will only apply to the servers in the `servercheck-nodejs` group).
 
@@ -165,22 +166,288 @@ Using inventory variables (which will be explored further), and well-constructed
 
 Chapter 5 introduced basic methods of managing variables for individual hosts or groups of hosts through your inventory in the [inventory variables](#inventory-variables) section, but it's worth exploring the different ways of defining and overriding variables through inventory here.
 
-TODO:
+For extremely simple use cases---usually when you simply need to define one or two connection-related variables (like `ansible_ssh_user` or `ansible_ssh_port`)---you can place variables directly inside an inventory file.
 
-  - variables inside the inventory file (not recommended for anything but the simplest use cases)
-  - `host_vars` and `group_vars` (either in inventory or playbook directory)
+Assuming we have a standalone inventory file for a basic web application, here are some examples of variable definition inside the file:
+
+{lang=text}
+    [www]
+    # You can define host-specific variables inline with the host.
+    www1.example.com ansible_ssh_user=johndoe
+    www2.example.com
+    
+    [db]
+    db1.example.com
+    db2.example.com
+    
+    # You can add a '[group:vars]' heading to create variables that will apply
+    # to an entire inventory group.
+    [db:vars]
+    ansible_ssh_port=5222
+    database_performance_mode=true
+
+It's usually better to avoid throwing too many variables inside static inventory files, because not only are these variables typically less visible, they are also mixed in with your architecture definition. Especially for host-specific vars (which appear on one long line per host), this is an unmaintainable, low-visibility approach to host and group-specific variables.
+
+Fortunately, Ansible provides a more flexible way of declaring host and group variables.
+
+### `host_vars`
+
+For [Hosted Apache Solr](https://www.hostedapachesolr.com/), different servers in a `solr` group have different memory requirements. The simplest way to tell Ansible to override a default variable in our Ansible playbook (in this case, the `tomcat_xmx` variable) is to use a `group_vars` directory (which can be placed either in the same location as your inventory file, or in a playbook's root directory), and place a YAML file named after the host which needs the overridden variable.
+
+As an illustration of the use of `host_vars`, we'll assume we have the following directory layout:
+
+{lang=text,linenos=off}
+    hostedapachesolr/
+      host_vars/
+        nyc1.hostedapachesolr.com
+      inventory/
+        hosts
+      main.yml
+
+The `inventory/hosts` file contains a simple definition of all the servers by group:
+
+{lang=text}
+    [solr]
+    nyc1.hostedapachesolr.com
+    nyc2.hostedapachesolr.com
+    jap1.hostedapachesolr.com
+    ...
+    
+    [log]
+    log.hostedapachesolr.com
+
+Ansible will search for a file at either `hostedapachesolr/host_vars/nyc1.hostedapachesolr.com` or `hostedapachesolr/inventory/host_vars/nyc1.hostedapachesolr.com`, and if there are any variables defined in the file (in YAML format), those variables will override all other playbook and role variables and gathered facts, *only for the single host*.
+
+The `nyc1.hostedapachesolr.com` host_vars file looks like:
+
+{lang=text}
+    ---
+    tomcat_xmx: "1024m"
+
+The default for `tomcat_xmx` may normally be `640m`, but when Ansible runs a playbook against nyc1.hostedapachesolr.com, the value of `tomcat_xmx` will be `1024m` instead.
+
+Overriding host variables with `host_vars` is much more maintainable than doing so directly in static inventory files, and also provides greater visibility into what hosts are getting what overrides.
+
+### `group_vars`
+
+Much like `host_vars`, Ansible will automatically load any files named after inventory groups in a `group_vars` directory placed inside the playbook or inventory file's location.
+
+Using the same example as above, we'll override one particular variable for an entire group of servers. First, we add a `group_vars` directory with a file named after the group needing the overridden variable:
+
+{lang=text,linenos=off}
+    hostedapachesolr/
+      group_vars/
+        solr
+      host_vars/
+        nyc1.hostedapachesolr.com
+      inventory/
+        hosts
+      main.yml
+
+Then, inside `group_vars/solr`, use YAML to define a list of variables that will be applied to servers in the `solr` group:
+
+{lang=text}
+    ---
+    do_something_amazing=true
+    foo=bar
+
+Typically, if your playbook is only being run on one gruop of hosts, it's easier to define the variables in the playbook via an included vars file. However, in many cases you will be running a playbook or applying a set of roles to multiple inventory groups. In these situations, you may need to use `group_vars` to override specific variables for one or more groups of servers.
 
 ## Ephemeral infrastructure: Dynamic inventory
 
+In many circumstances, static inventories are adequate for describing your infrastructure. When working on small applications, low-traffic web applications, and individual workstations, it's simple enough to manage an inventory file by hand.
+
+However, in the age of cloud computing and highly scalable application architecture, it's often necessary to add dozens or hundreds of servers to an infrastructure in a short period of time---or to add and remove servers continuously, to scale as traffic grows and subsides. In this circumstance, it would be tedious (if not impossible) to manage a single inventory file by hand, especially if you're using auto-scaling infrastructure new instances are provisioned and need to be configured in minutes or seconds.
+
+Even in the case of container-based infrastructure, new instances need to be configured correctly, with the proper port mappings, application settings, and filesystem configuration.
+
+For these situations, Ansible allows you to define inventory *dynamically*. If you're using one of the larger cloud-based hosting providers, chances are there is already a dynamic inventory script (which Ansible uses to build an inventory) for you to use. Ansible core already includes scripts for Amazon Web Services, Cobbler, DigitalOcean, Linode, OpenStack, and other large providers, and later we'll explore creating our own dynamic inventory script (if you aren't using one of the major hosting providers or cloud management platforms).
+
+### Dynamic inventory with DigitalOcean
+
+Digital Ocean is one of the world's top five hosting companies, and has grown rapidly since it's founding in 2011. One of the reasons for the extremely rapid growth is the ease of provisioning new 'droplets' (cloud VPS servers), and the value provided; as of this writing, you could get a fairly speedy VPS with 512MB of RAM and a generous portion of fast SSD storage for $5 USD per month.
+
+Digital Ocean's API and simple developer-friendly philosophy has made it easy for Ansible to interact with Digital Ocean droplets; you can create, manage, and delete droplets with Ansible, as well as use droplets with your playbooks using dynamic inventory.
+
+#### DigitalOcean account prerequisites
+
+Before you can follow the rest of the examples in this section, you will need:
+
+  1. A DigitalOcean account (sign up at www.digitalocean.com).
+  2. `dopy`, a Python wrapper for Digital Ocean API interaction (you can install it with pip: `sudo pip install dopy`).
+  3. Your DigitalOcean account API key and client ID (Ansible currently supports the v1 API, so you need to go to the 'Apps & API' page in your profile, then click the 'API v1.0 Page' link to get a key and client ID).
+  4. An SSH key pair, which will be used to connect to your DigitalOcean servers. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-ssh-keys-with-digitalocean-droplets) to create a key pair and add the public key to your DigitalOcean account.
+
+Once you have these four things set up and ready to go, you should be able to communicate with your DigitalOcean account through Ansible.
+
+#### Connecting to your DigitalOcean account
+
+There are a few different ways you can specify your DigitalOcean client ID and API key (including command line arguments `--client-id` and `--api-key`, as values inside a `digital_ocean.ini` file, or as environment variables). For our example, we'll use environment variables (since these are easy to configure, and work both with Ansible's `digital_ocean` module and the dynamic inventory script). Open up a terminal session, and enter the following commands:
+
+{lang=text,linenos=off}
+    $ export DO_CLIENT_ID=YOUR_CLIENT_ID_HERE
+    $ export DO_API_KEY=YOUR_API_KEY_HERE
+
+Before we can use a dynamic inventory script to discover our DigitalOcean droplets, let's use Ansible to quickly provision a new droplet.
+
+W> Creating cloud instances ('Droplets', in DigitalOcean parlance) will incur minimal charges for the time you use them (currently less than $0.01/hour for the size in this example). For the purposes of this tutorial (and in general, for any testing), make sure you shut down and destroy your instances when you're finished using them, or you will be charged through the next billing cycle! Even so, using low-priced instances (like a $5/month DigitalOcean droplet with hourly billing) means that, even in the worst case, you won't have to pay much. If you create and destroy an instance in a few hours, you'll be charged a few pennies.
+
+#### Creating a droplet with Ansible
+
+Create a new playbook named `provision.yml`, with the following contents:
+
+{lang=text}
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: false
+
+      tasks:
+        - name: Create new Droplet.
+          digital_ocean:
+            state: present
+            command: droplet
+            name: ansible-test
+            private_networking: yes
+            # 512mb
+            size_id: 66
+            # CentOS 7.0 x64
+            image_id: 6713409
+            # nyc2
+            region_id: 4
+            ssh_key_ids: 138954
+            # Required for idempotence/only one droplet creation.
+            unique_name: yes
+          register: do
+
+The `digital_ocean` module lets you create, manage, and delete droplets with ease. You can read the documentation for all the options, but the above is an overview of the main options. `name` sets the hostname for the droplet, `state` can also be set to `deleted` if you want the droplet to be destroyed, and other options tell DigitalOcean where to set up the droplet, and with what OS and configuration.
+
+T> You can use DigitalOcean's API, along with your client_id and api_key, to get the IDs for `size_id` (the size of the Droplet), `image_id` (the system or distro image to use), `region_id` (the data center in which your droplet will be created), and `ssh_key_ids` (a comma separate list of SSH keys to be included in the root account's `authorized_keys` file).
+T> 
+T> As an example, to get all the available images, use `curl "https://api.digitalocean.com/images/?client_id=CLIENT_ID&api_key=API_KEY&filter=global" | python -m json.tool`, substituting your own `CLIENT_ID` and `API_KEY`, and you'll receive a JSON listing of all available values. Browse the [DigitalOcean API](https://developers.digitalocean.com/) for information on how to query SSH key information, size information, etc.
+
+We used `register` as part of the `digital_ocean` task so we could immediately start using and configuring the new host if needed. Running the above playbook returns the following output (using `debug: var=do` in an additional task to dump the contents of our registered variable, `do`):
+
+{lang=text,linenos=off}
+    $ ansible-playbook do_test.yml
+    
+    PLAY [localhost] ***********************************************************
+    
+    TASK: [Create new Droplet.] ************************************************
+    changed: [localhost]
+    
+    TASK: [debug var=do] *******************************************************
+    ok: [localhost] => {
+        "do": {
+            "changed": true,
+            "droplet": {
+                "backups": [],
+                "backups_active": false,
+                "created_at": "2014-10-22T02:09:20Z",
+                "event_id": 34915980,
+                "id": 2940194,
+                "image_id": 6918990,
+                "ip_address": "162.243.20.29",
+                "locked": false,
+                "name": "ansible-test",
+                "private_ip_address": null,
+                "region_id": 4,
+                "size_id": 66,
+                "snapshots": [],
+                "status": "active"
+            },
+            "invocation": {
+                "module_args": "",
+                "module_name": "digital_ocean"
+            }
+        }
+    }
+    
+    PLAY RECAP *****************************************************************
+    localhost                  : ok=2    changed=1    unreachable=0    failed=0
+
+Since `do` contains lace your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding on to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it with something like:
+
+{lang=text,starting-line-number=24}
+        - name: Add new host to our inventory.
+          add_host:
+            name: "{{ do.droplet.ip_address }}"
+            groups: do
+          when: do.droplet is defined
+
+    - hosts: do
+      remote_user: root
+
+      tasks:
+        - name: Install tcpdump.
+          yum: name=tcpdump state=installed
+
+At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it should create a new droplet (if it has not already been created), then add that droplet to the `do` inventory group, and finally, run a new play on all the `do` hosts (including the new droplet). Here are the results:
+
+{lang=text,linenos=off}
+    $ ansible-playbook provision.yml
+    
+    PLAY [localhost] ***********************************************************
+    
+    TASK: [Create new Droplet.] ************************************************
+    changed: [localhost]
+    
+    TASK: [Add new host to our inventory.] *************************************
+    ok: [localhost]
+    
+    PLAY [do] ******************************************************************
+    
+    GATHERING FACTS ************************************************************
+    ok: [162.243.20.29]
+    
+    TASK: [Install tcpdump.] ***************************************************
+    changed: [162.243.20.29]
+    
+    PLAY RECAP *****************************************************************
+    162.243.20.29              : ok=2    changed=1    unreachable=0    failed=0
+    localhost                  : ok=2    changed=1    unreachable=0    failed=0
+
+If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can simply run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
+
+T> Note that you might need to disable strict host key checking to get provisioning and instant configuration to work correctly, otherwise you may run into an error stating that Ansible can't connect to the new droplet during the second play. To do this, add the line `host_key_checking=False` under the `[defaults]` section in your `ansible.cfg` file (located in `/etc/ansible` by default).
+
+#### DigitalOcean dynamic inventory with `digital_ocean.py`
+
+TODO: Steps to getting dynamic inventory up and running:
+
+  1. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py) from Ansible on GitHub: `$ curl https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py .`.
+  2. Make the inventory script executable: `$ chmod +x digital_ocean.py`.
+  3. Make sure the script is working (with the credentials you defined in `digital_ocean.ini` earlier) by running the script directly: `$ ./digital_ocean.py`. After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address as JSON.
+  4. Ping all your DigitalOcean droplets: `$ ansible all -m ping -i digital_ocean.py -u root`.
+
+I> Ansible currently supports DigitalOcean's v1 API, which makes working with DigitalOcean slightly more difficult. The v2 API allows you to use region names (e.g. "nyc2") instead of numeric IDs, allows you to [add metadata to your droplets](https://www.digitalocean.com/community/tutorials/an-introduction-to-droplet-metadata), and much more. Ansible should soon support the v2 API. If you're interested in the current status of this effort, or would like to help in migrating to the v2 API, visit [the v2 API support issue on GitHub](https://github.com/ansible/ansible-modules-core/issues/209).
+
+### Dynamic inventory with AWS
+
+Many of this book's readers are familiar with Amazon Web Services (especially EC2, S3, ElastiCache, and Route53), and likely have managed or currently manage an infrastructure within Amazon's cloud. Ansible has very strong support for managing AWS-based infrastructure, and includes a [dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/ec2.py) to help you run playbooks on your hosts in a variety of ways.
+
+Because there are already a number of updated and extremely thorough guides to using Ansible with AWS, I've elected to direct readers to these other resources rather than spend the effort duplicating what others have already documented. Here are some great resources for using Ansible with AWS:
+
+  - [Ansible - Amazon Web Services Guide](http://docs.ansible.com/guide_aws.html)
+  - [Ansible for AWS](https://leanpub.com/ansible-for-aws)
+
+In future editions of this book, this section may be expanded.
+
+### Multiple inventory sources - mixing static and dynamic inventories
+
 TODO:
 
-  - Inventory scripts included in core (AWS, Cobbler, Digital Ocean, Linode, OpenStack, etc.)
-  - Multiple inventory sources (pass a directory to `-i`, all scripts will be used)
-  - Creating custom dynamic inventories (see [developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html))
+  - Pass a directory to `-i`, all scripts inside will be used.
+
+### Create custom dynamic inventories
+
+TODO:
+
+  - See [developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html).
 
 ## Summary
 
-TODO.
+From the most basic infrastructure consisting of one server to a multi-tenant, dynamic infrastructure with thousands of servers, Ansible offers many options for describing your servers, and overriding playbook and role variables for specific hosts or groups. You should be able to describe all your servers, however they're managed and wherever they're hosted, with Ansible's flexible inventory system.
 
 {lang=text,linenos=off}
      ___________________________________

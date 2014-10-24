@@ -4,6 +4,12 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Version 0.64 (2014-10-24)
+
+  - Added Server Check.in architecture diagram (chapter 7).
+  - Wrote about `host_vars`, `group_vars`, and dynamic inventory (chapter 7).
+  - Added Digital Ocean provisioning and dynamic inventory walkthrough (chapter 7).
+
 ## Version 0.62 (2014-10-07)
 
   - Wrote a good deal of chapter 7 (Inventories).
