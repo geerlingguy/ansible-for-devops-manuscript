@@ -40,54 +40,40 @@ We're going to manage three VMs: two app servers and a database server. Many sim
 
 Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), and create a new blank file named `Vagrantfile` (this is how we describe our virtual machines to Vagrant). Open the file in your favorite editor, and add the following, then save the file:
 
+{lang=text}
     # -*- mode: ruby -*-
     # vi: set ft=ruby :
     
-    # Vagrantfile API/syntax version.
     VAGRANTFILE_API_VERSION = "2"
-    
+  
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    
-      # Configure VM settings for servers running in VirtualBox.
       config.vm.provider :virtualbox do |vb|
         vb.customize ["modifyvm", :id, "--memory", "256"]
       end
-      
+    
       # Application server 1.
       config.vm.define "app1" do |app|
         app.vm.hostname = "orc-app1.dev"
-        
-        app.vm.box = "centos64"
-        app.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos\
-        -64-x64-vbox4210-nocm.box"
-        
+        app.vm.box = "geerlingguy/centos6"
         app.vm.network :private_network, ip: "192.168.60.4"
       end
-      
+    
       # Application server 2.
       config.vm.define "app2" do |app|
         app.vm.hostname = "orc-app2.dev"
-        
-        app.vm.box = "centos64"
-        app.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos\
-        -64-x64-vbox4210-nocm.box"
-        
+        app.vm.box = "geerlingguy/centos6"
         app.vm.network :private_network, ip: "192.168.60.5"
       end
-      
+    
       # Database server.
       config.vm.define "db" do |db|
         db.vm.hostname = "orc-db.dev"
-        
-        db.vm.box = "centos64"
-        db.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/centos\
-        -64-x64-vbox4210-nocm.box"
-        
+        db.vm.box = "geerlingguy/centos6"
         db.vm.network :private_network, ip: "192.168.60.6"
       end
     end
 
-This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 6.4.
+This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 6.
 
 Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the centos64 box while building the example from Chapter 2, this process shouldn't take too long---maybe 5-10 minutes.
 

@@ -1,3 +1,45 @@
-# Chapter 8 - Ansible Modules
+# Chapter 8 - Ansible Cookbooks
+
+Most of the book up to this point has demonstrated individual aspects of Ansible---inventory, playbooks, ad-hoc tasks, etc.---but this chapter will start to synthesize everything and show how Ansible is applied to real-world infrastructure management scenarios.
+
+## High Availability LAMP Infrastructure with Ansible
+
+TODO:
+
+  - [Web Architecture Example - Ansible](https://github.com/geerlingguy/ansible-for-devops/tree/master/lamp-infrastructure)
+
+## ELK Monitoring with Ansible
+
+TODO:
+
+  - [Ansible Vagrant Profile for ELK](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/elk)
+
+## Mac Provisioning with Ansible and Homebrew
+
+TODO:
+
+  - [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook)
+
+## Docker-based Infrastructure with Ansible
+
+TODO:
+
+  - [Ansible's Docker module](http://docs.ansible.com/docker_module.html)
+  - [Managing CoreOS with Ansible](https://coreos.com/blog/managing-coreos-with-ansible/)
+  - [Fun with containers](http://www.slideshare.net/abadger1999/fun-withcontainers)
+
+## Summary
 
 TODO.
+
+{lang=text,linenos=off}
+     _________________________________________
+    / Any sufficiently advanced technology is \
+    | indistinguishable from magic.           |
+    \ (Arthur C. Clarke)                      /
+     -----------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

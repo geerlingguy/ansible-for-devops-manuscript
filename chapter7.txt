@@ -85,12 +85,12 @@ Lines 31-39 describe groups of groups (using `groupname:children` to describe 'c
 
 Describing infrastructure in such a way affords a lot of flexibility when using Ansible. Consider the task of patching a vulnerability on all your CentOS servers; instead of having to log into each of the servers, or even having to run an `ansible` command against all the groups, using the above structure allows you to easily run an ansible command or playbook against all `centos` servers.
 
-As an example, when the [Shellshock](TODO: Link here) vulnerability was disclosed in 2014, patched bash packages were released for all the major distributions within hours. To update all the Server Check.in servers, all that was needed was:
+As an example, when the [Shellshock](https://en.wikipedia.org/wiki/Shellshock_(software_bug)) vulnerability was disclosed in 2014, patched bash packages were released for all the major distributions within hours. To update all the Server Check.in servers, all that was needed was:
 
 {lang=text,linenos=off}
     $ ansible centos -m yum -a "name=bash state=latest"
 
-You could even go further and create a small playbook that would patch the vulnerability, then run tests to make sure the vulnerability was no longer present, as illustrated in [this playbook](TODO: Link here). This would also allow you to run the playbook in check mode or run it through a continuous integration system to verify the fix works in a non-prod environment.
+You could even go further and create a small playbook that would patch the vulnerability, then run tests to make sure the vulnerability was no longer present, as illustrated in [this playbook](https://raymii.org/s/articles/Patch_CVE-2014-6271_Shellshock_with_Ansible.html). This would also allow you to run the playbook in check mode or run it through a continuous integration system to verify the fix works in a non-prod environment.
 
 This infrastructure inventory is also nice in that you could create a top-level playbook that runs certain roles or tasks against all your infrastructure, others against all servers of a certain Linux flavor, and another against all servers in your entire infrastructure.
 
@@ -301,7 +301,7 @@ Create a new playbook named `provision.yml`, with the following contents:
     - hosts: localhost
       connection: local
       gather_facts: false
-
+    
       tasks:
         - name: Create new Droplet.
           digital_ocean:
@@ -374,10 +374,10 @@ Since `do` contains lace your freshly-created droplet in an existing inventory g
             name: "{{ do.droplet.ip_address }}"
             groups: do
           when: do.droplet is defined
-
+    
     - hosts: do
       remote_user: root
-
+    
       tasks:
         - name: Install tcpdump.
           yum: name=tcpdump state=installed
@@ -417,8 +417,9 @@ TODO: Steps to getting dynamic inventory up and running:
 
   1. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py) from Ansible on GitHub: `$ curl https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py .`.
   2. Make the inventory script executable: `$ chmod +x digital_ocean.py`.
-  3. Make sure the script is working (with the credentials you defined in `digital_ocean.ini` earlier) by running the script directly: `$ ./digital_ocean.py`. After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address as JSON.
+  3. Make sure the script is working (with the credentials you defined in `digital_ocean.ini` earlier) by running the script directly: `$ ./digital_ocean.py --pretty`. After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
   4. Ping all your DigitalOcean droplets: `$ ansible all -m ping -i digital_ocean.py -u root`.
+  5. Use `add_hosts` with dynamic inventory to build or rebuild your infrastructure quickly and easily.
 
 I> Ansible currently supports DigitalOcean's v1 API, which makes working with DigitalOcean slightly more difficult. The v2 API allows you to use region names (e.g. "nyc2") instead of numeric IDs, allows you to [add metadata to your droplets](https://www.digitalocean.com/community/tutorials/an-introduction-to-droplet-metadata), and much more. Ansible should soon support the v2 API. If you're interested in the current status of this effort, or would like to help in migrating to the v2 API, visit [the v2 API support issue on GitHub](https://github.com/ansible/ansible-modules-core/issues/209).
 
@@ -426,20 +427,70 @@ I> Ansible currently supports DigitalOcean's v1 API, which makes working with Di
 
 Many of this book's readers are familiar with Amazon Web Services (especially EC2, S3, ElastiCache, and Route53), and likely have managed or currently manage an infrastructure within Amazon's cloud. Ansible has very strong support for managing AWS-based infrastructure, and includes a [dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/ec2.py) to help you run playbooks on your hosts in a variety of ways.
 
-Because there are already a number of updated and extremely thorough guides to using Ansible with AWS, I've elected to direct readers to these other resources rather than spend the effort duplicating what others have already documented. Here are some great resources for using Ansible with AWS:
+There are a few excellent guides to using Ansible with AWS, for example:
 
   - [Ansible - Amazon Web Services Guide](http://docs.ansible.com/guide_aws.html)
   - [Ansible for AWS](https://leanpub.com/ansible-for-aws)
 
-In future editions of this book, this section may be expanded.
+I won't be covering dynamic inventory in this chapter, but will simply mention that the `ec2.py` dynamic inventory script, along with Ansible's extensive support for AWS infrastructure through `ec2_*` modules, makes Ansible the best and most simple tool for managing a broad AWS infrastructure.
+
+In the next chapter, one of the examples will include a guide for provisioning infrastructure on AWS, along with a quick overview of dynamic inventory on AWS.
+
+### Inventory on-the-fly: `add_host` and `group_by`
+
+Sometimes, especially when provisioning new servers, you will need to modify the in-memory inventory during the course of a playbook run. Ansible offers the `add_host` and `group_by` modules to help you manage inventory for these scenarios.
+
+In the DigitalOcean example above, `add_host` was used to add the new droplet to the `do` group:
+
+{lang=text,linenos=off}
+    [...]
+        - name: Add new host to our inventory.
+          add_host:
+            name: "{{ do.droplet.ip_address }}"
+            groups: do
+          when: do.droplet is defined
+    
+    - hosts: do
+      remote_user: root
+    
+      tasks:
+    [...]
+
+You could add multiple groups with add_host, and you can also add other variables for the host inline with `add_host`. As an example, let's say you created a VM using an image that exposes SSH on port 2288 and requires an application-specific memory limit specific to this VM:
+
+{lang=text,linenos=off}
+    - name: Add new host to our inventory.
+      add_host:
+        name: "{{ do.droplet.ip_address }}"
+        ansible_ssh_port: 2288
+        myapp_memory_maximum: "1G"
+      when: do.droplet is defined
+
+The custom port will be used when Ansible connects to this host, and the `myapp_memory_maximum` will be passed into the playbooks just as any other inventory variable.
+
+The `group_by` module is even simpler, and simply allows you to create dynamic groups during the course of a playbook run. Usage is extremely simple:
+
+{lang=text,linenos=off}
+    - hosts: all
+      gather_facts: yes
+      tasks:
+        - name: Create an inventory group for each architecture.
+          group_by: "key=architecture-{{ ansible_machine }}"
+    
+        - debug: var=groups
+
+After running the above playbook, you'd see all your normal inventory groups, plus groups for `architecture-x86_64`, `i386`, etc. (depending on what kind of server architectures you use).
 
 ### Multiple inventory sources - mixing static and dynamic inventories
 
-TODO:
+If you need to combine static and dynamic inventory, or even if you wish to use multiple dynamic inventories (for example, if you are managing servers hosted by two different cloud providers), you can simply pass a directory to `ansible` or `ansible-playbook`, and Ansible will combine the output of all the inventories (both static and dynamic) inside the directory:
 
-  - Pass a directory to `-i`, all scripts inside will be used.
+{lang=text,linenos=off}
+    `ansible-playbook -i path/to/inventories main.yml`
 
-### Create custom dynamic inventories
+One caveat: Ansible ignores `.ini` and backup files in the directory, but will attempt to parse every text file and execute every executable file in the directory---don't leave random files in mixed inventory folders!
+
+### Creating custom dynamic inventories
 
 TODO:
 

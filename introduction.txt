@@ -43,6 +43,7 @@ There are many Ansible examples (playbooks, roles, infrastructure, configuration
 We'll explore all aspects of using Ansible to provision and manage your infrastructure in this book, but there's no substitute for the wealth of documentation and community interaction that make Ansible great. Check out the links below to find out more about Ansible and discover the community:
 
   - [Ansible Documentation](http://docs.ansible.com/) - Covers all Ansible options in depth. There are few open source projects with documentation as clear and thorough.
+  - [Ansible Glossary](http://docs.ansible.com/glossary.html) - If there's ever a term in this book you don't seem to fully understand, check the glossary.
   - [Ansible Mailing List](https://groups.google.com/forum/#!forum/ansible-project) - Discuss Ansible and submit questions with Ansible's community via this Google group.
   - [Ansible on GitHub](https://github.com/ansible/ansible) - The official Ansible code repository, where the magic happens.
   - [Ansible Example Playbooks on GitHub](https://github.com/ansible/ansible-examples) - Many examples for common server configurations.

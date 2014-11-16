@@ -7,6 +7,14 @@
     - How can I manage my organization's roles? Separate repositories? See: http://goo.gl/99eM2z
   - Clean up and fix the "Organizing more complex and cross-platform roles" in Chapter 6!
 
+TODO (Add any of this?):
+
+  - [Windows Support](http://docs.ansible.com/intro_windows.html)
+  - Ansible configuration (`/etc/ansible/ansible.cfg`)
+  - Ansible Vault
+  - High Performance / Scalable Ansible: Asynchronous actions, Polling, distributed Ansible, Redis-based fact cache
+  - Error handling
+
 ## Interesting articles / links:
 
   - [Ansible Modules](http://blog.josephkahn.io/articles/ansible-modules/)
@@ -54,9 +62,7 @@
 
   - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
   - "Do or do not. There is no try. (Yoda)" (Used in 0.38 email 4/11/14)
-  - "Fool me once, shame on you. Fool me twice, prepare to die. (Klingon Proverb)"
   - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
-  - "Any sufficiently advanced technology is indistinguishable from magic. (Arthur C. Clarke)"
   - "One machine can do the work of fifty ordinary men. No machine can do the work of one extraordinary man. (Elbert Hubbard)"
 
 ## Publisher Offers

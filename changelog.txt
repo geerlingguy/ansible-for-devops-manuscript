@@ -4,6 +4,20 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Version 0.70 (2014-11-16)
+
+  - Coverted Testing/CI section into its own chapter.
+  - Added cowsay to chapter 12.
+  - Removed glossary (and pointed readers directly to Ansible's very helpful glossary).
+  - Added missing link in chapter 7.
+  - Converted chapter 8 from "Ansible Modules" to "Ansible Cookbooks" due to reader interest.
+  - Cleaned up Vagrantfile in chapter 3, as well as throughout `ansible-for-devops` git repo.
+  - Added "Web Architecture Example" example to `ansible-for-devops` git repo.
+  - Built structure of chapter 8 ("Ansible Cookbooks").
+  - Added cowsay to chapter 8.
+  - Added information about `add_host` and `group_by` to chapter 7.
+  - Reworked sections in chapter 12 and fixed a few problems.
+
 ## Version 0.64 (2014-10-24)
 
   - Added Server Check.in architecture diagram (chapter 7).

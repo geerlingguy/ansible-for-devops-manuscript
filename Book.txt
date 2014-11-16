@@ -18,5 +18,4 @@ backmatter.txt
 appendix-a.txt
 appendix-b.txt
 appendix-c.txt
-glossary.txt
 changelog.txt
