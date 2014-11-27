@@ -2,11 +2,520 @@
 
 Most of the book up to this point has demonstrated individual aspects of Ansible---inventory, playbooks, ad-hoc tasks, etc.---but this chapter will start to synthesize everything and show how Ansible is applied to real-world infrastructure management scenarios.
 
-## High Availability LAMP Infrastructure with Ansible
+## Highly-Availabile Infrastructure with Ansible
 
-TODO:
+Real-world web applications require redundancy and horizontal scalability with multi-server infrastructure. In the following example, we'll use Ansible to configure a complex infrastructure (illustrated below) on servers provisioned either locally via Vagrant and VirtualBox, or on a set of automatically-provisioned instances running on either DigitalOcean or Amazon Web Services:
 
-  - [Web Architecture Example - Ansible](https://github.com/geerlingguy/ansible-for-devops/tree/master/lamp-infrastructure)
+{width=60%}
+![Highly-Available Infrastructure.](images/8-highly-available-infrastructure.png)
+
+**Varnish** acts as a load balancer and reverse proxy, fronting web requests and routing them to the application servers. We could just as easily use something like **Nginx** or **HAProxy**, or even a proprietary cloud-based solution like an Amazon **Elastic Load Balancer** or Linode **NodeBalancer**, but for simplicity's sake, and for flexibility in deployment, Varnish works well.
+
+**Apache** and mod_php run a PHP-based application that tests the rest of the stack and displays the stack's current status.
+
+A **Memcached** server provides a caching layer that can be used to store and retrieve frequently-accessed objects in lieu of slower database storage.
+
+Two **MySQL** servers, configured as a master and slave, offer redundant and performant database access; all data will be replicated from the master to the slave, and the slave can also be used as a secondary server for read-only queries to take some load off the master.
+
+### Directory Structure
+
+In order to keep our configuration organized, we'll use the following structure for our playbooks and configuration:
+
+{lang=text,linenos=off}
+    lamp-infrastructure/
+      inventories/
+      playbooks/
+        db/
+        memcached/
+        varnish/
+        www/
+      provisioners/
+      configure.yml
+      provision.yml
+      Vagrantfile
+
+Organizing things this way allows us to focus on each server configuration individually, then build playbooks for provisioning and configuring instances on different hosting providers later. This organization also enables you to use server playbooks independently, so you could, as an example, share the same `db` or `varnish` playbook directory for different applications and infrastructures.
+
+### Individual Server Playbooks
+
+Let's start building our individual server playbooks (in the `playbooks` directory). To make our playbooks more efficient, we'll use some contributed Ansible roles on Ansible Galaxy rather than install and configure everything step-by-step. We're going to target CentOS 6.x servers in these playbooks, but only minimal changes would be required to use the playbooks with Ubuntu or later versions of CentOS.
+
+**Varnish**
+
+Create a `main.yml` file within the the `playbooks/varnish` directory, with the following contents:
+
+{lang=text}
+    ---
+    - hosts: lamp-varnish
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.repo-epel
+        - geerlingguy.varnish
+    
+      tasks:
+        - name: Copy Varnish default.vcl.
+          template:
+            src: "templates/default.vcl.j2"
+            dest: "/etc/varnish/default.vcl"
+          notify: restart varnish
+
+We're going to run this playbook on all hosts in the `lamp-varnish` inventory group (we'll create this later), and we'll run a few simple roles to configure the server:
+
+  - `geerlingguy.firewall` configures a simple iptables-based firewall using a couple variables defined in `vars.yml`.
+  - `geerlingguy.repo-epel` adds the EPEL repository (a prerequisite for varnish on CentOS 6.x hosts).
+  - `geerlingguy.varnish` installs and configures Varnish.
+
+Finally, a task copies over a custom `default.vcl` that configures Varnish, telling it where to find our web servers and how to load balance requests between the servers.
+
+Let's create the two files referenced in the above playbook. First, `vars.yml`, in the same directory as the `main.yml` file we just created:
+
+{lang=text}
+    ---
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+    
+    varnish_use_default_vcl: false
+
+The first variable tells the `geerlingguy.firewall` role to open TCP ports 22 and 80 for incoming traffic. The second variable tells the `geerlingguy.varish` role that we will be supplying our own `default.vcl` file in lieu of the basic one provided by the role.
+
+Create a `templates` directory inside the `playbooks/varnish` directory, and inside, create a `default.vcl.j2` file. This file will use Jinja2 syntax to build Varnish's final `default.vcl` file, thus the extra `j2` extension:
+
+{lang=text}
+    vcl 4.0;
+    
+    import directors;
+    
+    {% for host in groups['lamp-www'] %}
+    backend www{{ loop.index }} {
+      .host = "{{ host }}";
+      .port = "80";
+    }
+    {% endfor %}
+    
+    sub vcl_init {
+      new vdir = directors.random();
+    {% for host in groups['lamp-www'] %}
+      vdir.add_backend(www{{ loop.index }}, 1);
+    {% endfor %}
+    }
+    
+    sub vcl_recv {
+      set req.backend_hint = vdir.backend();
+    
+      # For testing ONLY; we want to make sure load balancing is working correctly.
+      return (pass);
+    }
+
+We won't study Varnish's VCL syntax in depth here, but we can at least walk through this demonstration `default.vcl` and see what's going on:
+
+  1. (1-3) Indicate that we're using the 4.0 version of the VCL syntax and importing the `directors` varnish module (which is used for configuring load balancing).
+  2. (5-10) Define each web server as a new backend; give a host and a port through which varnish can contact each host.
+  3. (12-17) When varnish first loads the VCL configuration, this function is called and initializes any required varnish modules. In this case, we're configuring a load balancer `vdir`, and adding each of the `www[#]` backends we defined earlier as backends to which the load balancer will distribute requests. We're going to use a `random` director so we can easily demonstrate the infrastructure's successful build, but other load balancing strategies are also available.
+  4. (19-24) Define what happens when a request is received; in this case, we want to simple route the request to our `vdir` backend, and indicate that Varnish should *not* cache the result.
+
+According to #4, we're actually *bypassing Varnish's caching layer*, which would be rather silly to do in most production circumstances. If you just need a load balancer without any reverse proxy/caching capabilities, there are better options. However, we are doing this so we can more easily verify our infrastructure is working as it should. If we used Varnish's caching, Varnish would only ever hit one of our two web servers during normal testing.
+
+In terms of our caching/load balancing layer, this should suffice. For a true production environment, you'd probably want to at least remove the final `return (pass)`, and likely customize the rest of the VCL according to your application's needs.
+
+**Apache / PHP**
+
+Create a `main.yml` file within the the `playbooks/www` directory, with the following contents:
+
+{lang=text}
+    ---
+    - hosts: lamp-www
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.repo-epel
+        - geerlingguy.apache
+        - geerlingguy.php
+        - geerlingguy.php-mysql
+        - geerlingguy.php-memcached
+    
+      tasks:
+        - name: Remove the Apache test page.
+          file:
+            path: /var/www/html/index.html
+            state: absent
+        - name: Copy our fancy server-specific home page.
+          template:
+            src: templates/index.php.j2
+            dest: /var/www/html/index.php
+
+As with Varnish's configuration, we'll configure a firewall and add the EPEL repository (which helps with the installation of certain PHP packages), and we'll also add the following roles:
+
+  - `geerlingguy.apache` installs and configures the latest available version of the Apache web server.
+  - `geerlingguy.php` installs and configures PHP to run through Apache.
+  - `geerlingguy.php-mysql` adds MySQL support to PHP.
+  - `geerlingguy.php-memcached` adds Memcached support to PHP.
+
+Two final tasks remove the default `index.html` home page included with Apache, then places our new PHP-powered home page in its place.
+
+As in the Varnish example, create the two files referenced in the above playbook. First, `vars.yml`, in the same directory as the `main.yml` file we just created:
+
+{lang=text}
+    ---
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+
+Create a `templates` directory inside the `playbooks/www` directory, and inside, create an `index.php.j2` file. This file will use Jinja2 syntax to build a (relatively) simple PHP script to check the health and status of all the servers in our infrastructure:
+
+{lang=text}
+    <?php
+    /**
+     * @file
+     * Infrastructure test page.
+     *
+     * DO NOT use this in production. It is simply a PoC.
+     */
+    
+    $mysql_servers = array(
+    {% for host in groups['lamp-db'] %}
+      '{{ host }}',
+    {% endfor %}
+    );
+    $mysql_results = array();
+    foreach ($mysql_servers as $host) {
+      if ($result = mysql_test_connection($host)) {
+        $mysql_results[$host] = '<span style="color: green;">PASS</span> (' . $result['status'] . ')';
+      }
+      else {
+        $mysql_results[$host] = '<span style="color: red;">FAIL</span>';
+      }
+    }
+    
+    // Connect to Memcached.
+    $memcached_result = '<span style="color: red;">FAIL</span>';
+    if (class_exists('Memcached')) {
+      $memcached = new Memcached;
+      $memcached->addServer('{{ groups['lamp-memcached'][0] }}', 11211);
+
+      // Test adding a value to memcached.
+      if ($memcached->add('test', 'success', 1)) {
+        $result = $memcached->get('test');
+        if ($result == 'success') {
+          $memcached_result = '<span style="color: green;">PASS</span>';
+          $memcached->delete('test');
+        }
+      }
+    }
+    
+    /**
+     * Connect to a MySQL server and test the connection.
+     *
+     * @param string $host
+     *   IP Address or hostname of the server.
+     *
+     * @return array
+     *   Array with keys 'success' (bool) and 'status' ('slave' or 'master'). Empty
+     *   if connection failure.
+     */
+    function mysql_test_connection($host) {
+      $username = 'mycompany_user';
+      $password = 'secret';
+      try {
+        $db = new PDO(
+          'mysql:host=' . $host . ';dbname=mycompany_database',
+          $username,
+          $password,
+          array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+    
+        // Query to see if the server is configured as a master or slave.
+        $statement = $db->prepare("SELECT variable_value FROM information_schema.global_variables WHERE variable_name = 'LOG_BIN';");
+        $statement->execute();
+        $result = $statement->fetch();
+
+        return array(
+          'success' => TRUE,
+          'status' => ($result[0] == 'ON') ? 'master' : 'slave',
+        );
+      }
+      catch (PDOException $e) {
+        return array();
+      }
+    }
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Host {{ inventory_hostname }}</title>
+      <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+    </head>
+    <body>
+      <h1>Host {{ inventory_hostname }}</h1>
+      <?php foreach ($mysql_results as $host => $result): ?>
+        <p>MySQL Connection (<?php print $host; ?>): <?php print $result; ?></p>
+      <?php endforeach; ?>
+      <p>Memcached Connection: <?php print $memcached_result; ?></p>
+    </body>
+    </html>
+
+T> Don't try transcribing this example manually; you can get the code from this book's repository on GitHub. Visit the [ansible-for-devops](https://github.com/geerlingguy/ansible-for-devops) repository and download the source for [index.php.j2](https://github.com/geerlingguy/ansible-for-devops/blob/master/lamp-infrastructure/playbooks/www/templates/index.php.j2)
+
+As this is the heart of the example application we're deploying to the infrastructure, it's necessarily a bit more complex than most examples in the book, but a quick run through follows:
+
+  - (9-22) Iterate through all the `lamp-db` MySQL hosts defined in the playbook inventory, and test the ability to connect to them, and whether they are configured as master or slave, using the `mysql_test_connection()` function defined later (40-73).
+  - (24-38) Check the first defined `lamp-memcached` Memcached host defined in the playbook inventory, confirming the ability to connect and create, retrieve, and delete a value from the cache.
+  - (75-88) Print the results of all the MySQL and Memcached tests, along with `{{ inventory_hostname }}` as the page title, so we can easily see which web server is serving the viewed page.
+
+At this point, the heart of our infrastructure---the application that will test and display the status of all our servers---is ready to go.
+
+**Memcached**
+
+After the previous two playbooks, the Memcached server playbook will be much simpler for our purposes. Create `playbooks/memcached/main.yml` with the following contents:
+
+{lang=text}
+    ---
+    - hosts: lamp-memcached
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.memcached
+
+As with the other servers, we need to ensure a couple TCP ports are open using the simple `geerlingguy.firewall` role. After that, we need to install Memcached, which is simply done using the `geerlingguy.memcached` role.
+
+In our `vars.yml` file (in the same directory as the fresh `main.yml` file you just created), place the following:
+
+{lang=text}
+    ---
+    firewall_allowed_tcp_ports:
+      - "22"
+    firewall_additional_rules:
+      - "iptables -A INPUT -p tcp --dport 11211 -s {{ groups['lamp-www'][0] }} -j ACCEPT"
+      - "iptables -A INPUT -p tcp --dport 11211 -s {{ groups['lamp-www'][1] }} -j ACCEPT"
+
+We need port 22 open for remote access, but in Memcached's case, a simple way to restrict access is to add manual iptables rules to allow access on port 11211 for the web servers *only*. We're manually adding one rule per `lamp-www` server, using the generated `groups` variable that Ansible uses to track all inventory groups currently available.
+
+W> The **principle of least privilege** "requires that in a particular abstraction layer of a computing environment, every module ... must be able to access only the information and resources that are necessary for its legitimate purpose" (Source: [Wikipedia](http://en.wikipedia.org/wiki/Principle_of_least_privilege)). Always restrict services and ports to only those servers or users that need access!
+
+**MySQL**
+
+Our MySQL configuration is necessarily the most complex of the bunch. In addition to the generic installation and configuration of MySQL, we will need to configure MySQL users per-host, and set up master-slave replication. Because we want to build a flexible playbook that can be used with a variety of provisioned infrastructures, we need to dynamically create some variables so they have the right server addresses.
+
+Let's create `playbooks/db/main.yml`:
+
+{lang=text}
+    ---
+    - hosts: lamp-db
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      pre_tasks:
+        - name: Create dynamic MySQL variables.
+          set_fact:
+            mysql_users:
+              - { name: mycompany_user, host: "{{ groups['lamp-www'][0] }}", password: secret, priv: "*.*:SELECT" }
+              - { name: mycompany_user, host: "{{ groups['lamp-www'][1] }}", password: secret, priv: "*.*:SELECT" }
+            mysql_replication_master: "{{ groups['a4d.lamp.db.1'][0] }}"
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.mysql
+
+Most of the playbook is straightforward, but in this instance, we're using `set_fact` as a `pre_task` (to be run before the `geerlingguy.firewall` and `geerlingguy.mysql` roles) so we can dynamically create some variables that will be used by MySQL.
+
+`set_fact` allows us to wait until other Ansible plays have run (in this case, plays which may be provisioning individual servers and registering them in new inventory groups), then define a variable at runtime which will be available for all later tasks and plays.
+
+Here we are creating two new variables:
+
+  - `mysql_users` is a list of users the `geerlingguy.mysql` role will create when it runs. This variable will be used on all database servers so both of the two `lamp-www` servers get `SELECT` privileges on all databases.
+  - `mysql_replication_master` is used to indicate to the `geerlingguy.mysql` role which database server is the master; it will perform certain steps differently depending on whether the server being configured is a master or slave, and ensure that all the slaves are configured to replicate data from the master.
+
+We'll need a few other variables to configure MySQL successfully, but these variables need not be created at runtime, so we can define them inside `playbooks/db/vars.yml`:
+
+{lang=text}
+    ---
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "3306"
+    
+    mysql_replication_user: {name: 'replication', password: 'secret'}
+    mysql_databases:
+      - { name: mycompany_database, collation: utf8_general_ci, encoding: utf8 }
+
+In this case, we're going to allow access to port 3306 to anyone, but according to the **principle of least privilege** discussed earlier, you would be justified in restricting this port to only the servers and users that need access to MySQL. In this case, the attack vector is mitigated by the fact that we rely on MySQL's own authentication layer in our dynamic `mysql_user` configuration inside `main.yml`.
+
+We are defining two MySQL variables, one to set up a replication user for the replication between master and slaves (`mysql_replication_user`), and another to define a list of databases that will be created (if they don't already exist) on the database servers (`mysql_databases`).
+
+With the configuration of the database servers complete, all of our server-specific playbooks are ready to go.
+
+### Main Playbook for Configuring All Servers
+
+To put all the server-specific playbooks together, we can define a simple playbook that includes each of the group-specific playbooks. Create a `configure.yml` file in the project's root directory, with the following contents:
+
+{lang=text}
+    ---
+    - include: playbooks/varnish/main.yml
+    - include: playbooks/www/main.yml
+    - include: playbooks/db/main.yml
+    - include: playbooks/memcached/main.yml
+
+At this point, if you statically defined inventory groups like `lamp-www`, `lamp-db`, etc., and created the file above, you could run `ansible-playbook configure.yml` and you'd have a full HA infrastructure at the ready!
+
+But we're going to continue building out this infrastructure to make it even more flexible and useful.
+
+### Vagrantfile for Local Infrastructure via VirtualBox
+
+As with many other examples in this book, we're going to use Vagrant and VirtualBox to build the infrastructure locally. This lets us test things as much as we want with zero costs, and also results in often faster infrastructure testing (assuming you're using a moderately beefy computer), since everything is orchestrated over a local private network.
+
+Our basic Vagrantfile layout will be something like the following:
+
+  1. Define a base box (in this case, CentOS 6.x) and VM hardware defaults.
+  2. Define all the VMs to be built, with VM-specific IP addresses and hostname configuration.
+  3. Define the Ansible provisioner along with the last VM, so Ansible can run once at the end of Vagrant's build cycle.
+
+Here's the Vagrantfile in all its glory:
+
+{lang=ruby}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    Vagrant.configure("2") do |config|
+      # Base VM OS configuration.
+      config.vm.box = "geerlingguy/centos6"
+    
+      # General VirtualBox VM configuration.
+      config.vm.provider :virtualbox do |v|
+        v.customize ["modifyvm", :id, "--memory", 512]
+        v.customize ["modifyvm", :id, "--cpus", 1]
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize ["modifyvm", :id, "--ioapic", "on"]
+      end
+    
+      # Varnish.
+      config.vm.define "varnish" do |varnish|
+        varnish.vm.hostname = "varnish.dev"
+        varnish.vm.network :private_network, ip: "192.168.2.2"
+      end
+    
+      # Apache.
+      config.vm.define "www1" do |www1|
+        www1.vm.hostname = "www1.dev"
+        www1.vm.network :private_network, ip: "192.168.2.3"
+    
+        www1.vm.provision "shell",
+          inline: "sudo yum update -y"
+    
+        www1.vm.provider :virtualbox do |v|
+          v.customize ["modifyvm", :id, "--memory", 256]
+        end
+      end
+    
+      # Apache.
+      config.vm.define "www2" do |www2|
+        www2.vm.hostname = "www2.dev"
+        www2.vm.network :private_network, ip: "192.168.2.4"
+    
+        www2.vm.provision "shell",
+          inline: "sudo yum update -y"
+    
+        www2.vm.provider :virtualbox do |v|
+          v.customize ["modifyvm", :id, "--memory", 256]
+        end
+      end
+    
+      # MySQL.
+      config.vm.define "db1" do |db1|
+        db1.vm.hostname = "db1.dev"
+        db1.vm.network :private_network, ip: "192.168.2.5"
+      end
+    
+      # MySQL.
+      config.vm.define "db2" do |db2|
+        db2.vm.hostname = "db2.dev"
+        db2.vm.network :private_network, ip: "192.168.2.6"
+      end
+    
+      # Memcached.
+      config.vm.define "memcached" do |memcached|
+        memcached.vm.hostname = "memcached.dev"
+        memcached.vm.network :private_network, ip: "192.168.2.7"
+    
+        # Run Ansible provisioner once for all VMs at the end.
+        memcached.vm.provision "ansible" do |ansible|
+          ansible.playbook = "configure.yml"
+          ansible.inventory_path = "inventories/vagrant/inventory"
+          ansible.limit = "all"
+          ansible.extra_vars = {
+            ansible_ssh_user: 'vagrant',
+            ansible_ssh_private_key_file: "~/.vagrant.d/insecure_private_key"
+          }
+        end
+      end
+    end
+
+For the last block of code, which defines the `ansible` provisioner configuration, most options are typical of any provisioner's configuration, but there are three values that are important for our purposes:
+
+{lang=ruby}
+          ansible.inventory_path = "inventories/vagrant/inventory"
+          ansible.limit = "all"
+          ansible.extra_vars = {
+            ansible_ssh_user: 'vagrant',
+            ansible_ssh_private_key_file: "~/.vagrant.d/insecure_private_key"
+          }
+
+  1. `ansible.inventory_path` defines an inventory file to be used with the `ansible.playbook`. You could certainly create a dynamic inventory script for use with Vagrant, but because we know the IP addresses ahead of time, and are expecting a few specially-crafted inventory group names, it's simpler to build the inventory file for Vagrant provisioning by hand.
+  2. `ansible.limit` is set to `all` so Vagrant knows it should run the Ansible playbook connected to all VMs, and not just the current VM. You could technically use `ansible.limit` with a provisioner configuration for each of the individual VMs, and just run the VM-specific playbook through Vagrant, but since our live production infrastructure will be using one playbook to configure all the servers, it's best to replicate that scenario locally.
+  3. `ansible.extra_vars` contains the vagrant SSH user configuration for Ansible. You normally would not need to define these values if you either include them in static inventory files, or use Vagrant's automatically-generated inventory file (if `ansible.inventory_path` is not defined).
+
+Now, before running `vagrant up` to see the fruits of our labor so far, we need to create the inventory file at `inventories/vagrant/inventory`:
+
+{lang=text}
+    [lamp-varnish]
+    192.168.2.2
+    
+    [lamp-www]
+    192.168.2.3
+    192.168.2.4
+    
+    [a4d.lamp.db.1]
+    192.168.2.5
+    
+    [lamp-db]
+    192.168.2.5
+    192.168.2.6
+    
+    [lamp-memcached]
+    192.168.2.7
+
+Now, with this inventory file created, you should be able to `cd` into the project's root directory, run `vagrant up`, and after ten or fifteen minutes, load `http://192.168.2.2/` in your browser, which should return something like the following:
+
+{width=80%}
+![Highly Available Infrastructure - Success!](images/8-ha-infrastructure-success.png)
+
+This is great for local development purposes, but how hard is it to get the exact same infrastructure configuration running on a cloud provider? As it turns out, Ansible makes it fairly straightforward.
+
+### Provisioner Configuration: DigitalOcean
+
+TODO
+
+### Provisioner Configuration: Amazon Web Services (EC2)
+
+TODO
+
+### Summary
+
+In the above example, an entire highly-available PHP application infrastructure was defined in a series of short Ansible playbooks, and then provisioning configuration was created to build the infrastructure on either local VMs, DigitalOcean droplets, or AWS EC2 instances.
+
+You can find the entire contents of this example in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), in the `lamp-infrastructure` directory.
 
 ## ELK Monitoring with Ansible
 

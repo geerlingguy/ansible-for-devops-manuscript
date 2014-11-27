@@ -36,6 +36,7 @@ TODO (Add any of this?):
 
   - [Taste Test - Puppet - Chef - Salt - Ansible](http://devopsu.com/books/taste-test-puppet-chef-salt-stack-ansible.html)
   - [Ansible Configuration Management](http://www.packtpub.com/ansible-configuration-management/book)
+  - [Ansible Up & Running](http://www.ansible.com/ansible-book)
 
 ## Things to add
 
@@ -53,6 +54,7 @@ TODO (Add any of this?):
   - Look through all code samples and fix line-wrapped lines.
   - Search for "—" (em-dash) in entire book and replace with `---`.
   - Search for "its" and "it's" and ensure proper grammatical usage.
+  - Remove parentheses that are meaningless.
 
 ## Thoughts on writing
 
@@ -69,6 +71,7 @@ TODO (Add any of this?):
 
 ### O'Reilly
 
+  - August 13, 2014
   - Met Greg D. at velocityconf, want to do some Ansible content
   - O'Reilly CTO was reading book, really liked it
   - Lots of early-release stuff (like Manning, other publishers), starting on 2nd chapter
@@ -86,3 +89,8 @@ TODO (Add any of this?):
   - **TODO**:
     - Provide a few examples of video tutorials and send them to Brian
     - Fill out proposal for book and send to Brian
+
+### Manning Publications
+
+  - Michael Stephens - mist@manning.com; June 26, 2014 (responded that I'm not currently interested).
+  - Erin Twohey - ertw@manning.com; November 7, 2014 ()

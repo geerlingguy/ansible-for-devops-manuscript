@@ -4,6 +4,16 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - TODO
+
+## Version 0.71 (2014-11-27)
+
+  - Added Highly-Available Infrastructure cookbook to chapter 8.
+  - Updated screenshots throughout the book.
+  - Began incorporating changes from copy editor (more to come!).
+
 ## Version 0.70 (2014-11-16)
 
   - Coverted Testing/CI section into its own chapter.
