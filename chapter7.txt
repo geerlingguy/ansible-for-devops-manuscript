@@ -366,7 +366,7 @@ We used `register` as part of the `digital_ocean` task so we could immediately s
     PLAY RECAP *****************************************************************
     localhost                  : ok=2    changed=1    unreachable=0    failed=0
 
-Since `do` contains lace your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding on to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it with something like:
+Since `do` contains lace your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding on to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
 
 {lang=text,starting-line-number=24}
         - name: Add new host to our inventory.
@@ -379,6 +379,9 @@ Since `do` contains lace your freshly-created droplet in an existing inventory g
       remote_user: root
     
       tasks:
+        - name: Wait for port 22 to become available.
+          local_action: "wait_for port=22 host={{ inventory_hostname }}"
+    
         - name: Install tcpdump.
           yum: name=tcpdump state=installed
 
@@ -410,6 +413,8 @@ At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it 
 If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can simply run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
 
 T> Note that you might need to disable strict host key checking to get provisioning and instant configuration to work correctly, otherwise you may run into an error stating that Ansible can't connect to the new droplet during the second play. To do this, add the line `host_key_checking=False` under the `[defaults]` section in your `ansible.cfg` file (located in `/etc/ansible` by default).
+T> 
+T> You should normally leave `host_key_checking` enabled, but when rapidly building and destroying VMs for testing purposes, it is simplest to disable it temporarily.
 
 #### DigitalOcean dynamic inventory with `digital_ocean.py`
 

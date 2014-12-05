@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - TODO
+  - Added `wait_for` to DigitalOcean example in chapter 7.
 
 ## Version 0.71 (2014-11-27)
 
