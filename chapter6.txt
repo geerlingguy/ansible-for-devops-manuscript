@@ -6,7 +6,7 @@ Ansible is very flexible when it comes to organizing your plays in more efficien
 
 ## Includes
 
-We've already seen one of the most basic ways of including other files in Chatper 4, when `vars_files` was used to place variables into a separate `vars.yml` file instead of inline with the playbook:
+We've already seen one of the most basic ways of including other files in Chapter 4, when `vars_files` was used to place variables into a separate `vars.yml` file instead of inline with the playbook:
 
 {lang="text",linenos=off}
     - hosts: all

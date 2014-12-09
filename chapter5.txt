@@ -371,7 +371,7 @@ To get a list of every gathered fact available, you can use the `ansible` comman
                 "2604:180::a302:9076",
     [...]
 
-If you don't need to use facts, and would like to save a few seconds per-host when running playbooks (this can be especially helpful when running an Ansible playbook dozens or hundreds of servers), you can set `gather_facts: no` in your playbook:
+If you don't need to use facts, and would like to save a few seconds per-host when running playbooks (this can be especially helpful when running an Ansible playbook against dozens or hundreds of servers), you can set `gather_facts: no` in your playbook:
 
 {lang=text,linenos=off}
     - hosts: db

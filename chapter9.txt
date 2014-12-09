@@ -4,6 +4,7 @@ TODO:
 
   - [Server Check.in](https://servercheck.in/) infrastructure walkthrough
   - [Deploying with Ansible](https://groups.google.com/forum/?#!topic/ansible-project/R3Kr2uMYUt4)
+  - [project_deploy module](https://galaxy.ansible.com/list#/roles/2266) (something similar is slated for core inclusion)
   - Rolling Updates
   - `serial` batch size (instead of running each play in parallel on all servers) - can be defined per-play or per-playbook.
   - Manage load balancers (BigIP, ELB, netscaler, etc.) in [pre|post]_task.
