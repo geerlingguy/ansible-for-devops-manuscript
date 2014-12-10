@@ -4,6 +4,10 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Fixed code formatting in examples in chapter 8.
+
 ## Version 0.73 (2014-12-09)
 
   - Added `wait_for` to DigitalOcean example in chapter 7.
