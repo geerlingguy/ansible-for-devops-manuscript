@@ -7,6 +7,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Current Version
 
   - Fixed code formatting in examples in chapter 8.
+  - Added YAML `|` multiline variable delimiter example to appendix b.
 
 ## Version 0.73 (2014-12-09)
 

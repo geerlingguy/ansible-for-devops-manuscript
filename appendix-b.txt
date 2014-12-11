@@ -196,6 +196,38 @@ If you can find a way to run a command without having to use `creates` and `chdi
 
 Sometimes, though, the above is as good as you can do to keep unwieldy tasks sane.
 
+### Using `|` to format multiline variables
+
+In addition to using `>` to join multiple lines using spaces, YAML allows the use of `|` (pipe) to define multi-line variables with a newline (rather than a space) for each line in a variable.
+
+For example:
+
+{lang=text}
+    extra_lines: |
+      first line
+      second line
+      third line
+
+Would be translated to a block of text with newlines intact:
+
+{lang=text}
+    first line
+    second line
+    third line
+
+Using a folded scalar (`>`) would concatenate the lines, which might not be desirable. For example:
+
+{lang=text}
+    extra_lines: >
+      first line
+      second line
+      third line
+
+Would be translated to a single string with no newlines:
+
+{lang=text}
+    first line second line third line
+
 ## Using `ansible-playbook`
 
 Generally, running playbooks from your own computer or a central playbook runner is preferable to running Ansible playbooks locally (using `--connection=local`), since you can avoid installing Ansible and all its dependencies on the system you're provisioning. Because of Ansible's optimized use of SSH for connecting to remote machines, there is usually minimal difference in performance running Ansible locally or from a remote workstation (barring network flakiness or a high-latency connection).
