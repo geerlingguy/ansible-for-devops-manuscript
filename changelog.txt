@@ -8,6 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   - Fixed code formatting in examples in chapter 8.
   - Added YAML `|` multiline variable delimiter example to appendix b.
+  - Edited and updated examples and guide for HA Infrastructure in chapter 8.
 
 ## Version 0.73 (2014-12-09)
 
