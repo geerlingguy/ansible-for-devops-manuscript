@@ -198,7 +198,7 @@ Sometimes, though, the above is as good as you can do to keep unwieldy tasks san
 
 ### Using `|` to format multiline variables
 
-In addition to using `>` to join multiple lines using spaces, YAML allows the use of `|` (pipe) to define multi-line variables with a newline (rather than a space) for each line in a variable.
+In addition to using `>` to join multiple lines using spaces, YAML allows the use of `|` (pipe) to define literal scalars, so you can define strings with newlines preserved.
 
 For example:
 
