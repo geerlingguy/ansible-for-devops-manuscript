@@ -352,7 +352,7 @@ Most of the playbook is straightforward, but in this instance, we're using `set_
   - `mysql_users` is a list of users the `geerlingguy.mysql` role will create when it runs. This variable will be used on all database servers so both of the two `lamp-www` servers get `SELECT` privileges on all databases.
   - `mysql_replication_master` is used to indicate to the `geerlingguy.mysql` role which database server is the master; it will perform certain steps differently depending on whether the server being configured is a master or slave, and ensure that all the slaves are configured to replicate data from the master.
 
-We'll need a few other variables to configure MySQL successfully, but these variables need not be created at runtime, so we can define them inside `playbooks/db/vars.yml`:
+We'll need a few other normal variables to configure MySQL, so we'll add them alongside the firewall variable in `playbooks/db/vars.yml`:
 
 {lang=text}
     ---
@@ -364,15 +364,15 @@ We'll need a few other variables to configure MySQL successfully, but these vari
     mysql_databases:
       - { name: mycompany_database, collation: utf8_general_ci, encoding: utf8 }
 
-In this case, we're going to allow access to port 3306 to anyone, but according to the **principle of least privilege** discussed earlier, you would be justified in restricting this port to only the servers and users that need access to MySQL. In this case, the attack vector is mitigated by the fact that we rely on MySQL's own authentication layer in our dynamic `mysql_user` configuration inside `main.yml`.
+We're opening port 3306 to anyone, but according to the **principle of least privilege** discussed earlier, you would be justified in restricting this port to only the servers and users that need access to MySQL (similar to the memcached server configuration). In this case, the attack vector is mitigated because MySQL's own authentication layer is used through the `mysql_user` variable generated in `main.yml`.
 
-We are defining two MySQL variables, one to set up a replication user for the replication between master and slaves (`mysql_replication_user`), and another to define a list of databases that will be created (if they don't already exist) on the database servers (`mysql_databases`).
+We are defining two MySQL variables, `mysql_replication_user` to be used as for master and slave replication, and `mysql_databases` to define a list of databases that will be created (if they don't already exist) on the database servers.
 
-With the configuration of the database servers complete, all of our server-specific playbooks are ready to go.
+With the configuration of the database servers complete, the server-specific playbooks are ready to go.
 
 ### Main Playbook for Configuring All Servers
 
-To put all the server-specific playbooks together, we can define a simple playbook that includes each of the group-specific playbooks. Create a `configure.yml` file in the project's root directory, with the following contents:
+A simple playbook including each of the group-specific playbooks is all we need for the overall configuration to take place. Create `configure.yml` in the project's root directory, with the following contents:
 
 {lang=text}
     ---
@@ -381,9 +381,9 @@ To put all the server-specific playbooks together, we can define a simple playbo
     - include: playbooks/db/main.yml
     - include: playbooks/memcached/main.yml
 
-At this point, if you statically defined inventory groups like `lamp-www`, `lamp-db`, etc., and created the file above, you could run `ansible-playbook configure.yml` and you'd have a full HA infrastructure at the ready!
+At this point, if you had some already-booted servers and statically defined inventory groups like `lamp-www`, `lamp-db`, etc., you could run `ansible-playbook configure.yml` and you'd have a full HA infrastructure at the ready!
 
-But we're going to continue building out this infrastructure to make it even more flexible and useful.
+But we're going to continue to make our playbooks more flexible and useful.
 
 ### Getting the required roles
 
@@ -402,14 +402,16 @@ Ansible allows you to define all the required Ansible Galaxy roles for a given p
 
 To make sure all the required dependencies are available, just run `ansible-galaxy install -r requirements.txt` from within the project's root.
 
+I> Ansible 1.8 and greater provide more flexibility in requirements files. If you use a YAML file (e.g. `requirements.yml`) to define a structured list of all the roles you need, you can source them from Ansible Galaxy, a git repository, a web-accessible URL (as a `.tar.gz`), or even a mercurial repository! See the documentation for [Advanced Control over Role Requirements Files](http://docs.ansible.com/galaxy.html#advanced-control-over-role-requirements-files).
+
 ### Vagrantfile for Local Infrastructure via VirtualBox
 
-As with many other examples in this book, we're going to use Vagrant and VirtualBox to build the infrastructure locally. This lets us test things as much as we want with zero costs, and also results in often faster infrastructure testing (assuming you're using a moderately beefy computer), since everything is orchestrated over a local private network.
+As with many other examples in this book, we can use Vagrant and VirtualBox to build and configure the infrastructure locally. This lets us test things as much as we want with zero cost, and usually results in faster testing cycles, since everything is orchestrated over a local private network on a (hopefully) beefy workstation.
 
 Our basic Vagrantfile layout will be something like the following:
 
   1. Define a base box (in this case, CentOS 6.x) and VM hardware defaults.
-  2. Define all the VMs to be built, with VM-specific IP addresses and hostname configuration.
+  2. Define all the VMs to be built, with VM-specific IP addresses and hostname configurations.
   3. Define the Ansible provisioner along with the last VM, so Ansible can run once at the end of Vagrant's build cycle.
 
 Here's the Vagrantfile in all its glory:
@@ -492,7 +494,7 @@ Here's the Vagrantfile in all its glory:
       end
     end
 
-For the last block of code, which defines the `ansible` provisioner configuration, most options are typical of any provisioner's configuration, but there are three values that are important for our purposes:
+Most of the Vagrantfile is straightforward, and similar to other examples used in this book. The last block of code, which defines the `ansible` provisioner configuration, contains three extra values that are important for our purposes:
 
 {lang=ruby}
           ansible.inventory_path = "inventories/vagrant/inventory"
@@ -502,11 +504,11 @@ For the last block of code, which defines the `ansible` provisioner configuratio
             ansible_ssh_private_key_file: "~/.vagrant.d/insecure_private_key"
           }
 
-  1. `ansible.inventory_path` defines an inventory file to be used with the `ansible.playbook`. You could certainly create a dynamic inventory script for use with Vagrant, but because we know the IP addresses ahead of time, and are expecting a few specially-crafted inventory group names, it's simpler to build the inventory file for Vagrant provisioning by hand.
-  2. `ansible.limit` is set to `all` so Vagrant knows it should run the Ansible playbook connected to all VMs, and not just the current VM. You could technically use `ansible.limit` with a provisioner configuration for each of the individual VMs, and just run the VM-specific playbook through Vagrant, but since our live production infrastructure will be using one playbook to configure all the servers, it's best to replicate that scenario locally.
-  3. `ansible.extra_vars` contains the vagrant SSH user configuration for Ansible. You normally would not need to define these values if you either include them in static inventory files, or use Vagrant's automatically-generated inventory file (if `ansible.inventory_path` is not defined).
+  1. `ansible.inventory_path` defines an inventory file to be used with the `ansible.playbook`. You could certainly create a dynamic inventory script for use with Vagrant, but because we know the IP addresses ahead of time, and are expecting a few specially-crafted inventory group names, it's simpler to build the inventory file for Vagrant provisioning by hand (we'll do this next).
+  2. `ansible.limit` is set to `all` so Vagrant knows it should run the Ansible playbook connected to all VMs, and not just the current VM. You could technically use `ansible.limit` with a provisioner configuration for each of the individual VMs, and just run the VM-specific playbook through Vagrant, but our live production infrastructure will be using one playbook to configure all the servers, so we'll do the same locally.
+  3. `ansible.extra_vars` contains the vagrant SSH user configuration for Ansible. It's more standard to include these settings in a static inventory file or use Vagrant's automatically-generated inventory file, but it's easiest to set them once for all servers here.
 
-Now, before running `vagrant up` to see the fruits of our labor so far, we need to create the inventory file at `inventories/vagrant/inventory`:
+Before running `vagrant up` to see the fruits of our labor, we need to create an inventory file for Vagrant at `inventories/vagrant/inventory`:
 
 {lang=text}
     [lamp-varnish]
@@ -526,18 +528,20 @@ Now, before running `vagrant up` to see the fruits of our labor so far, we need 
     [lamp-memcached]
     192.168.2.7
 
-Now, with this inventory file created, you should be able to `cd` into the project's root directory, run `vagrant up`, and after ten or fifteen minutes, load `http://192.168.2.2/` in your browser, which should return something like the following:
+Now `cd` into the project's root directory, run `vagrant up`, and after ten or fifteen minutes, load `http://192.168.2.2/` in your browser. Voila!
 
 {width=80%}
 ![Highly Available Infrastructure - Success!](images/8-ha-infrastructure-success.png)
 
-This is great for local development purposes, but how hard is it to get the exact same infrastructure configuration running on a cloud provider? As it turns out, Ansible makes it fairly straightforward.
+You should see something like the above screenshot; the PHP app simply displays the current app server's IP address, the individual MySQL servers' status, and the Memcached server status. Refresh the page a few times to verify Varnish is distributing requests randomly between the two app servers.
+
+We have local infrastructure development covered, and Ansible makes it easy to use the exact same configuration to build our infrastructure in the cloud.
 
 ### Provisioner Configuration: DigitalOcean
 
-As we learned in Chapter 7, it's simple enough to provision a new DigitalOcean droplet and begin configuring it immediately. But we need to take provisioning a step further, provisioning multiple droplets (one for each server in our infrastructure) and dynamically grouping them so we can configure them after they are booted and online.
+In Chapter 7, we learned provisioning and configuring DigitalOcean droplets in an Ansible playbook is fairly simple. But we need to take provisioning a step further by provisioning multiple droplets (one for each server in our infrastructure) and dynamically grouping them so we can configure them after they are booted and online.
 
-For the sake of flexibility (we want to be able to use a variety of cloud-based services, in addition to the already defined Vagrant provisioning configuration), let's create a playbook for our DigitalOcean droplets in `provisioners/digitalocean.yml`. As with our example in Chapter 7, we will use a local connection to provision cloud instances, so begin the playbook with:
+For the sake of flexibility, let's create a playbook for our DigitalOcean droplets in `provisioners/digitalocean.yml`. This will allow us to add other provisioner configurations later, alongside the `digitalocean.yml` playbook. As with our example in Chapter 7, we will use a local connection to provision cloud instances. Begin the playbook with:
 
 {lang=text}
     ---
