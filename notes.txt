@@ -7,6 +7,7 @@
     - How can I manage my organization's roles? Separate repositories? See: http://goo.gl/99eM2z
     - `requirements.yml` in 1.8 (see: https://speakerdeck.com/mpdehaan/1-dot-8)
   - Clean up and fix the "Organizing more complex and cross-platform roles" in Chapter 6!
+  - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
 
 TODO (Add any of this?):
 

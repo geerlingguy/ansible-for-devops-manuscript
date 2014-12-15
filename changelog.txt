@@ -15,7 +15,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added `wait_for` to DigitalOcean example in chapter 7.
   - Completed Hightly-Available Infrastructure cookbook in chapter 8.
   - Began work on ELK log monitoring cookbook in chapter 8.
-  - Fixed a few typos in chapters 5 and 6 (thanks to George Boobyer!).
+  - Fixed a few typos in chapters 5 and 6 (thanks to George Boobyer / @ibluebag!).
   - Incorporated edits in preface from technical editor.
 
 ## Version 0.71 (2014-11-27)

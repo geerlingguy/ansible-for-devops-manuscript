@@ -549,7 +549,7 @@ For the sake of flexibility, let's create a playbook for our DigitalOcean drople
       connection: local
       gather_facts: false
 
-Next, since we want to provision multiple droplets, but we don't want to repeat the same task over and over for each droplet, let's define the minimum required droplet configuration necessary for provisioning:
+Next we need to define some metadata to describe each of our droplets. For simplicity's sake, we'll inline the `droplets` variable in this playbook:
 
 {lang=text,starting-line-number=6}
       vars:
@@ -563,10 +563,10 @@ Next, since we want to provision multiple droplets, but we don't want to repeat 
 
 Each droplet is an object with two keys:
 
-  - `name`: The name of the Droplet in DigitalOcean's listings and when inventory information is generated.
-  - `group`: The Ansible inventory group in which the droplet should belong.
+  - `name`: The name of the Droplet for DigitalOcean's listings and Ansible's host inventory.
+  - `group`: The Ansible inventory group for the droplet.
 
-Now that we have some generic metadata for each droplet, let's add a task to create the droplets, then register their information in a separate dictionary:
+Next we need to add a task to create the droplets, using the `droplets` list as a guide, and as part of the same task, register each droplet's information in a separate dictionary, `created_droplets`:
 
 {lang=text,starting-line-number=15}
       tasks:
@@ -584,13 +584,13 @@ Now that we have some generic metadata for each droplet, let's add a task to cre
           register: created_droplets
           with_items: droplets
 
-Many of the options (e.g. `size_id`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size_id: 72` (or whatever valid value you'd like), and it would override the default value set in the task. Using defaults affords additional flexibility when provisioning infrastructure.
+Many of the options (e.g. `size_id`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size_id: 72` (or whatever valid value you'd like), and it would override the default value set in the task.
 
 T> You could specify an SSH public key per droplet, or (as in this instance) use the same key for all hosts by providing a default. In this case, I added an SSH key to my DigitalOcean account, then used the DigitalOcean API to retrieve the key's numeric ID (as described in the previous chapter).
 T> 
 T> It's best to use key-based authentication and add at least one SSH key to your DigitalOcean account so Ansible can connect using keys instead of insecure passwords, especially since these instances will be created with only a root account.
 
-We loop through all the defined `droplets` using `with_items: droplets`, and after each droplet is created, Ansible will add the DigitalOcean metadata (including name, IP address, network information, etc.) about the droplet to the `created_droplets` variable. We can then use that variable to add all the created hosts to our Ansible inventory, so we can then run the configuration playbooks on the right servers:
+We loop through all the defined `droplets` using `with_items: droplets`, and after each droplet is created add the droplet's metadata (name, IP address, etc.) to the `created_droplets` variable. Next, we'll loop through that variable to build our inventory on-the-fly so our configuration applies to the correct servers:
 
 {lang=text,starting-line-number=30}
         - name: Add DigitalOcean hosts to their respective inventory groups.
@@ -608,13 +608,13 @@ We loop through all the defined `droplets` using `with_items: droplets`, and aft
 
 You'll notice a few interesting things happening in this task:
 
-  - This is the first time we've used `with_indexed_items`. In this case, the primary reason for using this less-common loop feature is so we can add a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's simplest to dynamically create the variable for every server, so it's available when needed. `with_indexed_items` simply sets `item.0` to the key of the item, and `item.1` to the value of the item.
-  - The other reason for using `with_indexed_items` is so we can reliably set each droplet's group when adding the host with `add_host`. Because the currently-supported version of DigitalOcean's API doesn't support features like tagging Droplets, we need to set up the groups through our own devices. In this case, using the `droplets` variable we manually created earlier allows us to set the proper group for a particular droplet.
-  - Finally, as noted in the comment, you can add inventory variables per-host in add_host, simply by adding the variable name as a key, and the variable value as the key's value. Simple, but powerful!
+  - This is the first time we've used `with_indexed_items`. The reason for using this less-common loop feature is to add a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's simplest to dynamically create the variable for every server, so it's available when needed. `with_indexed_items` simply sets `item.0` to the key of the item, and `item.1` to the value of the item.
+  - `with_indexed_items` also helps us reliably set each droplet's group. Because the v1 DigitalOcean API doesn't support features like tags for Droplets, we need to set up the groups on our own. Using the `droplets` variable we manually created earlier allows us to set the proper group for a particular droplet.
+  - Finally we add inventory variables per-host in `add_host` by adding the variable name as a key, and the variable value as the key's value. Simple, but powerful!
 
 T> There are a few different ways you can approach dynamic provisioning and inventory management for your infrastructure, and, especially if you are only targeting one cloud hosting provider, there are ways to avoid using more exotic features of Ansible (e.g. `with_indexed_items`) and complex if/else conditions. This example is slightly more complex due to the fact that the playbook is being created to be interchangeable with other similar provisioning playbooks.
 
-The final step in our provisioning is to make sure all the droplets are booted and can be reached via SSH, so at the end of the `digitalocean.yml` playbook, add another play to be run on all the `digitalocean` hosts (which we just defined in the `add_host` task):
+The final step in our provisioning is to make sure all the droplets are booted and can be reached via SSH, so at the end of the `digitalocean.yml` playbook, add another play to be run on hosts in the `do` group we just defined:
 
 {lang=text,starting-line-number=43}
     - hosts: do
@@ -624,16 +624,16 @@ The final step in our provisioning is to make sure all the droplets are booted a
         - name: Wait for port 22 to become available.
           local_action: "wait_for port=22 host={{ inventory_hostname }}"
 
-We simply need to wait for port 22 to be reachable, and once that's verified, we will be able to configure the droplets.
+Once we know port 22 is reachable, we know the droplet is up and ready for configuration.
 
-We're *almost* ready to provision and configure our entire infrastructure on DigitalOcean, we just need one final playbook (let's call it `provision.yml`, and place it in the root directory of our project) to put everything together:
+We're *almost* ready to provision and configure our entire infrastructure on DigitalOcean, but we need to create one last playbook to tie everything together. Create `provision.yml` in the project root with the following contents:
 
 {lang=text}
     ---
     - include: provisioners/digitalocean.yml
     - include: configure.yml
 
-That's it! Now, assuming the environment variables `DO_CLIENT_ID` and `DO_API_KEY` are set in your current terminal session, you can run `$ ansible-playbook provision.yml`.
+That's it! Now, assuming you set the environment variables `DO_CLIENT_ID` and `DO_API_KEY`, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on DigitalOcean.
 
 The entire process should take about 15 minutes, and once it's complete, you should see something like:
 
@@ -652,17 +652,19 @@ Visit the IP address of the varnish server and you should be greeted with a stat
 {width=80%}
 ![Highly Available Infrastructure on DigitalOcean.](images/8-ha-infrastructure-digitalocean.png)
 
-If you run the same `ansible-playbook provision.yml` command again, since everything in this playbook is idempotent, Ansible will run through the entire process of provisioning and configuring your infrastructure, and report that nothing has changed.
+Because everything in this playbook is idempotent, running `$ ansible-playbook provision.yml` again should report no changes, and helps you verify that everything is running correctly.
 
-Ansible will also rebuild and reconfigure any droplets that may be missing from your infrastructure. If you're daring, and want to test this feature, just log into your DigitalOcean account, delete one of the droplets just created by this playbook, then run the playbook again.
+Ansible will also rebuild and reconfigure any droplets that may be missing from your infrastructure. If you're daring, and want to test this feature, just log into your DigitalOcean account, delete one of the droplets just created by this playbook (maybe one of the two app servers), then run the playbook again.
 
-Now that we've tested our infrastructure on DigitalOcean, we can destroy the droplets just as easily (change the `state` parameter in `provisioners/digitalocean.yml` to default to `'absent'` and run `$ ansible-playbook provision.yml` again), then move on to creating the exact same infrastructure a third time---this time in Amazon's cloud.
+Now that we've tested our infrastructure on DigitalOcean, we can destroy the droplets just as easily (change the `state` parameter in `provisioners/digitalocean.yml` to default to `'absent'` and run `$ ansible-playbook provision.yml` again).
+
+Next up, we'll build the infrastructure a third time---on Amazon's infrastructure.
 
 ### Provisioner Configuration: Amazon Web Services (EC2)
 
-For Amazon Web Services, the provisioning is slightly different. Whereas DigitalOcean's provisioning focuses solely on particular droplets, AWS's provisioning takes into account Amazon's broader ecosystem of services that support EC2 instances. For our purposes, we need only configure security groups (which configure AWS-level firewalls running outside an EC2 instance OS) prior to provisioning our EC2 instances.
+For Amazon Web Services, provisioning works slightly different. Amazon has a broader ecosystem of services surrounding EC2 instances, and for our particular example, we will need to configure security groups prior to provisioning instances.
 
-For starters, add the file `provisioners/aws.yml` and put the standard play details at the top:
+To begin, create `aws.yml` inside the `provisioners` directory and begin the playbook the same ways as with DigitalOcean:
 
 {lang=text}
     ---
@@ -670,7 +672,8 @@ For starters, add the file `provisioners/aws.yml` and put the standard play deta
       connection: local
       gather_facts: false
 
-Because we need to configure security groups for our EC2 instances, our defined variables are a little more verbose, and include a list of `security_groups` in addition to the EC2 `instances`. First, the `instances`:
+EC2 instances use security groups as an AWS-level firewall (which operates outside the individual instance's OS).
+We will need to define a list of `security_groups` alongside our EC2 `instances`. First, the `instances`:
 
 {lang=text,starting-line-number=6}
       vars:
@@ -706,15 +709,15 @@ Because we need to configure security groups for our EC2 instances, our defined 
             security_group: ["default", "a4d_lamp_memcached"]
           }
 
-Each instance is an object with three keys:
+Inside the `instances` variable, each instance is an object with three keys:
 
-  - `name`: The name of the instance, which will be used by Ansible to tag the instance and ensure only one of this particular instance is created.
+  - `name`: The name of the instance, which we'll use to tag the instance and ensure only one instance is created per name.
   - `group`: The Ansible inventory group in which the instance should belong.
-  - `security_group`: A list of security groups into which the instance will be placed. The `default` security group is added to your AWS account when it is created, and typically has one rule to allow all outgoing traffic from a particular instance.
+  - `security_group`: A list of security groups into which the instance will be placed. The `default` security group comes is added to your AWS account upon creation, and has one rule to allow outgoing traffic on any port to any IP address.
 
-I> Note that it may be a better idea, if using AWS exclusively, to use use a different structure of VMs with autoscaling groups, etc., but for this example, we need to ensure that the six instances we explicitly define are created, so we're using particular `name`s and an `exact_count` to enforce the 1:1 relationship.
+I> If you use AWS exclusively, it would be best to autoscaling groups and change the design of this infrastructure a bit. For this example, we just need to ensure that the six instances we explicitly define are created, so we're using particular `name`s and an `exact_count` to enforce the 1:1 relationship.
 
-We've added security groups to instances, so next we'll define a `security_groups` variable so we can loop through it in a task and ensure all the security groups we need are present:
+With our instances defined, we'll next define a `security_groups` variable containing all the required security group configuration for each server:
 
 {lang=text,starting-line-number=39}
         security_groups:
@@ -734,9 +737,9 @@ We've added security groups to instances, so next we'll define a `security_group
               - { proto: tcp, from_port: 22, to_port: 22, cidr_ip: 0.0.0.0/0 }
             rules_egress: []
 
-Each security group has a `name` (which matches the name for a given instance in our `instances` list), `rules` (a list of firewall rules like protocol, ports, and IP ranges to limit *incoming* traffic), and `rules_egress` (a list of firewall rules to limit *outgoing* traffic).
+Each security group has a `name` (which was used to identify the security group in the `instances` list), `rules` (a list of firewall rules like protocol, ports, and IP ranges to limit *incoming* traffic), and `rules_egress` (a list of firewall rules to limit *outgoing* traffic).
 
-We need three security groups: `http` to open port 80, `db` to open port 3306, and `memcached` to open port 11211.
+We need three security groups: `a4d_lamp_http` to open port 80, `a4d_lamp_db` to open port 3306, and `a4d_lamp_memcached` to open port 11211.
 
 Now that we have all the data we need to set up security groups and instances, the first task needs to to create or verify the existence of the security groups:
 
@@ -752,9 +755,9 @@ Now that we have all the data we need to set up security groups and instances, t
             rules_egress: "{{ item.rules_egress }}"
           with_items: security_groups
 
-The `ec2_group` module is simple enough to use; give it a name, region, and rules, and your security groups will be created if they don't exist, modified to match the supplied values if they do exist, or simply verified if they exist and match the given values.
+The `ec2_group` requires a name, region, and rules for each security group. Security groups will be created if they don't exist, modified to match the supplied values if they do exist, or simply verified if they exist and match the given values.
 
-Now that we have our security groups configured, we can provision the defined EC2 instances by looping through `instances` with the `ec2` module:
+With the security groups configured, we can provision the defined EC2 instances by looping through `instances` with the `ec2` module:
 
 {lang=text,starting-line-number=67}
         - name: Provision EC2 instances.
@@ -776,14 +779,14 @@ Now that we have our security groups configured, we can provision the defined EC
           register: created_instances
           with_items: instances
 
-This book is not a thorough guide on all things AWS, but I will explain a few of the details of this module, as it's slightly increased complexity (over our DigitalOcean example) warrants a deeper look:
+This example is slightly more complex than the DigitalOcean example, and a few parts warrant a deeper look:
 
-  - EC2 allows keys to be defined by name---in my case, I have a key `jeff_mba_home` in my AWS account. You should set the `key_name` default to a key that you have in your account.
-  - Instance tags are tags that AWS will attach to your instance, for categorization purposes. By giving a list of keys and values, I can then use that list later in the `count_tag` parameter (more on this in a bit).
+  - EC2 allows SSH keys to be defined by name---in my case, I have a key `jeff_mba_home` in my AWS account. You should set the `key_name` default to a key that you have in your account.
+  - Instance tags are tags that AWS will attach to your instance, for categorization purposes. By giving a list of keys and values, I can then use that list later in the `count_tag` parameter.
   - `t2.micro` was used as the default instance type, since it falls within EC2's free tier usage. If you just set up an account and keep all AWS resource usage within free tier limits, you won't be billed anything.
-  - `exact_count` and `count_tag` work together to ensure AWS provisions only one of each of the servers we defined. The `count_tag` tells the `ec2` module to match the given group + host and then `exact_count` tells the module to only provision `1` instance. If you wanted to *remove* all your servers, you could set `exact_count` to 0 and run the playbook again.
+  - `exact_count` and `count_tag` work together to ensure AWS provisions only one of each of the instances we defined. The `count_tag` tells the `ec2` module to match the given group + host and then `exact_count` tells the module to only provision `1` instance. If you wanted to *remove* all your instances, you could set `exact_count` to 0 and run the playbook again.
 
-Each provisioned instance will have its metadata added to the registered `created_instances` variable, and we can use that variable to build up Ansible inventory groups for use in the rest of the infrastructure plays.
+Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we'll use to build Ansible inventory groups for the server configuration playbooks.
 
 {lang=text,starting-line-number=86}
         - name: Add EC2 instances to their respective inventory groups.
@@ -799,9 +802,9 @@ Each provisioned instance will have its metadata added to the registered `create
           when: item.1.instances is defined
           with_indexed_items: created_instances.results
 
-This `add_host` example is slightly simpler than the one for DigitalOcean, mostly because AWS attaches metadata to EC2 instances that we can re-use when building groups or hostnames (e.g. `item.1.item.group`). This way we don't have to use list indexes to fetch group names from the original `instances` variable.
+This `add_host` example is slightly simpler than the one for DigitalOcean, because AWS attaches metadata to EC2 instances which we can re-use when building groups or hostnames (e.g. `item.1.item.group`). We don't have to use list indexes to fetch group names from the original `instances` variable.
 
-We again use `with_indexed_items` so we can use the index to generate a unique ID per server for use in building the MySQL master-slave replication.
+We still use `with_indexed_items` so we can use the index to generate a unique ID per server for use in building the MySQL master-slave replication.
 
 The final step in provisioning the EC2 instances is to ensure we can connect to them before continuing, and to set `selinux` into permissive mode so the configuration we supply will work correctly.
 
@@ -818,9 +821,9 @@ The final step in provisioning the EC2 instances is to ensure we can connect to 
           selinux: policy=targeted state=permissive
           sudo: yes
 
-Note that, since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs as `sudo` explicitly.
+Since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs with `sudo` explicitly.
 
-Now, modify the `provision.yml` file in the root of the project folder, changing the provisioners line to look like the following:
+Now, modify the `provision.yml` file in the root of the project folder, and change the provisioners include to look like the following:
 
 {lang=text}
     ---
@@ -841,12 +844,12 @@ The entire process should take about 15 minutes, and once it's complete, you sho
     54.69.86.187               : ok=19   changed=14   unreachable=0    failed=0
     localhost                  : ok=3    changed=1    unreachable=0    failed=0
 
-Visit the IP address of the varnish server and you should be greeted with a status page similar to the one generated by the Vagrant and DigitalOcean-based infrastructure:
+Visit the IP address of the varnish server (the first server configured) and you should be greeted with a status page similar to the one generated by the Vagrant and DigitalOcean-based infrastructure:
 
 {width=80%}
 ![Highly Available Infrastructure on AWS EC2.](images/8-ha-infrastructure-aws.png)
 
-As with DigitalOcean, running `ansible-playbook provision.yml` again should produce no changes, because everything in this playbook is idempotent. And if one of your instances were terminated, running the playbook again would recreate and reconfigure the instance in a few minutes.
+As with the earlier examples, running `ansible-playbook provision.yml` again should produce no changes, because everything in this playbook is idempotent. And if one of your instances were terminated, running the playbook again would recreate and reconfigure the instance in a few minutes.
 
 To terminate all the provisioned instances, you can change the `exact_count` in the `ec2` task to `0`, and run `$ ansible-playbook provision.yml` again.
 
@@ -854,7 +857,7 @@ To terminate all the provisioned instances, you can change the `exact_count` in 
 
 In the above example, an entire highly-available PHP application infrastructure was defined in a series of short Ansible playbooks, and then provisioning configuration was created to build the infrastructure on either local VMs, DigitalOcean droplets, or AWS EC2 instances.
 
-Once you start working on building infrastructure this way---first, abstracting individual servers, then abstracting cloud provisioning---you'll start to see some of Ansible's true power in being more than just a configuration management tool. Imagine being able to create your own multi-datacenter, multi-provider infrastructure with Ansible and some basic configuration.
+Once you start working on building infrastructure this way---abstracting individual servers, then abstracting cloud provisioning---you'll start to see some of Ansible's true power in being more than just a configuration management tool. Imagine being able to create your own multi-datacenter, multi-provider infrastructure with Ansible and some basic configuration.
 
 While Amazon, DigitalOcean, Rackspace and other hosting providers have their own tooling and unique infrastructure merits, the agility and flexibility afforded by building infrastructure in a provider-agnostic fashion lets you treat hosting providers as commodities, and gives you freedom to build more reliable, performant, and simple application infrastructure.
 
@@ -864,7 +867,7 @@ I> You can find the entire contents of this example in the [Ansible for DevOps G
 
 ## ELK Logging with Ansible
 
-Though application servers and backup servers may be some of the most mission-critical components of a well-rounded infrastructure, one area that is equally important is a decent logging configuration.
+Though application, database, and backup servers may be some of the most mission-critical components of a well-rounded infrastructure, one area that is equally important is a decent logging system.
 
 In the old days, when one or two servers could handle an entire website or application, you could work with built-in logfiles and rsyslog to troubleshoot an issue or check trends in performance, errors, or overall traffic. With a typical modern infrastructure---like the example above, with six separate servers---it pays dividends to find a better solution for application, server, and firewall/authentication logging. Plain text files, logrotate, and grep don't cut it anymore.
 
