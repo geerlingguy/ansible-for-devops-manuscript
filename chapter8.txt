@@ -884,7 +884,7 @@ Just like our previous example, we're going to let a few roles from Ansible Gala
 
 In this example, rather than walking through each role and variable in detail, I'm going to highlight the important parts, but then jump immediately into how you can use this base server to aggregate logs, then how to point your other servers' log files to it using Logstash Forwarder.
 
-Here's our main playbook, saved as `provisioning/playbook.yml`:
+Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
 
 {lang=text}
     - hosts: logs
@@ -906,7 +906,7 @@ Here's our main playbook, saved as `provisioning/playbook.yml`:
         - geerlingguy.logstash
         - geerlingguy.logstash-forwarder
 
-This assumes you have a `logs` group in your inventory with at least one server listed. The playbook includes a vars file located in `provisioning/vars/main.yml`, so create that file, and then put the following inside:
+This assumes you have a `logs` group in your inventory with at least one server listed. The playbook includes a vars file located in `provisioning/elk/vars/main.yml`, so create that file, and then put the following inside:
 
 {lang=text}
     ---
@@ -946,29 +946,27 @@ If you want to get this ELK server up and running quickly, you can create a loca
       config.vm.box = "geerlingguy/ubuntu1204"
     
       config.vm.provider :virtualbox do |v|
-        v.customize ["modifyvm", :id, "--name", "logs"]
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
         v.customize ["modifyvm", :id, "--memory", 1024]
         v.customize ["modifyvm", :id, "--cpus", 2]
         v.customize ["modifyvm", :id, "--ioapic", "on"]
       end
     
-      config.vm.hostname = "logs"
-      config.vm.network :private_network, ip: "192.168.9.90"
+      # ELK server.
+      config.vm.define "logs" do |logs|
+        logs.vm.hostname = "logs"
+        logs.vm.network :private_network, ip: "192.168.9.90"
     
-      # Set the name of the VM. See: http://stackoverflow.com/a/17864388/100134
-      config.vm.define :logs do |logs_config|
+        logs.vm.provision :ansible do |ansible|
+          ansible.playbook = "provisioning/elk/playbook.yml"
+          ansible.inventory_path = "provisioning/elk/inventory"
+          ansible.sudo = true
+        end
       end
     
-      # Ansible provisioner.
-      config.vm.provision :ansible do |ansible|
-        ansible.playbook = "provisioning/playbook.yml"
-        ansible.inventory_path = "provisioning/inventory"
-        ansible.sudo = true
-      end
     end
 
-This Vagrant configuration expects an inventory file at `provisioning/inventory`, so quickly create one with the following contents:
+This Vagrant configuration expects an inventory file at `provisioning/elk/inventory`, so quickly create one with the following contents:
 
 {lang=text}
     logs ansible_ssh_host=192.168.9.90 ansible_ssh_port=22
@@ -989,15 +987,106 @@ I> This example uses Kibana 3.x, but a stable release of Kibana 4.x is on the ho
 
 ### Forwarding Logs from Other Servers
 
-It's great that we have the ELK stack running; Elasticsearch is quietly storing and querying log data in a per-day search index, Logstash is listening for log entries, Logstash Forwarder is running on the server, and sending new entries in `/var/log/auth.log` to Logstash, and Kibana is displaying useful visualizations of the logged data.
+It's great that we have the ELK stack running; Elasticsearch will store and make available log data with one search index per day, Logstash will listening for log entries, Logstash Forwarder will send entries in `/var/log/auth.log` to Logstash, and Kibana will organize the logged data with useful visualizations.
 
-But we want to monitor the health and activity of all the servers in our infrastructure. Luckily, configuring additional servers to direct log activity to our new Logstash server is fairly simple using Logstash Forwarder. The basic steps we'll follow are:
+Configuring additional servers to direct their logs to our new Logstash server is fairly simple using Logstash Forwarder. The basic steps we'll follow are:
 
-  1. Set up a new server in the Vagrantfile.
-  2. Set up an Ansible playbook to install and configure Logstash Forwarder.
+  1. Set up another server in the Vagrantfile.
+  2. Set up an Ansible playbook to install and configure Logstash Forwarder alongside the application running on the server.
   3. Boot the server and watch as the logs are forwarded to the main ELK server.
 
+Let's begin by creating a new Nginx web server. It's useful to monitor webserver access logs for a variety of reasons, not the least of which is to watch for traffic spikes and increases in non-200 responses for certain resources. Add the following server definition inside the Vagrantfile, just after the `end` of the ELK server definition:
+
+{lang=ruby,starting-line-number=28}
+      # Web server.
+      config.vm.define "webs" do |webs|
+        webs.vm.hostname = "webs"
+        webs.vm.network :private_network, ip: "192.168.9.91"
+
+        webs.vm.provision :ansible do |ansible|
+          ansible.playbook = "provisioning/web/playbook.yml"
+          ansible.inventory_path = "provisioning/web/inventory"
+          ansible.sudo = true
+        end
+      end
+
+We'll next set up the simple playbook to install and configure both Nginx and Logstash Forwarder, at `provisioning/web/playbook.yml`:
+
+{lang=text}
+    - hosts: webs
+      gather_facts: yes
+    
+      vars_files:
+        - vars/main.yml
+    
+      pre_tasks:
+        - name: Update apt cache if needed.
+          apt: update_cache=yes cache_valid_time=86400
+    
+      roles:
+        - geerlingguy.nginx
+        - geerlingguy.logstash-forwarder
+    
+      tasks:
+        - name: Set up virtual host for testing.
+          copy:
+            src: files/example.conf
+            dest: /etc/nginx/conf.d/example.conf
+            owner: root
+            group: root
+            mode: 0644
+          notify: restart nginx
+
+This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forwarder` roles, and in the `tasks`, there is an additional task to configure one virtualhost in a Nginx configuration directory, via the file `example.conf`. Create that file now (at the path `provisioning/web/files/example.conf`), and define one Nginx virtualhost for our testing:
+
+{lang=text}
+    server {
+      listen 80 default_server;
+      server_name _;
+    
+      root /usr/share/nginx/www;
+      index index.html index.htm;
+    
+      access_log /var/log/nginx/access.log combined;
+      error_log /var/log/nginx/error.log debug;
+    }
+
 TODO.
+
+Next, set up the required variables to tell the `nginx` and `logstash-forwarder` roles how to configure their respective services. Inside `provisioning/web/vars/main.yml`:
+
+{lang=text}
+    ---
+    java_packages:
+      - openjdk-7-jdk
+    
+    nginx_user: www-data
+    nginx_worker_connections: 1024
+    nginx_remove_default_vhost: true
+    
+    logstash_forwarder_logstash_server: 192.168.9.90
+    logstash_forwarder_logstash_server_port: 5000
+    
+    logstash_forwarder_files:
+      - paths:
+          - /var/log/secure
+        fields:
+          type: syslog
+      - paths:
+          - /var/log/nginx/access.log
+        fields:
+          type: nginx
+
+TODO.
+
+Finally, we need to define the new `webs` server in our custom inventory so Vagrant can pass the proper connection details to Ansible. Inside `provisioning/web/inventory`:
+
+{lang=text}
+    webs ansible_ssh_host=192.168.9.91 ansible_ssh_port=22
+
+TODO.
+
+W> Buffer size... http://nginx.org/en/docs/http/ngx_http_log_module.html
 
 ### Summary
 
