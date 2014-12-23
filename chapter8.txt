@@ -928,7 +928,7 @@ This assumes you have a `logs` group in your inventory with at least one server 
         fields:
           type: syslog
 
-Obviously, you'll want to use a different password besides 'password' for `kibana_password`, so set something more secure there. Other options are relatively standard, with the exception of the two `logstash_*` variables.
+You'll want to use a different password besides 'password' for `kibana_password`. Other options are straightforward, with the exception of the two `logstash_*` variables.
 
 The first variable tells the `geerlingguy.logstash` role to ignore the local syslog file (in this case, we're only interested in logging authorization attempts through the local `auth.log`).
 
@@ -1042,7 +1042,6 @@ This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forward
 {lang=text}
     server {
       listen 80 default_server;
-      server_name _;
     
       root /usr/share/nginx/www;
       index index.html index.htm;
@@ -1051,15 +1050,12 @@ This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forward
       error_log /var/log/nginx/error.log debug;
     }
 
-TODO.
+Since this is the only `server` definition, and it's set as the `default_server` on port 80, all requests will be directed to it. We routed the `access_log` to `/var/log/nginx/access.log`, and told Nginx to write log entries using the `combined` format, which is what our Logstash server will expect for nginx access logs.
 
 Next, set up the required variables to tell the `nginx` and `logstash-forwarder` roles how to configure their respective services. Inside `provisioning/web/vars/main.yml`:
 
 {lang=text}
     ---
-    java_packages:
-      - openjdk-7-jdk
-    
     nginx_user: www-data
     nginx_worker_connections: 1024
     nginx_remove_default_vhost: true
@@ -1077,22 +1073,50 @@ Next, set up the required variables to tell the `nginx` and `logstash-forwarder`
         fields:
           type: nginx
 
-TODO.
+The `nginx` variables simply ensure Nginx will run optimally on our Ubuntu server, and remove the default virtualhost entry. The `logstash_forwarder` variables tell `geerlingguy.logstash-forwarder` what logs to forward to our central log server:
 
-Finally, we need to define the new `webs` server in our custom inventory so Vagrant can pass the proper connection details to Ansible. Inside `provisioning/web/inventory`:
+  - `logstash_forwarder_logstash_server` and `_port`: Defines the server IP or domain and port to which logs should be transported.
+  - `logstash_forwarder_files`: Defines a list of `paths` and `fields`, which identify a file or list of files to be transported to the log server, along with a `type` for the files. In this case, the authentication log (`/var/log/secure`) is a `syslog`-formatted log file, and `/var/log/nginx/access.log` is of type `nginx` (which will be parsed correctly on the Logstash server since it's in the combined log format popularized by Apache).
+
+W> Note that this demonstration configuration is not using a custom certificate to authenticate logging connections. You should normally configure your own secure certificate and give the logstash-forwarder role the path to the certificate using the `logstash_forwarder_ssl_certificate_file` variable. If you use the example provided with the project, you could expose your logging infrastructure to the outside, plus you'll get a `***SECURITY RISK***` warning in the logs every time the Logstash role is run.
+
+To allow Vagrant to pass the proper connection details to Ansible, create `provisioning/web/inventory` with the `webs` host details:
 
 {lang=text}
     webs ansible_ssh_host=192.168.9.91 ansible_ssh_port=22
 
-TODO.
+Run `vagrant up` again. Vagrant should verify that the first server (`logs`) is running, then create and run the Ansible provisioner on the newly-defined `webs` Nginx server.
 
-W> Buffer size... http://nginx.org/en/docs/http/ngx_http_log_module.html
+You can load `http://192.168.9.91/` or `http://webs/` in your browser, and you should see a `Welcome to nginx!` message on the page. You can refresh the page a few times, then switch back over to `http://logs/` to view some new log entries on the ELK server:
+
+{width=80%}
+![Entries populating the Logstash Search Kibana dashboard.](images/8-logstash-forwarding-nginx.png)
+
+T> If you refresh the page a few times, and no entries show up in the Kibana Logstash dashboard, it could be that Nginx is buffering the log entries. In this case, keep refreshing a while (so you generate a few dozen or hundred entries), and Nginx will eventually write the entries to disk (thus allowing Logstash Forwarder to convey the logs to the Logstash server). Read more about Nginx log buffering in the [Nginx's ngx_http_log_module documentation](http://nginx.org/en/docs/http/ngx_http_log_module.html).
+
+A few requests being logged through logstash forwarder isn't all that exciting. Let's use the popular `ab` tool available most anywhere to put some load on the web server. On a modest MacBook Air, running the command below resulted in Nginx serving around 1,200 requests per second.
+
+{lang=text,linenos=off}
+    ab -n 20000 -c 50 http://webs/
+
+During the course of the load test, I set Kibana to show only the past 5 minutes of log data, automatically refreshed every 5 seconds, and I could monitor the requests on the ELK server just a few seconds after they were served by Nginx:
+
+{width=80%}
+![Monitoring a deluge of Nginx requests in near-realtime.](images/8-logstash-forwarding-ab-load.png)
+
+Logstash Forwarder uses a highly-efficient TCP-like protocol, Lumberjack, to transmit log entries securely between servers. With the right tuning and scaling, you can efficiently process and display thousands of requests per second across your infrastructure! For most, even the simple example demonstrated above would adequately cover an entire infrastructure's logging and log analysis needs.
 
 ### Summary
 
-TODO.
+Log aggregation and analysis are two fields that see constant improvements and innovation. There are many SaaS products and proprietary solutions that can assist with logging, but few match the flexibility, security, and TCO of Elasticsearch, Logstash and Kibana.
+
+Ansible is the simplest way to configure an ELK server and direct all your infrastructure's pertinent log data to the server.
 
 ## Mac Provisioning with Ansible and Homebrew
+
+The next example will be specific to the Mac (since that's the author's platform of choice), but the principle behind it applies universally. How many times have you wanted to hit the 'reset' button on your day-to-day workstation or personal computer? How much time to you spend automating configuration and testing of applications and infrastructure at your day job, and how little do you spend automating your *own* local environment?
+
+From ensuring your favorite development tools and command line utilities are always up-to-date, to synchronizing your configuration between multiple workstations, to fully rebuilding your local workstation *from scratch*, Ansible will help you automate and simplify your life.
 
 TODO:
 
