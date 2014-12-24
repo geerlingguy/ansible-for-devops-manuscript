@@ -4,12 +4,13 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.75 (2014-12-23)
 
   - Fixed code formatting in examples in chapter 8.
   - Added YAML `|` multiline variable delimiter example to appendix b.
   - Edited and updated examples and guide for HA Infrastructure in chapter 8.
   - Completed the ELK and Logstash Forwarder examples in chapter 8.
+  - Started on the Mac provisioning example in chapter 8.
 
 ## Version 0.73 (2014-12-09)
 

@@ -83,7 +83,7 @@ Let's create the two files referenced in the above playbook. First, `vars.yml`, 
     
     varnish_use_default_vcl: false
 
-The first variable tells the `geerlingguy.firewall` role to open TCP ports 22 and 80 for incoming traffic. The second variable tells the `geerlingguy.varish` we will supply a custom `default.vcl` for Varnish configuration.
+The first variable tells the `geerlingguy.firewall` role to open TCP ports 22 and 80 for incoming traffic. The second variable tells the `geerlingguy.varnish` we will supply a custom `default.vcl` for Varnish configuration.
 
 Create a `templates` directory inside the `playbooks/varnish` directory, and inside, create a `default.vcl.j2` file. This file will use Jinja2 syntax to build Varnish's custom `default.vcl` file:
 
@@ -1115,8 +1115,6 @@ Ansible is the simplest way to configure an ELK server and direct all your infra
 ## Mac Provisioning with Ansible and Homebrew
 
 The next example will be specific to the Mac (since that's the author's platform of choice), but the principle behind it applies universally. How many times have you wanted to hit the 'reset' button on your day-to-day workstation or personal computer? How much time to you spend automating configuration and testing of applications and infrastructure at your day job, and how little do you spend automating your *own* local environment?
-
-From ensuring your favorite development tools and command line utilities are always up-to-date, to synchronizing your configuration between multiple workstations, to fully rebuilding your local workstation *from scratch*, Ansible will help you automate and simplify your life.
 
 TODO:
 
