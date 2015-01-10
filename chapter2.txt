@@ -2,13 +2,13 @@
 
 ## Prototyping and testing with local virtual machines
 
-Ansible works great with any server to which you can connect---remote *or* local. For speedier testing and development of Ansible playbooks, and for testing in general, it's a very good idea to work locally. Local development and testing of infrastructure is both safer and faster than doing it on remote/live machines---especially in production environments!
+Ansible works well with any server to which you can connect---remote *or* local. For speedier testing and development of Ansible playbooks, and for testing in general, it's a very good idea to work locally. Local development and testing of infrastructure is both safer and faster than doing it on remote/live machines---especially in production environments!
 
-I> In the past decade, test-driven development (TDD), in one form or another, has become the norm for much of the software industry. Infrastructure development hasn't been as organized until more recently, and best practices dictate that infrastructure (which is becoming more and more important to the software that runs on it) should be thoroughly tested as well.
+I> In the past decade, test-driven development (TDD), in one form or another, has become the norm for much of the software industry. Infrastructure development hasn't been as organized until recently, and best practices dictate that infrastructure (which is becoming more and more important to the software that runs on it) should be thoroughly tested as well.
 I> 
-I> Changes to software are tested either manually or in some automated fashion, and there are now systems that integrate with Ansible and other deployment and configuration management tools to allow some amount of infrastructure testing as well. Even if it's just testing a configuration change locally before applying it to production, that is a thousand times better than what, in the software development world, would be called 'cowboy coding'---working directly in a production environment, not documenting or encapsulating changes in code, and not having a way to roll back to a previous version.
+I> Changes to software are tested either manually or in some automated fashion; there are now systems that integrate both with Ansible and with other deployment and configuration management tools, to allow some amount of infrastructure testing as well. Even if it's just testing a configuration change locally before applying it to production, that approach is a thousand times better than what, in the software development world, would be called 'cowboy coding'---working directly in a production environment, not documenting or encapsulating changes in code, and not having a way to roll back to a previous version.
 
-The past decade has seen the growth of many virtualization tools that allow for flexible and very powerful infrastructure emulation, all from your local workstation! It's empowering to be able to play around with a config file, or tweak the order of a server update to perfection, over and over again, with no fear of breaking an important server. If you use a local virtual machine, there's no downtime for a server rebuild; just re-run the provisioning on a new VM, and you're back up and running in minutes, no one the wiser.
+The past decade has seen the growth of many virtualization tools that allow for flexible and very powerful infrastructure emulation, all from your local workstation! It's empowering to be able to play around with a config file, or to tweak the order of a server update to perfection, over and over again, with no fear of breaking an important server. If you use a local virtual machine, there's no downtime for a server rebuild; just re-run the provisioning on a new VM, and you're back up and running in minutes---with no one the wiser.
 
 [Vagrant](http://www.vagrantup.com/), a server provisioning tool, and [VirtualBox](https://www.virtualbox.org/), a local virtualization environment, make a potent combination for testing infrastructure and individual server configurations locally. Both applications are free and open source, and work well on Mac, Linux, or Windows hosts.
 
@@ -18,11 +18,11 @@ We're going to set up Vagrant and VirtualBox so we can work on using Ansible to 
 
 To get started with your first local virtual server, you need to download and install Vagrant and VirtualBox, and set up a simple Vagrantfile, which will describe the virtual server.
 
-  1. Download and install Vagrant and VirtualBox (whatever version is appropriate for your OS):
+  1. Download and install Vagrant and VirtualBox (whichever version is appropriate for your OS):
     - [Download Vagrant](http://www.vagrantup.com/downloads.html)
-    - [Download VirtualBox](https://www.virtualbox.org/wiki/Downloads) (when installing, make sure the command line tools are installed so Vagrant can work with it)
+    - [Download VirtualBox](https://www.virtualbox.org/wiki/Downloads) (when installing, make sure the command line tools are installed, so Vagrant can work with it)
   2. Create a new folder somewhere on your hard drive where you will keep your Vagrantfile and provisioning instructions.
-  3. Open a Terminal or PowerShell window, and navigate to the folder you just created.
+  3. Open a Terminal or PowerShell window, then navigate to the folder you just created.
   4. Add a CentOS (6.4) 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
     `vagrant box add centos64 http://puppet-vagrant-boxes.puppetlabs.com/centos-64-x64-vbox4210-nocm.box`
     (note: You can find a comprehensive list of different pre-made Linux boxes at [Vagrantbox.es](http://www.vagrantbox.es/)), or check out the 'official' Vagrant Ubuntu boxes on the [Vagrant wiki](https://github.com/mitchellh/vagrant/wiki/Available-Vagrant-Boxes).
@@ -43,7 +43,7 @@ Vagrant's ability to bring up preconfigured boxes is convenient on its own, but 
 
   - [**Network interface management**](http://docs.vagrantup.com/v2/networking/index.html): You can forward ports to a VM, share the public network connection, or use private networking for inter-VM and host-only communication.
   - [**Shared folder management**](http://docs.vagrantup.com/v2/synced-folders/index.html): VirtualBox can set up shares between your host machine and VMs using NFS or (much slower) native folder sharing in VirtualBox.
-  - [**Multi-machine management**](http://docs.vagrantup.com/v2/multi-machine/index.html): Vagrant is able to configure and control multiple VMs within one Vagrantfile. This is important because, as is stated in the documentation, "Historically, running complex environments was done by flattening them onto a single machine. The problem with that is that it is an inaccurate model of the production setup, which can behave far differently."
+  - [**Multi-machine management**](http://docs.vagrantup.com/v2/multi-machine/index.html): Vagrant is able to configure and control multiple VMs within one Vagrantfile. This is important because, as stated in the documentation, "Historically, running complex environments was done by flattening them onto a single machine. The problem with that is that it is an inaccurate model of the production setup, which can behave far differently."
   - [**Provisioning**](http://docs.vagrantup.com/v2/provisioning/index.html): When running `vagrant up` the first time, Vagrant automatically *provisions* the newly-minted VM using whatever provisioner you have configured in the Vagrantfile. You can also run `vagrant provision` after the VM has been created to explicitly run the provisioner again.
 
 It's this last feature that is most important for us. Ansible is one of many provisioners integrated with Vagrant (others include basic shell scripts, Chef, Docker, Puppet, and Salt). When you call `vagrant provision` (or `vagrant up` the first time, Vagrant passes off the VM to Ansible, and tells Ansible to run a defined Ansible playbook. We'll get into the details of Ansible playbooks later, but for now, we're going to edit our Vagrantfile to use Ansible to provision our virtual machine.
@@ -58,7 +58,7 @@ Open the Vagrantfile that was created when we used the `vagrant init` command ea
       ansible.sudo = true
     end
 
-This is a very basic configuration to simply get you started using Ansible with Vagrant. There are [many other Ansible options](http://docs.vagrantup.com/v2/provisioning/ansible.html) you can use once we get deeper into using Ansible. For now, we just want to set up a very basic playbook---a simple file you create to tell Ansible how to configure your VM.
+This is a very basic configuration to get you started using Ansible with Vagrant. There are [many other Ansible options](http://docs.vagrantup.com/v2/provisioning/ansible.html) you can use once we get deeper into using Ansible. For now, we just want to set up a very basic playbook---a simple file you create to tell Ansible how to configure your VM.
 
 ## Your first Ansible playbook
 
@@ -113,7 +113,7 @@ However, the above script is still not quite as robust as Ansible's `yum` comman
       - name: Ensure NTP is running.
         service: name=ntpd state=started enabled=yes
 
-This final task both checks and makes sure the ntpd service is started and running, and sets it to start at system boot. A shell script with the same effect would be:
+This final task both checks and ensures that the ntpd service is started and running, and sets it to start at system boot. A shell script with the same effect would be:
 
 {lang="text",linenos=off}
     # Start ntpd if it's not already running.
@@ -127,7 +127,7 @@ This final task both checks and makes sure the ntpd service is started and runni
     # Make sure ntpd is enabled on system startup.
     chkconfig ntpd on
 
-You can see how things start getting complex in the land of shell scripts! And this shell script is still not as robust as what you get with Ansible. To maintain idempotency and handle error conditions, you'll have to do a lot of extra work with basic shell scripts than you do with Ansible.
+You can see how things start getting complex in the land of shell scripts! And this shell script is still not as robust as what you get with Ansible. To maintain idempotency and handle error conditions, you'll have to do a lot more extra work with basic shell scripts than you do with Ansible.
 
 We could be even more terse (and really demonstrate Ansible's powerful simplicity) and not use Ansible's `name` module to give human-readable names to each command, resulting in the following playbook:
 
@@ -142,7 +142,7 @@ I> Just as with code and configuration files, documentation in Ansible (e.g. usi
 
 ## Summary
 
-Your workstation is on the path towards becoming an infrastructure-in-a-box, and you can now ensure your infrastructure is as well-tested as the code that runs on top if it. And with one small example, you've gotten a glimpse at the simple, but powerful, Ansible playbook. We'll dive deeper into Ansible playbooks later, and we'll also explore Vagrant a little more as we go.
+Your workstation is on the path to becoming an "infrastructure-in-a-box," and you can now ensure your infrastructure is as well-tested as the code that runs on top if it. With one small example, you've got a glimpse at the simple-yet-powerful Ansible playbook. We'll dive deeper into Ansible playbooks later, and we'll also explore Vagrant a little more as we go.
 
 {lang="text",linenos=off}
      ______________________________________

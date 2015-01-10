@@ -1,14 +1,14 @@
 # Chapter 3 - Ad-Hoc Commands
 
-In the previous chapter, we ended our exploration of local infrastructure testing with Vagrant by creating a very simple Ansible playbook. Earlier still, we use a simple ansible ad-hoc command to run a one-off command on a remote server.
+In the previous chapter, we ended our exploration of local infrastructure testing with Vagrant by creating a very simple Ansible playbook. Earlier still, we used a simple ansible ad-hoc command to run a one-off command on a remote server.
 
-We'll dive deeper into playbooks in coming chapters, but for now, we'll explore how Ansible can help you quickly perform common tasks on and gather data from one or many servers with ad-hoc commands.
+We'll dive deeper into playbooks in coming chapters; for now, we'll explore how Ansible can help you quickly perform common tasks on, and gather data from, one or many servers with ad-hoc commands.
 
 ## Conducting an orchestra
 
-The number of servers managed by an individual administrator has risen dramatically in the past decade, especially as virtualization and growing cloud application usage has become standard fare. As a result, admins have had to find new ways of managing all these servers in a more streamlined fashion.
+The number of servers managed by an individual administrator has risen dramatically in the past decade, especially as virtualization and growing cloud application usage has become standard fare. As a result, admins have had to find new ways of managing servers in a streamlined fashion.
 
-There are many tasks a systems administrator has to do on a day-to-day basis:
+On any given day, a systems administrator has many tasks:
 
   - Apply patches and updates via `yum`, `apt`, and other package managers.
   - Check resource usage (disk space, memory, CPU, swap space, network).
@@ -22,25 +22,25 @@ There are many tasks a systems administrator has to do on a day-to-day basis:
 
 Nearly all of these tasks can be (and usually are) at least partially automated---but some often need a human touch, especially when it comes to diagnosing issues in real time. And in today's complex multi-server environments, logging into servers individually is not a workable solution.
 
-Ansible allows admins to run ad-hoc commands on one or hundreds of machines at the same time, using the `ansible` command. In Chapter 1, we ran a couple commands (`date` and `free -m`) on a server we added to our Ansible inventory file. This chapter will explore ad-hoc commands and multi-server environments in much greater detail. Even if you decide to ignore the rest of Ansible's powerful features, you will be able to manage your servers much more efficiently after reading this chapter.
+Ansible allows admins to run ad-hoc commands on one or hundreds of machines at the same time, using the `ansible` command. In Chapter 1, we ran a couple of commands (`date` and `free -m`) on a server that we added to our Ansible inventory file. This chapter will explore ad-hoc commands and multi-server environments in much greater detail. Even if you decide to ignore the rest of Ansible's powerful features, you will be able to manage your servers much more efficiently after reading this chapter.
 
-I> Some of the examples in this chapter will display how you can configure certain aspects of a server with ad-hoc commands. It is usually more appropriate to contain all configuration within playbooks and templates, so it's easier to provision your servers (running the playbook the first time) and then ensure their configuration is idempotent (you can run the playbooks over and over again and your servers will be in the correct state).
+I> Some of the examples in this chapter will display how you can configure certain aspects of a server with ad-hoc commands. It is usually more appropriate to contain all configuration within playbooks and templates, so it's easier to provision your servers (running the playbook the first time) and then ensure their configuration is idempotent (you can run the playbooks over and over again, and your servers will be in the correct state).
 I> 
-I> The examples in this chapter are for illustration purposes only, and all might not be applicable to your environment. But even if you *only* used Ansible for server management and running individual plays against groups of servers and didn't use Ansible's playbook functionality at all, you'd still have a great orchestration and deployment tool in Ansible!
+I> The examples in this chapter are for illustration purposes only, and all might not be applicable to your environment. But even if you *only* used Ansible for server management and running individual plays against groups of servers, and didn't use Ansible's playbook functionality at all, you'd still have a great orchestration and deployment tool in Ansible!
 
 ## Build infrastructure with Vagrant for testing
 
-For the rest of this chapter, since we want to do a bunch of experimentation without damaging any production servers, we're going to use Vagrant's powerful multi-machine capabilities to configure a few servers which we will manage with Ansible.
+For the rest of this chapter, since we want to do a bunch of experimentation without damaging any production servers, we're going to use Vagrant's powerful multi-machine capabilities to configure a few servers which we'll manage with Ansible.
 
-Earlier, we used Vagrant to simply boot up one virtual machine running CentOS 6.4. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile, but in this example, we'll use Vagrant's powerful multi-machine management features.
+Earlier, we used Vagrant to simply boot up one virtual machine running CentOS 6.4. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
 
 ![Three servers: two application, one database.](images/1-basic-vagrant-application.png)
 
 We're going to manage three VMs: two app servers and a database server. Many simple web applications and websites have a similar architecture, and even though this may not reflect the vast realm of infrastructure combinations that exist, it will be enough to highlight Ansible's server management abilities.
 
-Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), and create a new blank file named `Vagrantfile` (this is how we describe our virtual machines to Vagrant). Open the file in your favorite editor, and add the following, then save the file:
+To begin, create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), and create a new blank file named `Vagrantfile` (this is how we describe our virtual machines to Vagrant). Open the file in your favorite editor, and add the following, then save the file:
 
-{lang=text}
+{lang=ruby}
     # -*- mode: ruby -*-
     # vi: set ft=ruby :
     
@@ -116,15 +116,15 @@ Let's step through this example, group by group:
   3. The third block tells ansible to define a new group 'multi', with child groups, and we add in both the 'app' and 'db' groups.
   4. The fourth block adds variables to the multi group that will be applied to *all* servers within multi and all its children.
 
-I> We'll dive deeper into variables, group definitions, group hierarchy, and other Inventory file topics later. For now, we just want Ansible to know about our servers so we can start managing them quickly.
+I> We'll dive deeper into variables, group definitions, group hierarchy, and other Inventory file topics later. For now, we just want Ansible to know about our servers, so we can start managing them quickly.
 
 Save the updated inventory file, and then check to see if Vagrant has finished building the three VMs. Once Vagrant has finished, we can start managing the servers with Ansible.
 
 ## Your first ad-hoc commands
 
-One of the first things you need to do is check in on your servers. Let's make sure they're configured correctly, have the right time and date (we don't want any time synchronization-related errors in our application!), and have enough free resources to run an application.
+One of the first things you need to do is to check in on your servers. Let's make sure they're configured correctly, have the right time and date (we don't want any time synchronization-related errors in our application!), and have enough free resources to run an application.
 
-T> Many of the things we're manually checking here should also be monitored by an automated system on production servers; the best way to prevent disaster is to know when it could be coming, and fix the problem *before* it happens. You should use tools like Munin, Nagios, Cacti, Hyperic, etc. to ensure you have a good idea of your servers' past and present resource usage! If you're running a website or web application available over the Internet, you should probably also use an external monitoring solution like Pingdom or Server Check.in.
+T> Many of the things we're manually checking here should also be monitored by an automated system on production servers; the best way to prevent disaster is to know when it could be coming, and to fix the problem *before* it happens. You should use tools like Munin, Nagios, Cacti, Hyperic, etc. to ensure you have a good idea of your servers' past and present resource usage! If you're running a website or web application available over the Internet, you should probably also use an external monitoring solution like Pingdom or Server Check.in.
 
 ### Discover Ansible's parallel nature
 
@@ -150,7 +150,7 @@ You may have noticed that the command was not run on each server in the order yo
 
 By default, Ansible will run your commands in parallel, using multiple process forks, so the command will complete more quickly. If you're managing a few servers, this may not be much quicker than running the command serially, on one server after the other, but even managing 5-10 servers, you'll notice a dramatic speedup if you use Ansible's parallelism (which is enabled by default).
 
-Run the same command again, but this time, add the argument `-f 1` to tell Ansible to only use one fork (basically, perform the command on each server in sequence):
+Run the same command again, but this time, add the argument `-f 1` to tell Ansible to use only one fork (basically, to perform the command on each server in sequence):
 
 {lang="text",linenos=off}
     $ ansible multi -a "hostname" -f 1
@@ -240,7 +240,7 @@ Third, let's make sure the date and time on each server is in sync:
 
 Most applications are written with slight tolerances for per-server time jitter, but it's always a good idea to make sure the times on the different servers are as close as possible, and the simplest way to do that is to use the Network Time Protocol, which is easy enough to configure. We'll do that next, using Ansible's modules to make the process painless.
 
-T> To get an exhaustive list of all the environment details ('facts', in Ansible's lingo) for a particular server (or a group of servers), use the command `ansible [host-or-group] -m setup`. This will give a list of every minute bit of detail about the server (including file systems, memory, OS, network interfaces... you name it, it's in the list).
+T> To get an exhaustive list of all the environment details ('facts', in Ansible's lingo) for a particular server (or for a group of servers), use the command `ansible [host-or-group] -m setup`. This will provide a list of every minute bit of detail about the server (including file systems, memory, OS, network interfaces... you name it, it's in the list).
 
 ### Make changes using Ansible modules
 
@@ -249,7 +249,7 @@ We want to install the NTP daemon on the server so it can keep the time in sync.
 {lang="text",linenos=off}
     $ ansible multi -s -m yum -a "name=ntp state=installed"
 
-Hopefully, you'll see three simple 'success' messages, reporting no change, since NTP was already installed on the three machines; but it's good to know everything is in working order.
+You should see three simple 'success' messages, reporting no change, since NTP was already installed on the three machines; this confirms everything is in working order.
 
 I> The `-s` option (alias for `--sudo`) tells Ansible to run the command with sudo. This will work fine with our Vagrant VMs, but if you're running commands against a server where your user account requires a sudo password, you should also pass in `-k` (alias for `--ask-sudo-pass`), so you can enter your sudo password when Ansible needs it.
 
@@ -283,7 +283,7 @@ In my test, I was within three one-hundredths of a second on all three servers--
 
 ## Configure groups of servers, or individual servers
 
-Now that we've been able to get all our servers to a solid baseline (all of them have the correct time, at least), we need to set up the application servers, then the database server.
+Now that we've been able to get all our servers to a solid baseline (e.g. all of them at least have the correct time), we need to set up the application servers, then the database server.
 
 Since we set up two separate groups in our inventory file, `app` and `db`, we can target commands to just the servers in those groups.
 
@@ -338,7 +338,7 @@ I> The MySQL configuration used here is for example/development purposes only! T
 
 ### Make changes to just one server
 
-Congratulations! You now have a small web application environment running Django and MySQL. It's not much, and there's not even a load balancer in front of the app servers to spread out the requests... but we've configured everything pretty quickly, and without ever having to log into a server. What's even more impressive is you could run any of the ansible commands again (besides a couple of the simple shell commands), and they wouldn't change anything---they would simply return `"changed": false`, giving you peace of mind that the original configuration is intact.
+Congratulations! You now have a small web application environment running Django and MySQL. It's not much, and there's not even a load balancer in front of the app servers to spread out the requests; but we've configured everything pretty quickly, and without ever having to log into a server. What's even more impressive is that you could run any of the ansible commands again (besides a couple of the simple shell commands), and they wouldn't change anything---they would simply return `"changed": false`, giving you peace of mind that the original configuration is intact.
 
 Now that your local infrastructure has been running a while, you notice (hypothetically, of course) that the logs indicate one of the two app servers' time has gotten way out of sync with the others, likely because the NTP daemon has crashed or somehow been stopped. Quickly, you enter the following command to check the status of `ntpd`:
 
@@ -359,7 +359,7 @@ In this command, we used the `--limit` argument to limit the command to a specif
     # Limit hosts with a regular expression (prefix with a tilde).
     $ ansible app -s -a "service ntpd restart" --limit ~".*\.4"
 
-In these examples, we've been using IP addresses instead of hostnames, but in many real-world scenarios, you'll probably be using hostnames like nyc-dev-1.example.com, and being able to match on regular expressions can be helpful.
+In these examples, we've been using IP addresses instead of hostnames, but in many real-world scenarios, you'll probably be using hostnames like nyc-dev-1.example.com; being able to match on regular expressions can be helpful.
 
 T> Try to reserve the `--limit` option for running commands on single servers. If you often find yourself running commands on the same set of servers using `--limit`, consider instead adding them to a group in your inventory file. That way you can just enter `ansible [my-new-group-name] [command]`, and save yourself a few keystrokes.
 
@@ -367,7 +367,7 @@ T> Try to reserve the `--limit` option for running commands on single servers. I
 
 One of the most common uses for Ansible's ad-hoc commands in my day-to-day usage is user and group management. I don't know how many times I've had to re-read the man pages or do a Google search just to remember which arguments I need to create a user with or without a home folder, add the user to certain groups, etc.
 
-Ansible's `user` and `group` modules make things pretty simple, and standard across any Linux flavor.
+Ansible's `user` and `group` modules make things pretty simple and standard across any Linux flavor.
 
 First, add an `admin` group on the app servers for the server administrators:
 
@@ -442,12 +442,12 @@ Here's how to create a symlink (set `state=link`):
 
 ### Delete directories and files
 
-You can set the `state` to `absent` to simply delete a file or directory.
+You can set the `state` to `absent` to delete a file or directory.
 
 {lang="text",linenos=off}
     $ ansible multi -m file -a "dest=/tmp/test state=absent"
 
-There are many simple ways to manage files remotely using Ansible. We've briefly covered the `copy` and `file` modules here, but be sure to read the documentation for the other file-management modules like `lineinfile`, `ini_file`, and `unarchive`. This book will cover these additional modules in depth in later chapters, when dealing with playbooks.
+There are many simple ways to manage files remotely using Ansible. We've briefly covered the `copy` and `file` modules here, but be sure to read the documentation for the other file-management modules like `lineinfile`, `ini_file`, and `unarchive`. This book will cover these additional modules in depth in later chapters (when dealing with playbooks).
 
 ## Run operations in the background
 
