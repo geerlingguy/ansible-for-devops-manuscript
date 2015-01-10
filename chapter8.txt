@@ -423,6 +423,7 @@ Here's the Vagrantfile in all its glory:
     Vagrant.configure("2") do |config|
       # Base VM OS configuration.
       config.vm.box = "geerlingguy/centos6"
+      config.ssh.insert_key = false
     
       # General VirtualBox VM configuration.
       config.vm.provider :virtualbox do |v|
@@ -1116,9 +1117,132 @@ Ansible is the simplest way to configure an ELK server and direct all your infra
 
 The next example will be specific to the Mac (since that's the author's platform of choice), but the principle behind it applies universally. How many times have you wanted to hit the 'reset' button on your day-to-day workstation or personal computer? How much time to you spend automating configuration and testing of applications and infrastructure at your day job, and how little do you spend automating your *own* local environment?
 
-TODO:
+Over the past few years, as I've gone through four Macs (one personal, three employer-provided), I decided to start fresh on each new Mac (rather than transfer all my cruft from my old Mac to my new Mac through Apple's Migration Assistant). I had a problem, though; I had to spend at least 4-6 hours on each Mac, downloading, installing, and configuring everything. Another problem: since I actively used at least two separate Macs, I had to manually install and configure new software on both Macs whenever I wanted to try a new tool.
 
-  - [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook)
+To restore order to this madness, I wrapped up all the configuration I could into a set of [dotfiles](https://github.com/geerlingguy/dotfiles) and used git to synchronize the dotfiles to all my workstations.
+
+However, even with the assistance of [Homebrew](http://brew.sh/), a great package manager for OS X, there was still a lot of manual labor involved in installing and configuring my favorite apps and command line tools.
+
+### Running Ansible playbooks locally
+
+We've seen examples of running playbooks with `connection: local` earlier, when provisioning virtual machines in the cloud through our local workstation; but you can perform _any_ Ansible task using a local connection. This is how we'll configure our local workstation using Ansible.
+
+I usually begin building a playbook with the basic scaffolding in place, and fill in details as I go. You can follow along by creating the playbook `main.yml` with:
+
+{lang=text}
+    ---
+    - hosts: localhost
+      user: jgeerling
+      connection: local
+    
+      vars_files:
+        - vars/main.yml
+    
+      roles: []
+    
+      tasks: []
+
+We'll store any variables we need in the included `vars/main.yml` file. The `user` is set to my local user account, in this case, `jgeerling`, so file permissions are set for my account, and tasks are run under my own account to minimize surprises.
+
+T> If certain tasks need to be run with sudo privileges, you can add `sudo: yes` to the task, and either run the playbook with `--ask-sudo-pass` (in which case, Ansible will prompt you for your sudo password before running the playbook), or run the playbook normally, and wait for Ansible to prompt you for your sudo password.
+
+### Automating Homebrew package and app management
+
+Since I use Homebrew (billed as "the missing package manager for OS X") for most of my application installation and configuration, I created the role `geerlingguy.homebrew`, which installs homebrew, then installs all the applications and packages I configure in a few simple variables.
+
+The next step, then, is to add the Homebrew role and configure the required variables. Inside `main.yml`, update the `roles` section:
+
+{lang=text,starting-line-number=9}
+      roles:
+        - geerlingguy.homebrew
+
+Then add the following into `vars/main.yml`:
+
+{lang=text}
+    ---
+    homebrew_installed_packages:
+      - ansible
+      - sqlite
+      - mysql
+      - php56
+      - python
+      - ssh-copy-id
+      - cowsay
+      - pv
+      - drush
+      - wget
+      - brew-cask
+    
+    homebrew_taps:
+      - caskroom/cask
+      - homebrew/binary
+      - homebrew/dupes
+      - homebrew/php
+      - homebrew/versions
+    
+    homebrew_cask_appdir: /Applications
+    homebrew_cask_apps:
+      - google-chrome
+      - firefox
+      - sequel-pro
+      - sublime-text
+      - vagrant
+      - vagrant-manager
+      - virtualbox
+
+Homebrew has a few tricks up its sleeve, like being able to manage general packages like PHP, MySQL, Python, Pipe Viewer, etc. natively (using commands like `brew install [package]` and `brew uninstall package`), and can also install and manage general application installation for many Mac apps, like Chrome, Firefox, VLC, etc. using `brew cask`.
+
+To anyone who's set up a new Mac the old-fashioned way---download 15 .dmg files, mount them, drag the applications to the Applications folder, eject them, delete the .dmg files---Homebrew's simplicity and speed are a godsend. This Ansible playbook has so far automated that process completely, so you don't even need to run the Homebrew commands manually! The `geerlingguy.homebrew` role uses Ansible's built-in `homebrew` module to manage package installation, and some custom tasks to manage cask applications.
+
+### Configuring Mac OS X through dotfiles
+
+Just like there's a `homebrew` role on Galaxy made for configuring and installing packages via Homebrew, there's a `dotfiles` role you can use to download and configure your local dotfiles.
+
+I> Dotfiles are named as such because they are, simply, files that begin with a `.` placed in your home directory. Many programs and shell environments read local configuration from dotfiles, so dotfiles are a simple, efficient, and easily-synchronized method of customizing your development environment for maximum efficiency.
+
+In this example, we'll use the author's dotfiles, but you can tell the role to use whatever set of dotfiles you want.
+
+Add another role to the `roles` list:
+
+{lang=text,starting-line-number=9}
+      roles:
+        - geerlingguy.homebrew
+        - geerlingguy.dotfiles
+
+Then, add the following three variables to your `vars/main.yml` file:
+
+{lang=text,starting-line-number=2}
+    dotfiles_repo: https://github.com/geerlingguy/dotfiles.git
+    dotfiles_repo_local_destination: ~/repositories/dotfiles
+    dotfiles_files:
+      - .bash_profile
+      - .gitignore
+      - .inputrc
+      - .osx
+      - .vimrc
+
+The first variable gives the git repository URL for the dotfiles to be cloned. The second gives a local path for the repository to be stored, and the final variable tells the role which dotfiles it should use from the specified repository.
+
+The `dotfiles` role clones the specified dotfiles repository locally, then symlinks every one of the dotfiles specified in `dotfiles_files` into your home folder (removing any existing dotfiles of the same name).
+
+If you want to run the `.osx` dotfile, which adjusts many system and application settings, add in a new task under the `tasks` section in the main playbook:
+
+      tasks:
+        - name: Run .osx dotfiles.
+          shell: ~/.osx --no-restart
+          changed_when: false
+
+In this case, the `.osx` dotfile allows a `--no-restart` flag to be passed to prevent the script from restarting certain apps and services including Terminal---which is good, since you'd likely be running the playbook from within Terminal.
+
+At this point, you already have the majority of your local environment set up. Copying additional settings and tweaking things further is simply an exercise in adjusting your dotfiles or including another playbook that copies or links preference files into the right places.
+
+I'm constantly tweaking my own development workstation, and for the most part, all my configuration is wrapped up in my [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook), available on GitHub. I'd encourage you to fork that project, as well as my dotfiles, if you'd like to get started automating the build of your own development workstation. Even if you don't use a Mac, most of the structure is similar; just substitute a different package manager, and start automating everything!
+
+### Summary
+
+Ansible is the best way to automate infrastructure provisioning and configuration. Ansible can also be used to configure your own worstation or workstations, saving you time and frustration in doing so yourself. Unfortunately, you can't yet provision yourself a new top-of-the-line workstation with Ansible!
+
+You can find the full playbook I'm currently using to configure my Macs on GitHub: [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook).
 
 ## Docker-based Infrastructure with Ansible
 

@@ -106,7 +106,7 @@ Consider the following task:
 
 {lang=text,linenos=off}
     - name: Install foo.
-      apt: pkg=foo state=installed
+      apt: name=foo state=installed
 
 All well and good, right? Well, as you get deeper into Ansible and start defining more complex configuration, you might start seeing tasks like the following:
 
@@ -116,7 +116,7 @@ All well and good, right? Well, as you get deeper into Ansible and start definin
 
 The one-line syntax (which uses Ansible-specific `key=value` shorthand for defining parameters) has some positive attributes:
 
-  - Simpler tasks (like installations and copies) are compact and readable (`apt: pkg=apache2 state=installed` is just about as simple as `apt-get install -y apache2`; in this way, an Ansible playbook feels very much like a shell script.
+  - Simpler tasks (like installations and copies) are compact and readable (`apt: name=apache2 state=installed` is just about as simple as `apt-get install -y apache2`; in this way, an Ansible playbook feels very much like a shell script.
   - Playbooks are more compact, and more configuration can be displayed on one screen.
   - Ansible's official documentation follows this format, as do many existing roles and playbooks.
 
@@ -138,7 +138,7 @@ Ansible's shorthand syntax uses `key=value` parameters after the name of a modul
 
 {lang=text,linenos=off}
     - name: Install Nginx.
-      yum: pkg=nginx state=installed
+      yum: name=nginx state=installed
 
 For any situation where an equivalent shell command would roughly match what I'm writing in the YAML, I prefer this method, since it's immediately obvious what's happening, and it's highly unlikely any of the parameters (like `state=installed`) will change frequently during development.
 

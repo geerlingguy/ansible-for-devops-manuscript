@@ -194,7 +194,7 @@ If you're not actively using a piece of software, or there's a cron task running
 
 {lang=text}
     - name: Remove unused packages.
-      apt: pkg={{ item }} state=absent purge=yes
+      apt: name={{ item }} state=absent purge=yes
       with_items:
         - apache2
         - nano
@@ -283,7 +283,7 @@ RedHat 6 and later (and modern versions of Fedora, and RedHat derivatives like C
 
 {lang=text}
     - name: Install yum-cron.
-      yum: pkg=yum-cron state=installed
+      yum: name=yum-cron state=installed
     
     - name: Ensure yum-cron is running and enabled on boot.
       service: name=yum-cron state=started enabled=yes
@@ -296,7 +296,7 @@ Debian and its derivatives typically use the `unattended-upgrades` package to co
 
 {lang=text}
     - name: Install unattended upgrades package.
-      apt: pkg=unattended-upgrades state=installed
+      apt: name=unattended-upgrades state=installed
     
     - name: Copy unattended-upgrades configuration files in place.
       template:

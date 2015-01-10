@@ -230,7 +230,7 @@ Create a `main.yml` file in this folder, and add the following contents (basical
 {lang=text}
     ---
     - name: Install Node.js (npm plus all its dependencies).
-      yum: pkg=npm state=present enablerepo=epel
+      yum: name=npm state=present enablerepo=epel
     
     - name: Install forever module (to run our Node.js app).
       npm: name=forever global=yes state=latest
@@ -281,7 +281,7 @@ Modify the `tasks/main.yml` file to use a list variable and iterate through the 
 {lang=text}
     ---
     - name: Install Node.js (npm plus all its dependencies).
-      yum: pkg=npm state=present enablerepo=epel
+      yum: name=npm state=present enablerepo=epel
     
     - name: Install npm modules required by our app.
       npm: name={{ item }} global=yes state=latest

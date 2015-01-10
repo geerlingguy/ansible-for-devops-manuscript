@@ -495,7 +495,7 @@ T> If you want to see the different properties of a particular registered variab
 One of the most helpful extra keys you can add to a play is a `when` statement. Let's take a look at a simple use of `when`:
 
 {lang="text",linenos=off}
-    - yum: pkg=mysql-server state=present
+    - yum: name=mysql-server state=present
       when: is_db_server
 
 The above statement assumes you've defined the `is_db_server` variable as a boolean (`true` or `false`) earlier, and will run the play if the value is true, or skip the play when the value is false.
@@ -503,7 +503,7 @@ The above statement assumes you've defined the `is_db_server` variable as a bool
 If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run plays conditionally like so:
 
 {lang="text",linenos=off}
-    - yum: pkg=mysql-server state=present
+    - yum: name=mysql-server state=present
       when: (is_db_server is defined) and is_db_server
 
 `when` is even more powerful if used in conjunction with variables registered by previous plays. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:

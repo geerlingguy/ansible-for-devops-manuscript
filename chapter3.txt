@@ -45,8 +45,9 @@ Create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), 
     # vi: set ft=ruby :
     
     VAGRANTFILE_API_VERSION = "2"
-  
+    
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      config.ssh.insert_key = false
       config.vm.provider :virtualbox do |vb|
         vb.customize ["modifyvm", :id, "--memory", "256"]
       end
@@ -85,6 +86,7 @@ There are many ways you can tell Ansible about the servers you manage, but the m
 
 Add the following to the file:
 
+{lang=text}
     # Lines beginning with a # are comments, and are only included for
     # illustration. These comments are overkill for most inventory files.
     
@@ -245,7 +247,7 @@ T> To get an exhaustive list of all the environment details ('facts', in Ansible
 We want to install the NTP daemon on the server so it can keep the time in sync. Instead of running the command `yum install -y ntp` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m yum -a "pkg=ntp state=installed"
+    $ ansible multi -s -m yum -a "name=ntp state=installed"
 
 Hopefully, you'll see three simple 'success' messages, reporting no change, since NTP was already installed on the three machines; but it's good to know everything is in working order.
 

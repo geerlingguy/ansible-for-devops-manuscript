@@ -69,7 +69,7 @@ Let's create the Ansible `playbook.yml` file now. Create an empty text file in t
     - hosts: all
       tasks:
       - name: Ensure NTP (for time synchronization) is installed.
-        yum: pkg=ntp state=installed
+        yum: name=ntp state=installed
       - name: Ensure NTP is running.
         service: name=ntpd state=started enabled=yes
 
@@ -98,7 +98,7 @@ All the tasks after this line will be run on all hosts (or, in our case, our one
 
 {lang="text",starting-line-number=4}
       - name: Ensure NTP daemon (for time synchronization) is installed.
-        yum: pkg=ntp state=installed
+        yum: name=ntp state=installed
 
 This command is the equivalent of running `yum install ntp`, but is much more intelligent; it will check if ntp is installed, and, if not, install it. This is the equivalent of the following shell script:
 
@@ -135,7 +135,7 @@ We could be even more terse (and really demonstrate Ansible's powerful simplicit
     ---
     - hosts: all
       tasks:
-      - yum: pkg=ntp state=installed
+      - yum: name=ntp state=installed
       - service: name=ntpd state=started enabled=yes
 
 I> Just as with code and configuration files, documentation in Ansible (e.g. using the `name` function and/or adding comments to the YAML for complicated plays) is not absolutely necessary. However, I'm a firm believer in thorough (but concise) documentation, so I almost always document what my plays will do by providing a `name` for each one. This also helps when you're running the playbooks, so you can see what's going on in a human-readable format.

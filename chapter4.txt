@@ -68,7 +68,7 @@ The above playbook will perform *exactly* like the shell script, but we can impr
     - hosts: all
       tasks:
       - name: Install Apache.
-        yum: pkg={{ item }} state=present
+        yum: name={{ item }} state=present
         with_items:
         - httpd
         - httpd-devel
@@ -95,7 +95,7 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
 
   1. The first line, `---`, is how we mark this document as using YAML syntax (like using `<html>` at the top of an HTML document, or `<?php` at the top of a block of PHP code).
   2. The second line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
-  3. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum pkg=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
+  3. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
 
      - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the `items` array we pass in (`{{ variable }}` references a variable in Ansible's playbooks). We tell yum to make sure the packages we define are installed with `state=present`, but we could also use `state=latest` to ensure the latest version is installed, or `state=absent` if we want to make sure the package is *not* installed.
      - Ansible allows simple lists to be passed into plays using `with_items`: Simply define a list of items below, and each line will be passed into the play, one by one. In this case, each of the items will be substituted for the `{{ item }}` variable.
@@ -257,7 +257,7 @@ Ansible can make things a little more robust. Even though the following is sligh
       service: name=iptables state=stopped enabled=no
     
     - name: Install Node.js and npm.
-      yum: pkg=npm state=present enablerepo=epel
+      yum: name=npm state=present enablerepo=epel
     
     - name: Install forever (to run our Node.js app).
       npm: name=forever global=yes state=latest
@@ -420,7 +420,7 @@ The first step towards building an application server that depends on the LAMP s
 {lang="text",starting-line-number=11}
       tasks:
       - name: Get software for apt repository management.
-        apt: pkg={{ item }} state=installed
+        apt: name={{ item }} state=installed
         with_items:
           - python-apt
           - python-pycurl
@@ -430,7 +430,7 @@ The first step towards building an application server that depends on the LAMP s
         apt_repository: repo='ppa:ondrej/php5-oldstable'
       
       - name: "Install Apache, MySQL, PHP, and other dependencies."
-        apt: pkg={{ item }} state=installed
+        apt: name={{ item }} state=installed
         with_items:
           - git
           - curl
@@ -727,7 +727,7 @@ It's easy enough to install Tomcat 7 on an Ubuntu Precise server; there are pack
 {lang="text",starting-line-number=11}
       tasks:
       - name: Install Tomcat 7.
-        apt: "pkg={{ item }} state=installed"
+        apt: "name={{ item }} state=installed"
         with_items:
           - tomcat7
           - tomcat7-admin
