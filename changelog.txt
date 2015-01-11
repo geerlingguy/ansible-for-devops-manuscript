@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Used `name` instead of `pkg` for packaging modules as per updated Ansible style guide.
   - Incorporated editorial changes for introduction, chapter 1, chapter 2, and chapter 3.
   - Fixed references to Vagrant Cloud/HashiCorp's Atlas.
+  - Finished almost all of chapter 5.
 
 ## Version 0.75 (2014-12-23)
 

@@ -14,13 +14,13 @@ TODO:
 
 Ansible allows you to work with environment variables in a variety of ways. First of all, if you simply need to set some environment variables for your remote user account, you can do that by adding lines to the remote user's `.bash_profile`, like so:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - name: Add an environment variable to the remote user's shell.
       lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
 
 All subsequent plays would then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further plays, it's recommended you use a play's `register` option to store the environment variable in a variable Ansible can use later, for example:
 
-{lang="text"}
+{lang=text}
     - name: Add an environment variable to the remote user's shell.
       lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
     
@@ -39,7 +39,7 @@ I> Why `~/.bash_profile`? There are many different places you can store environm
 
 Linux will also read global environment variables added to `/etc/environment`, so you can add your variable there:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - name: Add a global environment variable.
       lineinfile: dest=/etc/environment regexp=^ENV_VAR= line=ENV_VAR=value
       sudo: yes
@@ -50,7 +50,7 @@ In any case, it's pretty simple to manage environment variables on the server wi
 
 You can also set the environment for just one play, using the `environment` option for that play. As an example, let's say you need to set an http proxy for a certain file download. This can be done with:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - name: Download a file, using example-proxy as a proxy.
       get_url: url=http://www.example.com/file.tar.gz dest=~/Downloads/
       environment:
@@ -58,7 +58,7 @@ You can also set the environment for just one play, using the `environment` opti
 
 That could be rather cumbersome, though, especially if you have many plays that require a proxy or some other environment variable. In this case, you can pass an environment in via a variable in your playbook's `vars` section (or via an included variables file), like so:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     vars:
       var_proxy:
         http_proxy: http://example-proxy:80/
@@ -72,7 +72,7 @@ That could be rather cumbersome, though, especially if you have many plays that 
 
 If a proxy needs to be set system-wide (as is the case behind many corporate firewalls), I like to do so using the global `/etc/environment` file:
 
-{lang="text"}
+{lang=text}
     # In the 'vars' section of the playbook (set to 'absent' to disable proxy):
     proxy_state: present
     
@@ -102,12 +102,12 @@ Invalid variable names include `_foo`, `foo-bar`, `5_foo_bar`, `foo.bar` and `fo
 
 In an inventory file, a variable's value is assigned using an equals sign, like so:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     foo=bar
 
 In a playbook or variables include file, a variable's value is assigned using a colon, like so:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     foo: bar
 
 ### Playbook Variables
@@ -116,14 +116,14 @@ There are many different ways you can define variables to use in plays.
 
 Variables can be passed in via the command line, when calling `ansible-playbook`, with the `--extra-vars` option:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     ansible-playbook example.yml --extra-vars "foo=bar"
 
 You can also pass in extra variables using quoted JSON, YAML, or even by passing a JSON or YAML file directly, like `--extra-vars "@even_more_vars.json"` or `--extra-vars "@even_more_vars.yml`, but at this point, you might be better off using one of the other methods below.
 
 Variables may be included inline with the rest of a playbook, in a `vars` section:
 
-{lang="text"}
+{lang=text}
     ---
     - hosts: example
       vars:
@@ -134,7 +134,7 @@ Variables may be included inline with the rest of a playbook, in a `vars` sectio
 
 Variables may also be included in a separate file, using the `vars_files` section:
 
-{lang="text"}
+{lang=text}
     ---
     # Main playbook file.
     - hosts: example
@@ -143,7 +143,7 @@ Variables may also be included in a separate file, using the `vars_files` sectio
       tasks:
         - debug: msg="Variable 'foo' is set to {{ foo }}"
 
-{lang="text"}
+{lang=text}
     ---
     # Variables file 'vars.yml' in the same folder as the playbook.
     foo: bar
@@ -152,7 +152,7 @@ Notice how the variables are all at the root level of the YAML file. They don't 
 
 Variable files can also be imported conditionally. Say, for instance, you have one set of variables for your CentOS servers (where the Apache service is named `httpd`), and another for your Debian servers (where the Apache service is named `apache2`). In this case, you could use a conditional `vars_files` include:
 
-{lang="text"}
+{lang=text}
     ---
     - hosts: example
       vars_files:
@@ -168,7 +168,7 @@ As long as your remote server has `facter` or `ohai` installed, Ansible will be 
 
 Variables may also be added via Ansible inventory files, either inline with a host definition, or after a group:
 
-{lang="text"}
+{lang=text}
     # Host-specific variables (defined inline).
     [washington]
     app1.example.com proxy_state=present
@@ -183,7 +183,7 @@ If you need to define more than a few variables, especially variables that apply
 
 For example, to apply a set of variables to the host `app1.example.com`, create a blank file named `app1.example.com` at the location `/etc/ansible/host_vars/app1.example.com`, and add variables as you would in an included `vars_files` YAML file:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     ---
     foo: bar
     baz: qux
@@ -200,7 +200,7 @@ There are many times that you will want to run a command, then use its return co
 
 In the previous chapter, we used `register` to get the output of the `forever list` command, then used the output to determine whether we needed to start our Node.js app:
 
-{lang="text",starting-line-number=39}
+{lang=text,starting-line-number=39}
     - name: "Node: Check list of Node.js apps running."
       command: forever list
       register: forever_list
@@ -461,7 +461,7 @@ If you're familiar with almost any programming language, you will probably pick 
 
 For example:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     # The following expressions evaluate to 'true':
     1 in [1, 2, 3]
     'see' in 'Can you see me?'
@@ -494,7 +494,7 @@ In Ansible, any play can 'register' a variable, and once registered, that variab
 
 Many times, you may need the output (stdout or stderr) of a shell command, and you can get that in a variable using the following syntax:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - shell: my_command_here
       register: my_command_result
 
@@ -508,7 +508,7 @@ T> If you want to see the different properties of a particular registered variab
 
 One of the most helpful extra keys you can add to a play is a `when` statement. Let's take a look at a simple use of `when`:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - yum: name=mysql-server state=present
       when: is_db_server
 
@@ -516,13 +516,13 @@ The above statement assumes you've defined the `is_db_server` variable as a bool
 
 If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run plays conditionally like so:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - yum: name=mysql-server state=present
       when: (is_db_server is defined) and is_db_server
 
 `when` is even more powerful if used in conjunction with variables registered by previous plays. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     - command: my-app --status
       register: myapp_result
     
@@ -531,7 +531,7 @@ If you only define the `is_db_server` variable on database servers (meaning ther
 
 These examples are a little contrived, but they illustrate basic uses of `when` in your plays. Here are some examples of uses of `when` in real-world playbooks:
 
-{lang="text",linenos=off}
+{lang=text,linenos=off}
     # From our Node.js playbook - register a command's output, then see
     # if the path to our app is in the output. Start the app if it's
     # not present.
@@ -611,7 +611,31 @@ TODO:
 
 ## Prompts
 
-TODO.
+In rare circumstances, you may require the user to enter the value of a variable that will be used in the playbook. If the playbook require's a user's personal login information, or if you prompt for a version or other values that may change depending on who is running the playbook, or where it's being run, and if there's no other way this information can be configured (e.g. using environment variables, inventory variables, etc.), use `vars_prompt`.
+
+As a simple example, you can request a user to enter a username and password that could be used to login to a network share:
+
+{lang=text}
+    ---
+    - hosts: all
+    
+      vars_prompt:
+        - name: share_user
+          prompt: "What is your network username?"
+    
+        - name: share_pass
+          prompt: "What is your network password?"
+          private: yes
+
+Before Ansible runs the play, Ansible prompts the user for a username and password, the latter's input being hidden on the command line for security purposes.
+
+There are a few special options you can add to prompts:
+
+  - `private`: If set to `yes`, the user's input will be hidden on the command line.
+  - `default`: You can set a default value for the prompt, to save time for the end user.
+  - `encrypt` / `confirm` / `salt_size`: These values can be set for passwords so you can verify the entry (the user will have to enter the password twice if `confirm` is set to `yes`), and encrypt it using a salt (with the specified size and crypt scheme). See Ansible's [Prompts](http://docs.ansible.com/playbooks_prompts.html#prompts) documentation for detailed information on prompted variable encryption.
+
+Prompts are a simple way to gather user-specific information, but in most cases, you should avoid them unless absolutely necessary. It's preferable to use role or playbook variables, inventory variables, or even local environment variables, to maintain complete automation of the playbook run.
 
 ## Tags
 
@@ -619,9 +643,11 @@ TODO.
 
 ## Summary
 
-TODO.
+Playbooks are Ansible's primary means of automating infrastructure management. After reading this chapter, you should know how to use (and hopefully not abuse!) variables, inventories, handlers, conditionals, tags, and more.
 
-{lang="text",linenos=off}
+The more you understand the fundamental components of a playbook, the more efficient you'll be building and expanding your infrastructure with Ansible.
+
+{lang=text,linenos=off}
      ____________________________________
     / Men have become the tools of their \
     \ tools. (Henry David Thoreau)       /
