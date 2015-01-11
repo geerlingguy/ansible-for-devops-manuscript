@@ -57,6 +57,7 @@ TODO (Add any of this?):
   - Search for "—" (em-dash) in entire book and replace with `---`.
   - Search for "its" and "it's" and ensure proper grammatical usage.
   - Remove parentheses that are meaningless.
+  - Search for 'ansible' (lower) and make sure non-CLI usage is capitalized.
   - Make sure credits are added:
     - Margie Newman - editor
 
