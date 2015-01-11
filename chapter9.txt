@@ -9,5 +9,6 @@ TODO:
   - `serial` batch size (instead of running each play in parallel on all servers) - can be defined per-play or per-playbook.
   - Manage load balancers (BigIP, ELB, netscaler, etc.) in [pre|post]_task.
   - `max_fail_percentage`
+  - `run_once` (e.g. for a database update command)
   - `delegate_to` / `local_action`
   - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)

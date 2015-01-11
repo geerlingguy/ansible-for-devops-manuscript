@@ -1,17 +1,17 @@
 # Changelog
 
-This log will track changes between releases of the book. Until version 1.0, each release number will correlate to the amount complete, so 'Version 0.33' equals 33% complete. After the final, complete book, major version numbers will track editions.
+This log will track changes between releases of the book. Until version 1.0, each release number will correlate to the amount complete, so 'Version 0.75' equals 75% complete. After the final, complete book, major version numbers will track editions.
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current version
+## Version 0.81 (2015-01-11)
 
   - Fixed Vagrantfile examples to work with Vagrant 1.7.x.
   - Added local Mac configuration example in chapter 8.
   - Used `name` instead of `pkg` for packaging modules as per updated Ansible style guide.
   - Incorporated editorial changes for introduction, chapter 1, chapter 2, and chapter 3.
   - Fixed references to Vagrant Cloud/HashiCorp's Atlas.
-  - Finished almost all of chapter 5.
+  - Finished almost all the rest of chapter 5.
 
 ## Version 0.75 (2014-12-23)
 

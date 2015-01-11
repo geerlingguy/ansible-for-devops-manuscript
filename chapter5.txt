@@ -6,9 +6,43 @@ We'll cover things like how to run plays with more granularity, how to organize 
 
 ## Handlers
 
-TODO:
+In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Apache, and certain tasks that affected Apache's configuration would notify the handler with the option `notify: restart apache`:
 
-  - Emphasize more advanced scenarios (handlers calling other handlers, notify multiple handlers per task, etc.).
+{lang=text,linenos=off}
+    handlers:
+      - name: restart apache
+        service: name=apache2 state=restarted
+    
+    tasks:
+      - name: Enable Apache rewrite module.
+        apache2_module: name=rewrite state=present
+        notify: restart apache
+
+In some circumstances, you may want to notify more than one handler, or even have handlers notify other handlers. Both are easy to do with Ansible. To notify multiple handlers from one task, use a list for the `notify` option:
+
+{lang=text,linenos=off}
+    - name: Rebuild application configuration.
+      command: /opt/app/rebuild.sh
+      notify:
+        - restart apache
+        - restart memcached
+
+To have one handler notify another, just add a `notify` option onto the handler---handlers are basically glorified tasks that can be called by the `notify` option, but since they act as tasks themselves, they can chain themselves to other handlers as well:
+
+{lang=text,linenos=off}
+    handlers:
+      - name: restart apache
+        service: name=apache2 state=restarted
+        notify: restart memcached
+
+      - name: restart memcached
+        service: name=memcached state=restarted
+
+There are a few other considerations when dealing with handlers:
+
+  - Handlers will only be run if a task notifies the handler; if a task that would've notified the handlers is skipped due to a `when` condition or something of the like, the handler will not be run.
+  - Handlers will run once, and only once, at the end of a play. If you absolutely need to override this behavior and run handlers in the middle of a playbook, you can use the `meta` module to do so (e.g. `- meta: flush_handlers`).
+  - If the play fails on a particular host (or all hosts) before handlers are notified, the handlers will never be run. If it's desirable to always run handlers, even after the playbook has failed, you can use the `meta` module as described above as a separate task in the playbook, or you use the command line flag `--force-handlers` when running your playbook. Handlers won't run on any hosts that became unreachable during the playbook's run.
 
 ## Environment variables
 
@@ -603,9 +637,9 @@ For these situations, you can simply add `ignore_errors` to the task, and Ansibl
 TODO:
 
   - [Delegation, Rolling Updates, and Local Actions](http://docs.ansible.com/playbooks_delegation.html)
-  - Waiting for reboots (`wait_for`).
-  - `delegate_to` for particular tasks.
-  - `local_action` shorthand syntax (equivalent to `delegate_to: 127.0.0.1`).
+  - `wait_for` - Waiting for reboots, ports to be opened, etc.
+  - `delegate_to` - Delegate an action to a particular host.
+  - `local_action` shorthand syntax for `delegate_to: 127.0.0.1`.
     - Test: Does `local_action` use SSH connection? Even for `command`/`shell`?
     - Test and explain difference between `--connection=local` and `local_action`.
 
@@ -639,7 +673,61 @@ Prompts are a simple way to gather user-specific information, but in most cases,
 
 ## Tags
 
-TODO.
+Tags allow you to run (or exclude) subsets of a playbook's tasks.
+
+You can tag roles, included files, individual tasks, and even entire plays. The syntax is simple, and below are examples of the different ways you can add tags:
+
+{lang=text}
+    ---
+    # You can apply tags to an entire play.
+    - hosts: webservers
+      tags: deploy
+    
+      roles:
+        # Tags applied to a role will be applied to the tasks in the role.
+        - { role: tomcat, tags: ['tomcat', 'app'] }
+    
+      tasks:
+        - name: Notify on completion.
+          local_action:
+            module: osx_say
+            msg: "{{inventory_hostname}} is finished!"
+            voice: Zarvox
+          tags:
+            - notifications
+            - say
+    
+        - include: foo.yml
+          tags: foo
+
+Assuming we save the above playbook as `tags.yml`, you could run the command below to only run the `tomcat` role and the `Notify on completion` task:
+
+{lang=text}
+    $ ansible-playbook tags.yml --tags "tomcat,say"
+
+If you want to exclude anything tagged with `notifications`, you can use `--skip-tags`.
+
+{lang=text}
+    $ ansible-playbook tags.yml --skip-tags "notifications"
+
+This is incredibly handy if you have a decent tagging structure; when you want to only run a particular portion of a playbook, or one play in a series (or, alternatively, if you want to exclude a play or included tasks), then it's easy to do using `--tags` or `--skip-tags`.
+
+There is one caveat when adding one or multiple tags using the `tags` option in a playbook: you can use the shorthand `tags: tagname` when adding just one tag, but if adding more than one tag, you have to use YAML's list syntax, for example:
+
+{lang=text,linenos=off}
+    # Shorthand list syntax.
+    tags: ['one', 'two', 'three']
+    
+    # Explicit list syntax.
+    tags:
+      - one
+      - two
+      - three
+    
+    # Non-working example.
+    tags: one, two, three
+
+In general, I tend to use tags for larger playbooks, especially with individual roles and plays, but unless I'm debugging a set of tasks, I generally avoid adding tags to individual tasks or includes, simply for style reasons (not adding tags everywhere reduces visual clutter). You will need to find a tagging style that suits your needs and lets you run (or *not* run) the specific parts of your playbooks you desire.
 
 ## Summary
 
