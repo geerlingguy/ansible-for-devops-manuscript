@@ -333,21 +333,175 @@ This file provides further configuration for unattended upgrades, like whether t
 
 ## Use a properly-configured firewall
 
-TODO.
+If you were building a secure bank vault, you wouldn't want to have a large array of doors and windows that lead into the vault. Rather, you'd build thick reinforced concrete walls, and maybe have one or two locked-down controlled-access doors.
+
+Similarly, you shouldn't close any port that isn't explicitly required to remain open on all your servers---whether in a DMZ in your network or open the the entire Internet. There are dozens of different ways to manage firewalls nowadays, from `iptables` and helpful tools like `ufw` and `firewalld` that help make iptables configuration easier, to AWS security groups and other external firewall services.
+
+Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, RedHat, and CentOS distributions).
+
+### Configuring a firewall with `ufw` on Debian or Ubuntu
+
+Below is an entire firewall configuration that will lock down most everything on a Debian or Ubuntu server, allowing traffic only through ports 22 (SSH), 80 (HTTP), and 123 (NTP):
+
+{lang=text}
+    - name: Configure open ports with ufw.
+      ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      with_items:
+        - { rule: 'allow', port: 22, proto: 'tcp' }
+        - { rule: 'allow', port: 80, proto: 'tcp' }
+        - { rule: 'allow', port: 123, proto: 'udp' }
+    
+    - name: Configure default incoming/outgoing rules with ufw.
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+        state: enabled
+      with_items:
+        - { direction: outgoing, policy: allow }
+        - { direction: incoming, policy: deny }
+
+If you run a playbook with the above rules, the log into the machine (or use the `ansible` command) and run `sudo ufw status verbose`, you should see the configuration has been updated to the following:
+
+{lang=text,linenos=off}
+    $ sudo ufw status verbose
+    Status: active
+    Logging: on (low)
+    Default: deny (incoming), allow (outgoing), disabled (routed)
+    New profiles: skip
+
+    To                         Action      From
+    --                         ------      ----
+    22/tcp                     ALLOW IN    Anywhere
+    80/tcp                     ALLOW IN    Anywhere
+    123/udp                    ALLOW IN    Anywhere
+    22/tcp (v6)                ALLOW IN    Anywhere (v6)
+    80/tcp (v6)                ALLOW IN    Anywhere (v6)
+    123/udp (v6)               ALLOW IN    Anywhere (v6)
+
+### Configuring a firewall with `firewalld` on RedHat, Fedora, or CentOS
+
+The same firewall configuration can be done via `firewalld` for RedHat-based systems with similar ease:
+
+{lang=text}
+    - name: Configure open ports with firewalld.
+      firewalld:
+        state: "{{ item.state }}"
+        port: "{{ item.port }}"
+        zone: external
+        immediate: yes
+        permanent: yes
+      with_items:
+        - { state: 'enabled', port: '22/tcp' }
+        - { state: 'enabled', port: '80/tcp' }
+        - { state: 'enabled', port: '123/udp' }
+
+W> The `immediate` parameter was added in Ansible 1.9, and is required to make the rules effective immediately when the `permanent` parameter is set to `yes`. If you are running an older version of Ansible, you will need to restart to see your changes, or set `permanent` to `no`.
+
+I> Note that `firewalld` doesn't have a simple/explicit command to allow setting default inbound/outbound policies, but you can still use `iptables` commands or manage the firewall via XML files inside `/etc/firewalld`.
+
+If you run `sudo firewall-cmd --zone=external --list-all`, you should see the open ports:
+
+{lang=text,linenos=off}
+    $ sudo firewall-cmd --zone=external --list-all
+    external
+      interfaces:
+      sources:
+      services: ssh
+      ports: 123/udp 80/tcp 22/tcp
+      masquerade: yes
+      forward-ports:
+      icmp-blocks:
+      rich rules:
+
+Some still prefer configuring firewalls with `iptables` (which can be obtuse, but is almost infinitely malleable). This approach is used in the `geerlingguy.firewall` role on Ansible Galaxy, which translates simple variables like `firewall_allowed_tcp_ports` and `firewall_forwarded_tcp_ports` into `iptables` rules, and provides a simple `firewall` service for loading firewall rules.
+
+It doesn't really matter what method you use to control access to your server, but the *principle of least privilege* applies here, as in most security-related discussions: only allow access on ports that are absolutely necessary for the functionality of your server, and restrict the use of those ports to only the hosts or subnets that need access to the services listening on the ports.
+
+T> When you're building up a firewall, make sure that you don't accidentally lock down ports or IP addresses that will lock you out of the server entirely, otherwise you'll have to connect to the server through a local terminal connection and start over!
 
 ## Make sure log files are populated and rotated
 
-TODO.
+Checking server logs is one of the most effective ways to not only see what attacks have taken place on a server, but also to see trends over time and predict high-traffic periods, potential attack vectors, and potential catastrophe.
+
+But logs are completely worthless if they aren't being populated with effective data, aren't being monitored in any way, or are *the cause* of an outage! There are too many root cause analyses that conclude, "the server's disk was full because log file *x* took up all the free space".
+
+{title="I have my eyes on you, 218.78.214.9...",lang=text}
+    sshd[19731]: input_userauth_request: invalid user db2admin
+    sshd[19731]: Received disconnect from 218.78.214.9: 11: Bye Bye
+    sshd[19732]: Invalid user jenkins from 218.78.214.9
+    sshd[19733]: input_userauth_request: invalid user jenkins
+    sshd[19733]: Received disconnect from 218.78.214.9: 11: Bye Bye
+    sshd[19734]: Invalid user jenkins from 218.78.214.9
+    sshd[19735]: input_userauth_request: invalid user jenkins
+    sshd[19735]: Received disconnect from 218.78.214.9: 11: Bye Bye
+    sshd[19736]: Invalid user minecraft from 218.78.214.9
+    sshd[19737]: input_userauth_request: invalid user minecraft
+    sshd[19737]: Received disconnect from 218.78.214.9: 11: Bye Bye
+
+Only you will know what logs are the most important to monitor on your servers, but some of the most common ones are database slow query logs, webserver access and error logs, authorization logs, and cron logs. You can use tools like the ELK stack (demonstrated in a cookbook in Chapter 8), Munin, Nagios, or even a hosted service to make sure logs are populated and monitored.
+
+Additionally, you should always make sure log files are rotated and archived (according to your infrastructure's needs) using a tool like `logrotate`, and you should have monitoring enabled on log file sizes so you have an early warning when a particular log file or directory grows a bit too large. There are a number of `logrotate` roles on Ansible Galaxy (e.g. [Nick Hammond's `logrotate` role](https://galaxy.ansible.com/list#/roles/1117)) that make rotation configuration simple.
 
 ## Monitor logins and block suspect IP addresses
 
-TODO.
+If you've ever set up a new server on the public internet and enabled SSH on port 22 with password-based login enabled, you know how quickly the deluge of script-based logins begins. Many honeypot servers detect hundreds or thousands of such attempts per hours.
 
-## Use SELinux (Security-Enhanced Linux)
+Suffice it to say, if you allow password-based login (for SSH, for your web app, or for anything else for that matter), you need to implement some form of monitoring and rate limiting. At a most basic level (and this may be all you need), you should install a tool like [Fail2Ban](http://www.fail2ban.org/wiki/index.php/Main_Page), which monitors log files and bans IP addresses when it detects too many unsuccessful login attempts in a given period of time.
 
-TODO:
+For the most basic level of security, you should install Fail2Ban and use it's default configuration, which will help you protect common application logins. Here's a simple set of tasks you could add to your playbook to install Fail2Ban and make sure it's started on either Debian or RedHat-based distributions:
 
-  - [Manage selinux with configuration management](https://speakerdeck.com/arrfab/manage-selinux-with-your-cfgmtmt-solution)
+{lang=text}
+    - name: Install fail2ban (RedHat).
+      apt: pkg=fail2ban state=present enablerepo=epel
+      when: ansible_os_family == 'RedHat'
+    
+    - name: Install fail2ban (Debian).
+      apt: pkg=fail2ban state=present
+      when: ansible_os_family == 'Debian'
+    
+    - name: Ensure fail2ban is running and enabled on boot.
+      service: name=fail2ban state=started enabled=yes
+
+Fail2Ban configuration is managed in a series of `.conf` files inside `/etc/fail2ban`, and most of the simpler configuration can be done by overriding defaults in a local override file, `/etc/fail2ban/jail.local`. See the [Fail2Ban manual](http://www.fail2ban.org/wiki/index.php/MANUAL_0_8) for more information.
+
+## Use SELinux (Security-Enhanced Linux) or AppArmor
+
+SELinux and AppArmor are two different tools which allow you to construct security sandboxes for memory and filesystem access, so, for example, one application can't easily access another application's resources. It's a little like user and group file permissions, but allowing far finer detail---with far more complexity.
+
+You'd be forgiven if you disabled SELinux or AppArmor in the past; both require extra work to set up and configure for your particular servers, especially if you're using less popular distribution packages (extremely popular packages like Apache and MySQL are extremely well supported out-of-the-box on most distributions).
+
+However, both of these tools are excellent ways to add *defense in depth* to your infrastructure. You should already have decent configurations for firewalls, file permissions, users and groups, OS updates, etc. But if you're running a web-facing application---especially one that runs on a server with any other applications---it's great to have the extra protection SELinux or AppArmor provides from applications accessing things they shouldn't.
+
+SELinux is usually installed and enabled by default on Fedora, RedHat and CentOS systems, is available and supported on most other Linux platforms, and is widely supported through Ansible modules, so we'll cover SELinux in a bit more depth.
+
+To enable SELinux in `targeted` mode (which is the most secure mode without being almost impossible to work with), make sure the Python SELinux library is installed, then use Ansible's `selinux` module:
+
+{lang=text,linenos=off}
+    - name: Install Python SELinux library.
+      yum: name=libselinux-python state=installed
+    
+    - Ensure SELinux is enabled in `targeted` mode.
+      selinux: policy=targeted state=enforcing
+
+Ansible also has a `seboolean` module that allows setting SELinux booleans. A very common setting for web servers involves setting the `httpd_can_network_connect` boolean:
+
+{lang=text,linenos=off}
+    - name: Ensure httpd can connect to the network.
+      seboolean: name=httpd_can_network_connect state=yes persistent=yes
+
+The Ansible `file` module also integrates well with SELinux, as you can set the four security context fields for a file or directory, one per parameter:
+
+  1. `selevel`
+  2. `serole`
+  3. `setype`
+  4. `seuser`
+
+Building custom SELinux policies for more complex scenarios is out of the scope of this chapter, but you should be able to use tools like `setroubleshoot`, `setroubleshoot-server`, `getsebool`, and `aureport` to see what is being blocked, what booleans are available (and/or enabled currently), and even get helpful notifications when SELinux denies access to an application. Read [Getting started with SELinux](https://major.io/2012/01/25/getting-started-with-selinux/) for an excellent and concise introduction.
+
+Next time you're tempted to disable SELinux instead of fixing the underlying problem, spend a little time seeing if you can keep SELinux's additional layer of protection by setting the correct boolean or configuring your filesystem correctly.
 
 ## Summary and further reading
 
@@ -358,7 +512,7 @@ This chapter contains a broad overview of some Linux security best practices, an
   - [20 Linux Server Hardening Security Tips](http://www.cyberciti.biz/tips/linux-security.html)
   - [Unix and Linux System Administration Handbook](http://www.admin.com/)
 
-Also, some of the security configuration in this chapter is encapsulated in a simple Ansible role on Ansible Galaxy, which you can use for your own servers: [security role by geerlingguy](https://galaxy.ansible.com/list#/roles/1030).
+Also, much of the security configuration in this chapter is encapsulated in a simple Ansible role on Ansible Galaxy, which you can use for your own servers: [security role by geerlingguy](https://galaxy.ansible.com/list#/roles/1030).
 
 {lang="text",linenos=off}
      _____________________________________

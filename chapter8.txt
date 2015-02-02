@@ -1284,7 +1284,7 @@ If you want to run the container image you just created, enter the following:
 {lang=text,linenos=off}
     $ docker run --name=test test
 
-This creates a docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps` command:
+This creates a docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps -a` command:
 
 {lang=text,linenos=off}
     $ docker ps -a
@@ -1293,7 +1293,7 @@ This creates a docker container with the name `test`, and starts the container. 
 
 You can control the container using either the container ID (in this case, `bae0972c26d4`) or the name (`test`); start with `docker start [container]`, stop with `docker stop [container]`, delete/remove with `docker rm [container]`.
 
-If you delete the container (`docker rm test`) and delete the image you built (`docker rmi test`), then you can experiment with the Dockerfile by changing it and rebuilding the image (with `docker build`), and running the resulting image (with `docker run`). As an example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show that the container exited with the status code `1` instead of `0`.
+If you delete the container (`docker rm test`) and delete the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image (with `docker build`), and running the resulting image (with `docker run`). As an example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show that the container exited with the status code `1` instead of `0`.
 
 For our purposes, this is a simple enough introduction to how Docker works. To summarize:
 
@@ -1307,7 +1307,7 @@ When developing Dockerfiles to containerize your own applications, you will like
 
 ### Using Ansible to build and manage containers
 
-Ansible has a built-in [Docker module](http://docs.ansible.com/docker_module.html) that integrates nicely with Docker for container management. We're going to use it to automate the building and running of the container managed by the Dockerfile we created earlier.
+Ansible has a built-in [Docker module](http://docs.ansible.com/docker_module.html) that integrates nicely with Docker for container management. We're going to use it to automate the building and running of the container managed by the Dockerfile we just created.
 
 Move the Dockerfile you had into a subdirectory, and create a new Ansible playbook (call it `main.yml`) in the project root directory. The directory layout should look like:
 
@@ -1361,7 +1361,7 @@ Let's build a more useful Docker-powered environment, with a container that runs
 {width=60%}
 ![Docker stack for Flask App](images/8-flask-docker-stack.png)
 
-So that we can run the same Docker configuration on any machine capable of running Ansible and Vagrant, we'll use a Vagrantfile to create a VM to run our Docker containers:
+We'll create a VM using Vagrant to run our Docker containers so the same Docker configuration can be tested on on any machine capable of running Ansible and Vagrant. Create a `docker` folder, and inside it, the following `Vagrantfile`:
 
 {lang=ruby}
     # -*- mode: ruby -*-
@@ -1389,7 +1389,7 @@ So that we can run the same Docker configuration on any machine capable of runni
     
     end
 
-We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `angstwad.docker_ubuntu`), then run some additional setup tasks, and finally build and start the required Docker containers:
+We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `angstwad.docker_ubuntu`), then run some additional setup tasks, and finally build and start the required Docker containers:
 
 {lang=text}
     ---
@@ -1403,7 +1403,7 @@ We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook
         - include: setup.yml
         - include: docker.yml
 
-We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simpler for our purposes to simply set everything up with `sudo`.
+We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to simply set everything up with `sudo`.
 
 Angstwad's `docker_ubuntu` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
 
@@ -1417,9 +1417,9 @@ Angstwad's `docker_ubuntu` role requires no additional settings or configuration
       pip: name=docker-py state=present
       sudo: yes
 
-Ansible needs the `docker-py` library in order to control Docker via Python, so we'll install `pip` and install `docker-py` using pip.
+Ansible needs the `docker-py` library in order to control Docker via Python, so we install `pip`, then use it to install `docker-py`.
 
-Next, we move to the meat of the playbook, `docker.yml` (also in the `provisioning` directory). The first task that needs to be done is to build docker images for our data, application, and database containers:
+Next is the meat of the playbook, `docker.yml` (also in the `provisioning` directory). The first task is building docker images for our data, application, and database containers:
 
 {lang=text}
     ---

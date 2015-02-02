@@ -66,6 +66,7 @@ The above playbook will perform *exactly* like the shell script, but we can impr
 {lang="text"}
     ---
     - hosts: all
+      sudo: yes
       tasks:
       - name: Install Apache.
         yum: name={{ item }} state=present
@@ -94,18 +95,20 @@ The above playbook will perform *exactly* like the shell script, but we can impr
 Now we're getting somewhere. Let me walk you through this simple playbook:
 
   1. The first line, `---`, is how we mark this document as using YAML syntax (like using `<html>` at the top of an HTML document, or `<?php` at the top of a block of PHP code).
-  2. The second line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
-  3. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
+  2. The second line, `- hosts: all` defines the first (and in this case, only) _play_, and tells Ansible to run the play on `all` hosts that it knows about.
+  3. The third line, `sudo: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
+  4. The fourth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
+  5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
 
      - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the `items` array we pass in (`{{ variable }}` references a variable in Ansible's playbooks). We tell yum to make sure the packages we define are installed with `state=present`, but we could also use `state=latest` to ensure the latest version is installed, or `state=absent` if we want to make sure the package is *not* installed.
      - Ansible allows simple lists to be passed into plays using `with_items`: Simply define a list of items below, and each line will be passed into the play, one by one. In this case, each of the items will be substituted for the `{{ item }}` variable.
 
-  4. The second task again starts with a human-readable name (which could be left out if you'd like).
+  6. The second task again starts with a human-readable name (which could be left out if you'd like).
 
      - We use the `copy` module to copy files from a source (on our local workstation) to a destination (the server being managed). We can also pass in more variables, like file metadata including ownership and permissions (`owner`, `group`, and `mode`).
      - In this case, we are using an array with multiple elements for variable substitution; you use the syntax `{var1: value, var2: value}` to define each element (it can have as many variables as you want within, or even nested levels of variables!). When you reference the variables in the play, you simply use a dot to access the variable within the item, so `{{ item.var1 }}` would access the first variable. In our example, `item.src` access the `src` in each item.
 
-  5. The third task also uses a name to describe it in a human-readable format.
+  7. The third task also uses a name to describe it in a human-readable format.
 
      - We use the `service` module to describe the desired state of a particular service, in this case `httpd`, Apache's http daemon. We want it to be running, so we set `state=started`, and we want it to run at system startup, so we say `enabled=yes` (the equivalent of running `chkconfig httpd on`).
 
@@ -545,7 +548,7 @@ We briefly mentioned `lineinfile` earlier in the book, when discussing file mana
 {lang="text",starting-line-number=74}
       - name: Enable upload progress via APC.
         lineinfile:
-          dest: "/etc/php5/conf.d/20-apc.ini"
+          dest: "/etc/php5/apache2/conf.d/20-apcu.ini"
           regexp: "^apc\.rfc1867"
           line: "apc.rfc1867 = 1"
           state: present
@@ -744,11 +747,11 @@ Ubuntu 12.04 includes a package for Apache Solr, but it installs a very old vers
 {lang="text",starting-line-number=20}
     - name: Download Solr.
       get_url:
-        url: http://apache.osuosl.org/lucene/solr/4.7.1/solr-4.7.1.tgz
-        dest: "{{ download_dir }}/solr-4.7.1.tgz"
+        url: http://apache.osuosl.org/lucene/solr/4.9.1/solr-4.9.1.tgz
+        dest: "{{ download_dir }}/solr-4.9.1.tgz"
         sha256sum: 4a546369a31d34b15bc4b99188984716bf4c0c158c0e337f3c1f98088aec70ee
 
-We're installing Apache Solr 4.7.1, the latest version at the time of this book's writing. When downloading files from remote servers, the `get_url` module provides more flexibility and convenience than raw `wget` or `curl` commands.
+We're installing Apache Solr 4.9.1, a recent stable version. When downloading files from remote servers, the `get_url` module provides more flexibility and convenience than raw `wget` or `curl` commands.
 
 You have to pass `get_url` a `url` (the source of the file to be downloaded), and a `dest` (the location where the file will be downloaded). If you pass a directory to the `dest` parameter, Ansible will place the file inside, but will always re-download the file on subsequent runs of the playbook (and overwrite the existing download if it has changed). To avoid this extra overhead, we give the full path to the downloaded file.
 
@@ -757,13 +760,13 @@ We also use `sha256sum`, an optional parameter, for peace of mind; if you are do
 {lang="text",starting-line-number=25}
     - name: Expand Solr.
       command: >
-        tar -C /tmp -xvzf {{ download_dir }}/solr-4.7.1.tgz
-        creates={{ download_dir }}/solr-4.7.1/dist/solr-4.7.1.war
+        tar -C /tmp -xvzf {{ download_dir }}/solr-4.9.1.tgz
+        creates={{ download_dir }}/solr-4.9.1/dist/solr-4.9.1.war
     
     - name: Copy Solr into place.
       command: >
-        cp -r {{ download_dir }}/solr-4.7.1 {{ solr_dir }}
-        creates={{ solr_dir }}/dist/solr-4.7.1.war
+        cp -r {{ download_dir }}/solr-4.9.1 {{ solr_dir }}
+        creates={{ solr_dir }}/dist/solr-4.9.1.war
 
 We need to expand the Apache Solr archive, then copy it into place. For both of these steps, use the built-in `tar` and `cp` utilities (with the appropriate options) to do the work. Setting `creates` tells Ansible to skip these steps in subsequent runs, since the Solr war file will already be in place.
 

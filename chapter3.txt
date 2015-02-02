@@ -135,6 +135,8 @@ First, I want to make sure Vagrant configured the VMs with the right hostnames. 
 
 Ansible will run this command against all three of the servers, and return the results (if Ansible can't reach one a server, it will show an error for that server, but continue running the command on the others).
 
+T> If Ansible reports `No hosts matched` or returns some other inventory-related error, try setting the `ANSIBLE_HOSTS` environment variable explicitly: `export ANSIBLE_HOSTS=/etc/ansible/hosts`. Generally Ansible will read the file in `/etc/ansible/hosts` automatically, but depending on how you installed Ansible, you may need to explicitly set `ANSIBLE_HOSTS` for the `ansible` command to work correctly.
+
 You may have noticed that the command was not run on each server in the order you'd expect. Go ahead and run the command a few more times, and see the order:
 
 {lang="text",linenos=off}
@@ -569,7 +571,7 @@ Ansible will assume `*` for all values you don't specify (valid values are `day`
 What if we want to remove the cron job? Simple enough, use the same `cron` command, and pass the name of the cron job you want to delete, and `state=absent`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' state=absent'"
+    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' state=absent"
 
 You can also use Ansible to manage custom crontab files; use the same syntax as you used earlier, but specify the location to the cron file with: `cron_file=cron_file_name` (where `cron_file_name` is a cron file located in `/etc/cron.d`).
 

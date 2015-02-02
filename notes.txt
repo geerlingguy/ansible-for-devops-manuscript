@@ -6,6 +6,7 @@
     - Where should I put variables? (See email to Najitaka dated 10/1/14).
     - How can I manage my organization's roles? Separate repositories? See: http://goo.gl/99eM2z
     - `requirements.yml` in 1.8 (see: https://speakerdeck.com/mpdehaan/1-dot-8)
+    - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
   - Clean up and fix the "Organizing more complex and cross-platform roles" in Chapter 6!
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
 
@@ -33,12 +34,14 @@ TODO (Add any of this?):
   - [DevOps in Straight English – Part 2 of 2](http://developerblog.redhat.com/2014/01/29/devops-straight-english-2-of-2/)
   - [ansigenome - Manage your Ansible Roles](https://github.com/nickjj/ansigenome)
   - [Using `ansible-galaxy` with self-hosted roles](http://willthames.github.io/2014/09/03/techniques-for-versioning-ansible-ii.html)
+  - [Using Packer and Ansible to Build Immutable Infrastructure](http://blog.codeship.com/packer-ansible/)
 
 ## Competition / Similar works:
 
   - [Taste Test - Puppet - Chef - Salt - Ansible](http://devopsu.com/books/taste-test-puppet-chef-salt-stack-ansible.html)
   - [Ansible Configuration Management](http://www.packtpub.com/ansible-configuration-management/book)
-  - [Ansible Up & Running](http://www.ansible.com/ansible-book)
+  - [Ansible Up & Running](http://shop.oreilly.com/product/0636920035626.do)
+  - [Learning Ansible](https://www.packtpub.com/networking-and-servers/learning-ansible)
 
 ## Things to add
 

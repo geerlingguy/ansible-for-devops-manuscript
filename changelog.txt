@@ -4,6 +4,18 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Cleaned up Docker examples in chapter 8.
+  - Fixed a typo in chapter 3 (thanks to Jonathan Le / @jonathanhle!)
+  - Added section on configuring firewalls with `ufw` and `firewalld` in chapter 10.
+  - Updated Apache Solr version in chapter 4 example.
+  - Fixed APC uploadprogress task in Drupal example in chapter 4.
+  - Added section on installing and configuring Fail2Ban in chapter 10.
+  - Added suggestion for setting ANSIBLE_HOSTS environment variable in chapter 3 (thanks to Jason Baker!).
+  - Added section on SELinux and AppArmor in chapter 10.
+  - Completed chapter 10.
+
 ## Version 0.84 (2015-01-27)
 
   - Added Docker introduction and cookbooks in chapter 8.
