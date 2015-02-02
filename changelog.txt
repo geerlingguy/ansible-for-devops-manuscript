@@ -4,7 +4,7 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.87 (2015-02-01)
 
   - Cleaned up Docker examples in chapter 8.
   - Fixed a typo in chapter 3 (thanks to Jonathan Le / @jonathanhle!)
