@@ -4,6 +4,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Fixed two errors in chapter 7 (thanks to Jonathan Le / @jonathanhle!)
+  - Wrote introduction and started on first deployment example in chapter 9.
+
 ## Version 0.87 (2015-02-01)
 
   - Cleaned up Docker examples in chapter 8.
@@ -12,7 +17,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Updated Apache Solr version in chapter 4 example.
   - Fixed APC uploadprogress task in Drupal example in chapter 4.
   - Added section on installing and configuring Fail2Ban in chapter 10.
-  - Added suggestion for setting ANSIBLE_HOSTS environment variable in chapter 3 (thanks to Jason Baker!).
+  - Added suggestion for setting ANSIBLE_HOSTS environment variable in chapter 3 (thanks to Jason Baker / @diermakeralch!).
   - Added section on SELinux and AppArmor in chapter 10.
   - Completed chapter 10.
 

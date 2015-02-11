@@ -192,7 +192,7 @@ Fortunately, Ansible provides a more flexible way of declaring host and group va
 
 ### `host_vars`
 
-For [Hosted Apache Solr](https://www.hostedapachesolr.com/), different servers in a `solr` group have different memory requirements. The simplest way to tell Ansible to override a default variable in our Ansible playbook (in this case, the `tomcat_xmx` variable) is to use a `group_vars` directory (which can be placed either in the same location as your inventory file, or in a playbook's root directory), and place a YAML file named after the host which needs the overridden variable.
+For [Hosted Apache Solr](https://www.hostedapachesolr.com/), different servers in a `solr` group have different memory requirements. The simplest way to tell Ansible to override a default variable in our Ansible playbook (in this case, the `tomcat_xmx` variable) is to use a `host_vars` directory (which can be placed either in the same location as your inventory file, or in a playbook's root directory), and place a YAML file named after the host which needs the overridden variable.
 
 As an illustration of the use of `host_vars`, we'll assume we have the following directory layout:
 
@@ -251,7 +251,7 @@ Then, inside `group_vars/solr`, use YAML to define a list of variables that will
     do_something_amazing=true
     foo=bar
 
-Typically, if your playbook is only being run on one gruop of hosts, it's easier to define the variables in the playbook via an included vars file. However, in many cases you will be running a playbook or applying a set of roles to multiple inventory groups. In these situations, you may need to use `group_vars` to override specific variables for one or more groups of servers.
+Typically, if your playbook is only being run on one group of hosts, it's easier to define the variables in the playbook via an included vars file. However, in many cases you will be running a playbook or applying a set of roles to multiple inventory groups. In these situations, you may need to use `group_vars` to override specific variables for one or more groups of servers.
 
 ## Ephemeral infrastructure: Dynamic inventory
 

@@ -1,14 +1,77 @@
 # Chapter 9 - Deployments with Ansible
 
+Deploying application code to servers is one of the hardest, but most rewarding, aspects of any DevOps-focused team. Most shops that use traditional deployment techniques (manual steps, shell scripts, and prayer) dread deployments, especially for complex, monolithic apps.
+
+But once you adopt modern deployment processes, and find the right amount of automation for your application, deployments are less daunting. In the best case, deployments become so boring and routine they barely register as a blip on your team's radar.
+
+Consider Etsy, a company whose engineers are deploying code to production [20, 30, or 40 times per day](http://www.slideshare.net/mikebrittain/principles-and-practices-in-continuous-deployment-at-etsy), with no manual intervention from the operations team. The operations team is free to work on more creative endeavors than repetitively completing the same tasks over and over, and the developers get to see their beautifully-crafted code live in near-real-time!
+
+Your organization might not be able to match Etsy's production deployment schedule immediately, as it requires a larger cultural shift that takes time (involving robust code repository management, continuous integration, well-tested code, feature flags, etc.). However, you can move a long way towards effortless deployments by automating everything with Ansible.
+
+## Deployment strategies
+
+There are dozens of ways to deploy code to servers. For the simplest of applications, all that's involved might be switching to a new tag in a code repository on the server and restarting a service.
+
+For more complex applications, you might do a full Blue-Green deployment, where you build an entire new infrastructure alongside your current production infrastructure, run tests on the new infrastructure, then automatically cut over to the new instances. While this may be overkill for many applications (especially if you can tolerate a little deployment downtime), it is becoming more and more common, and Ansible can orchestrate the entire process automatically.
+
+In this chapter, we will be covering the following deployment strategies, using a few different demonstration applications as examples:
+
+  1. Simple single-server deployments.
+  2. Multi-server rolling deployments.
+  3. Capistrano-style deployments using `f500.project_deploy`.
+  4. Blue-green deployments on AWS.
+
+These are four of the most common deployment techniques, and they cover most common use cases today. There are other ways you can make your deployment processes even more robust, and many application-level and organization-level decisions you can make to ensure deployment success (especially when dealing with schema changes, data migrations, and major feature additions), but those deployment aspects are out of the scope of this book.
+
+## Simple single-server deployments
+
+The vast majority of small applications and websites are easily run on a single virtual machine or dedicated server. Using Ansible to provision and manage the configuration on the server is a no-brainer. Even though you only have to manage *one* server, it's better to encapsulate all the setup so you don't end up with a *snowflake server*.
+
+In this instance, we are managing a very simple Ruby on Rails site that allows users to perform CRUD operations on articles (very simple database records with a title and body).
+
+The code repository for this app is located on GitHub at `https://github.com/geerlingguy/demo-rails-app`.
+
+TODO.
+
+## Multi-server rolling deployments
+
 TODO:
 
   - [Server Check.in](https://servercheck.in/) infrastructure walkthrough
-  - [Deploying with Ansible](https://groups.google.com/forum/?#!topic/ansible-project/R3Kr2uMYUt4)
-  - [project_deploy module](https://galaxy.ansible.com/list#/roles/2266) (something similar is slated for core inclusion)
   - Rolling Updates
   - `serial` batch size (instead of running each play in parallel on all servers) - can be defined per-play or per-playbook.
+
+## Capistrano-style deployments
+
+TODO:
+
+  - [Deploying with Ansible](https://groups.google.com/forum/?#!topic/ansible-project/R3Kr2uMYUt4)
+  - [project_deploy module](https://galaxy.ansible.com/list#/roles/2266) (something similar is slated for core inclusion)
+
+## Blue-green deployments
+
+TODO:
+
   - Manage load balancers (BigIP, ELB, netscaler, etc.) in [pre|post]_task.
+
+## Summary
+
+TODO:
+
   - `max_fail_percentage`
   - `run_once` (e.g. for a database update command)
   - `delegate_to` / `local_action`
   - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
+
+{lang=text,linenos=off}
+     _______________________________________
+    / One machine can do the work of fifty  \
+    | ordinary men. No machine can do the   |
+    | work of one extraordinary man.        |
+    \ (Elbert Hubbard)                      /
+     ---------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

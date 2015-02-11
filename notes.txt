@@ -17,6 +17,7 @@ TODO (Add any of this?):
   - Ansible Vault
   - High Performance / Scalable Ansible: Asynchronous actions, Polling, distributed Ansible, Redis-based fact cache
   - Error handling
+  - SSH private key management and security (see email to Erik-jan Reimers)
 
 ## Interesting articles / links:
 
@@ -67,13 +68,14 @@ TODO (Add any of this?):
 ## Thoughts on writing
 
   - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)
+  - [Self Publishing My First Technical Book on LeanPub](https://servercheck.in/blog/self-publishing-my-first-technical-book-leanpub)
+  - [The Last Starving Author Has Died](http://www.luckyisgood.com/starving-authors-begone/)
 
 ## Cowsay
 
   - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
   - "Do or do not. There is no try. (Yoda)" (Used in 0.38 email 4/11/14)
   - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
-  - "One machine can do the work of fifty ordinary men. No machine can do the work of one extraordinary man. (Elbert Hubbard)"
 
 ## Publisher Offers
 
