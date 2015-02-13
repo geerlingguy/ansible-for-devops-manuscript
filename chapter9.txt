@@ -16,7 +16,7 @@ For more complex applications, you might do a full Blue-Green deployment, where 
 
 In this chapter, we will be covering the following deployment strategies, using a few different demonstration applications as examples:
 
-  1. Simple single-server deployments.
+  1. Single-server deployments.
   2. Multi-server rolling deployments.
   3. Capistrano-style deployments using `f500.project_deploy`.
   4. Blue-green deployments on AWS.
@@ -31,7 +31,333 @@ In this instance, we are managing a very simple Ruby on Rails site that allows u
 
 The code repository for this app is located on GitHub at `https://github.com/geerlingguy/demo-rails-app`.
 
-TODO.
+To make testing simple, we'll begin by creating a new Vagrant VM using the following Vagrantfile:
+
+{lang=ruby}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    Vagrant.configure(2) do |config|
+      config.vm.box = "geerlingguy/ubuntu1404"
+    
+      config.vm.provider "virtualbox" do |v|
+        v.name = "rails-demo"
+        v.memory = 1024
+        v.cpus = 2
+      end
+    
+      config.vm.hostname = "rails-demo"
+      config.vm.network :private_network, ip: "192.168.33.7"
+    
+      config.vm.provision "ansible" do |ansible|
+        ansible.playbook = "playbooks/main.yml"
+        ansible.sudo = true
+      end
+    
+    end
+
+In this case, we have a very simple VM that will be accessible at the IP address `192.168.33.7`, and when provisioned, it will run the Ansible playbook defined in `playbooks/main.yml`.
+
+### Provisioning a simple Ruby on Rails server
+
+To prepare for our application deployment, we need to do the following:
+
+  1. Install git (our application is version controlled in a git repository).
+  2. Install Node.js (asset compilation requires it's Javascript runtime).
+  2. Install Ruby (our application requires version 2.2.0 or later).
+  3. Install Passenger with Nginx (we need a fast web server to run our rails application).
+  4. Install any other dependencies, and prepare the server for deployment.
+
+To that end, let's create a new playbook just for the provisioning tasks (we'll worry about deployment later), in a new file, `playbooks/provision.yml`:
+
+{lang=text}
+    ---
+    - hosts: all
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      roles:
+        - geerlingguy.git
+        - geerlingguy.nodejs
+        - geerlingguy.ruby
+        - geerlingguy.passenger
+    
+      tasks:
+        - name: Install app dependencies.
+          apt: "name={{ item }} state=present"
+          with_items:
+            - libsqlite3-dev
+            - libreadline-dev
+    
+        - name: Ensure app directory exists and is writeable.
+          file:
+            path: "{{ app_directory }}"
+            state: directory
+            owner: "{{ app_user }}"
+            group: "{{ app_user }}"
+            mode: 0755
+
+This is a fairly simple playbook. We'll need to define a few variables to make sure the `geerlingguy.ruby` role installs the correct version of Ruby (at least 2.2.0), and the `geerlingguy.passenger` role is configured to serve our app correctly.
+
+There are also a few other variables we will need, like `app_directory` and `app_user`, so let's create the variables file now, at `playbooks/vars.yml`:
+
+{lang=text}
+    # Variables for our app.
+    app_directory: /opt/demo-rails-app
+    app_user: www-data
+    
+    # Variables for Passenger and Nginx.
+    passenger_server_name: 0.0.0.0
+    passenger_app_root: /opt/demo-rails-app/public
+    passenger_app_env: production
+    passenger_ruby: /usr/local/bin/ruby
+    
+    # Variables for Ruby installation.
+    ruby_install_from_source: true
+    ruby_download_url: http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.0.tar.gz
+    ruby_version: 2.2.0
+
+The passenger variables simply tell Passenger to run a server available on every network interface, and to launch our app (which will be located in `/opt/demo-rails-app/public`) with `production` settings (the app's environment), using the `ruby` binary we have installed in `/usr/local/bin/ruby`.
+
+The Ruby variables tell the `ruby` role to install Ruby 2.2.0 from source, since the packages available through Ubuntu's standard apt repositories only contain older versions.
+
+The playbook specified in our Vagrantfile, `playbooks/main.yml`, doesn't yet exist. Let's create that playbook and include the above `provisioning.yml` playbook so our server will be provisioned successfully. We'll separate out the deployment steps into another playbook and include that separately. Inside `playbooks/main.yml`:
+
+{lang=text}
+    ---
+    - include: provision.yml
+
+### Deploying a Rails app to the server
+
+All the dependencies for our app's deployment were configured in `provision.yml`, so we're ready to build a playbook to perform all the deployment tasks.
+
+Add a line to the `main.yml` file to include a new `deploy.yml` playbook:
+
+{lang=text}
+    ---
+    - include: provision.yml
+    - include: deploy.yml
+
+Now we're ready to create a the `deploy.yml` playbook, which will do the following:
+
+  1. Use git to check out the latest production release of the Rails app.
+  2. Copy over a `secrets.yml` template that holds some secure app data required for running the app.
+  3. Make sure all the gems required for the app are installed (via Bundler).
+  4. Create the database (if it doesn't already exist).
+  5. Run `rake` tasks to make sure the database schema is up-to-date and all assets (like JS and CSS) are compiled.
+  6. Make sure the app files' ownership is set correctly so Passenger and Nginx can serve them without error.
+  7. If any changes or updates were made, restart Passenger and Nginx.
+
+Most of these tasks will use Ansible's modules, but for a few, we'll just wrap the normal deployment-related commands in `shell` since there aren't pre-existing modules to take care of them for us:
+
+{lang=text}
+    ---
+    - hosts: all
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      roles:
+        - geerlingguy.passenger
+    
+      tasks:
+        - name: Ensure demo application is at correct release.
+          git:
+            repo: https://github.com/geerlingguy/demo-rails-app.git
+            version: "{{ app_version }}"
+            dest: "{{ app_directory }}"
+            accept_hostkey: true
+          register: app_updated
+          notify: restart nginx
+    
+        - name: Ensure secrets file is present.
+          template:
+            src: templates/secrets.yml.j2
+            dest: "{{ app_directory }}/config/secrets.yml"
+            owner: "{{ app_user }}"
+            group: "{{ app_user }}"
+            mode: 0664
+          notify: restart nginx
+    
+        - name: Install required dependencies with bundler.
+          shell: "bundle install --path vendor/bundle chdir={{ app_directory }}"
+          when: app_updated.changed == true
+          notify: restart nginx
+    
+        - name: Check if database exists.
+          stat: "path={{ app_directory }}/db/{{ app_environment.RAILS_ENV }}.sqlite3"
+          register: app_db_exists
+    
+        - name: Create database.
+          shell: "bundle exec rake db:create chdir={{ app_directory }}"
+          when: app_db_exists.stat.exists == false
+          notify: restart nginx
+    
+        - name: Perform deployment-related rake tasks.
+          shell: "{{ item }} chdir={{ app_directory }}"
+          with_items:
+            - bundle exec rake db:migrate
+            - bundle exec rake assets:precompile
+          environment: app_environment
+          when: app_updated.changed == true
+          notify: restart nginx
+    
+        - name: Ensure demo application has correct user for files.
+          file:
+            path: "{{ app_directory }}"
+            state: directory
+            owner: "{{ app_user }}"
+            group: "{{ app_user }}"
+            recurse: yes
+          notify: restart nginx
+
+The first thing you'll notice (besides the fact that we've included the `vars.yml` file again, since we need those variables in this playbook as well) is that we've added the `geerlingguy.passenger` role in this playbook. Since we'll be using one of the handlers defined in that playbook (`restart nginx`), we need to include the role explicitly. We could've added a separate handler specific to this playbook, but it's more maintainable to reuse handlers from roles if necessary.
+
+Let's walk through the tasks, one-by-one:
+
+  1. (Lines 12-19) We put all the application files in place by checking out the git repository at the version `app_version` into the directory `app_directory`. We set `accept_hostkey` to true so that, the first time we deploy the app, this task doesn't hang since we haven't yet accepted the Git server's hostkey.
+  2. (Lines 21-28) We copy a `secrets.yml` file to the application's configuration directory. There are different ways to deploy app secrets, but this is the simplest and easiest, and allows us to store the app secrets in an Ansible Vault-protected vars file if we so desire.
+  3. (Lines 30-33) If the `app_updated` variable shows that a change occurred as part of the first `git` task, we'll run a bundler command to ensure all the latest bundled dependencies are installed in the `vendor/bundle` directory.
+  4. (Lines 35-42) Create the application database with `rake db:create` if it doesn't already exist. Since this application uses a simple SQLite database, it's a matter of checking if the .sqlite3 file exists, and if not, running the `db:create` task.
+  5. (Lines 44-51) If the `app_updated` variable shows that a change occurred as part of the first `git` task, we'll also run a couple `rake` tasks to make sure the database schema is up to date, and all assets (like scripts and stylesheets) are compiled.
+  6. (Lines 53-60) Make sure all app files have the correct permissions for Passenger/Nginx to serve them correctly.
+
+Because many of the tasks result in filesystem changes that could change the behavior of the application, they all notify the `restart nginx` handler provided by the `geerlingguy.passenger` role, so Passenger reloads the configuration and restarts the app.
+
+There are a few new variables we need to add to `vars.yml`, and we also need to add the `secrets.yml.j2` template mentioned in the task that copies it into place.
+
+First, we'll create the secrets file, inside `playbooks/templates/secrets.yml.j2`:
+
+{lang=text}
+    development:
+      secret_key_base: {{ app_secrets.dev }}
+    
+    test:
+      secret_key_base: {{ app_secrets.test }}
+    
+    production:
+      secret_key_base: {{ app_secrets.prod }}
+
+We'll be using a dictionary variable for `app_secrets`, so let's add that and all the other new variables to `playbooks/vars.yml`:
+
+{lang=text}
+    ---
+    # Variables for our app.
+    app_version: 1.2.2
+    app_directory: /opt/demo-rails-app
+    app_user: www-data
+    app_secrets:
+      dev: fe562ec1e21eecc5af4d83f6a157a7
+      test: 4408f36dd290766d2f368fdfcedf4d
+      prod: 9bf801da1a24c9a103ea86a1438caa
+    app_environment:
+      RAILS_ENV: production
+
+    # Variables for Passenger and Nginx.
+    passenger_server_name: 0.0.0.0
+    passenger_app_root: /opt/demo-rails-app/public
+    passenger_app_env: production
+    passenger_ruby: /usr/local/bin/ruby
+
+    # Variables for Ruby installation.
+    ruby_install_from_source: true
+    ruby_download_url: http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.0.tar.gz
+    ruby_version: 2.2.0
+
+Note the addition of the following variables to support our `deploy.yml` playbook:
+
+  - `app_version`: This is the git tag or branch tip to be deployed to the server.
+  - `app_secrets`: A dictionary of Rails app secrets, which are used to verify the integrity of signed app cookies. You can generate new, unique strings for these variables using `rake secret`.
+  - `app_environment`: Environment settings required for certain commands (like `bundle exec` and `rake`) to run with the correct Rails application environment.
+
+### Provisioning and Deploying the Rails App
+
+Since we now have our `provision.yml` and `deploy.yml` playbooks completed, and both are `include`d in the `main.yml` playbook Vagrant will run, we can finally bring up the new VM using Vagrant, and see if our application works!
+
+The structure of your project folder should look like this:
+
+{lang=text,linenos=off}
+    deployments/
+      playbooks/
+        templates/
+          secrets.yml.j2
+        deploy.yml
+        main.yml
+        provision.yml
+        vars.yml
+      Vagrantfile
+
+Before we can run the playbook, we need to make sure all the role dependencies are present. If you were building everything from scratch, you might have a `roles` directory with all the roles inside, but in this case, since we're using roles from Ansible Galaxy, it's best to not include the role files directly with our playbook, but instead, add a `requirements.txt` file to the project and install the roles automatically with Galaxy.
+
+Inside `requirements.txt`:
+
+{lang=text}
+    geerlingguy.git
+    geerlingguy.ruby
+    geerlingguy.nodejs
+    geerlingguy.passenger
+
+Now, in the same directory as that file, run the command `$ ansible-galaxy install -r requirements.txt`, and after a minute, all the required roles will be downloaded to your default Ansible roles directory, if they're not already present.
+
+Change directory back to the main directory containing the `Vagrantfile`, and run `vagrant up`. Assuming everything runs correctly, you should see the playbook complete successfully after a few minutes:
+
+{lang=text,linenos=off}
+    TASK: [Ensure demo application has correct user for files.] *************
+    changed: [default]
+    
+    NOTIFIED: [geerlingguy.passenger | restart nginx] ***********************
+    changed: [default]
+    
+    PLAY RECAP **************************************************************
+    default               : ok=46   changed=28   unreachable=0    failed=0
+
+Now, jump over to a web browser and load `http://192.168.33.7/`. You should see something like the following:
+
+{width=80%}
+![Demonstration Rails app running successfully.](images/9-rails-app-fresh.png)
+
+Try creating, updating, and deleting a few articles to make sure the database and all app functionality is working correctly:
+
+{width=80%}
+![A simple app to perform CRUD operations on Articles.](images/9-rails-app-with-articles.png)
+
+The app seems to function perfectly, but it could use some improvements. After more development work, we have a new version of to deploy. We could simply update the `app_version` variable in `vars.yml` and run `vagrant provision` to run the entire provisioning and deployment playbook again, but to save a little time, and to utilize the more flexible playbook layout (with provisioning and deployment concerns separated), we can run the `deploy.yml` playbook separately.
+
+### Deploying application updates
+
+First, to test whether we can deploy without provisioning, we will need to create an inventory file to tell Ansible how to connect directly to the Vagrant-managed VM.
+
+Create the file `playbooks/inventory-ansible` with the following contents:
+
+{lang=text}
+    [rails]
+    192.168.33.7
+    
+    [rails:vars]
+    ansible_ssh_user=vagrant
+    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+
+T> If you were creating this playbook for a server or VM running outside of Vagrant's control, you'd probably have already created an inventory file or added the server to your global inventory, but when we're working with Vagrant, it's often convenient to use Vagrant's own dynamically-managed inventory, so running playbooks outside of Vagrant requires us to create a separate inventory file like we did above.
+
+Test the ability to run the `deploy.yml` playbook by running the following command inside the `playbooks` directory:
+
+{lang=text,linenos=off}
+    $ ansible-playbook deploy.yml -i inventory-ansible
+
+Hopefully the playbook completed its run successfully. It may have reported a change in the "Ensure demo application has correct user for files" task, and if so, it will have restarted Passenger. Run it again, and ansible should report no changes:
+
+{lang=text,linenos=off}
+    PLAY RECAP **************************************************************
+    192.168.33.7          : ok=16   changed=0    unreachable=0    failed=0
+
+Hopefully you've noticed that running the `deploy.yml` playbook standalone is much faster than running the `provision` and `deploy` playbooks together (deployment only takes 16 tasks, while both playbooks add up to 70+ tasks!). In the future, we can deploy application updates using only the `deploy.yml` playbook and changing the `app_version` either in `vars.yml` or by specifying the version on the command line in the `ansible-playbook` command.
+
+TODO:
+
+  - Increase app_version and deploy again, show changes.
 
 ## Multi-server rolling deployments
 

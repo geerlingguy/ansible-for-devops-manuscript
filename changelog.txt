@@ -4,10 +4,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.88 (2015-02-13)
 
   - Fixed two errors in chapter 7 (thanks to Jonathan Le / @jonathanhle!)
-  - Wrote introduction and started on first deployment example in chapter 9.
+  - Wrote introduction to chapter 9.
+  - Wrote first deployment example for Rails app in chapter 9.
 
 ## Version 0.87 (2015-02-01)
 
