@@ -88,7 +88,7 @@ If you run a different flavor of Linux, the steps are similar---you need the Pyt
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 1.8.2
+    ansible 1.8.4
 
 ## Creating a basic inventory file {#basic-inventory}
 

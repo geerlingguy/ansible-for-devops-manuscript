@@ -497,7 +497,7 @@ If you want to be able to install roles from other sources, like GitHub, an HTTP
     - src: https://www.example.com/ansible/roles/my-role-name.tar.gz
       name: my-role
 
-Installing roles defined in this file is similar to the `.txt` example: `ansible-galaxy install -r requirements.yml`.
+Installing roles defined in this file is similar to the `.txt` example: `ansible-galaxy install -r requirements.yml`. For more documentation on Ansible requirements files, read the official documentation: [Advanced Control over Role Requirements Files](http://docs.ansible.com/galaxy.html#advanced-control-over-role-requirements-files).
 
 ### A LAMP server in six lines of YAML
 

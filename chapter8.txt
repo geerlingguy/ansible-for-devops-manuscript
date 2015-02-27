@@ -387,7 +387,7 @@ But we're going to continue to make our playbooks more flexible and useful.
 
 ### Getting the required roles
 
-Ansible allows you to define all the required Ansible Galaxy roles for a given project in a `requirements.txt` file. Instead of having to remember to run `ansible-galaxy install -y [role1] [role2] [role3]` for each of the roles we're using, we can create `requirements.txt` in the root of our project, with the following contents:
+As mentioned in the Chapter 6, Ansible allows you to define all the required Ansible Galaxy roles for a given project in a `requirements.txt` file. Instead of having to remember to run `ansible-galaxy install -y [role1] [role2] [role3]` for each of the roles we're using, we can create `requirements.txt` in the root of our project, with the following contents:
 
 {lang=text}
     geerlingguy.firewall
@@ -400,9 +400,7 @@ Ansible allows you to define all the required Ansible Galaxy roles for a given p
     geerlingguy.mysql
     geerlingguy.memcached
 
-To make sure all the required dependencies are available, just run `ansible-galaxy install -r requirements.txt` from within the project's root.
-
-I> Ansible 1.8 and greater provide more flexibility in requirements files. If you use a YAML file (e.g. `requirements.yml`) to define a structured list of all the roles you need, you can source them from Ansible Galaxy, a git repository, a web-accessible URL (as a `.tar.gz`), or even a mercurial repository! See the documentation for [Advanced Control over Role Requirements Files](http://docs.ansible.com/galaxy.html#advanced-control-over-role-requirements-files).
+To make sure all the required dependencies are installed, run `ansible-galaxy install -r requirements.txt` from within the project's root.
 
 ### Vagrantfile for Local Infrastructure via VirtualBox
 

@@ -2,12 +2,7 @@
 
 ## TODO SOON:
 
-  - Add more info to 'Roles' section:
-    - Where should I put variables? (See email to Najitaka dated 10/1/14).
-    - How can I manage my organization's roles? Separate repositories? See: http://goo.gl/99eM2z
-    - `requirements.yml` in 1.8 (see: https://speakerdeck.com/mpdehaan/1-dot-8)
-    - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
-  - Clean up and fix the "Organizing more complex and cross-platform roles" in Chapter 6!
+  - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
 
 TODO (Add any of this?):
