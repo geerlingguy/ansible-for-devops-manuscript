@@ -195,9 +195,9 @@ Instead of requiring you to explicitly include certain files and playbooks in a 
 There are only two directories required to make a working Ansible role:
 
 {lang=text,linenos=off}
-    role_name
-      --> meta
-      --> tasks
+    role_name/
+      meta/
+      tasks/
 
 If you create a directory structure like the one shown above, with a `main.yml` file in each directory, Ansible will run all the tasks defined in `tasks/main.yml` if you call the role from your playbook using the following syntax:
 
@@ -209,13 +209,13 @@ If you create a directory structure like the one shown above, with a `main.yml` 
 
 Your roles (each one as its own directory, where the directory name is used by Ansible as the name of the role) can live in a couple different places---in the default global Ansible role path (configurable in `/etc/ansible/ansible.cfg`), or in a 'roles' folder directly within the same directory as your main playbook file.
 
-I> Another simple way to build the scaffolding for a role (complete with all the available options/directories, a README file, and a structure suitable for contributing the role to Ansible Galaxy (we'll get to Galaxy in a little bit!) so it can easily be shared), is to use the `ansible-galaxy init` command. Running the command will create an example role in the current working directory, which you can then modify to suit your needs.
+I> Another simple way to build the scaffolding for a role (complete with all the available options/directories, a README file, and a structure suitable for contributing the role to Ansible Galaxy (we'll get to Galaxy in a little bit!) so it can easily be shared), is to use the `ansible-galaxy init` command. Running this command creates an example role in the current working directory, which you can modify to suit your needs.
 
 ### Building your first role
 
-Let's jump right into cleaning up our Node.js server example from Chapter four, and break out one of the main parts of the configuration---installing Node.js and any npm modules we need for our server.
+Let's clean up the Node.js server example from Chapter four, and break out one of the main parts of the configuration---installing Node.js and any required npm modules.
 
-Create a `roles` folder in the same directory as your main `playbook.yml` file like we created in Chapter 4's first example, and inside that folder, create a new folder `nodejs` (which will be our role's name). Create two folders inside the `nodejs` role directory, `meta` and `tasks`.
+Create a `roles` folder in the same directory as the main `playbook.yml` file like we created in Chapter 4's first example, and inside that folder, create a new folder `nodejs` (which will be our role's name). Create two folders inside the `nodejs` role directory, `meta` and `tasks`.
 
 Inside the `meta` folder, add a simple `main.yml` file with the following contents:
 
@@ -250,7 +250,7 @@ The Node.js directory structure should now look like the following:
           tasks/
             main.yml
 
-You now have a complete Ansible role that you can use in your node.js server configuration playbook. Delete the Node.js app installation lines from the other project, and reformat the playbook so the other tasks run first (in a `pre_tasks:` section instead of `tasks:`), then the role is included, then the rest of the tasks (in the main `tasks:` section). Something like:
+You now have a complete Ansible role that you can use in your node.js server configuration playbook. Delete the Node.js app installation lines from `playbook.yml`, and reformat the playbook so the other tasks run first (in a `pre_tasks:` section instead of `tasks:`), then the role is included, then the rest of the tasks (in the main `tasks:` section). Something like:
 
 {lang=text,linenos="off"}
     pre_tasks:
@@ -266,13 +266,13 @@ I> You can view the full example of this playbook in the [ansible-for-devops cod
 
 Once you finish reformatting the main playbook, everything would run exactly the same during an `ansible-playbook`, with the exception of the tasks inside the `nodejs` role being prefixed with `nodejs | [Task name here]`.
 
-This little bit of extra data shown during playbook runs is useful because it shows you from exactly what role tasks are being run, without you having to add in descriptions as part of the `name` values of the tasks.
+This little bit of extra data shown during playbook runs is useful because it automatically prefixes tasks with the role that provides them, without you having to add in descriptions as part of the `name` values of the tasks.
 
 Our role isn't all that helpful at this point, though, because it still does only one thing, and it's not really flexible enough to be used on other servers that might need different Node.js modules to be installed.
 
 ### More flexibility with role vars and defaults
 
-To make our role more flexible, we can make it use a list of npm modules instead of a hardcoded value, then allow playbooks using the role to define what modules they want to use.
+To make our role more flexible, we can make it use a list of npm modules instead of a hardcoded value, then allow playbooks using the role to provide their own module list variable to override our role's default list.
 
 When running a role's tasks, Ansible picks up variables defined in a role's `vars/main.yml` file and `defaults/main.yml` (I'll get to the differences between the two later), but will allow your playbooks to override the defaults or other role-provided variables if you want.
 
@@ -468,9 +468,40 @@ T> The latest version or a role will be downloaded if no version is specified. T
 
 I> Ansible Galaxy is still evolving rapidly, and has already seen many small improvements. There are a few areas where Galaxy could use some improvement (like browsing for roles by Operating System in the online interface, or automatically downloading roles that are included in playbooks), but most of these little bugs or rough areas will be fixed in time. Please check Ansible Galaxy's [About](https://galaxy.ansible.com/intro) page and stay tuned to Ansible's blog for the latest updates.
 
+#### Using role requirements files to manage dependencies
+
+If your infrastructure configuration requires have five, ten, fifteen or more Ansible roles, installing them all via `ansible-galaxy install` commands can get very tiring. Additionally, if you host roles internally (e.g. via an internal Git repository), you can't install the roles through Ansible Galaxy. The `ansible-galaxy` command, however, can be passed a 'requirements' file that it will parse and use to automatically download all the included dependencies---whether on Ansible Galaxy or in some other role repository.
+
+There are two simple syntaxes, the first which follows Python's `pip` requirements convention. Generally, you can create a `requirements.txt` file (I usually add one in the root of my project directory), and include a line for each role, using the same syntax we used in the `install` command earlier:
+
+{lang=none}
+    geerlingguy.apache,1.3.1
+    geerlingguy.mysql
+    geerlingguy.php,1.4.1
+
+Specify one Ansible Galaxy role per line either by itself, or with a particular version number, and then run `ansible-galaxy install -r requirements.txt`. Ansible will download all the roles from Galaxy into your local roles path.
+
+If you want to be able to install roles from other sources, like GitHub, an HTTP download, BitBucket, etc., or if you'd like to specify the path into which the roles should be downloaded, you can use a `requirements.yml` file with the following syntax:
+
+{lang=none}
+    # From Ansible Galaxy, like the earlier requirements.txt example.
+    - src: geerlingguy.firewall
+    
+    # From GitHub, into a particular path, with a custom name and version.
+    - src: https://github.com/geerlingguy/ansible-role-passenger
+      path: /etc/ansible/roles/
+      name: passenger
+      version: 1.0.2
+    
+    # From a web server, with a custom name.
+    - src: https://www.example.com/ansible/roles/my-role-name.tar.gz
+      name: my-role
+
+Installing roles defined in this file is similar to the `.txt` example: `ansible-galaxy install -r requirements.yml`.
+
 ### A LAMP server in six lines of YAML
 
-Now that we have these roles installed (Apache, MySQL, and PHP), we can quickly create a LAMP server. This example assumes you already have a CentOS-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
+With the Apache, MySQL, and PHP roles installed, we can quickly create a LAMP server. This example assumes you already have a CentOS-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
 
 First, create an Ansible playbook named `lamp.yml` with the following contents:
 

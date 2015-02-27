@@ -4,6 +4,12 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current version
+
+  - Completed first deployment example for Rails app in chapter 9.
+  - Added notes on role requirements.txt and requirements.yml options in chapter 6.
+  - Tweaked language and cleaned up examples for roles in chapter 6.
+
 ## Version 0.88 (2015-02-13)
 
   - Fixed two errors in chapter 7 (thanks to Jonathan Le / @jonathanhle!)
