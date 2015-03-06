@@ -10,6 +10,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Tweaked formatting of GlusterFS cookbook in chapter 6.
   - Fixed GlusterFS example ports and mount task in chapter 8.
   - Fixed some examples in chapter 4 to ensure apt repositories update cache.
+  - Fixed typos in chapter 8 (thanks to a reader's suggestion!).
+  - Updated Ansible installation instructions for Debian/Ubuntu in chapter 1.
 
 ## Version 0.89 (2015-02-26)
 

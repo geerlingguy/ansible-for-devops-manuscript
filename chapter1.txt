@@ -75,14 +75,19 @@ I> ~~~~~~~~~~~~~~~
 
 *Debian/Ubuntu:*
 
-The simplest way of installing Ansible is with `pip`, though there is an [official Ansible PPA](https://launchpad.net/~ansible/+archive/ubuntu/ansible) available for Debian/Ubuntu to make installation even easier; use `ppa:ansible/ansible`.
+The easiest way to install Ansible on a Debian or Ubuntu system is to use the official apt package.
 
 {lang="text",linenos=off}
+    $ sudo apt-add-repository -y ppa:ansible/ansible
     $ sudo apt-get update
-    $ sudo apt-get -y install python-pip python-dev
-    $ sudo pip install ansible
+    $ sudo apt-get install -y ansible
 
-If you run a different flavor of Linux, the steps are similar---you need the Python development headers and pip, then you can use `pip install ansible`.
+I> If you get an error like "sudo: add-apt-repository: command not found", you're probably missing the `python-software-properties` package. Install it with the command:
+I>
+I> {lang="text",linenos=off}
+I> ~~~~~~~~~~~~~~~
+I> $ sudo apt-get install python-software-properties
+I> ~~~~~~~~~~~~~~~
 
 **Once Ansible is installed**, make sure it's working properly by entering `ansible --version` on the command line. You should see the currently-installed version:
 

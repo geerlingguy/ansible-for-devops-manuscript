@@ -293,7 +293,7 @@ Compared to the earlier playbooks, the Memcached playbook is quite simple. Creat
         - geerlingguy.firewall
         - geerlingguy.memcached
 
-As with the other servers, we need to ensure a only the required TCP ports are open using the simple `geerlingguy.firewall` role. Next we install Memcached using the `geerlingguy.memcached` role.
+As with the other servers, we need to ensure only the required TCP ports are open using the simple `geerlingguy.firewall` role. Next we install Memcached using the `geerlingguy.memcached` role.
 
 In our `vars.yml` file (again, alongside `main.yml`), add the following:
 
