@@ -455,11 +455,11 @@ For the most basic level of security, you should install Fail2Ban and use it's d
 
 {lang=text}
     - name: Install fail2ban (RedHat).
-      apt: pkg=fail2ban state=present enablerepo=epel
+      yum: name=fail2ban state=present enablerepo=epel
       when: ansible_os_family == 'RedHat'
     
     - name: Install fail2ban (Debian).
-      apt: pkg=fail2ban state=present
+      apt: name=fail2ban state=present
       when: ansible_os_family == 'Debian'
     
     - name: Ensure fail2ban is running and enabled on boot.

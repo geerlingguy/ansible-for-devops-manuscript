@@ -12,6 +12,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed some examples in chapter 4 to ensure apt repositories update cache.
   - Fixed typos in chapter 8 (thanks to a reader's suggestion!).
   - Updated Ansible installation instructions for Debian/Ubuntu in chapter 1.
+  - Corrected use of yum module in fail2ban example in chapter 10 (thanks to @lekum!).
 
 ## Version 0.89 (2015-02-26)
 
