@@ -242,9 +242,9 @@ If you are running a playbook on a large number of servers, consider increasing 
 
 ## Use Ansible's Configuration file
 
-Ansible's main configuration file, in `/etc/ansible/ansible.cnf`, can contain a wealth of optimizations and customizations that help you run playbooks and ad-hoc tasks more easily, faster, or with better output than stock Ansible provides.
+Ansible's main configuration file, in `/etc/ansible/ansible.cfg`, can contain a wealth of optimizations and customizations that help you run playbooks and ad-hoc tasks more easily, faster, or with better output than stock Ansible provides.
 
-Read through the official documentation's [Ansible Configuration File](http://docs.ansible.com/intro_configuration.html) page for details on options you can customize in `ansible.cnf`.
+Read through the official documentation's [Ansible Configuration File](http://docs.ansible.com/intro_configuration.html) page for details on options you can customize in `ansible.cfg`.
 
 ## Summary
 
