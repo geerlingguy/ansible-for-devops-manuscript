@@ -14,6 +14,9 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Updated Ansible installation instructions for Debian/Ubuntu in chapter 1.
   - Corrected use of yum module in fail2ban example in chapter 10 (thanks to @lekum!).
   - Fixed references to `ansible.cfg` config file in appendix b (thanks to @lekum!).
+  - Fixed DigitalOcean provisioning playbook in chapter 8 (thanks to @jonathanhle!).
+  - Adjusted DigitalOcean dynamic inventory example in chapter 7.
+  - Rewrote completely nonsensical sentence in chapter 7 (thanks to @dan_bohea!).
 
 ## Version 0.89 (2015-02-26)
 

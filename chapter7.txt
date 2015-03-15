@@ -366,7 +366,7 @@ We used `register` as part of the `digital_ocean` task so we could immediately s
     PLAY RECAP *****************************************************************
     localhost                  : ok=2    changed=1    unreachable=0    failed=0
 
-Since `do` contains lace your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding on to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
+Since `do` contains the new droplet's IP address (alongside other relevant information), you can place your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
 
 {lang=text,starting-line-number=24}
         - name: Add new host to our inventory.
@@ -377,6 +377,7 @@ Since `do` contains lace your freshly-created droplet in an existing inventory g
     
     - hosts: do
       remote_user: root
+      gather_facts: false
     
       tasks:
         - name: Wait for port 22 to become available.
@@ -399,9 +400,6 @@ At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it 
     ok: [localhost]
     
     PLAY [do] ******************************************************************
-    
-    GATHERING FACTS ************************************************************
-    ok: [162.243.20.29]
     
     TASK: [Install tcpdump.] ***************************************************
     changed: [162.243.20.29]

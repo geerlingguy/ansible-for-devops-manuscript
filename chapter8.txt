@@ -618,6 +618,7 @@ The final step in our provisioning is to make sure all the droplets are booted a
 {lang=text,starting-line-number=43}
     - hosts: do
       remote_user: root
+      gather_facts: no
 
       tasks:
         - name: Wait for port 22 to become available.
