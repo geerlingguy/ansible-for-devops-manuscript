@@ -10,7 +10,7 @@ These tools are still improving rapidly, and I'm excited for what the future hol
 
 In these pages, I'll share with you all I've learned about Ansible: my favorite tool for server provisioning, configuration management, and application deployment. I hope you enjoy reading this book as much as I did writing it!
 
---- Jeff Geerling, 2014
+--- Jeff Geerling, 2015
 
 ## Who is this book for?
 
@@ -28,7 +28,7 @@ Ansible uses a simple syntax (YAML) and simple command-line tools (using common 
     ---
     # This is the beginning of a YAML file.
 
-Some lines of YAML and other code examples require more than 80 characters per line, resulting in the code wrapping to a new line. Wrapping code is indicated by a colored `\` at the end of the line of code. For example:
+Some lines of YAML and other code examples require more than 80 characters per line, resulting in the code wrapping to a new line. Wrapping code is indicated by a `\` at the end of the line of code. For example:
 
 {lang="text"}
     # The line of code wraps due to the extremely long URL.

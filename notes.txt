@@ -57,8 +57,7 @@ TODO (Add any of this?):
   - Search for "its" and "it's" and ensure proper grammatical usage.
   - Remove parentheses that are meaningless.
   - Search for 'ansible' (lower) and make sure non-CLI usage is capitalized.
-  - Make sure credits are added:
-    - Margie Newman - editor
+  - Search for 'simple' and 'simply', since I overuse these words.
 
 ## Thoughts on writing
 

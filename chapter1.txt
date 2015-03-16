@@ -111,6 +111,10 @@ Edit this hosts file with nano, vim, or whatever editor you'd like, but note you
 
 ...where `example` is the group of servers you're managing and `www.example.com` is the domain name (or IP address) of a server in that group. If you're not using port 22 for SSH on this server, you will need to add it to the address, like `www.example.com:2222`, since Ansible defaults to port 22 and won't get this value from your ssh config file.
 
+I> This first example assumes you have a server set up that you can test with; if you don't already have a spare server somewhere that you can connect to, you might want to create a small VM using DigitalOcean, Amazon Web Services, Linode, or some other service that bills by the hour. That way you can have a full server environment to work with when learning Ansible---and when you're finished testing, you can delete the server and you'll only be billed a few pennies!
+I>
+I> Replace the `www.example.com` in the above example with the name or IP address of your server.
+
 ## Running your first Ad-Hoc Ansible command
 
 Now that you've installed Ansible and created an inventory file, it's time to run a command to see if everything works! Enter the following in the terminal (we'll do something safe so it doesn't make any changes on the server):

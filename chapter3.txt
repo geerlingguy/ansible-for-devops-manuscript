@@ -22,7 +22,7 @@ On any given day, a systems administrator has many tasks:
 
 Nearly all of these tasks can be (and usually are) at least partially automated---but some often need a human touch, especially when it comes to diagnosing issues in real time. And in today's complex multi-server environments, logging into servers individually is not a workable solution.
 
-Ansible allows admins to run ad-hoc commands on one or hundreds of machines at the same time, using the `ansible` command. In Chapter 1, we ran a couple of commands (`date` and `free -m`) on a server that we added to our Ansible inventory file. This chapter will explore ad-hoc commands and multi-server environments in much greater detail. Even if you decide to ignore the rest of Ansible's powerful features, you will be able to manage your servers much more efficiently after reading this chapter.
+Ansible allows admins to run ad-hoc commands on one or hundreds of machines at the same time, using the `ansible` command. In Chapter 1, we ran a couple of commands (`ping` and `free -m`) on a server that we added to our Ansible inventory file. This chapter will explore ad-hoc commands and multi-server environments in much greater detail. Even if you decide to ignore the rest of Ansible's powerful features, you will be able to manage your servers much more efficiently after reading this chapter.
 
 I> Some of the examples in this chapter will display how you can configure certain aspects of a server with ad-hoc commands. It is usually more appropriate to contain all configuration within playbooks and templates, so it's easier to provision your servers (running the playbook the first time) and then ensure their configuration is idempotent (you can run the playbooks over and over again, and your servers will be in the correct state).
 I> 
@@ -232,13 +232,13 @@ Third, let's make sure the date and time on each server is in sync:
 {lang="text",linenos=off}
     $ ansible multi -a "date"
     192.168.60.5 | success | rc=0 >>
-    Sat Feb  1 20:23:08 UTC 2014
+    Sat Feb  1 20:23:08 UTC 2021
     
     192.168.60.4 | success | rc=0 >>
-    Sat Feb  1 20:23:09 UTC 2014
+    Sat Feb  1 20:23:09 UTC 2021
     
     192.168.60.6 | success | rc=0 >>
-    Sat Feb  1 20:23:08 UTC 2014
+    Sat Feb  1 20:23:08 UTC 2021
 
 Most applications are written with slight tolerances for per-server time jitter, but it's always a good idea to make sure the times on the different servers are as close as possible, and the simplest way to do that is to use the Network Time Protocol, which is easy enough to configure. We'll do that next, using Ansible's modules to make the process painless.
 
@@ -491,7 +491,7 @@ Wait a little while (or a *long* while, depending on how old the system image is
             "update"
         ],
         "delta": "0:13:13.973892",
-        "end": "2014-02-09 04:47:58.259723",
+        "end": "2021-02-09 04:47:58.259723",
         "finished": 1,
     
     ... [more info and stdout from job] ...

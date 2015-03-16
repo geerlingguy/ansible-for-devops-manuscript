@@ -4,7 +4,7 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current version
+## Version 0.90 (2015-03-16)
 
   - Tweaked requirements.txt explanation in chapter 8.
   - Tweaked formatting of GlusterFS cookbook in chapter 6.
@@ -17,6 +17,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed DigitalOcean provisioning playbook in chapter 8 (thanks to @jonathanhle!).
   - Adjusted DigitalOcean dynamic inventory example in chapter 7.
   - Rewrote completely nonsensical sentence in chapter 7 (thanks to @dan_bohea!).
+  - Fixed some errors throughout the first few chapters (thanks to nesfel!).
+  - Fixed a couple errors in chapters 2 and 4 (thanks to a reader!).
 
 ## Version 0.89 (2015-02-26)
 

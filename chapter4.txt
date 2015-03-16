@@ -106,7 +106,7 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
   6. The second task again starts with a human-readable name (which could be left out if you'd like).
 
      - We use the `copy` module to copy files from a source (on our local workstation) to a destination (the server being managed). We can also pass in more variables, like file metadata including ownership and permissions (`owner`, `group`, and `mode`).
-     - In this case, we are using an array with multiple elements for variable substitution; you use the syntax `{var1: value, var2: value}` to define each element (it can have as many variables as you want within, or even nested levels of variables!). When you reference the variables in the play, you simply use a dot to access the variable within the item, so `{{ item.var1 }}` would access the first variable. In our example, `item.src` access the `src` in each item.
+     - In this case, we are using an array with multiple elements for variable substitution; you use the syntax `{var1: value, var2: value}` to define each element (it can have as many variables as you want within, or even nested levels of variables!). When you reference the variables in the play, you simply use a dot to access the variable within the item, so `{{ item.var1 }}` would access the first variable. In our example, `item.src` accesses the `src` in each item.
 
   7. The third task also uses a name to describe it in a human-readable format.
 

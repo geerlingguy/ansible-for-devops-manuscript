@@ -6,7 +6,7 @@ To use SSH on Windows, you need additional software. But Ansible also requires o
 
 This appendix will guide Windows users through the author's preferred method of using Ansible on a Windows workstation.
 
-I> Ansible 1.7 and later can be used to manage Windows hosts (see Ansible's [Windows Support](http://docs.ansible.com/intro_windows.html) documentation) (but it can't be run from within Windows natively). You will still need to follow the instructions here to run the Ansible client on a Windows host, if you are stuck on Windows and want to use Ansible to manage other (Windows, Linux, Mac, etc.) hosts.
+I> Ansible 1.7 and later can be used to manage Windows hosts (see Ansible's [Windows Support](http://docs.ansible.com/intro_windows.html) documentation), but it can't be run from within Windows natively. You will still need to follow the instructions here to run the Ansible client on a Windows host, if you are stuck on Windows and want to use Ansible to manage other (Windows, Linux, Mac, etc.) hosts.
 
 ## Prerequisites
 
