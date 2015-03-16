@@ -76,7 +76,7 @@ To begin, create a new folder somewhere on your local drive (I like using `~/VMs
 
 This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 6.
 
-Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the centos64 box while building the example from Chapter 2, this process shouldn't take too long---maybe 5-10 minutes.
+Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the centos6 box while building the example from Chapter 2, this process shouldn't take too long---maybe 5-10 minutes.
 
 While that's going on, we'll work on telling Ansible about the servers, so we can start managing them right away.
 

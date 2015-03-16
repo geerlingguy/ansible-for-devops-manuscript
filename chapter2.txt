@@ -23,11 +23,11 @@ To get started with your first local virtual server, you need to download and in
     - [Download VirtualBox](https://www.virtualbox.org/wiki/Downloads) (when installing, make sure the command line tools are installed, so Vagrant can work with it)
   2. Create a new folder somewhere on your hard drive where you will keep your Vagrantfile and provisioning instructions.
   3. Open a Terminal or PowerShell window, then navigate to the folder you just created.
-  4. Add a CentOS (6.4) 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
-    `vagrant box add centos64 http://puppet-vagrant-boxes.puppetlabs.com/centos-64-x64-vbox4210-nocm.box`
+  4. Add a CentOS 6.x 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
+    `vagrant box add geerlingguy/centos6`
     (note: You can find a comprehensive list of different pre-made Linux boxes at HashiCorp's [Atlas](https://atlas.hashicorp.com/boxes/search) site, or check out the 'official' Vagrant Ubuntu boxes on the [Vagrant wiki](https://github.com/mitchellh/vagrant/wiki/Available-Vagrant-Boxes).
   5. Create a default virtual server configuration using the box you just downloaded:
-    `vagrant init centos64`
+    `vagrant init centos6`
   6. Boot your CentOS server:
     `vagrant up`
 
