@@ -26,13 +26,13 @@ Ansible allows admins to run ad-hoc commands on one or hundreds of machines at t
 
 I> Some of the examples in this chapter will display how you can configure certain aspects of a server with ad-hoc commands. It is usually more appropriate to contain all configuration within playbooks and templates, so it's easier to provision your servers (running the playbook the first time) and then ensure their configuration is idempotent (you can run the playbooks over and over again, and your servers will be in the correct state).
 I> 
-I> The examples in this chapter are for illustration purposes only, and all might not be applicable to your environment. But even if you *only* used Ansible for server management and running individual plays against groups of servers, and didn't use Ansible's playbook functionality at all, you'd still have a great orchestration and deployment tool in Ansible!
+I> The examples in this chapter are for illustration purposes only, and all might not be applicable to your environment. But even if you *only* used Ansible for server management and running individual tasks against groups of servers, and didn't use Ansible's playbook functionality at all, you'd still have a great orchestration and deployment tool in Ansible!
 
 ## Build infrastructure with Vagrant for testing
 
 For the rest of this chapter, since we want to do a bunch of experimentation without damaging any production servers, we're going to use Vagrant's powerful multi-machine capabilities to configure a few servers which we'll manage with Ansible.
 
-Earlier, we used Vagrant to simply boot up one virtual machine running CentOS 6.4. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
+Earlier, we used Vagrant to boot up one virtual machine running CentOS 6.4. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
 
 ![Three servers: two application, one database.](images/1-basic-vagrant-application.png)
 
@@ -312,7 +312,7 @@ Check to make sure Django is installed and working correctly.
 
 Things look like they're working correctly on our app servers. We can now move on to our database server.
 
-T> Almost all of the configuration we've done in this chapter would be much better off in an Ansible playbook (which will be explored in greater depth throughout the rest of this book). This chapter is simply demonstrating how easy it is to manage multiple servers---for whatever purpose---using Ansible. Even if you set up and configure servers by hand using shell commands, using Ansible will save you a ton of time and help you do everything in the most secure and efficient manner possible.
+T> Almost all of the configuration we've done in this chapter would be much better off in an Ansible playbook (which will be explored in greater depth throughout the rest of this book). This chapter demonstrates how easy it is to manage multiple servers---for whatever purpose---using Ansible. Even if you set up and configure servers by hand using shell commands, using Ansible will save you a ton of time and help you do everything in the most secure and efficient manner possible.
 
 ### Configure the Database servers
 
@@ -340,7 +340,7 @@ I> The MySQL configuration used here is for example/development purposes only! T
 
 ### Make changes to just one server
 
-Congratulations! You now have a small web application environment running Django and MySQL. It's not much, and there's not even a load balancer in front of the app servers to spread out the requests; but we've configured everything pretty quickly, and without ever having to log into a server. What's even more impressive is that you could run any of the ansible commands again (besides a couple of the simple shell commands), and they wouldn't change anything---they would simply return `"changed": false`, giving you peace of mind that the original configuration is intact.
+Congratulations! You now have a small web application environment running Django and MySQL. It's not much, and there's not even a load balancer in front of the app servers to spread out the requests; but we've configured everything pretty quickly, and without ever having to log into a server. What's even more impressive is that you could run any of the ansible commands again (besides a couple of the simple shell commands), and they wouldn't change anything---they would return `"changed": false`, giving you peace of mind that the original configuration is intact.
 
 Now that your local infrastructure has been running a while, you notice (hypothetically, of course) that the logs indicate one of the two app servers' time has gotten way out of sync with the others, likely because the NTP daemon has crashed or somehow been stopped. Quickly, you enter the following command to check the status of `ntpd`:
 
@@ -398,7 +398,7 @@ Another common use for ad-hoc commands is remote file management. Ansible makes 
 
 ### Get information about a file
 
-If you need to simply check a file's permissions, MD5, or owner, use Ansible's `stat` module:
+If you need to check a file's permissions, MD5, or owner, use Ansible's `stat` module:
 
 {lang="text",linenos=off}
     $ ansible multi -m stat -a "path=/etc/environment"
@@ -524,7 +524,7 @@ You won't be able to track progress using the `jid` anymore, but it's helpful fo
 
 W> For tasks you don't track remotely, it's usually a good idea to log the progress of the task *somewhere*, and also send some sort of alert on failure---especially, for example, when running backgrounded tasks that perform backup operations, or when running business-critical database maintenance tasks.
 
-You can also run plays in Ansible playbooks in the background, asynchronously, by defining an `async` and `poll` parameter on the play. We'll discuss playbook task backgrounding more in later chapters.
+You can also run tasks in Ansible playbooks in the background, asynchronously, by defining an `async` and `poll` parameter on the play. We'll discuss playbook task backgrounding more in later chapters.
 
 ## Check log files
 
@@ -579,9 +579,9 @@ I> Ansible denotes Ansible-managed crontab entries by adding a comment on the li
 
 ## Deploy a version-controlled application
 
-For simple application deployments, where you may simply need to update a git checkout, or copy a new bit of code to a group of servers, then run a command to finish the deployment, Ansible's ad-hoc mode can help. For more complicated deployments, you can use Ansible playbooks and rolling update features (which will be discussed in later chapters) to ensure successful deployments with zero downtime.
+For simple application deployments, where you may need to update a git checkout, or copy a new bit of code to a group of servers, then run a command to finish the deployment, Ansible's ad-hoc mode can help. For more complicated deployments, you can use Ansible playbooks and rolling update features (which will be discussed in later chapters) to ensure successful deployments with zero downtime.
 
-In the example below, I'll assume we're running a simple application on one or two servers, in the directory `/opt/myapp`. This directory is a git repository cloned from a central server or a service like GitHub, and application deployments and updates are done by simply updating the clone, then running a shell script at `/opt/myapp/scripts/update.sh`.
+In the example below, I'll assume we're running a simple application on one or two servers, in the directory `/opt/myapp`. This directory is a git repository cloned from a central server or a service like GitHub, and application deployments and updates are done by updating the clone, then running a shell script at `/opt/myapp/scripts/update.sh`.
 
 First, update the git checkout to the application's new version branch, 1.2.4, on all the app servers:
 
@@ -645,7 +645,7 @@ Accelerate mode is a spiritual descendant of the now-deprecated 'Fireball' mode,
 
 Ansible 1.5 and later contains a very nice improvement to Ansible's default OpenSSH implementation.
 
-Instead of copying files, running them on the remote server, then removing them, the new method of OpenSSH transfer will simply send and execute commands for most Ansible modules directly over the SSH connection.
+Instead of copying files, running them on the remote server, then removing them, the new method of OpenSSH transfer will send and execute commands for most Ansible modules directly over the SSH connection.
 
 This method of connection is only available in Ansible 1.5+, and it can be enabled by adding `pipelining=True` under the `[ssh_connection]` section of the Ansible configuration file (`ansible.cfg`, which will be covered in more detail later).
 

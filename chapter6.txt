@@ -2,7 +2,7 @@
 
 So far, we've used fairly straightforward examples in this book. Most examples are ad-hoc for a particular server, and listing all tasks in one long listing makes for a fairly long playbook.
 
-Ansible is very flexible when it comes to organizing your plays in more efficient ways so you can make your playbooks more maintainable, reusable, and powerful. We'll look at two ways to split up plays more efficiently: using includes and roles. Finally, we'll explore Ansible Galaxy, a repository of some community-maintained roles that help configure common packages and applications.
+Ansible is very flexible when it comes to organizing your tasks in more efficient ways so you can make your playbooks more maintainable, reusable, and powerful. We'll look at two ways to split up tasks more efficiently: using includes and roles. Finally, we'll explore Ansible Galaxy, a repository of some community-maintained roles that help configure common packages and applications.
 
 ## Includes
 
@@ -94,7 +94,7 @@ This can be helpful in limiting the noise in your main playbook, since handlers 
 
 ### Playbook includes
 
-Playbooks can even be included in other playbooks, by simply using the same `include` syntax in the top level of your playbook. For example, if you have two playbooks---one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
+Playbooks can even be included in other playbooks, using the same `include` syntax in the top level of your playbook. For example, if you have two playbooks---one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
 
 {lang="text",linenos=off}
     - hosts: all
@@ -137,7 +137,7 @@ What if I told you we could remake the 137-line Drupal LAMP server playbook from
 
 All you need to do is create two new folders in the same folder where you saved the Drupal `playbook.yml` file, `handlers` and `tasks`, then create files inside for each section of the playbook.
 
-For example, inside `handlers/handlers.yml`, you'd have, simply:
+For example, inside `handlers/handlers.yml`, you'd have:
 
 {lang="text"}
     ---
@@ -167,7 +167,7 @@ And inside `tasks/drush.yml`:
 
 Separating all the tasks into separate includes files means you'll have more files to manage for your playbook, but it helps keep the main playbook more compact (meaning it's easier to see all the installation and configuration steps the playbook contains), and also separates tasks into individual, easily-maintainable groupings. Instead of having to browse one playbook with twenty-three separate tasks, you now maintain eight included files with two to five tasks, each.
 
-It's much easier to maintain a more granular set of plays than one very long playbook. However, there's no reason to try to *start* writing a playbook with lots of individual includes. Most of the time, it's best to start with a monolithic playbook while you're working on the setup and configuration details, then move sets of tasks out to included files after you start seeing logical groupings.
+It's much easier to maintain a more granular set of tasks than one very long playbook. However, there's no reason to try to *start* writing a playbook with lots of individual includes. Most of the time, it's best to start with a monolithic playbook while you're working on the setup and configuration details, then move sets of tasks out to included files after you start seeing logical groupings.
 
 You can also use tags (demonstrated in the previous chapter) to limit the playbook run to a certain include file. Using the above example, if you wanted to add a 'drush' tag to the included drush file (so you could run `ansible-playbook playbook.yml --tags=drush` and only run the drush tasks), you can change line 20 to the following:
 
@@ -383,7 +383,7 @@ Similarly, when specifying a template, add the filename or the full path from wi
         dest=/etc/myapp/example.xml
         mode=644
 
-The `copy` module simply copies files from within the module's `files` folder, and the `template` module runs given template files through the Jinja2 templating engine, merging in any variables available during your playbook run before copying the file to the server.
+The `copy` module copies files from within the module's `files` folder, and the `template` module runs given template files through the Jinja2 templating engine, merging in any variables available during your playbook run before copying the file to the server.
 
 ### Organizing more complex and cross-platform roles
 
@@ -402,7 +402,7 @@ Initially, the role's main `tasks/main.yml` file looked something like the follo
     
     - name: Enable Apache modules.
 
-Soon after creating the role, though, I wanted to make the role work with both Debian and RedHat hosts. I could've simply added two sets of tasks in the `main.yml` file, resulting in twice the number of plays and a bunch of extra `when` statements:
+Soon after creating the role, though, I wanted to make the role work with both Debian and RedHat hosts. I could've added two sets of tasks in the `main.yml` file, resulting in twice the number of tasks and a bunch of extra `when` statements:
 
 {lang=text}
     - name: Ensure Apache is installed (via apt).
@@ -438,7 +438,7 @@ If I had gone this route, and continued with the rest of the playbook tasks in o
 
 Two important things to notice about this style of distribution-specific inclusion:
 
-  1. When including vars files (with `include_vars`), you can actually *use variables in the name of the file*. This is very handy for a variety of use cases, and here we're simply including a vars file in the format `distribution_name.yml`. For our purposes, since the role will be used on Debian and RedHat-based hosts, we can create `Debian.yml` and `RedHat.yml` files in our role's `defaults` and `vars` folders, and put distribution-specific variables there.
+  1. When including vars files (with `include_vars`), you can actually *use variables in the name of the file*. This is very handy for a variety of use cases, and here we're including a vars file in the format `distribution_name.yml`. For our purposes, since the role will be used on Debian and RedHat-based hosts, we can create `Debian.yml` and `RedHat.yml` files in our role's `defaults` and `vars` folders, and put distribution-specific variables there.
   2. When including playbook files (with `include`), you can't use variables in the name of the file, but you can do the next best thing: include the files by name explicitly, and use a condition to tell Ansible whether to run the tasks inside (the `when` condition will be applied to every task inside the included playbook).
 
 After setting things up this way, I put RedHat and CentOS-specific tasks (like `yum` tasks) into `tasks/setup-RedHat.yml`, and Debian and Ubuntu-specific tasks (like `apt` tasks) into `tasks/setup-Debian.yml`. There are other ways of making roles work cross-platform, but using distribution-specific variables files and included playbooks is one of the simplest.

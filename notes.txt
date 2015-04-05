@@ -7,12 +7,15 @@
 
 TODO (Add any of this?):
 
-  - [Windows Support](http://docs.ansible.com/intro_windows.html)
-  - Ansible configuration (`/etc/ansible/ansible.cfg`)
   - Ansible Vault
-  - High Performance / Scalable Ansible: Asynchronous actions, Polling, distributed Ansible, Redis-based fact cache
+  - Re-do Gluster example (using new `gluster_volume` module)
+  - High Performance / Scalable Ansible:
+    - Asynchronous actions
+    - Polling
+    - Distributed Ansible
+    - Redis-based fact cache
   - Error handling
-  - SSH private key management and security (see email to Erik-jan Reimers)
+  - SSH private key management and security (see emails to/from Erik-jan Reimers)
 
 ## Interesting articles / links:
 

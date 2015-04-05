@@ -8,7 +8,7 @@ Playbooks are written in [YAML](http://docs.ansible.com/YAMLSyntax.html), a huma
 
 Ad-hoc commands alone can make Ansible a powerful tool; playbooks turn Ansible into a top-notch server provisioning and configuration management tool.
 
-What attracts most DevOps personnel to Ansible is the fact that it is easy to convert shell scripts (or one-off shell commands) directly into Ansible plays. Consider the following script, which simply installs Apache on a RHEL/CentOS server:
+What attracts most DevOps personnel to Ansible is the fact that it is easy to convert shell scripts (or one-off shell commands) directly into Ansible plays. Consider the following script, which installs Apache on a RHEL/CentOS server:
 
 **Shell Script**
 
@@ -101,12 +101,12 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
   5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
 
      - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the `items` array we pass in (`{{ variable }}` references a variable in Ansible's playbooks). We tell yum to make sure the packages we define are installed with `state=present`, but we could also use `state=latest` to ensure the latest version is installed, or `state=absent` if we want to make sure the package is *not* installed.
-     - Ansible allows simple lists to be passed into plays using `with_items`: Simply define a list of items below, and each line will be passed into the play, one by one. In this case, each of the items will be substituted for the `{{ item }}` variable.
+     - Ansible allows simple lists to be passed into tasks using `with_items`: Define a list of items below, and each line will be passed into the play, one by one. In this case, each of the items will be substituted for the `{{ item }}` variable.
 
   6. The second task again starts with a human-readable name (which could be left out if you'd like).
 
      - We use the `copy` module to copy files from a source (on our local workstation) to a destination (the server being managed). We can also pass in more variables, like file metadata including ownership and permissions (`owner`, `group`, and `mode`).
-     - In this case, we are using an array with multiple elements for variable substitution; you use the syntax `{var1: value, var2: value}` to define each element (it can have as many variables as you want within, or even nested levels of variables!). When you reference the variables in the play, you simply use a dot to access the variable within the item, so `{{ item.var1 }}` would access the first variable. In our example, `item.src` accesses the `src` in each item.
+     - In this case, we are using an array with multiple elements for variable substitution; you use the syntax `{var1: value, var2: value}` to define each element (it can have as many variables as you want within, or even nested levels of variables!). When you reference the variables in the play, you use a dot to access the variable within the item, so `{{ item.var1 }}` would access the first variable. In our example, `item.src` accesses the `src` in each item.
 
   7. The third task also uses a name to describe it in a human-readable format.
 
@@ -116,7 +116,7 @@ The great thing about the way we've reformatted this list of commands Ansible ca
 
 Even better, the *second* time you run it, it won't actually do anything---besides telling you nothing has changed---as long as the server is in the correct state. So, with this one short playbook, we're able to provision and ensure the proper configuration for an Apache web server. Additionally, you will could run the playbook with the `--check` option (see the next section below) to ensure that the configuration matches what's defined in the playbook, without actually running the tasks on the server.
 
-If you ever want to update your configuration, or install another httpd package, you can simply update the file locally, or add the package to the `with_items` list, and run the playbook again. Whether you have one or a thousand servers, all of their configurations will be updated to match your playbook---and Ansible will tell you if anything ever changes (you're not making ad-hoc changes on individual production servers, *are you*?).
+If you ever want to update your configuration, or install another httpd package, you can update the file locally, or add the package to the `with_items` list, and run the playbook again. Whether you have one or a thousand servers, all of their configurations will be updated to match your playbook---and Ansible will tell you if anything ever changes (you're not making ad-hoc changes on individual production servers, *are you*?).
 
 ## Running Playbooks with `ansible-playbook`
 
@@ -138,7 +138,7 @@ You could also limit the playbook to one particular host:
 {lang="text",linenos=off}
     $ ansible-playbook playbook.yml --limit xyz.example.com
 
-If you want to simply see a list of hosts that would be affected by your playbook before you actually run it, use `--list-hosts`:
+If you want to see a list of hosts that would be affected by your playbook before you actually run it, use `--list-hosts`:
 
 {lang="text",linenos=off}
     $ ansible-playbook playbook.yml --list-hosts
@@ -268,7 +268,7 @@ Ansible can make things a little more robust. Even though the following is sligh
 Let's walk through this playbook step-by-step:
 
   1. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the keyid of an key that is already present, and can ensure the key is either present or absent (the `state` parameter). We want to import two keys---one for EPEL from the Fedora project, and one for the Remi Repository.
-  2. Since Ansible doesn't have a built-in rpm module, we simply use the rpm command, but we use Ansible's `command` module, which allows us to do two things:
+  2. Since Ansible doesn't have a built-in rpm module, we use the rpm command, but we use Ansible's `command` module, which allows us to do two things:
 
      1. Use the `creates` parameter to tell Ansible when to *not* run the command (in this case, we tell Ansible what file is present after the `rpm` command successfully completes).
      2. Use an multidimensional array of items (`with_items`) so we can define URLs and the resulting file that can be checked with `creates`.
@@ -399,7 +399,7 @@ Using one or more variable files, rather than defining everything inline, cleans
       - name: Update apt cache if needed.
         apt: update_cache=yes cache_valid_time=3600
 
-Ansible lets you run plays before or after the main set of plays using `pre_tasks` and `post_tasks`. In this case, we need to ensure that our apt cache is updated before we run the rest of the playbook, so we have the latest package versions on our server. We use Ansible's `apt` module and simply tell it to update the cache if it's been more than 3600 seconds (1 hour) since the last update.
+Ansible lets you run tasks before or after the main set of tasks using `pre_tasks` and `post_tasks`. In this case, we need to ensure that our apt cache is updated before we run the rest of the playbook, so we have the latest package versions on our server. We use Ansible's `apt` module and tell it to update the cache if it's been more than 3600 seconds (1 hour) since the last update.
 
 With that out of the way, we'll add another new section to our playbook, `handlers`:
 
@@ -408,11 +408,11 @@ With that out of the way, we'll add another new section to our playbook, `handle
       - name: restart apache
         service: name=apache2 state=restarted
 
-`handlers` are special kinds of plays that you can run at the end of a group of plays by adding the `notify` option to any of the plays in that group. The handler will only be called if one of the plays notifying the handler makes a change to the server (and doesn't fail), and it will only be notified at the *end* of the group of plays.
+`handlers` are special kinds of tasks that you can run at the end of a group of tasks by adding the `notify` option to any of the tasks in that group. The handler will only be called if one of the tasks notifying the handler makes a change to the server (and doesn't fail), and it will only be notified at the *end* of the group of tasks.
 
-To call this handler, you simply add the option `notify: restart apache` after defining the rest of a play. We've defined this handler so we can restart the `apache2` service after a configuration change, which will be explained below.
+To call this handler, add the option `notify: restart apache` after defining the rest of a play. We've defined this handler so we can restart the `apache2` service after a configuration change, which will be explained below.
 
-I> Just like variables, handlers and plays may be placed in separate files and included in your playbook to keep things tidy (we'll discuss this in chapter 6). For simplicity's sake, though, the examples in this chapter are shown as in a single playbook file. We'll discuss different playbook organization methods later.
+I> Just like variables, handlers and tasks may be placed in separate files and included in your playbook to keep things tidy (we'll discuss this in chapter 6). For simplicity's sake, though, the examples in this chapter are shown as in a single playbook file. We'll discuss different playbook organization methods later.
 
 I> By default, Ansible will stop all playbook execution when a task fails, and won't even notify any handlers that may need to be triggered. In some cases, this can lead to unintended side effects. If you want to make sure handlers always run after a task uses `notify` to call the handler, even in case of playbook failure, add `--force-handlers` to your `ansible-playbook` command.
 
@@ -536,9 +536,9 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
 
 Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `8.0.x` and `drupaltest` (or whatever values you'd like!).
 
-The last two plays (lines 12-19) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
+The last two tasks (lines 12-19) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
-At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't yet exist (there's no directory at `{{ drupal_core_path }}` yet!). This is why using `notify` is important---instead of adding a play after these three steps to restart Apache, which will fail the first time you run the playbook, notify will wait until after we've finished all the other steps in our main group of plays (giving us time to finish setting up the server), *then* restart Apache.
+At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't yet exist (there's no directory at `{{ drupal_core_path }}` yet!). This is why using `notify` is important---instead of adding a play after these three steps to restart Apache, which will fail the first time you run the playbook, notify will wait until after we've finished all the other steps in our main group of tasks (giving us time to finish setting up the server), *then* restart Apache.
 
 ### Configure PHP with `lineinfile` {#lineinfile-php}
 
@@ -623,7 +623,7 @@ Now, we'll install Drush using the latest version from GitHub:
           dest: /usr/local/bin/drush
           state: link
 
-Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the master branch, we simply pass in the `repo` (repository URL) and `dest` (destination path) parameters.
+Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the master branch, pass in the `repo` (repository URL) and `dest` (destination path) parameters.
 
 After drush is downloaded to `/opt/drush`, we use Composer to install all the required dependencies. In this case, we want Ansible to run `composer install` in the directory `/opt/drush` (this is so Composer can find drush's `composer.json` file automatically), so we pass along the parameter `chdir=/opt/drush`. Once Composer is finished, the file `/opt/drush/vendor/autoload.php` will be created, so we use the `creates` parameter to tell Ansible to skip this step if the file already exists (for idempotency).
 
@@ -876,7 +876,7 @@ T> You can find the entire example Apache Solr server playbook in this book's co
 
 At this point, you should be getting comfortable with Ansible's *modus operandi*. Playbooks are the heart of Ansible's configuration management and provisioning functionality, and the same modules and similar syntax can be used with ad-hoc commands for deployments and general server management.
 
-Now that you're familiar with playbooks, we'll explore more advanced concepts in building playbooks, like organization of plays, conditionals, variables, and more. Later, we'll explore how we can use playbooks within roles to make them infinitely more flexible, and save time setting up and configuring your infrastructure.
+Now that you're familiar with playbooks, we'll explore more advanced concepts in building playbooks, like organization of tasks, conditionals, variables, and more. Later, we'll explore how we can use playbooks within roles to make them infinitely more flexible, and save time setting up and configuring your infrastructure.
 
 {lang="text",linenos=off}
      _________________________________________

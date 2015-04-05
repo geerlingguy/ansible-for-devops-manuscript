@@ -4,6 +4,13 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current version
+
+  - Update Ansible project 'stars' count on GitHub in the introduction.
+  - Added zero-downtime multi-server deployment example to chapter 9.
+  - Removed frequent use of the filler word 'simply' (thanks to a reader's suggestion!).
+  - Fixed language around 'plays' vs. 'tasks' in chapters 4, 5, and 6 (thanks to André!).
+
 ## Version 0.90 (2015-03-16)
 
   - Tweaked requirements.txt explanation in chapter 8.
@@ -18,7 +25,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Adjusted DigitalOcean dynamic inventory example in chapter 7.
   - Rewrote completely nonsensical sentence in chapter 7 (thanks to @dan_bohea!).
   - Fixed some errors throughout the first few chapters (thanks to nesfel!).
-  - Fixed a couple errors in chapters 2 and 4 (thanks to a reader!).
+  - Fixed a couple errors in chapters 2 and 4 (thanks to Barry McClendon!).
 
 ## Version 0.89 (2015-02-26)
 

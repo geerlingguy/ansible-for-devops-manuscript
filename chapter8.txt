@@ -532,7 +532,7 @@ Now `cd` into the project's root directory, run `vagrant up`, and after ten or f
 {width=80%}
 ![Highly Available Infrastructure - Success!](images/8-ha-infrastructure-success.png)
 
-You should see something like the above screenshot; the PHP app simply displays the current app server's IP address, the individual MySQL servers' status, and the Memcached server status. Refresh the page a few times to verify Varnish is distributing requests randomly between the two app servers.
+You should see something like the above screenshot; the PHP app displays the current app server's IP address, the individual MySQL servers' status, and the Memcached server status. Refresh the page a few times to verify Varnish is distributing requests randomly between the two app servers.
 
 We have local infrastructure development covered, and Ansible makes it easy to use the exact same configuration to build our infrastructure in the cloud.
 
@@ -607,7 +607,7 @@ We loop through all the defined `droplets` using `with_items: droplets`, and aft
 
 You'll notice a few interesting things happening in this task:
 
-  - This is the first time we've used `with_indexed_items`. The reason for using this less-common loop feature is to add a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's simplest to dynamically create the variable for every server, so it's available when needed. `with_indexed_items` simply sets `item.0` to the key of the item, and `item.1` to the value of the item.
+  - This is the first time we've used `with_indexed_items`. The reason for using this less-common loop feature is to add a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's simplest to dynamically create the variable for every server, so it's available when needed. `with_indexed_items` sets `item.0` to the key of the item, and `item.1` to the value of the item.
   - `with_indexed_items` also helps us reliably set each droplet's group. Because the v1 DigitalOcean API doesn't support features like tags for Droplets, we need to set up the groups on our own. Using the `droplets` variable we manually created earlier allows us to set the proper group for a particular droplet.
   - Finally we add inventory variables per-host in `add_host` by adding the variable name as a key, and the variable value as the key's value. Simple, but powerful!
 
@@ -755,7 +755,7 @@ Now that we have all the data we need to set up security groups and instances, t
             rules_egress: "{{ item.rules_egress }}"
           with_items: security_groups
 
-The `ec2_group` requires a name, region, and rules for each security group. Security groups will be created if they don't exist, modified to match the supplied values if they do exist, or simply verified if they exist and match the given values.
+The `ec2_group` requires a name, region, and rules for each security group. Security groups will be created if they don't exist, modified to match the supplied values if they do exist, or verified if they exist and match the given values.
 
 With the security groups configured, we can provision the defined EC2 instances by looping through `instances` with the `ec2` module:
 
@@ -981,7 +981,7 @@ Kibana helpfully links to an example dashboard for Logstash (under the "Are you 
 {width=80%}
 ![Kibana's default Logstash dashboard.](images/8-elk-kibana-logstash-dashboard.png)
 
-This example won't dive too deep into customizing Kibana's dashboard customization, since there are many guides to using Kibana available freely, including [Kibana's official guide](http://www.elasticsearch.org/guide/en/kibana/current/index.html). For our purposes, we'll simply use the default dashboard.
+This example won't dive too deep into customizing Kibana's dashboard customization, since there are many guides to using Kibana available freely, including [Kibana's official guide](http://www.elasticsearch.org/guide/en/kibana/current/index.html). For our purposes, we'll use the default dashboard.
 
 I> This example uses Kibana 3.x, but a stable release of Kibana 4.x is on the horizon (as of early 2015). Some of the screenshots may show a different interface than the latest release, but this book will likely be updated with newer screenshots and updated guides once the 4.x release comes out.
 
@@ -1073,7 +1073,7 @@ Next, set up the required variables to tell the `nginx` and `logstash-forwarder`
         fields:
           type: nginx
 
-The `nginx` variables simply ensure Nginx will run optimally on our Ubuntu server, and remove the default virtualhost entry. The `logstash_forwarder` variables tell `geerlingguy.logstash-forwarder` what logs to forward to our central log server:
+The `nginx` variables ensure Nginx will run optimally on our Ubuntu server, and remove the default virtualhost entry. The `logstash_forwarder` variables tell `geerlingguy.logstash-forwarder` what logs to forward to our central log server:
 
   - `logstash_forwarder_logstash_server` and `_port`: Defines the server IP or domain and port to which logs should be transported.
   - `logstash_forwarder_files`: Defines a list of `paths` and `fields`, which identify a file or list of files to be transported to the log server, along with a `type` for the files. In this case, the authentication log (`/var/log/secure`) is a `syslog`-formatted log file, and `/var/log/nginx/access.log` is of type `nginx` (which will be parsed correctly on the Logstash server since it's in the combined log format popularized by Apache).
@@ -1388,7 +1388,7 @@ If you want to run the `.osx` dotfile, which adjusts many system and application
 
 In this case, the `.osx` dotfile allows a `--no-restart` flag to be passed to prevent the script from restarting certain apps and services including Terminal---which is good, since you'd likely be running the playbook from within Terminal.
 
-At this point, you already have the majority of your local environment set up. Copying additional settings and tweaking things further is simply an exercise in adjusting your dotfiles or including another playbook that copies or links preference files into the right places.
+At this point, you already have the majority of your local environment set up. Copying additional settings and tweaking things further is an exercise in adjusting your dotfiles or including another playbook that copies or links preference files into the right places.
 
 I'm constantly tweaking my own development workstation, and for the most part, all my configuration is wrapped up in my [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook), available on GitHub. I'd encourage you to fork that project, as well as my dotfiles, if you'd like to get started automating the build of your own development workstation. Even if you don't use a Mac, most of the structure is similar; just substitute a different package manager, and start automating everything!
 
@@ -1485,7 +1485,7 @@ Inside the new playbook, add the following:
             path: test
             state: build
 
-The playbook uses the `docker_image` module to build an image. You simply provide a name for the image, the path to the Dockerfile (in this case, inside the `test` directory), and you tell Ansible via the `state` parameter whether the image should be `present`, `absent`, or built (via `build`).
+The playbook uses the `docker_image` module to build an image. Provide a name for the image, the path to the Dockerfile (in this case, inside the `test` directory), and tell Ansible via the `state` parameter whether the image should be `present`, `absent`, or built (via `build`).
 
 I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker-py` package.
 
@@ -1559,7 +1559,7 @@ We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook
         - include: setup.yml
         - include: docker.yml
 
-We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to simply set everything up with `sudo`.
+We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo`.
 
 Angstwad's `docker_ubuntu` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
 
@@ -1621,7 +1621,7 @@ After building the images, we will need to start each of them (or at least make 
         command: /opt/start-mysql.sh
         ports: "3306:3306"
 
-Each of these containers' configuration is a little more involved than the previous. In the case of the first container, it is simply `present`; Ansible will simply ensure a `data` container is present.
+Each of these containers' configuration is a little more involved than the previous. In the case of the first container, it's just `present`; Ansible will ensure a `data` container is present.
 
 For the Flask container, we need to make sure our app is running, and *continues* running, so in this case (unlike our earlier usage of `/bin/true` to run a container briefly and exit), we are providing an explicit command to run:
 
@@ -1785,7 +1785,7 @@ For the Flask app to function properly, we'll need to get the `host_ip_address`,
 
 The shell command that registers the `host_ip` (which is used in the next task to generate the `host_ip_address` variable) is a simple way to retrieve the IP while still letting Docker do it's own virtual network management.
 
-The last two tasks simply copy the flask app and templates directory into place.
+The last two tasks copy the flask app and templates directory into place.
 
 The `docker/provisioning/www` directory should now contain the following:
 
@@ -1825,7 +1825,7 @@ Next, we need to account for the fact that there are two conditions under which 
   1. When Docker builds the container initially (using `docker build` through Ansible's `docker_image` module).
   2. When we launch the container and pass in the `data` volume (using `docker run` through Ansible's `docker` module).
 
-In the latter case, the data volume's `/var/lib/mysql` directory will supplant the container's own directory, but it will be empty! Therefore, instead of simply launching the MySQL daemon as we launched the Flask app in the `www` container, we need to build a small shell script to run on container start to detect if MySQL has already been setup inside `/var/lib/mysql`, and if not, reconfigure MySQL so the data is there.
+In the latter case, the data volume's `/var/lib/mysql` directory will supplant the container's own directory, but it will be empty! Therefore, instead of just launching the MySQL daemon as we launched the Flask app in the `www` container, we need to build a small shell script to run on container start to detect if MySQL has already been setup inside `/var/lib/mysql`, and if not, reconfigure MySQL so the data is there.
 
 Here's a simple script to do just that---using the playbook we just created to do most of the heavy lifting. Save this as `docker/provisioning/db/start-mysql.sh`:
 
@@ -1842,7 +1842,7 @@ Here's a simple script to do just that---using the playbook we just created to d
     
     exec /usr/bin/mysqld_safe
 
-This bash script simply checks if there's already a `mysql` directory inside MySQL's default data directory, and if not (as is the case when we run the container with the `data` volume), it will remove any existing `.my.cnf` connection file, run `mysql_install_db` to initialize MySQL, then run the playbook, and shut down MySQL.
+This bash script checks if there's already a `mysql` directory inside MySQL's default data directory, and if not (as is the case when we run the container with the `data` volume), it will remove any existing `.my.cnf` connection file, run `mysql_install_db` to initialize MySQL, then run the playbook, and shut down MySQL.
 
 Once that's all done (or if the persistent `data` volume has already been set up previously), MySQL is started with the `mysqld_safe` startup script which, [according to the MySQL documentation](http://dev.mysql.com/doc/refman/5.6/en/mysqld-safe.html), is "the recommended way to start a mysqld server on Unix".
 

@@ -84,7 +84,7 @@ SSH is fairly secure by default---certainly more so than telnet or rlogin's defa
   1. **Disable password-based SSH authentication.** Even though passwords are sent in the clear, disabling password-based authentication makes it impossible for brute-force password attacks to even be *attempted*, even if you have the additional (and recommended) layer of something like Fail2Ban running. Set `PasswordAuthentication no` in the configuration.
   2. **Disable root account remote login.** You shouldn't log in as the root user regardless (use `sudo` instead), but to reinforce this good habit, disable remote root user account login by setting `PermitRootLogin no` in the configuration. If you need to perform actions as root, either use `sudo` (preferred), or if it's absolutely necessary to work interactively as root, login with a normal account, then `su` to the root account.
   3. **Explicitly allow/deny SSH for users.** You can enable or disable SSH access for particular users on your system with `AllowUsers` and `DenyUsers`. To allow only 'John' to log in, the rule would be `AllowUsers John`. To allow any user *except* John to log in, the rule would be `DenyUsers John`.
-  4. **Use a non-standard port.** You can change the default SSH port from 22 to something more obscure, like 2849, and prevent thousands of 'script kiddie' attacks that simply look for servers responding on port 22. While security through obscurity is no substitute for actually securing SSH overall, it can provide a slight extra layer of protection. To change the port, set `Port [new-port-number]` in the configuration.
+  4. **Use a non-standard port.** You can change the default SSH port from 22 to something more obscure, like 2849, and prevent thousands of 'script kiddie' attacks that look for servers responding on port 22. While security through obscurity is no substitute for actually securing SSH overall, it can provide a slight extra layer of protection. To change the port, set `Port [new-port-number]` in the configuration.
 
 We'll cover how Ansible can help configure some of these particular options in SSH in the next section.
 
@@ -96,7 +96,7 @@ In some circumstances, just *establishing a connection* can take some time. Addi
 
 [Mosh](https://www.usenix.org/system/files/conference/atc12/atc12-final32.pdf), "the mobile shell", a new alternative to SSH, uses SSH to establish an initial connection, then synchronizes the following local session with a remote session on the server via UDP.
 
-Using UDP instead of TCP requires Mosh to do a little extra behind-the-scenes work to synchronize the local and remote sessions (instead of simply sending all local keystrokes over the wire serially via TCP, then waiting for stdout and stderr to be returned, like SSH).
+Using UDP instead of TCP requires Mosh to do a little extra behind-the-scenes work to synchronize the local and remote sessions (instead of sending all local keystrokes over the wire serially via TCP, then waiting for stdout and stderr to be returned, like SSH).
 
 Mosh also promises better UTF-8 support than SSH, and is well supported by all the major POSIX-like operating systems (and can even run inside Google Chrome!).
 
@@ -182,7 +182,7 @@ Another way of changing the sudoers file, and ensuring the integrity of the file
         dest: /etc/sudoers
         validate: 'visudo -cf %s'
 
-The `%s` is simply a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination. The same parameter can be passed into Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
+The `%s` is a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination. The same parameter can be passed into Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
 
 T> The sudoers file syntax is very powerful and flexible, but also a bit obtuse. Read the entire [Sudoers Manual](http://www.sudo.ws/sudoers.man.html) for all the details, or check out the [sample sudoers file](http://www.sudo.ws/sudo/sample.sudoers) for some practical examples.
 

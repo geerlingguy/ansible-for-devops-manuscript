@@ -18,7 +18,7 @@ As playbooks are Ansible's bread and butter, it's important to organize them in 
 
 Many tasks you write will be fairly obvious when you write them, but less so six months later when you are making changes. Just like application code, Ansible playbooks should be documented, at least minimally, so you can spend less time familiarizing yourself with what a particular task is supposed to do, and more time fixing problems or extending your playbooks.
 
-In YAML, you can write a comment by simply starting a line with a hash (`#`). If your comment spans multiple lines, start each line with `#`.
+In YAML, you can write a comment by starting a line with a hash (`#`). If your comment spans multiple lines, start each line with `#`.
 
 It's also a good idea to use a `name` for every task you write, besides the most trivial. If you're using the `git` module to check out a specific tag, use a `name` to indicate what repository you're using, why a tag instead of a commit hash, etc. This way, whenever your playbook is run, you'll see the comment you wrote and be assured what's going on.
 

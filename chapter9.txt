@@ -17,7 +17,7 @@ For more complex applications, you might do a full Blue-Green deployment, where 
 In this chapter, we will be covering the following deployment strategies, using a few different demonstration applications as examples:
 
   1. Single-server deployments.
-  2. Multi-server rolling deployments.
+  2. Zero-downtime multi-server deployments.
   3. Capistrano-style deployments using `f500.project_deploy`.
   4. Blue-green deployments on AWS.
 
@@ -119,7 +119,7 @@ There are also a few other variables we will need, like `app_directory` and `app
     ruby_download_url: http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.0.tar.gz
     ruby_version: 2.2.0
 
-The passenger variables simply tell Passenger to run a server available on every network interface, and to launch our app (which will be located in `/opt/demo-rails-app/public`) with `production` settings (the app's environment), using the `ruby` binary we have installed in `/usr/local/bin/ruby`.
+The passenger variables tell Passenger to run a server available on every network interface, and to launch our app (which will be located in `/opt/demo-rails-app/public`) with `production` settings (the app's environment), using the `ruby` binary we have installed in `/usr/local/bin/ruby`.
 
 The Ruby variables tell the `ruby` role to install Ruby 2.2.0 from source, since the packages available through Ubuntu's standard apt repositories only contain older versions.
 
@@ -324,7 +324,7 @@ Try creating, updating, and deleting a few articles to make sure the database an
 {width=80%}
 ![A simple app to perform CRUD operations on Articles.](images/9-rails-app-with-articles.png)
 
-The app seems to function perfectly, but it could use some improvements. After more development work, we have a new version of to deploy. We could simply update the `app_version` variable in `vars.yml` and run `vagrant provision` to run the entire provisioning and deployment playbook again, but to save a little time, and to utilize the more flexible playbook layout (with provisioning and deployment concerns separated), we can run the `deploy.yml` playbook separately.
+The app seems to function perfectly, but it could use some improvements. After more development work, we have a new version of to deploy. We could update the `app_version` variable in `vars.yml` and run `vagrant provision` to run the entire provisioning and deployment playbook again, but to save a little time, and to utilize the more flexible playbook layout (with provisioning and deployment concerns separated), we can run the `deploy.yml` playbook separately.
 
 ### Deploying application updates
 
@@ -369,15 +369,249 @@ After a minute or so, the deployment should complete, and once that's done, you'
 {width=80%}
 ![Rails app - version 1.3.0 with a responsive UI.](images/9-rails-app-1-3-0.png)
 
-Simple application update deployments will involve incrementing the `app_version` to the latest git tag, then running the `deploy.yml` playbook again. You can always run the `main.yml` playbook to ensure the entire server stack is in the correct state, but it's faster to simply deploy the app updates.
+Simple application update deployments will involve incrementing the `app_version` to the latest git tag, then running the `deploy.yml` playbook again. You can always run the `main.yml` playbook to ensure the entire server stack is in the correct state, but it's faster to just deploy the app updates.
 
-## Multi-server rolling deployments
+## Zero-downtime multi-server deployments
 
-TODO:
+A single server deployment strategy is all that's needed for many applications, but if you need to run an application on multiple servers for horizontal scalability or redundancy, deployments can be cumbersome---but not when you use Ansible!
 
-  - [Server Check.in](https://servercheck.in/) infrastructure walkthrough
-  - Rolling Updates
-  - `serial` batch size (instead of running each play in parallel on all servers) - can be defined per-play or per-playbook.
+[Server Check.in](https://servercheck.in/) is a simple server and website monitoring service that has a microservices-based architecture; there is a website, an API application, and a server checking application.
+
+The server checking application needs to run on a variety of servers hosted around the world by different providers to provide redundancy and reliability. Server Check.in uses Ansible to manage *rolling deployments* for this application, so new code can be deployed across all the servers in minutes while maintaining 100% uptime!
+
+We'll emulate part of Server Check.in's infrastructure (the check server application) by deploying and updating a simple Node.js application to a set of virtual machines. The code repository for this app is located on GitHub at `https://github.com/geerlingguy/demo-nodejs-api`. Here's a diagram of the infrastructure we'll be building:
+
+TODO - IMAGE: four servers connected to cloud
+
+To begin, create four lightweight Vagrant VMs using the following Vagrantfile:
+
+{lang=ruby}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    Vagrant.configure("2") do |config|
+      # Base VM OS configuration.
+      config.vm.box = "geerlingguy/ubuntu1404"
+      config.vm.synced_folder '.', '/vagrant', disabled: true
+      config.ssh.insert_key = false
+    
+      config.vm.provider :virtualbox do |v|
+        v.memory = 256
+        v.cpus = 1
+      end
+    
+      # Define four VMs with static private IP addresses.
+      boxes = [
+        { :name => "nodejs1", :ip => "192.168.3.2" },
+        { :name => "nodejs2", :ip => "192.168.3.3" },
+        { :name => "nodejs3", :ip => "192.168.3.4" },
+        { :name => "nodejs4", :ip => "192.168.3.5" }
+      ]
+    
+      # Provision each of the VMs.
+      boxes.each do |opts|
+        config.vm.define opts[:name] do |config|
+          config.vm.hostname = opts[:name]
+          config.vm.network :private_network, ip: opts[:ip]
+    
+          # Provision all the VMs using Ansible after the last VM is booted.
+          if opts[:name] == "nodejs4"
+            config.vm.provision "ansible" do |ansible|
+              ansible.playbook = "playbooks/main.yml"
+              ansible.inventory_path = "inventory"
+              ansible.limit = "all"
+            end
+          end
+        end
+      end
+    
+    end
+
+The above `Vagrantfile` defines four VMs that each use 256MB of RAM and have a unique hostname and IP address (defined by the `boxes` variable). Our Node.js app doesn't require much in the way of processing power or memory.
+
+In the `provision` section of the playbook, we told Vagrant to provision the all the VMs with Ansible, using the inventory file `inventory`, and the playbook `playbooks/main.yml`. Create these two files in the same folder as your Vagrantfile:
+
+{lang=text,linenos=off}
+    rolling-deployments/
+      playbooks/
+        main.yml
+      inventory
+      Vagrantfile
+
+Inside the `inventory` file, we just need to define a list of all the Node.js API app VMs by IP address:
+
+{lang=text}
+    [nodejs-api]
+    192.168.3.2
+    192.168.3.3
+    192.168.3.4
+    192.168.3.5
+    
+    [nodejs-api:vars]
+    ansible_ssh_user=vagrant
+    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+
+Inside the `main.yml` playbook, we'll call out two separate playbooks---one for the initial provisioning (installing Node.js and making sure the server is configured correctly), and another for deployment (ensuring our Node.js API app is present and running):
+
+{lang=text}
+    ---
+    - include: provision.yml
+    - include: deploy.yml
+
+Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting with `provision.yml`:
+
+{lang=text}
+    ---
+    - hosts: nodejs-api
+      sudo: yes
+    
+      vars:
+        nodejs_forever: true
+        firewall_allowed_tcp_ports:
+          - "22"
+          - "8080"
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.nodejs
+
+This extremely simple playbook runs on all the servers defined in our inventory file, and runs two roles on the servers: `geerlingguy.firewall` (which installs and configures a firewall, in this case opening ports 22 for SSH and 8080 for our app) and `geerlingguy.nodejs` (which installs Node.js, NPM, and `forever`, which we'll use to run our app as a daemon).
+
+Since we're using two roles from Ansible Galaxy, it's best practice to also include those roles in a requirements file so CI tools and others using this playbook can easily install all the required roles.
+
+Create a `requirements.txt` file in the root folder and add the following:
+
+{lang=text}
+    geerlingguy.firewall
+    geerlingguy.nodejs
+
+Now, whenever someone new to the project wants to run the playbook, all that person needs to do is run `ansible-galaxy install -r requirements.txt` to install all the required roles.
+
+At this point, your project directory should be structured like the following:
+
+{lang=text,linenos=off}
+    rolling-deployments/
+      playbooks/
+        deploy.yml
+        main.yml
+        provision.yml
+      inventory
+      requirements.txt
+      Vagrantfile
+
+Before we can run `vagrant up` and see our infrastructure in action, we need to build out the `deploy.yml` playbook, which will ensure our app is present and running correctly on all the servers.
+
+Inside `deploy.yml`, add the following:
+
+{lang=text}
+    ---
+    - hosts: nodejs-api
+      gather_facts: no
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+
+Use `sudo` for this playbook to keep things simple, and set `gather_facts` to `no` to save a little time during deployments, since our simple app doesn't require any of the gathered system facts to run.
+
+Since we have a few variables to define, and we'd like to track them separately for easier file revision history, we'll define the variables in a `vars.yml` file in the same directory as the `deploy.yml` playbook:
+
+{lang=text}
+    ---
+    app_repository: https://github.com/geerlingguy/demo-nodejs-api.git
+    app_version: "1.0.0"
+    app_directory: /opt/demo-nodejs-api
+
+Once you've saved the `vars.yml` file, continue building out `deploy.yml`, starting with a task to clone the app's repository (which we just defined in `vars.yml`):
+
+{lang=text,starting-line-number=9}
+      tasks:
+        - name: Ensure Node.js API app is present.
+          git:
+            repo: "{{ app_repository }}"
+            version: "{{ app_version }}"
+            dest: "{{ app_directory }}"
+            accept_hostkey: true
+          notify: restart forever apps
+
+Using variables for the `git` module's `repo` and `version` affords flexibility; app version changes might happen frequently, and it's easier to manage that in a separate `vars.yml` file.
+
+We also want to `notify` a `restart forever apps` handler whenever the codebase is changed. We'll define the `restart forever apps` handler later in the playbook.
+
+{lang=text,starting-line-number=18}
+        - name: Ensure Node.js API app dependencies are present.
+          npm: "path={{ app_directory }}"
+    
+        - name: Run Node.js API app tests.
+          command: "npm test chdir={{ app_directory }}"
+          changed_when: false
+
+Once the app is present on the server, we need to use `npm` to install dependencies (using Ansible's `npm` module), then run the app's test suite using `npm test`.
+
+Running the tests for the app after every deployment ensures the app is present and in a functioning state. Having a thorough unit and integration test suite that runs on every deployment is almost prerequisite to a frequent or continuously-integrated project! Running the tests during deployments also helps with ensuring zero-downtime deployments, as we'll see later.
+
+{lang=text,starting-line-number=25}
+        - name: Get list of all running Node.js apps.
+          command: forever list
+          register: forever_list
+          changed_when: false
+    
+        - name: Ensure Node.js API app is started.
+          command: "forever start {{ app_directory }}/app.js"
+          when: "forever_list.stdout.find('app.js') == -1"
+
+Once the app is present and running correctly, we need to make sure it's started. There's a command to get the list of all running apps (using `forever`), then a command to start the app if it's not already running.
+
+{lang=text,starting-line-number=34}
+        - name: Add cron entry to start Node.js API app on reboot.
+          cron:
+            name: "Start Node.js API app"
+            special_time: reboot
+            job: "forever start {{ app_directory }}/app.js"
+
+The final task adds a cron job to make sure the app is started after the server reboots. Since we're managing the deamonization of our app using `forever` instead of the OS's init system, it's simplest to make sure the app starts on system boot using a `reboot` cron job.
+
+Remember when we added the line `notify: restart forever apps` to the task that ensured the app was present on the server? It's time to define that handler, which runs the command `forever restartall` (which does exactly what it says):
+
+{lang=text,starting-line-number=40}
+      handlers:
+        - name: restart forever apps
+          command: "forever restartall"
+
+At this point, the Ansible playbooks and Vagrant configuration should be complete. The playbook will clone the `demo-nodejs-api` project, run its tests to make sure everything's working correctly, then start the app using `forever` and make sure it's started whenever the the server reboots.
+
+You can run the command below to test all the new servers and make sure the app is running correctly:
+
+{lang=text,linenos=off}
+    $ for i in {2..5}; \
+        do curl -w "\n" "http://192.168.3.$i:8080/hello/john"; \
+      done
+
+If all the servers are online, you should see the text `"hello john"` repeated four times (once for each server):
+
+{lang=text,linenos=off}
+    "hello john"
+    "hello john"
+    "hello john"
+    "hello john"
+
+You can run `vagrant provision` to run the entire provisioning and deployment process again, or just run `ansible-playbook -i inventory playbooks/deploy.yml` to run the deployment playbook again. In either case, you should see no changes, and Ansible should verify that everything's `ok`.
+
+You now have a fleet of Node.js API servers similar to Server Check.in's server checking infrastructure---except it doesn't do much yet! Luckily, the project has seen some new feature development since the initial `1.0.0` version you just deployed. We now need a way to get the new version deployed to and running on all the servers while maintaining 100% uptime for the API as a whole.
+
+### Ensuring zero downtime with `serial` and integration tests
+
+TODO.
+
+### Deploying to app servers behind a load balancer
+
+In the case of Server Check.in, there are two separate API layers that manage the complexity of ensuring all server checks happen, regardless of whether certain servers are up or down. The 'load balancing' occurs on the application layer instead of as a separate infrastructure layer (this is extremely helpful when dealing with global latency and network reliability variation).
+
+For many applications, especially those with app servers close together (e.g. in the same data center) the infrastructure layer follows a more traditional layout, with a load balancer to handle the API request distribution:
+
+TODO - IMAGE: many app servers behind one LB
+
+TODO.
 
 ## Capistrano-style deployments
 

@@ -79,7 +79,7 @@ This inventory may look a little overwhelming at first, but if you break it apar
 {width=85%}
 ![Server Check.in Infrastructure.](images/7-server-checkin-infrastructure.png)
 
-Lines 1-29 describe a few groups of servers (some with only one server), so playbooks and `ansible` commands can simply refer to the group by name. Lines 6-7 and 27-29 set variables that will apply only to the servers in the group (e.g. variables below `[servercheck-nodejs:vars]` will only apply to the servers in the `servercheck-nodejs` group).
+Lines 1-29 describe a few groups of servers (some with only one server), so playbooks and `ansible` commands can refer to the group by name. Lines 6-7 and 27-29 set variables that will apply only to the servers in the group (e.g. variables below `[servercheck-nodejs:vars]` will only apply to the servers in the `servercheck-nodejs` group).
 
 Lines 31-39 describe groups of groups (using `groupname:children` to describe 'child' groups) that allow for some helpful abstractions.
 
@@ -143,7 +143,7 @@ There are a number of different ways you can structure your infrastructure-manag
 
 Using the above playbook and the globally-configured Ansible inventory file is great for your production infrastructure, but what happens when you want to configure a separate but similar infrastructure for, say a development or user certification environment?
 
-In this case, it is easiest to simply use individual inventory files, rather than the central, locally-managed Ansible inventory file. For typical team-managed infrastructure, I would recommend including an inventory file for each environment in the same version-controlled repository as your Ansible playbooks, perhaps within an 'inventories' directory.
+In this case, it's easiest to use individual inventory files, rather than the central, locally-managed Ansible inventory file. For typical team-managed infrastructure, I would recommend including an inventory file for each environment in the same version-controlled repository as your Ansible playbooks, perhaps within an 'inventories' directory.
 
 For example, I could take the entire contents of `/etc/ansible/hosts` above, and stash that inside an inventory file named `inventory-prod`, then duplicate it, changing server names where appropriate (e.g. the `[servercheck-web]` group would only have `www-dev1.servercheck.in` for the development environment), and naming the files for the environments:
 
@@ -160,13 +160,13 @@ Now, when running `playbook.yml` to configure the development infrastructure, I 
 {lang=text,linenos=off}
     $ ansible-playbook playbook.yml -i inventory-dev
 
-Using inventory variables (which will be explored further), and well-constructed roles and/or tasks that use the variables effectively, you could architect your entire infrastructure, with environment-specific configurations, simply by changing some things in your inventory files.
+Using inventory variables (which will be explored further), and well-constructed roles and/or tasks that use the variables effectively, you could architect your entire infrastructure, with environment-specific configurations, by changing some things in your inventory files.
 
 ## Inventory variables
 
 Chapter 5 introduced basic methods of managing variables for individual hosts or groups of hosts through your inventory in the [inventory variables](#inventory-variables) section, but it's worth exploring the different ways of defining and overriding variables through inventory here.
 
-For extremely simple use cases---usually when you simply need to define one or two connection-related variables (like `ansible_ssh_user` or `ansible_ssh_port`)---you can place variables directly inside an inventory file.
+For extremely simple use cases---usually when you need to define one or two connection-related variables (like `ansible_ssh_user` or `ansible_ssh_port`)---you can place variables directly inside an inventory file.
 
 Assuming we have a standalone inventory file for a basic web application, here are some examples of variable definition inside the file:
 
@@ -408,7 +408,7 @@ At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it 
     162.243.20.29              : ok=2    changed=1    unreachable=0    failed=0
     localhost                  : ok=2    changed=1    unreachable=0    failed=0
 
-If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can simply run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
+If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
 
 T> Note that you might need to disable strict host key checking to get provisioning and instant configuration to work correctly, otherwise you may run into an error stating that Ansible can't connect to the new droplet during the second play. To do this, add the line `host_key_checking=False` under the `[defaults]` section in your `ansible.cfg` file (located in `/etc/ansible` by default).
 T> 
@@ -435,7 +435,7 @@ There are a few excellent guides to using Ansible with AWS, for example:
   - [Ansible - Amazon Web Services Guide](http://docs.ansible.com/guide_aws.html)
   - [Ansible for AWS](https://leanpub.com/ansible-for-aws)
 
-I won't be covering dynamic inventory in this chapter, but will simply mention that the `ec2.py` dynamic inventory script, along with Ansible's extensive support for AWS infrastructure through `ec2_*` modules, makes Ansible the best and most simple tool for managing a broad AWS infrastructure.
+I won't be covering dynamic inventory in this chapter, but will mention that the `ec2.py` dynamic inventory script, along with Ansible's extensive support for AWS infrastructure through `ec2_*` modules, makes Ansible the best and most simple tool for managing a broad AWS infrastructure.
 
 In the next chapter, one of the examples will include a guide for provisioning infrastructure on AWS, along with a quick overview of dynamic inventory on AWS.
 
@@ -471,7 +471,7 @@ You could add multiple groups with add_host, and you can also add other variable
 
 The custom port will be used when Ansible connects to this host, and the `myapp_memory_maximum` will be passed into the playbooks just as any other inventory variable.
 
-The `group_by` module is even simpler, and simply allows you to create dynamic groups during the course of a playbook run. Usage is extremely simple:
+The `group_by` module is even simpler, and allows you to create dynamic groups during the course of a playbook run. Usage is extremely simple:
 
 {lang=text,linenos=off}
     - hosts: all
@@ -486,7 +486,7 @@ After running the above playbook, you'd see all your normal inventory groups, pl
 
 ### Multiple inventory sources - mixing static and dynamic inventories
 
-If you need to combine static and dynamic inventory, or even if you wish to use multiple dynamic inventories (for example, if you are managing servers hosted by two different cloud providers), you can simply pass a directory to `ansible` or `ansible-playbook`, and Ansible will combine the output of all the inventories (both static and dynamic) inside the directory:
+If you need to combine static and dynamic inventory, or even if you wish to use multiple dynamic inventories (for example, if you are managing servers hosted by two different cloud providers), you can pass a directory to `ansible` or `ansible-playbook`, and Ansible will combine the output of all the inventories (both static and dynamic) inside the directory:
 
 {lang=text,linenos=off}
     `ansible-playbook -i path/to/inventories main.yml`

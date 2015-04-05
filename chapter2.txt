@@ -84,7 +84,7 @@ Ansible just took the simple playbook you defined, parsed the YAML syntax, and r
 {lang="text"}
     ---
 
-This first line is simply a marker showing that the rest of the document will be formatted in YAML (read a [getting started guide for YAML](http://www.yaml.org/start.html)).
+This first line is a marker showing that the rest of the document will be formatted in YAML (read a [getting started guide for YAML](http://www.yaml.org/start.html)).
 
 {lang="text",starting-line-number=2}
     - hosts: all
@@ -138,7 +138,7 @@ We could be even more terse (and really demonstrate Ansible's powerful simplicit
       - yum: name=ntp state=installed
       - service: name=ntpd state=started enabled=yes
 
-I> Just as with code and configuration files, documentation in Ansible (e.g. using the `name` function and/or adding comments to the YAML for complicated plays) is not absolutely necessary. However, I'm a firm believer in thorough (but concise) documentation, so I almost always document what my plays will do by providing a `name` for each one. This also helps when you're running the playbooks, so you can see what's going on in a human-readable format.
+I> Just as with code and configuration files, documentation in Ansible (e.g. using the `name` function and/or adding comments to the YAML for complicated tasks) is not absolutely necessary. However, I'm a firm believer in thorough (but concise) documentation, so I almost always document what my tasks will do by providing a `name` for each one. This also helps when you're running the playbooks, so you can see what's going on in a human-readable format.
 
 ## Summary
 

@@ -2,7 +2,7 @@
 
 The playbooks and simple playbook organization we used in the previous chapter cover many common use cases, but when discussing the breadth of system administration needs, there are thousands more little features of Ansible that you need to know.
 
-We'll cover things like how to run plays with more granularity, how to organize your plays and playbooks for simplicity and usability, and other advanced playbook topics that will help you manage your infrastructure with even more confidence.
+We'll cover things like how to run plays with more granularity, how to organize your tasks and playbooks for simplicity and usability, and other advanced playbook topics that will help you manage your infrastructure with even more confidence.
 
 ## Handlers
 
@@ -46,13 +46,13 @@ There are a few other considerations when dealing with handlers:
 
 ## Environment variables
 
-Ansible allows you to work with environment variables in a variety of ways. First of all, if you simply need to set some environment variables for your remote user account, you can do that by adding lines to the remote user's `.bash_profile`, like so:
+Ansible allows you to work with environment variables in a variety of ways. First of all, if you need to set some environment variables for your remote user account, you can do that by adding lines to the remote user's `.bash_profile`, like so:
 
 {lang=text,linenos=off}
     - name: Add an environment variable to the remote user's shell.
       lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
 
-All subsequent plays would then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further plays, it's recommended you use a play's `register` option to store the environment variable in a variable Ansible can use later, for example:
+All subsequent tasks would then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further tasks, it's recommended you use a task's `register` option to store the environment variable in a variable Ansible can use later, for example:
 
 {lang=text}
     - name: Add an environment variable to the remote user's shell.
@@ -65,7 +65,7 @@ All subsequent plays would then have access to this environment variable (rememb
     - name: Print the value of the environment variable.
       debug: msg="The variable is {{ foo.stdout }}"
 
-We use `source ~/.bash_profile` in line 4 because Ansible needs to make sure it's using the latest environment configuration for the remote user. In some situations, the plays all run over a persistent or quasi-cached SSH session, over which `$ENV_VAR` wouldn't yet be defined.
+We use `source ~/.bash_profile` in line 4 because Ansible needs to make sure it's using the latest environment configuration for the remote user. In some situations, the tasks all run over a persistent or quasi-cached SSH session, over which `$ENV_VAR` wouldn't yet be defined.
 
 (This is also the first time the `debug` module has made an appearance. It will be explored more in-depth along with other debugging techniques later.).
 
@@ -90,7 +90,7 @@ You can also set the environment for just one play, using the `environment` opti
       environment:
         http_proxy: http://example-proxy:80/
 
-That could be rather cumbersome, though, especially if you have many plays that require a proxy or some other environment variable. In this case, you can pass an environment in via a variable in your playbook's `vars` section (or via an included variables file), like so:
+That could be rather cumbersome, though, especially if you have many tasks that require a proxy or some other environment variable. In this case, you can pass an environment in via a variable in your playbook's `vars` section (or via an included variables file), like so:
 
 {lang=text,linenos=off}
     vars:
@@ -146,7 +146,7 @@ In a playbook or variables include file, a variable's value is assigned using a 
 
 ### Playbook Variables
 
-There are many different ways you can define variables to use in plays.
+There are many different ways you can define variables to use in tasks.
 
 Variables can be passed in via the command line, when calling `ansible-playbook`, with the `--extra-vars` option:
 
@@ -257,7 +257,7 @@ Simple variables (gathered by Ansible, defined in inventory files, or defined in
 
 When the command is run, Ansible will substitute the contents of `my_environment` for `{{ my_environment }}`. So the resulting command would be something like `/opt/my-app/rebuild dev`.
 
-Many variables you will use are structured as arrays (or 'lists'), and simply accessing the array `foo` would not give you enough information to be useful (except when passing in the array in a context where Ansible will use the entire array, like when using `with_items`).
+Many variables you will use are structured as arrays (or 'lists'), and accessing the array `foo` would not give you enough information to be useful (except when passing in the array in a context where Ansible will use the entire array, like when using `with_items`).
 
 If you define a list variable like so:
 
@@ -471,17 +471,17 @@ After lots of experience building playbooks, roles, and managing inventories, yo
   - Playbooks should rarely define variables (e.g. via `set_fact`), but rather, variables should be defined either in included `vars_files` or, less often, via inventory.
   - Only truly host- or group-specific variables should be defined in host or group inventories.
   - Dynamic and static inventory sources should contain a minimum of variables, especially as these variables are often less visible to those maintaining a particular playbook.
-  - Command line variables (`-e`) should be avoided when possible. One of the main use cases is when doing local testing or running one-off playbooks where you aren't worried about the maintainability or idempotence of the plays you're running.
+  - Command line variables (`-e`) should be avoided when possible. One of the main use cases is when doing local testing or running one-off playbooks where you aren't worried about the maintainability or idempotence of the tasks you're running.
 
 See Ansible's [Variable Precedence](http://docs.ansible.com/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable) documentation for more detail and examples.
 
 ## If/then/when - Conditionals
 
-Many plays need only be run in certain circumstances. Some plays use modules with built-in idempotence (as is the case when ensuring a yum or apt package is installed), and you usually don't need to define further conditional behaviors for these plays.
+Many tasks need only be run in certain circumstances. Some tasks use modules with built-in idempotence (as is the case when ensuring a yum or apt package is installed), and you usually don't need to define further conditional behaviors for these tasks.
 
-However, there are many plays---especially those using Ansible's `command` or `shell` modules---which require further input as to when they're supposed to run, whether they've changed anything after they've been run, or when they've failed to run.
+However, there are many tasks---especially those using Ansible's `command` or `shell` modules---which require further input as to when they're supposed to run, whether they've changed anything after they've been run, or when they've failed to run.
 
-We'll cover all the main conditionals behaviors you can apply to Ansible plays, as well as how you can tell Ansible when a play has done something to a server or failed.
+We'll cover all the main conditionals behaviors you can apply to Ansible tasks, as well as how you can tell Ansible when a play has done something to a server or failed.
 
 ### Jinja2 Expressions, Python built-ins, and Logic
 
@@ -524,7 +524,7 @@ It's generally best to stick with simpler Jinja2 filters and variables, but it's
 
 ### `register`
 
-In Ansible, any play can 'register' a variable, and once registered, that variable will be available to all subsequent plays. Registered variables work just like normal variables or host facts.
+In Ansible, any play can 'register' a variable, and once registered, that variable will be available to all subsequent tasks. Registered variables work just like normal variables or host facts.
 
 Many times, you may need the output (stdout or stderr) of a shell command, and you can get that in a variable using the following syntax:
 
@@ -534,7 +534,7 @@ Many times, you may need the output (stdout or stderr) of a shell command, and y
 
 Later, you can access stdout (as a string) with `my_command_result.stdout`, and stderr with `my_command_result.stderr`.
 
-Registered facts are very helpful for many types of plays, and can be used both with conditionals (defining when and how a play runs), and in any part of the play. As an example, if you have a command that outputs a version number string like "10.0.4", and you register the output as `version`, you can use the string later when doing a code checkout by printing the variable `{{ version.stdout }}`.
+Registered facts are very helpful for many types of tasks, and can be used both with conditionals (defining when and how a play runs), and in any part of the play. As an example, if you have a command that outputs a version number string like "10.0.4", and you register the output as `version`, you can use the string later when doing a code checkout by printing the variable `{{ version.stdout }}`.
 
 T> If you want to see the different properties of a particular registered variable, you can run a playbook with `-v` to inspect play output. Usually, you'll get access to values like `changed` (whether the play resulted in a change), `delta` (the time it took to run the play), `stderr` and `stdout`, etc. Some Ansible modules (like `stat`) add much more data to the registered variable, so always inspect the output with `-v` if you need to see what's inside.
 
@@ -548,13 +548,13 @@ One of the most helpful extra keys you can add to a play is a `when` statement. 
 
 The above statement assumes you've defined the `is_db_server` variable as a boolean (`true` or `false`) earlier, and will run the play if the value is true, or skip the play when the value is false.
 
-If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run plays conditionally like so:
+If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run tasks conditionally like so:
 
 {lang=text,linenos=off}
     - yum: name=mysql-server state=present
       when: (is_db_server is defined) and is_db_server
 
-`when` is even more powerful if used in conjunction with variables registered by previous plays. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
+`when` is even more powerful if used in conjunction with variables registered by previous tasks. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
 
 {lang=text,linenos=off}
     - command: my-app --status
@@ -563,7 +563,7 @@ If you only define the `is_db_server` variable on database servers (meaning ther
     - command: do-something-to-my-app
       when: "'ready' in myapp_result.stdout"
 
-These examples are a little contrived, but they illustrate basic uses of `when` in your plays. Here are some examples of uses of `when` in real-world playbooks:
+These examples are a little contrived, but they illustrate basic uses of `when` in your tasks. Here are some examples of uses of `when` in real-world playbooks:
 
 {lang=text,linenos=off}
     # From our Node.js playbook - register a command's output, then see
@@ -630,7 +630,7 @@ In this case, we only want Ansible to report a failure when the command returns 
 
 Sometimes there are commands that should be run always, and they often report errors. Or there are scripts you might run that output errors left and right, and the errors don't actually indicate a problem, but they're just annoying (and they cause your playbooks to stop executing).
 
-For these situations, you can simply add `ignore_errors` to the task, and Ansible will remain blissfully unaware of any problems running a particular task. Be careful using this, though; it's usually best if you can find a way to work with and around the errors generated by tasks so playbooks *do* fail if there are actual problems.
+For these situations, you can add `ignore_errors` to the task, and Ansible will remain blissfully unaware of any problems running a particular task. Be careful using this, though; it's usually best if you can find a way to work with and around the errors generated by tasks so playbooks *do* fail if there are actual problems.
 
 ## Local Actions and Delegation
 
@@ -727,7 +727,7 @@ There is one caveat when adding one or multiple tags using the `tags` option in 
     # Non-working example.
     tags: one, two, three
 
-In general, I tend to use tags for larger playbooks, especially with individual roles and plays, but unless I'm debugging a set of tasks, I generally avoid adding tags to individual tasks or includes, simply for style reasons (not adding tags everywhere reduces visual clutter). You will need to find a tagging style that suits your needs and lets you run (or *not* run) the specific parts of your playbooks you desire.
+In general, I tend to use tags for larger playbooks, especially with individual roles and plays, but unless I'm debugging a set of tasks, I generally avoid adding tags to individual tasks or includes (not adding tags everywhere reduces visual clutter). You will need to find a tagging style that suits your needs and lets you run (or *not* run) the specific parts of your playbooks you desire.
 
 ## Summary
 
