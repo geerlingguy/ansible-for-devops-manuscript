@@ -93,7 +93,7 @@ I> ~~~~~~~~~~~~~~~
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 1.8.4
+    ansible 1.9.0
 
 ## Creating a basic inventory file {#basic-inventory}
 

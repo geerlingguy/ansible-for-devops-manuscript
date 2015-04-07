@@ -532,6 +532,7 @@ Once you've saved the `vars.yml` file, continue building out `deploy.yml`, start
             version: "{{ app_version }}"
             dest: "{{ app_directory }}"
             accept_hostkey: true
+          register: app_updated
           notify: restart forever apps
 
 Using variables for the `git` module's `repo` and `version` affords flexibility; app version changes might happen frequently, and it's easier to manage that in a separate `vars.yml` file.
@@ -539,16 +540,21 @@ Using variables for the `git` module's `repo` and `version` affords flexibility;
 We also want to `notify` a `restart forever apps` handler whenever the codebase is changed. We'll define the `restart forever apps` handler later in the playbook.
 
 {lang=text,starting-line-number=18}
+        - name: Stop all running instances of the app.
+          command: "forever stopall"
+          when: app_updated.changed
+    
         - name: Ensure Node.js API app dependencies are present.
           npm: "path={{ app_directory }}"
+          when: app_updated.changed
     
         - name: Run Node.js API app tests.
           command: "npm test chdir={{ app_directory }}"
-          changed_when: false
+          when: app_updated.changed
 
-Once the app is present on the server, we need to use `npm` to install dependencies (using Ansible's `npm` module), then run the app's test suite using `npm test`.
+Once the app is present on the server, we need to use `npm` to install dependencies (using Ansible's `npm` module), then run the app's test suite using `npm test`. To save time, we only stop the application, update dependencies, and run tests if the application has changed (using the `app_updated` variable we registered when checking out the application code).
 
-Running the tests for the app after every deployment ensures the app is present and in a functioning state. Having a thorough unit and integration test suite that runs on every deployment is almost prerequisite to a frequent or continuously-integrated project! Running the tests during deployments also helps with ensuring zero-downtime deployments, as we'll see later.
+Running the tests for the app during every deployment ensures the app is present and in a functioning state. Having a thorough unit and integration test suite that runs on every deployment is almost prerequisite to a frequent or continuously-integrated project! Running the tests during deployments also helps with ensuring zero-downtime deployments, as we'll see later.
 
 {lang=text,starting-line-number=25}
         - name: Get list of all running Node.js apps.
@@ -600,6 +606,8 @@ You can run `vagrant provision` to run the entire provisioning and deployment pr
 You now have a fleet of Node.js API servers similar to Server Check.in's server checking infrastructure---except it doesn't do much yet! Luckily, the project has seen some new feature development since the initial `1.0.0` version you just deployed. We now need a way to get the new version deployed to and running on all the servers while maintaining 100% uptime for the API as a whole.
 
 ### Ensuring zero downtime with `serial` and integration tests
+
+`ansible-playbook -i inventory playbooks/deploy.yml`
 
 TODO.
 

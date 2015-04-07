@@ -55,21 +55,21 @@ To begin, create a new folder somewhere on your local drive (I like using `~/VMs
       # Application server 1.
       config.vm.define "app1" do |app|
         app.vm.hostname = "orc-app1.dev"
-        app.vm.box = "geerlingguy/centos6"
+        app.vm.box = "geerlingguy/centos7"
         app.vm.network :private_network, ip: "192.168.60.4"
       end
     
       # Application server 2.
       config.vm.define "app2" do |app|
         app.vm.hostname = "orc-app2.dev"
-        app.vm.box = "geerlingguy/centos6"
+        app.vm.box = "geerlingguy/centos7"
         app.vm.network :private_network, ip: "192.168.60.5"
       end
     
       # Database server.
       config.vm.define "db" do |db|
         db.vm.hostname = "orc-db.dev"
-        db.vm.box = "geerlingguy/centos6"
+        db.vm.box = "geerlingguy/centos7"
         db.vm.network :private_network, ip: "192.168.60.6"
       end
     end
@@ -177,29 +177,35 @@ First, let's make sure the servers have disk space available for our application
 
 {lang="text",linenos=off}
     $ ansible multi -a "df -h"
-    192.168.60.5 | success | rc=0 >>
-    Filesystem            Size  Used Avail Use% Mounted on
-    /dev/mapper/VolGroup-lv_root
-                          8.4G  1.1G  7.0G  13% /
-    tmpfs                 120M     0  120M   0% /dev/shm
-    /dev/sda1             485M   33M  427M   8% /boot
-    /vagrant              233G  200G   34G  86% /vagrant
-    
     192.168.60.6 | success | rc=0 >>
-    Filesystem            Size  Used Avail Use% Mounted on
-    /dev/mapper/VolGroup-lv_root
-                          8.4G  1.1G  7.0G  13% /
-    tmpfs                 120M     0  120M   0% /dev/shm
-    /dev/sda1             485M   33M  427M   8% /boot
-    /vagrant              233G  200G   34G  86% /vagrant
+    Filesystem               Size  Used Avail Use% Mounted on
+    /dev/mapper/centos-root   19G 1014M   18G   6% /
+    devtmpfs                 111M     0  111M   0% /dev
+    tmpfs                    120M     0  120M   0% /dev/shm
+    tmpfs                    120M  4.3M  115M   4% /run
+    tmpfs                    120M     0  120M   0% /sys/fs/cgroup
+    /dev/sda1                497M  124M  374M  25% /boot
+    none                     233G  217G   17G  94% /vagrant
+    
+    192.168.60.5 | success | rc=0 >>
+    Filesystem               Size  Used Avail Use% Mounted on
+    /dev/mapper/centos-root   19G 1014M   18G   6% /
+    devtmpfs                 111M     0  111M   0% /dev
+    tmpfs                    120M     0  120M   0% /dev/shm
+    tmpfs                    120M  4.3M  115M   4% /run
+    tmpfs                    120M     0  120M   0% /sys/fs/cgroup
+    /dev/sda1                497M  124M  374M  25% /boot
+    none                     233G  217G   17G  94% /vagrant
     
     192.168.60.4 | success | rc=0 >>
-    Filesystem            Size  Used Avail Use% Mounted on
-    /dev/mapper/VolGroup-lv_root
-                          8.4G  1.1G  7.0G  13% /
-    tmpfs                 120M     0  120M   0% /dev/shm
-    /dev/sda1             485M   33M  427M   8% /boot
-    /vagrant              233G  200G   34G  86% /vagrant
+    Filesystem               Size  Used Avail Use% Mounted on
+    /dev/mapper/centos-root   19G 1014M   18G   6% /
+    devtmpfs                 111M     0  111M   0% /dev
+    tmpfs                    120M     0  120M   0% /dev/shm
+    tmpfs                    120M  4.3M  115M   4% /run
+    tmpfs                    120M     0  120M   0% /sys/fs/cgroup
+    /dev/sda1                497M  124M  374M  25% /boot
+    none                     233G  217G   17G  94% /vagrant
 
 It looks like we have plenty of room for now; our application is pretty lightweight.
 
@@ -207,23 +213,23 @@ Second, let's also make sure there is enough memory on our servers:
 
 {lang="text",linenos=off}
     $ ansible multi -a "free -m"
-    192.168.60.5 | success | rc=0 >>
+    192.168.60.4 | success | rc=0 >>
                  total       used       free     shared    buffers     cached
-    Mem:           238        172         66          0         11        103
-    -/+ buffers/cache:         57        181
-    Swap:          927          0        927
+    Mem:           238        187         50          4          1         69
+    -/+ buffers/cache:        116        121
+    Swap:         1055          0       1055
     
     192.168.60.6 | success | rc=0 >>
                  total       used       free     shared    buffers     cached
-    Mem:           238        172         66          0         11        103
-    -/+ buffers/cache:         56        181
-    Swap:          927          0        927
+    Mem:           238        190         47          4          1         72
+    -/+ buffers/cache:        116        121
+    Swap:         1055          0       1055
     
-    192.168.60.4 | success | rc=0 >>
+    192.168.60.5 | success | rc=0 >>
                  total       used       free     shared    buffers     cached
-    Mem:           238        172         66          0         11        103
-    -/+ buffers/cache:         56        181
-    Swap:          927          0        927
+    Mem:           238        186         52          4          1         67
+    -/+ buffers/cache:        116        121
+    Swap:         1055          0       1055
 
 Memory is pretty tight, but since we're running three VMs on our localhost, we need to be a little conservative.
 
@@ -235,7 +241,7 @@ Third, let's make sure the date and time on each server is in sync:
     Sat Feb  1 20:23:08 UTC 2021
     
     192.168.60.4 | success | rc=0 >>
-    Sat Feb  1 20:23:09 UTC 2021
+    Sat Feb  1 20:23:08 UTC 2021
     
     192.168.60.6 | success | rc=0 >>
     Sat Feb  1 20:23:08 UTC 2021
@@ -305,10 +311,10 @@ Check to make sure Django is installed and working correctly.
 {lang="text",linenos=off}
     $ ansible app -a "python -c 'import django; print django.get_version()'"
     192.168.60.4 | success | rc=0 >>
-    1.6.1
+    1.8
     
     192.168.60.5 | success | rc=0 >>
-    1.6.1
+    1.8
 
 Things look like they're working correctly on our app servers. We can now move on to our database server.
 
@@ -318,16 +324,18 @@ T> Almost all of the configuration we've done in this chapter would be much bett
 
 We configured the application servers using the `app` group defined in Ansible's main inventory, and we can configure the database server (currently the only server in the `db` group) using the similarly-defined `db` group.
 
-Let's install MySQL, start it, and configure the server's firewall to allow access on MySQL's default port, 3306.
+Let's install MariaDB, start it, and configure the server's firewall to allow access on MariaDB's default port, 3306.
 
 {lang="text",linenos=off}
-    $ ansible db -s -m yum -a "name=mysql-server state=present"
-    $ ansible db -s -m service -a "name=mysqld state=started enabled=yes"
+    $ ansible db -s -m yum -a "name=mariadb-server state=present"
+    $ ansible db -s -m service -a "name=mariadb state=started enabled=yes"
     $ ansible db -s -a "iptables -F"
     $ ansible db -s -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp \
     -m tcp --dport 3306 -j ACCEPT"
 
-If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MySQL still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MySQL server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL module requires the `MySQL-python` module to be present on the managed server.
+If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MariaDB still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MariaDB server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL modules require the `MySQL-python` module to be present on the managed server.
+
+T> Why MariaDB and not MySQL? RHEL 7 and CentOS 7 have MariaDB as the default supported MySQL-compatible database server. Some of the tooling around MariaDB still uses the old 'MySQL*' naming syntax, but if you're used to MySQL, things work similarly with MariaDB.
 
 {lang="text",linenos=off}
     $ ansible db -s -m yum -a "name=MySQL-python state=present"

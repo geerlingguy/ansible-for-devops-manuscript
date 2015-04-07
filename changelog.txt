@@ -10,6 +10,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added zero-downtime multi-server deployment example to chapter 9.
   - Removed frequent use of the filler word 'simply' (thanks to a reader's suggestion!).
   - Fixed language around 'plays' vs. 'tasks' in chapters 4, 5, and 6 (thanks to André!).
+  - Fixed ad-hoc Django installation in chapter 3 (thanks to @wimvandijck!).
 
 ## Version 0.90 (2015-03-16)
 
