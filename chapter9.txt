@@ -381,7 +381,8 @@ The server checking application needs to run on a variety of servers hosted arou
 
 We'll emulate part of Server Check.in's infrastructure (the check server application) by deploying and updating a simple Node.js application to a set of virtual machines. The code repository for this app is located on GitHub at `https://github.com/geerlingguy/demo-nodejs-api`. Here's a diagram of the infrastructure we'll be building:
 
-TODO - IMAGE: four servers connected to cloud
+{width=80%}
+![Four servers connected to the Internet.](images/9-multi-server-deployment-cloud.png)
 
 To begin, create four lightweight Vagrant VMs using the following Vagrantfile:
 
@@ -607,9 +608,49 @@ You now have a fleet of Node.js API servers similar to Server Check.in's server 
 
 ### Ensuring zero downtime with `serial` and integration tests
 
-`ansible-playbook -i inventory playbooks/deploy.yml`
+Now, after a little extra time in development, we have new features to deploy in a `1.0.1` version. You could run the exact same `ansible-playbook` command as above, adding in `--extra-vars "app_version=1.0.1"`, but best practice is to update the variable in your included variables file, since that change can be tracked in version control and (hopefully) be used for automated deployments.
 
-TODO.
+Change the `app_version` in `playbooks/vars.yml` to `1.0.1`, and run the deployment playbook again:
+
+{lang=text,linenos=off}
+    ansible-playbook -i inventory playbooks/deploy.yml
+
+Uh oh---after we deployed the new version, our tests started failing! Since we deployed to all four servers asynchronously, all four application servers are offline, and our boss and customers are going to be very angry.
+
+In this case, rolling back is simply a matter of reverting to `1.0.0` and redeploying (go ahead and do that now, so you keep at least a few 9's of uptime!), but imagine if part of the application update changed a database schema or did something else that required a lot more work to roll back changes; you'd be in a world of hurt!
+
+Ansible has two particular settings that will help protect you when you deploy to many servers while maintaining your infrastructure's overall integrity during a failed deployment.
+
+Open the deployment playbook (`playbooks/deploy.yml`) and modify the initial settings to match the following:
+
+{lang=text}
+    ---
+    - hosts: nodejs-api
+      gather_facts: no
+      sudo: yes
+      serial: 2
+
+Note the addition of `serial: 1`. This tells Ansible to run the entire playbook on two servers at a time. If you update `app_version` to `1.0.1` again, and run the playbook, you should see it run on two of the four servers, and once it hits the test failure, the playbook execution will stop---leaving your other two servers up (and saving you a few hours on a conference bridge explaining the outage).
+
+You could again revert back to `1.0.0`, but in the time that you were deploying the failed version, developers finished a new version that got all tests passing again, `1.0.2`. Go ahead and update `app_version` and run the playbook again.
+
+{lang=text,linenos=off}
+    PLAY RECAP ***********************************************************
+    192.168.3.2         : ok=8    changed=5    unreachable=0    failed=0
+    192.168.3.3         : ok=8    changed=5    unreachable=0    failed=0
+    192.168.3.4         : ok=8    changed=5    unreachable=0    failed=0
+    192.168.3.5         : ok=8    changed=5    unreachable=0    failed=0
+
+*Whew!* Everything is back online and operational, and all tests are passing with the latest version of the application.
+
+I> This contrived example should be pretty rare in the real world; it should be rare that tests fail only on production. But there are many times where networking issues or even latency in third party services causes a random failure or two. Whenever you move beyond one server (usually to provide both redundancy and cacpacity), you will eventually run into these transient issues. It's best to account for them in your automated deployment process by tuning settings like `serial` well.
+
+Ansible exposes two different settings that you can use to control rolling deployment failure scenarios:
+
+  1. `serial`: Can be an integer (e.g. `3`) or a percentage (e.g. `30%`). Used to control how many hosts Ansible will manage at once.
+  2. `max_fail_percentage`: An integer between `1-100`. Used to tell Ansible what percentage of hosts can fail a task before the play will be aborted.
+
+If you have some headroom in your infrastructure, you can set these values higher without fear of leaving your infrastructure in a very bad state after a failed deployment. If you have only as much infrastructure running as your application needs, and having more than one or two servers offline would put your infrastructure into a bad state, you should probably be more conservative with these settings---and provision a little more capacity!
 
 ### Deploying to app servers behind a load balancer
 
@@ -617,7 +658,8 @@ In the case of Server Check.in, there are two separate API layers that manage th
 
 For many applications, especially those with app servers close together (e.g. in the same data center) the infrastructure layer follows a more traditional layout, with a load balancer to handle the API request distribution:
 
-TODO - IMAGE: many app servers behind one LB
+{width=80%}
+![Four servers behind a load balancer.](images/9-multi-server-deployment-lb.png)
 
 TODO.
 
@@ -641,7 +683,6 @@ TODO:
 
 TODO:
 
-  - `max_fail_percentage`
   - `run_once` (e.g. for a database update command)
   - `delegate_to` / `local_action`
   - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
