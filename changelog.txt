@@ -4,7 +4,7 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current version
+## Version 0.92 (2015-04-09)
 
   - Update Ansible project 'stars' count on GitHub in the introduction.
   - Added zero-downtime multi-server deployment example to chapter 9.
