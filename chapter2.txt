@@ -27,7 +27,7 @@ To get started with your first local virtual server, you need to download and in
     `vagrant box add geerlingguy/centos6`
     (note: You can find a comprehensive list of different pre-made Linux boxes at HashiCorp's [Atlas](https://atlas.hashicorp.com/boxes/search) site, or check out the 'official' Vagrant Ubuntu boxes on the [Vagrant wiki](https://github.com/mitchellh/vagrant/wiki/Available-Vagrant-Boxes).
   5. Create a default virtual server configuration using the box you just downloaded:
-    `vagrant init centos6`
+    `vagrant init geerlingguy/centos6`
   6. Boot your CentOS server:
     `vagrant up`
 

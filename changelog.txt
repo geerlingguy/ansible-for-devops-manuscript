@@ -4,6 +4,13 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current version
+
+  - Added information about Capistrano and blue-green deployments in chapter 9.
+  - Reorganized chapter 9 with an eye towards a 1.0 release.
+  - Merged chapter 12 into chapter 11 with an eye towards a 1.0 release.
+  - Fixed `vagrant init` command in chapter 2 (thanks to Ned Schumann!).
+
 ## Version 0.92 (2015-04-09)
 
   - Update Ansible project 'stars' count on GitHub in the introduction.

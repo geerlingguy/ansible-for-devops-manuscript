@@ -71,6 +71,7 @@ TODO (Add any of this?):
 ## Cowsay
 
   - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
+  - "Fool me once, shame on you. Fool me twice, prepare to die. (Klingon Proverb)"
   - "Do or do not. There is no try. (Yoda)" (Used in 0.38 email 4/11/14)
   - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
 

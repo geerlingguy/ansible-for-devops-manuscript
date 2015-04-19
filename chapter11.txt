@@ -1,4 +1,12 @@
-# Chapter 11 - Automating Your Automation with Ansible Tower
+# Chapter 11 - Automating Your Automation - Ansible Tower and CI/CD
+
+At this point, you should be able to convert almost any bit of your infrastructure's configuration into Ansible playbooks, roles, and inventories. And before deploying any infrastructure changes, you should test the changes in a non-production environment (just like you would with application releases). Manually running a playbook that configures your entire infrastructure, then making sure it does what you expect, is a good start towards order and stability.
+
+Since all your infrastructure is defined in code, you can start automating all the aspects of infrastructure deployment, and even run unit, functional, and integration tests on your infrastructure, just like you do for your applications.
+
+This section will cover different levels of infrastructure automation and testing, and highlight tools and techniques you can use to automate and streamline infrastructure operations.
+
+## Ansible Tower
 
 Throughout this book, all the examples use Ansible's CLI to run playbooks and report back the results. For smaller teams, especially when everyone on the team is well-versed in how to use Ansible, YAML syntax, and follows security best practices with playbooks and variables files, using the CLI can be a sustainable approach.
 
@@ -13,15 +21,15 @@ Ansible Tower checks off these items---and many more---and provides a great mech
 
 While this book includes a brief overview of Tower, and how you can get started with Tower, it is highly recommended that you read through Ansible, Inc's extensive [Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
 
-## Getting and Installing Ansible Tower
+### Getting and Installing Ansible Tower
 
 TODO.
 
-## Using Ansible Tower
+### Using Ansible Tower
 
 TODO.
 
-## Tower Alternatives
+### Tower Alternatives
 
 TODO:
 
@@ -29,9 +37,196 @@ TODO:
   - [Rundeck](http://rundeck.org/)
   - [Go CI](http://www.go.cd/)
 
-## Summary
+## Jenkins CI
 
 TODO.
+
+## Unit, Integration, and Functional Testing
+
+When determining how you should test your infrastructure, you need to understand the different kinds of testing, and then determine the kinds of testing on which you should focus more effort.
+
+*Unit* testing, when applied to applications, is testing that applies to the smallest units of code (usually functions or class methods). In Ansible, unit testing would typically apply to individual playbooks. You could run individual playbooks in an isolated environment, but that's often not worth the effort. What *is* worth your effort is at least checking the playbook syntax, to make sure you didn't just commit a YAML file that will break an entire deployment because of a missing quotation mark, or a whitespace issue!
+
+*Integration* testing, which is definitely more valuable when it comes to Ansible, is the testing of small groupings of individual units of code, to make sure they work correctly together. Breaking your infrastructure definition into many task-specific roles and playbooks allows you to do this; if you've structured your playbooks so they have no or limited dependencies, you could test each role individually in a fresh virtual machine, before you use the role as part of a full infrastructure deployment.
+
+*Functional* testing involves the whole shebang. Basically, you set up a complete infrastructure environment, and then run tests against it to make sure *everything* was successfully installed, deployed, and configured. Ansible's own reporting is helpful in this kind of testing (and often, all that is necessary), and there are also external tools that can be used to test infrastructure even more deeply.
+
+It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's often simple, inexpensive, and just as fast to test directly on cloud instances that mirror your production infrastructure!
+
+We'll begin with some of the simplest tests you can run against Ansible configuration, along with some common debugging techniques, then progress on to some more advanced, full-fledged functional testing methods using tools to fully automate the process.
+
+### Debugging and Asserting
+
+TODO:
+
+  - `debug`
+  - `fail`/`assert`
+
+### Checking syntax and performing dry runs
+
+TODO:
+
+  - `ansible-playbook --syntax-check`
+  - `ansible-playbook --check`
+  - [Ansible lint](https://github.com/willthames/ansible-lint)
+
+### Automated testing on GitHub using Travis CI
+
+Automated testing using a continuous integration tool like Travis CI (which is free for public projects and integrated very well with GitHub) allows you to run tests against Ansible playbooks or roles you have hosted on GitHub with every commit.
+
+There are four main things that should be tested when building and maintaining Ansible playbooks or roles:
+
+  1. The playbook or role's syntax (are all the .yml files formatted correctly?).
+  2. Whether the playbook or role will run through all the included tasks without failing.
+  3. The playbook or role's idempotence (if run again, it should not make any changes!).
+  4. The playbook or role's success (does the role do what it should be doing?).
+
+Ultimately, the most important aspect is #4, because what's the point of a playbook or role if it doesn't do what you want it to do (e.g. start a web server, configure a database, deploy an app, etc.)?
+
+We're going to assume, for the rest of this example, that you're testing a role you have on GitHub, though the example can be applied just as easily for standalone Ansible playbooks.
+
+#### Setting up a role for testing
+
+Since you're going to need a simple Ansible playbook and inventory file to test your role, you can create both inside a new 'tests' directory in your Ansible role:
+
+{lang=text}
+    # Directory structure:
+    my_role/
+      tests/
+        test.yml <-- your test playbook
+        inventory <-- an inventory file to use with the playbook
+
+Inside the inventory file, add:
+
+{lang=text}
+    localhost
+
+We just want to tell Ansible to run commands on the local machine (we'll use the --connection=local option when running the test playbook).
+
+Inside `test.yml`, add:
+
+{lang=text}
+    ---
+    - hosts: localhost
+      remote_user: root
+      roles:
+        - github-role-project-name
+
+Substitude your own role name for `github-role-project-name` (e.g. `ansible-role-django`). This is a typical Ansible playbook, and we tell Ansible to run the tasks on localhost, with the `root` user (otherwise, you could run tasks with `travis` if you want, and use `sudo` on certain tasks). You can add `vars`, `vars_files`, etc. if you want, but we'll keep things simple, because for many smaller roles, the role is pre-packaged with sane defaults and all the other info it needs to run.
+
+The next step is to add a `.travis.yml` file to your role so Travis CI will pick it up and use it for testing. Add that file to the root level of your role, and add the following to kick things off:
+
+{lang=yaml}
+    ---
+    language: python
+    python: "2.7"
+    
+    before_install:
+      # Make sure everything's up to date.
+      - sudo apt-get update -qq
+    
+    install:
+      # Install Ansible.
+      - pip install ansible
+    
+      # Add ansible.cfg to pick up roles path.
+      - "printf '[defaults]\nroles_path = ../' > ansible.cfg"
+    
+    script:
+      # We'll add some commands to test the role here.
+
+The only surprising part here is the `printf` line in the `install` section; I've added that line to create a quick and dirty `ansible.cfg` configuration file Ansible will use to set the `roles_path` one directory up from the current working directory. That way, we can include roles like `github-role-project-name`, or if we use `ansible-galaxy` to download dependencies (as another command in the install section), we can just use `- galaxy-role-name-here` to include that role in our `test.yml` playbook.
+
+Now that we have the basic structure, it's time to start adding the commands to test our role.
+
+#### Testing the role's syntax
+
+This is the easiest test; `ansible-playbook` has a built in command that will check a playbook's syntax (including all the included files and roles), and return `0` if there are no problems, or an error code and some output if there were any syntax issues.
+
+{lang=text}
+    ansible-playbook -i tests/inventory tests/test.yml --syntax-check
+
+Add this as a command in the `script` section of `.travis.yml`:
+
+{lang=text}
+    script:
+      # Check the role/playbook's syntax.
+      - ansible-playbook -i tests/inventory tests/test.yml --syntax-check
+
+If there are any syntax errors, Travis will fail the build and output the errors in the log.
+
+#### Role success - first run
+
+The next aspect to check is whether the role runs correctly or fails on its first run.
+
+{lang=text}
+    # Run the role/playbook with ansible-playbook.
+    - "ansible-playbook -i tests/inventory tests/test.yml --connection=local --sudo"
+
+This is a basic ansible-playbook command, which runs the playbook `test.yml` against the local host, using `--sudo`, and with the inventory file we added to the role's `tests` directory.
+
+Ansible returns a non-zero exit code if the playbook run fails, so Travis will know whether the command succeeded or failed.
+
+#### Role idempotence
+
+Another important test is the idempotence test---does the role change anything if it runs a second time? It should not, since all tasks you perform via Ansible should be idempotent (ensuring a static/unchanging configuration on subsequent runs with the same settings).
+
+{lang=text}
+    # Run the role/playbook again, checking to make sure it's idempotent.
+    - >
+      ansible-playbook -i tests/inventory tests/test.yml --connection=local --sudo
+      | grep -q 'changed=0.*failed=0'
+      && (echo 'Idempotence test: pass' && exit 0)
+      || (echo 'Idempotence test: fail' && exit 1)
+
+This command runs the exact same command as before, but pipes the results through grep, which checks to make sure 'changed' and 'failed' both report `0`. If there were no changes or failures, the idempotence test passes (and Travis sees the `0` exit and is happy), but if there were any changes or failures, the test fails (and Travis sees the `1` exit and reports a build failure).
+
+#### Role success - final result
+
+The last thing I check is whether the role actually did what it was supposed to do. If it configured a web server, is the server responding on port 80 or 443 without any errors? If it configured a command line application, does that command line application work when invoked, and do the things it's supposed to do?
+
+{lang=text}
+    # Request a page via the web server, to make sure it's running and responds.
+    - "curl http://localhost/"
+
+In this example, I'm testing a web server by loading 'localhost'; curl will exit with a 0 status (and dump the output of the web server's response) if the server responds with a 200 OK status, or will exit with a non-zero status if the server responds with an error status (like 500) or is unavailable.
+
+Taking this a step further, you could even run a deployed application or service's own automated tests after ansible is finished with the deployment, thus testing your infrastructure and application in one go---but we're getting ahead of ourselves here... that's a topic for later!
+
+#### Some notes about Travis CI
+
+There are a few things you need to know about Travis CI, especially if you're testing Ansible, which will rely heavily on the VM environment inside which it is running:
+
+  - **Ubuntu 12.04**: As of this writing, the only OS available via Travis CI is Ubuntu 12.04. Most of my roles work with Ubuntu/Debian/RedHat/CentOS, so it's not an issue for me... but if your roles strictly target a non-Debian-flavored distro, you probably won't get much mileage out of Travis. (There is an [open issue](https://github.com/travis-ci/travis-ci/issues/2046) to get Travis upgraded to Ubuntu 14.04, at least).
+  - **Preinstalled packages**: Travis CI comes with a bunch of services installed out of the box, like MySQL, Elasticsearch, Ruby, etc. In the `.travis.yml` `before_install` section, you may need to do some `apt-get remove --purge [package]` commands and/or other cleanup commands to make sure the VM is fresh for your Ansible role's run.
+  - **Networking/Disk/Memory**: Travis CI continously shifts the VM specs you're using, so don't assume you'll have X amount of RAM, disk space, or network capacity. You can add commands like `cat /proc/cpuinfo`, `cat /proc/meminfo`, `free -m`, etc. in the `.travis.yml` `before_install` section if you need to figure out the resources available in your VM.
+
+See much more information about the VM environment on the [Travis CI Build Environment page](http://docs.travis-ci.com/user/ci-environment/).
+
+#### Real-world examples
+
+This style of testing is integrated into many of the `geerlingguy.*` roles on Ansible Galaxy; here are a few example roles that use Travis CI integration in the way outlined above:
+
+  - https://github.com/geerlingguy/ansible-role-apache
+  - https://github.com/geerlingguy/ansible-role-gitlab
+  - https://github.com/geerlingguy/ansible-role-mysql
+
+### Automated testing with `test-runner`
+
+TODO:
+
+  - [debops/test-runner](https://github.com/debops/test-runner)
+
+### Functional testing using serverspec
+
+TODO:
+
+  - [server-spec](http://serverspec.org/)
+  - Caveat: Ansible already testing things as it goes. Do you really need another layer of testing?
+
+## Summary
+
+Tools to help manage, test, and run playbooks regularly and easily, such as Travis CI, Jenkins, and Ansible Tower, also help deliver certainty when applying changes to your infrastructure using Ansible. In addition the information contained in this chapter, read through the [Testing Strategies](http://docs.ansible.com/test_strategies.html) documentation in Ansible's documentation for a comprehensive overview of infrastructure testing and Ansible.
 
 {lang="text",linenos=off}
      ________________________________________

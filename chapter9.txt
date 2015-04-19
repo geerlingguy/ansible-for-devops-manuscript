@@ -1,27 +1,26 @@
 # Chapter 9 - Deployments with Ansible
 
-Deploying application code to servers is one of the hardest, but most rewarding, aspects of any development team. Most shops that use traditional deployment techniques (manual steps, shell scripts, and prayers) dread deployments, especially for complex, monolithic apps.
+Deploying application code to servers is one of the hardest, but most rewarding, tasks of any development team. Most shops using traditional deployment techniques (manual steps, shell scripts, and prayers) dread deployments, especially for complex, monolithic apps.
 
-Deployments are less daunting when you adopt modern deployment processes and find the right amount of automation. In the best case, deployments become so boring and routine they barely register as a blip on your team's radar.
+Deployments are less daunting when you adopt modern deployment processes and use the right amount of automation. In the best case, deployments become so boring and routine they barely register as a blip on your team's radar.
 
-Consider Etsy, a company whose engineers are deploying code to production [up to 40 times per day](http://www.slideshare.net/mikebrittain/principles-and-practices-in-continuous-deployment-at-etsy), with no manual intervention from the operations team. The operations team is free to work on more creative endeavors than repetitively completing the same tasks over and over, and the developers get to see their beautifully-crafted code go live in near-real-time!
+Consider Etsy, a company whose engineers are deploying code to production [up to 40 times per day](http://www.slideshare.net/mikebrittain/principles-and-practices-in-continuous-deployment-at-etsy), with no manual intervention from the operations team. The operations team is free to work on more creative endeavors, and the developers see their code go live in near-real-time!
 
-Etsy's production deployment schedule is enabled by a strong DevOps-oriented culture (with robust code repository management, continuous integration, well-tested code, feature flags, etc.). While it may not be possible to start deploying *your* application to production 20 times a day immediately, you can move a long way towards effortless deployments by automating deployments with Ansible.
+Etsy's production deployment schedule is enabled by a strong DevOps-oriented culture (with robust code repository management, continuous integration, well-tested code, feature flags, etc.). While it may not be immediately possible to start deploying *your* application to production 20 times a day, you can move a long way towards effortless deployments by automating deployments with Ansible.
 
 ## Deployment strategies
 
 There are dozens of ways to deploy code to servers. For the simplest of applications, all that's involved might be switching to a new tag in a code repository on the server and restarting a service.
 
-For more complex applications, you might do a full Blue-Green deployment, where you build an entire new infrastructure alongside your current production infrastructure, run tests on the new infrastructure, then automatically cut over to the new instances. While this may be overkill for many applications (especially if you can tolerate a little deployment downtime), it is becoming more and more common, and Ansible can orchestrate the entire process automatically.
+For more complex applications, you might do a full Blue-Green deployment, where you build an entire new infrastructure alongside your current production infrastructure, run tests on the new infrastructure, then automatically cut over to the new instances. This may be overkill for many applications (especially if <100% uptime is acceptable), but it is becoming more and more common---and Ansible can automate the entire process.
 
-In this chapter, we will be covering the following deployment strategies, using a few different demonstration applications as examples:
+In this chapter, we will be covering the following deployment strategies:
 
   1. Single-server deployments.
   2. Zero-downtime multi-server deployments.
-  3. Capistrano-style deployments using `f500.project_deploy`.
-  4. Blue-green deployments on AWS.
+  3. Capistrano-style and blue-green deployments.
 
-These are four of the most common deployment techniques, and they cover most common use cases today. There are other ways you can make your deployment processes even more robust, and many application-level and organization-level decisions you can make to ensure deployment success (especially when dealing with schema changes, data migrations, and major feature additions), but those deployment aspects are out of the scope of this book.
+These are three of the most common deployment techniques, and they cover many common use cases. There are other ways you can strengthen your deployment processes, often involving application-level and organizational change, but those deployment aspects are out of the scope of this book.
 
 ## Simple single-server deployments
 
@@ -663,29 +662,34 @@ For many applications, especially those with app servers close together (e.g. in
 
 TODO.
 
-## Capistrano-style deployments
+## Capistrano-style and blue-green deployments
 
-TODO:
+Many developers who deal with Ruby applications are familiar with [Capistrano](http://capistranorb.com/), a task automation and application deployment application built with Ruby. Capistrano's basic style of deployment is to create dated release directories, then symlink the current release into a stable application directory, along with resources that are continuous among releases (like logs and uploaded files).
 
-  - [Deploying with Ansible](https://groups.google.com/forum/?#!topic/ansible-project/R3Kr2uMYUt4)
-  - [project_deploy module](https://galaxy.ansible.com/list#/roles/2266) (something similar is slated for core inclusion)
+Capistrano does a lot more than that basic deployment model, but many people want to replicate that simple application deployment workflow (which is also fairly simple for rollbacks, since you just revert the symlink to the previous release directory!). This is fairly simple to do with Ansible, and rather than walk you through the entire process in this book, I'll point you to a few great resources that explain the process in detail, along with an Ansible Galaxy role that coordinates Capistrano-style deployments even more easily!
 
-## Blue-green deployments
+  - [Rebuilding Capistrano-like deployment with Ansible](http://blog.versioneye.com/2014/09/24/rebuilding-capistrano-like-deployment-with-ansible/)
+  - [project_deploy role on Ansible Galaxy](https://galaxy.ansible.com/list#/roles/732)
+  - [Thoughts on deploying with Ansible](http://www.future500.nl/articles/2014/07/thoughts-on-deploying-with-ansible/) (background for the above role)
+  - [Ansible project-deploy](http://www.slideshare.net/ramondelafuente/ansible-projectdeploy) (presentation about the above role)
 
-TODO:
+Extending things a little further, many organizations use **blue-green** deployments. The basic concept involves bringing up a parallel production infrastructure, then switching over to it. The cutover may take only a few milliseconds and no active production infrastructure is ever offline during the deployment process.
 
-  - Set up parallel infrastructure.
-  - Run tests on new infrastructure.
-  - Manage load balancers (BigIP, ELB, netscaler, etc.) in [pre|post]_task.
-  - After cutover, destroy old infrastructure.
+A few different technologies and concepts, like container-based infrasturcture and microservices (which are faster to deploy), and better cloud autoscaling and load balancing options, have made blue-green deployments much easier than in the past.
+
+This book won't go through a detailed example of this style of deployment, as the process is similar to other examples provided, the only difference being an additional task of switching a load balancer from the old to the new infrastructure once it's up and running. Ansible's blog has an excellent overview of AWS-based blue-green deployments: [Immutable Systems and Ansible](http://www.ansible.com/blog/immutable-systems), and there are built-in modules to manage almost any type of load balancer you could use, including [F5's BIG-IP](http://docs.ansible.com/list_of_network_modules.html#f5), [HAProxy](http://docs.ansible.com/haproxy_module.html), [Citrix NetScaler](http://docs.ansible.com/netscaler_module.html), and [Amazon ELB](http://docs.ansible.com/ec2_elb_module.html).
+
+## Additional Deployment Scenarios
+
+  - [`run_once`](http://docs.ansible.com/playbooks_delegation.html#run-once) For things like database updates and schema changes.
+  - [`delegate_to`](http://docs.ansible.com/playbooks_delegation.html#delegation)
+  - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
 
 ## Summary
 
-TODO:
+Automating deployments with Ansible enables your development team to have their code on production servers more reliably and quickly, and it enables your operations team to spend less time on repetitive tasks, and more time improving your infrastructure.
 
-  - `run_once` (e.g. for a database update command)
-  - `delegate_to` / `local_action`
-  - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
+This chapter outlined only a few of the most popular deployment techniques, but Ansible is flexible enough to handle almost any situation out of the box.
 
 {lang=text,linenos=off}
      _______________________________________
