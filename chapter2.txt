@@ -23,15 +23,15 @@ To get started with your first local virtual server, you need to download and in
     - [Download VirtualBox](https://www.virtualbox.org/wiki/Downloads) (when installing, make sure the command line tools are installed, so Vagrant can work with it)
   2. Create a new folder somewhere on your hard drive where you will keep your Vagrantfile and provisioning instructions.
   3. Open a Terminal or PowerShell window, then navigate to the folder you just created.
-  4. Add a CentOS 6.x 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
-    `vagrant box add geerlingguy/centos6`
+  4. Add a CentOS 7.x 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
+    `vagrant box add geerlingguy/centos7`
     (note: You can find a comprehensive list of different pre-made Linux boxes at HashiCorp's [Atlas](https://atlas.hashicorp.com/boxes/search) site, or check out the 'official' Vagrant Ubuntu boxes on the [Vagrant wiki](https://github.com/mitchellh/vagrant/wiki/Available-Vagrant-Boxes).
   5. Create a default virtual server configuration using the box you just downloaded:
-    `vagrant init geerlingguy/centos6`
+    `vagrant init geerlingguy/centos7`
   6. Boot your CentOS server:
     `vagrant up`
 
-Vagrant has downloaded a pre-built 64-bit CentOS 6.4 virtual machine (you can [build your own](http://docs.vagrantup.com/v2/virtualbox/boxes.html) virtual machine 'boxes', if you so desire), loaded it into VirtualBox with the configuration defined in the default Vagrantfile (which is now in the folder you created earlier), and booted the virtual machine.
+Vagrant has downloaded a pre-built 64-bit CentOS 7 virtual machine (you can [build your own](http://docs.vagrantup.com/v2/virtualbox/boxes.html) virtual machine 'boxes', if you so desire), loaded it into VirtualBox with the configuration defined in the default Vagrantfile (which is now in the folder you created earlier), and booted the virtual machine.
 
 Managing this virtual server is extremely easy: `vagrant halt` will shut down the VM, `vagrant up` will bring it back up, and `vagrant destroy` will completely delete the machine from VirtualBox. A simple `vagrant up` again will re-create it from the base box you originally downloaded.
 

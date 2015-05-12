@@ -32,7 +32,7 @@ I> The examples in this chapter are for illustration purposes only, and all migh
 
 For the rest of this chapter, since we want to do a bunch of experimentation without damaging any production servers, we're going to use Vagrant's powerful multi-machine capabilities to configure a few servers which we'll manage with Ansible.
 
-Earlier, we used Vagrant to boot up one virtual machine running CentOS 6.4. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
+Earlier, we used Vagrant to boot up one virtual machine running CentOS 7. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
 
 ![Three servers: two application, one database.](images/1-basic-vagrant-application.png)
 
@@ -74,9 +74,9 @@ To begin, create a new folder somewhere on your local drive (I like using `~/VMs
       end
     end
 
-This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 6.
+This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 7.
 
-Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the centos6 box while building the example from Chapter 2, this process shouldn't take too long---maybe 5-10 minutes.
+Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the box while building the example from Chapter 2, this process shouldn't take too long---maybe 5-10 minutes.
 
 While that's going on, we'll work on telling Ansible about the servers, so we can start managing them right away.
 
