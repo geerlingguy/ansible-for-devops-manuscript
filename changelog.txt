@@ -10,6 +10,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Reorganized chapter 9 with an eye towards a 1.0 release.
   - Merged chapter 12 into chapter 11 with an eye towards a 1.0 release.
   - Fixed `vagrant init` command in chapter 2 (thanks to Ned Schumann!).
+  - Completed 'Delegation, Local Actions, and Pauses' section in chapter 5.
+  - Completed DigitalOcean dynamic inventory example in chapter 7.
 
 ## Version 0.92 (2015-04-09)
 

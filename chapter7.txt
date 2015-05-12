@@ -192,7 +192,7 @@ Fortunately, Ansible provides a more flexible way of declaring host and group va
 
 ### `host_vars`
 
-For [Hosted Apache Solr](https://www.hostedapachesolr.com/), different servers in a `solr` group have different memory requirements. The simplest way to tell Ansible to override a default variable in our Ansible playbook (in this case, the `tomcat_xmx` variable) is to use a `host_vars` directory (which can be placed either in the same location as your inventory file, or in a playbook's root directory), and place a YAML file named after the host which needs the overridden variable.
+For [Hosted Apache Solr](https://hostedapachesolr.com/), different servers in a `solr` group have different memory requirements. The simplest way to tell Ansible to override a default variable in our Ansible playbook (in this case, the `tomcat_xmx` variable) is to use a `host_vars` directory (which can be placed either in the same location as your inventory file, or in a playbook's root directory), and place a YAML file named after the host which needs the overridden variable.
 
 As an illustration of the use of `host_vars`, we'll assume we have the following directory layout:
 
@@ -416,13 +416,18 @@ T> You should normally leave `host_key_checking` enabled, but when rapidly build
 
 #### DigitalOcean dynamic inventory with `digital_ocean.py`
 
-TODO: Steps to getting dynamic inventory up and running:
+Once you have some DigitalOcean droplets, you need a way for Ansible to dynamically build an inventory of your servers so you can build playbooks and use the servers in logical groupings (or run playbooks and `ansible` commands directly on all droplets).
 
-  1. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py) from Ansible on GitHub: `$ curl https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py .`.
-  2. Make the inventory script executable: `$ chmod +x digital_ocean.py`.
-  3. Make sure the script is working (with the credentials you defined in `digital_ocean.ini` earlier) by running the script directly: `$ ./digital_ocean.py --pretty`. After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
-  4. Ping all your DigitalOcean droplets: `$ ansible all -m ping -i digital_ocean.py -u root`.
-  5. Use `add_hosts` with dynamic inventory to build or rebuild your infrastructure quickly and easily.
+There are a few steps to getting DigitalOcean's official dynamic inventory script working:
+
+  1. Install `dopy` via pip (the DigitalOcean Python library): `$ pip install dopy`.
+  2. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py) from Ansible on GitHub: `$ curl -O https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py`.
+  3. Make the inventory script executable: `$ chmod +x digital_ocean.py`.
+  4. Make sure you have the credentials configured in `digital_ocean.ini` (as explained earlier in this chapter). Alternatively, you can set `DO_CLIENT_ID` and `DO_API_KEY` in your environment, or pass the command line options `--client-id` and `--api-key`.
+  5. Make sure the script is working by running the script directly: `$ ./digital_ocean.py --pretty`. After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
+  6. Ping all your DigitalOcean droplets: `$ ansible all -m ping -i digital_ocean.py -u root`.
+
+Now that you have all your hosts being loaded through the dynamic inventory script, you can use `add_hosts` to build groups of the Droplets for use in your playbooks. Alternatively, if you want to fork the `digital_ocean.py` inventory script, you can modify it to suit your needs; exclude certain servers, build groups based on certain criteria, etc.
 
 I> Ansible currently supports DigitalOcean's v1 API, which makes working with DigitalOcean slightly more difficult. The v2 API allows you to use region names (e.g. "nyc2") instead of numeric IDs, allows you to [add metadata to your droplets](https://www.digitalocean.com/community/tutorials/an-introduction-to-droplet-metadata), and much more. Ansible should soon support the v2 API. If you're interested in the current status of this effort, or would like to help in migrating to the v2 API, visit [the v2 API support issue on GitHub](https://github.com/ansible/ansible-modules-core/issues/209).
 
@@ -497,7 +502,8 @@ One caveat: Ansible ignores `.ini` and backup files in the directory, but will a
 
 TODO:
 
-  - See [developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html).
+  - [Dynamic Inventory](http://docs.ansible.com/intro_dynamic_inventory.html)
+  - [Developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html)
 
 ## Summary
 

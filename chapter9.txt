@@ -681,6 +681,8 @@ This book won't go through a detailed example of this style of deployment, as th
 
 ## Additional Deployment Scenarios
 
+TODO:
+
   - [`run_once`](http://docs.ansible.com/playbooks_delegation.html#run-once) For things like database updates and schema changes.
   - [`delegate_to`](http://docs.ansible.com/playbooks_delegation.html#delegation)
   - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
