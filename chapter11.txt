@@ -23,19 +23,99 @@ While this book includes a brief overview of Tower, and how you can get started 
 
 ### Getting and Installing Ansible Tower
 
-TODO.
+Ansible has a very thorough [Ansible Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which details the installation and configuration of Ansible Tower. For the purposes of this chapter, since we just want to download and try out Tower locally, we are going to use Ansible's official Vagrant box to quickly build an Ansible Tower VM.
+
+Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then create a directory (e.g. `tower`) and do the following within the directory:
+
+  1. `vagrant init tower http://vms.ansible.com/ansible-tower-2.1.4-virtualbox.box` (Create a new Vagrantfile using the Tower base box from Ansible).
+  2. `vagrant up` (Build the Tower VM).
+  3. `vagrant ssh` (Log into the VM, and Tower will display a message with connection information).
+
+I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
+
+You can now visit the URL provided by the login welcome message (something like `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
+
+At this point, you will need to register a free trial license of Ansible Tower, which can be done following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
+
+{width=80%}
+![Ansible Tower's Dashboard](images/11-ansible-tower-dashboard.png)
 
 ### Using Ansible Tower
 
-TODO.
+Ansible Tower is centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* can then be set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It can be a little overwhelming at first, but once you get the initial structure configured, you'll see how powerful and flexible Tower's Project workflow is.
+
+Let's get started with our first project!
+
+The first step is to make sure you have a test playbook you can run using Ansible Tower. Generally, your playbooks should be stored in a source code repository (e.g. Git or Subversion), with Tower configured to check out the latest version of the playbook from the repository and run it. Since we're only going to run a simple example, we will create a playbook in Tower's default `projects` directory located in `/var/lib/awx/projects`:
+
+  1. Log into the Tower VM: `vagrant ssh`
+  2. Switch to the `awx` user: `sudo su - awx`
+  3. Go to Tower's default `projects` directory: `cd /var/lib/awx/projects`
+  4. Create a new project directory: `mkdir ansible-for-devops && cd ansible-for-devops`
+  5. Create a new playbook file, `main.yml`, within the new directory, with the following contents:
+
+{lang=text}
+    ---
+    - hosts: all
+      gather_facts: no
+      connection: local
+    
+      tasks:
+        - name: Check the date on the server.
+          command: date
+
+Switch back to your web browser and get everything set up to run the test playbook inside Ansible Tower's web UI:
+
+  1. Create a new *Organization*, called 'Ansible for DevOps'.
+  2. Add a new User to the Organization, named John Doe, with the username `johndoe` and password `johndoe1234`.
+  3. Create a new *Team*, called 'DevOps Engineers', in the 'Ansible for DevOps' Organization.
+  4. Under the Team's Credentials section, add in SSH credentials by selecting 'Machine' for the Credential type, and setting 'Name' to `Vagrant`, 'Type' to `Machine`, 'SSH Username' to `vagrant`, and 'SSH Password' to `vagrant`.
+  5. Under the Team's Projects section, add a new *Project*. Set the 'Name' to `Tower Test`, 'Organization' to `Ansible for DevOps`, 'SCM Type' to `Manual`, and 'Playbook Directory' to `ansible-for-devops` (Tower automatically detects all folders placed inside `/var/lib/awx/projects`, but you could also use an alternate Project Base Path if you want to store projects elsewhere).
+  6. Under the Inventories section, add an *Inventory*. Set the 'Name' to `Tower Local`, and 'Organization' set to `Ansible for DevOps`. Once the inventory is saved:
+    1. Add a 'Group' with the Name `localhost`. Click on the group once it's saved.
+    2. Add a 'Host' with the Host Name `127.0.0.1`.
+
+T> New *Credentials* have a somewhat dizzying array of options, and offer login and API key support for a variety of services, like SSH, AWS, Rackspace, VMWare vCenter, and SCM systems. If you can login to a system, Tower likely supports the login mechanism!
+
+Now that we have all the structure for running playbooks configured, we need only create a *Job Template* so we can run the playbook on the localhost and see whether we've succeeded. Click on 'Job Templates', and create a new Job Template with the following configuration:
+
+  - Name: `Tower Test`
+  - Inventory: `Tower Local`
+  - Project: `Tower Test`
+  - Playbook: `main.yml`
+  - Machine Credential: `Vagrant`
+
+Save the Job Template, then click the small Rocketship button to start a job using the template. You'll be redirected to a Job status page, which provides live updates of the job status, and then a summary of the playbook run when complete:
+
+{width=80%}
+![Tower Test job completed successfully!](images/11-ansible-tower-job-complete.png)
+
+You can view the playbook run's standard output in real-time (or review it after the fact) with the 'View standard out' button. You can also stop a running job, delete a job's record, or relaunch a job with the same parameters using the respective buttons on the job's page.
+
+The job's dashboard page is very useful for giving an overview of how many hosts were successful, how many tasks resulted in changes, and the timing of the different parts of the playbook run.
+
+### Other Tower Features of Note
+
+In our simple walkthrough above, we used Tower to run a simple playbook on the local server; setting up Tower to run playbooks on real-world infastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
+
+This book won't walk through the entirety of Ansible Tower's documentation, but a few other simple features you should try out include:
+
+  - Setting up scheduled Job runs (especially with the 'Check' option instead of 'Run') for CI/CD.
+  - Integrating user accounts and Teams with LDAP users and groups for automatic team-based project management.
+  - Setting different levels of permissions for Users and Teams so certain users can edit certain jobs, others can only run certain jobs, and yet others can only view the results of job runs within an Organization.
+  - Configuring Ansible Vault credentials so you can easily and automatically use Vault-protected variables in your playbooks.
+  - Setting up Provisioning Callbacks so newly-provisioned servers can self-provision via a URL per Job Template.
+  - Surveys, which allow users to add extra information based on a 'Survey' of questions per job run.
+  - Inventory Scripts, which allow you to build inventory dynamically.
+  - Built-in Munin monitoring (to monitor the Tower server), available with the same admin credentials at `https://[tower-hostname]/munin`.
+
+Ansible Tower continues to improve rapidly, and is one of the best ways to run Ansible Playbooks from a central CI/CD-style server with team-based access and extremely detailed live and historical status reporting.
 
 ### Tower Alternatives
 
-TODO:
+Ansible Tower is purpose-built for use with Ansible playbooks, but there are many other ways to run playbooks on your servers with a solid workflow. If price is a major concern, and you don't need all the bells and whistles Tower provides, you can use other popular tools like [Jenkins](http://jenkins-ci.org/), [Rundeck](http://rundeck.org/), or [Go CI](http://www.go.cd/).
 
-  - [Jenkins](http://jenkins-ci.org/)
-  - [Rundeck](http://rundeck.org/)
-  - [Go CI](http://www.go.cd/)
+All these tools provide flexiblity and security for running Ansible Playbooks, and each one requires a different amount of setup and configuration before it will work well for common usage scenarios. One of the most popular and long-standing CI tools is Jenkins, so we'll explore how to configure a similar Playbook run in Jenkins next.
 
 ## Jenkins CI
 
