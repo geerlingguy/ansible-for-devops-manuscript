@@ -119,7 +119,121 @@ All these tools provide flexiblity and security for running Ansible Playbooks, a
 
 ## Jenkins CI
 
-TODO.
+Jenkins is a Java-based open source continuous integration tool. It was forked from the Hudson project in 2011, but has a long history as a robust build tool for most any software project.
+
+Jenkins is easy to install and configure, with the Java SDK as its only requirement. You can install Jenkins on any modern OS, but for the purposes of this demonstration, we'll build a local VM using Vagrant, install Jenkins inside the VM using Ansible, then use Jenkins to run an Ansible playbook.
+
+### Build a local Jenkins server with Ansible
+
+Create a new directory for the Jenkins VM named `jenkins`. Inside the directory, create a `Vagrantfile` to describe the machine and the Ansible provisioning to Vagrant, with the following contents:
+
+{lang=ruby}
+    VAGRANTFILE_API_VERSION = "2"
+    
+    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      config.vm.box = "geerlingguy/centos7"
+      config.vm.hostname = "jenkins.dev"
+      config.vm.network :private_network, ip: "192.168.76.76"
+      config.ssh.insert_key = false
+    
+      config.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "512"]
+      end
+    
+      # Ansible provisioning.
+      config.vm.provision "ansible" do |ansible|
+        ansible.playbook = "provision.yml"
+        ansible.sudo = true
+      end
+    end
+
+This Vagrantfile will create a new VM running CentOS 7, with the IP address `192.168.76.76` and the hostname `jenkins.dev`. Go ahead and add an entry for `192.168.76.76  jenkins.dev` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
+
+{lang=text}
+    ---
+    - hosts: all
+    
+      vars:
+        firewall_allowed_tcp_ports:
+          - "22"
+          - "8080"
+        jenkins_plugins:
+          - ansicolor
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.ansible
+        - geerlingguy.java
+        - geerlingguy.jenkins
+
+This playbook uses a set of roles from Ansible Galaxy to install all the required components for our Jenkins CI server. To make sure you have all the required roles installed on your host machine, add a `requirements.txt` file in the `jenkins` folder, containing all the roles being used in the playbook:
+
+{lang=text}
+    geerlingguy.firewall
+    geerlingguy.ansible
+    geerlingguy.java
+    geerlingguy.jenkins
+
+The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a simple firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
+
+Finally, we tell the `geerlingguy.jenkins` role a set of plugins to install through the `jenkins_plugins` variable; in this case, we just want the `ansicolor` plugin, which gives us full color display in Jenkins' console logs (so our Ansible playbook output is easier to read).
+
+T> There is an official [Ansible plugin for Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Ansible+Plugin), which can be used to run Ansible Ad-Hoc tasks and Playbooks, but as of the writing of this book, the plugin was still in early development stages and is not yet the recommended way to run Ansible playbooks via Jenkins.
+
+To build the VM and run the playbook, do the following (inside the `jenkins` folder):
+
+  1. Run `ansible-galaxy install -r requirements.txt` to install the required roles.
+  2. Run `vagrant up` to build the VM and install and configure Jenkins.
+
+After a few minutes, the provisioning should complete, and you should be able to access Jenkins at `http://jenkins.dev:8080/` (if you configured the hostname in your hosts file).
+
+### Create an Ansible playbook on the Jenkins server
+
+It's preferred to keep your playbooks and server configuration in a code repository (e.g. Git or SVN), but for simplicity's sake, this example requires a playbook stored locally on the Jenkins server, similar to the earlier Ansible Tower example.
+
+  1. Log into the Jenkins VM: `vagrant ssh`
+  2. Go to the `/opt` directory: `cd /opt`
+  3. Create a new project directory: `sudo mkdir ansible-for-devops && cd ansible-for-devops`
+  4. Create a new playbook file, `main.yml`, within the new directory, with the following contents (use sudo to create the file, e.g. `sudo vi main.yml`):
+
+    {lang=text}
+    ~~~
+    ---
+    - hosts: 127.0.0.1
+      gather_facts: no
+      connection: local
+    
+      tasks:
+        - name: Check the date on the server.
+          command: date
+    ~~~
+
+After you create the playbook, you will head over to the Jenkins UI to create a job to run the playbook. But if you want, you can quickly test the playbook while you're logged in, with `ansible-playbook main.yml`.
+
+### Create a Jenkins job to run an Ansible Playbook
+
+Now that you have Jenkins running, you can configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.dev:8080/`, and once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
+
+  - Under 'Build Environment', check the 'Color ANSI Console Output' option. This allows Ansible's helpful colored output to pass through the Jenkins console, so it is easier to read during and after the run.
+  - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field that appears, add the following code, which will run the local Ansible playbook:
+
+    {lang=text}
+    ~~~
+    # Force Ansible to output jobs with color.
+    export ANSIBLE_FORCE_COLOR=true
+    
+    # Run the local test playbook.
+    ansible-playbook /opt/ansible-for-devops/main.yml
+    ~~~
+
+Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, click the 'Build Now' link to start a build. After a few seconds, you should see a new item in the 'Build History' block. Click on the (hopefully) blue circle to the left of '#1', and it will take you to the console output of the job. It should look something like this:
+
+{width=80%}
+![Jenkins job completed successfully!](images/11-jenkins-job-console-output.png)
+
+This is an extremely simple example, but hopefully it's enough to show you how easy it is to get at least some of your baseline CI/CD automation done using a free and open source tool. Most of the more difficult aspects of managing infrastructure through Jenkins surrounds the ability to manage SSH keys, certificates, and other credentials through Jenkins, but there is already plenty of documentation surrounding these things elsewhere online and in Jenkins documentation, so this will be left as an exercise for the reader.
+
+The rest of this chapter focuses on ways to test and debug your playbooks and your infrastructure as a whole, and while many examples use Travis CI or plain command line options, anything you see can be automated with Jenkins jobs!
 
 ## Unit, Integration, and Functional Testing
 

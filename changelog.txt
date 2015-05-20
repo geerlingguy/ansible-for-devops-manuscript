@@ -4,6 +4,10 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Added Jenkins CI installation and usage guide in chapter 11.
+
 ## Version 0.94 (2015-05-16)
 
   - Added information about Capistrano and blue-green deployments in chapter 9.
@@ -12,7 +16,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed `vagrant init` command in chapter 2 (thanks to Ned Schumann!).
   - Completed 'Delegation, Local Actions, and Pauses' section in chapter 5.
   - Completed DigitalOcean dynamic inventory example in chapter 7.
-  - Fixed CentOS 6 vs 7 nomenclature in chapters 2 and 3 (thanks to @39digits and Alex Litvineko!).
+  - Fixed CentOS 6 vs 7 nomenclature in chapters 2 and 3 (thanks to @39digits and @aazon!).
   - Completed Ansible Tower installation guide in chapter 11.
   - Completed Ansible Tower usage guide and alternatives in chapter 11.
 
