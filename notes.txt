@@ -1,6 +1,6 @@
 # Notes
 
-## TODO SOON:
+## TODO
 
   - Re-do Gluster example (using new `gluster_volume` module)
   - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
@@ -13,7 +13,7 @@
   - [Ansible Up & Running](http://shop.oreilly.com/product/0636920035626.do)
   - [Learning Ansible](https://www.packtpub.com/networking-and-servers/learning-ansible)
 
-## Todo before final publication:
+## Editing notes:
 
   - Delete (or rewrite?) section in beginning of book about how you can improve this book during writing.
   - Add illustrations all over the place!

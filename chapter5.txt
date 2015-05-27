@@ -485,7 +485,7 @@ We'll cover all the main conditionals behaviors you can apply to Ansible tasks, 
 
 ### Jinja2 Expressions, Python built-ins, and Logic
 
-Before discussing all the different uses of conditionals in Ansible, it's worthwhile to at least quickly cover a small part of Jinja2 (the syntax Ansible uses both for templates and for conditionals), and available Python functions (often referred to as 'built-ins'). Ansible uses expressions and built-ins with `when`, `changed_when`, and `failed_when` so you can describe these things to Ansible with as much precision as possible.
+Before discussing all the different uses of conditionals in Ansible, it's worthwhile to cover a small part of Jinja2 (the syntax Ansible uses both for templates and for conditionals), and available Python functions (often referred to as 'built-ins'). Ansible uses expressions and built-ins with `when`, `changed_when`, and `failed_when` so you can describe these things to Ansible with as much precision as possible.
 
 Jinja2 allows the definition of literals like strings (`"string"`), integers (`42`), floats (`42.33`), lists (`[1, 2, 3]`), tuples (like lists, but can't be modified) dictionaries (`{key: value, key2: value2}`), and booleans (`true` or `false`).
 
