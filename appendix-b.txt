@@ -4,11 +4,7 @@ Ansible is a simple, flexible tool, and allows for a variety of organization met
 
 There are few *universal* best practices in Ansible, but this appendix contains many helpful suggestions for organizing playbooks, writing tasks, using roles, and otherwise build infrastructure with Ansible.
 
-TODO:
-
-  - Incorporate other commonly-asked-about best practices (ongoing).
-  - [Best Practices](http://docs.ansible.com/playbooks_best_practices.html)
-  - [Ansible (Real Life) Good Practices](http://www.reinteractive.net/posts/167-ansible-real-life-good-practices)
+In addition to this appendix (which contains mostly observations from the author's own daily use of Ansible), please read through the official [Ansible Best Practices](http://docs.ansible.com/playbooks_best_practices.html) guide, which contains a wealth of hard-earned knowledge.
 
 ## Playbook Organization
 
@@ -66,6 +62,12 @@ Using loosely-coupled roles to configure individual components of your servers (
 Consider that you will probably configure something like NTP (Network Time Protocol) on every single server you manage, or at a minimum, set a timezone for the server. Instead of adding two or three tasks to every playbook you manage, set up a role (maybe call it `time` or `ntp`) that does this configuration, and use a few variables to allow different groups of servers to have customized settings.
 
 Additionally, if you learn to build roles in a generic fashion, and for multiple platforms, you could even share it on Ansible Galaxy so others can use the role and help you make it more robust and efficient!
+
+### Use role defaults and vars correctly
+
+Set all role default variables that should and likely will be overridden inside `defaults/main.yml`, and set variables that are useful to store as variables, but will likely never need to be overridden in `vars/main.yml`.
+
+If you have a variable that needs to be overridden, but you need to include it in a platform-specific vars file (e.g. one vars file for Debian, one for RedHat), then create the variable in `vars/[file].yml` as `__varname`, and use `set_fact` to set the variable if the variable `varname` is not defined. This way playbooks using your role can still override one of these variables.
 
 ## YAML Conventions and Best Practices {#yaml-best-practices}
 
@@ -239,6 +241,8 @@ If you are able to use Ansible Tower to run your playbooks, this is even better,
 ## Specify `--forks` for playbooks running on > 5 servers
 
 If you are running a playbook on a large number of servers, consider increasing the number of `forks` Ansible uses to run tasks simultaneously. The default, `5`, means Ansible will only run a given task on 5 servers at a time. Consider increasing this to 10, 15, or however many connections your local workstation and ISP can handle---this can dramatically reduce the amount of time it takes a playbook to run.
+
+You can also use Ansible's configuration file to set the default `--forks` value for all playbook runs, instead of specifying it on the command line.
 
 ## Use Ansible's Configuration file
 

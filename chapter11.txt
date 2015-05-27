@@ -247,14 +247,99 @@ When determining how you should test your infrastructure, you need to understand
 
 It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's often simple, inexpensive, and just as fast to test directly on cloud instances that mirror your production infrastructure!
 
-We'll begin with some of the simplest tests you can run against Ansible configuration, along with some common debugging techniques, then progress on to some more advanced, full-fledged functional testing methods using tools to fully automate the process.
+We'll begin with some of the simplest tests you can run using Ansible, along with some common debugging techniques, then progress to full-fledged functional testing methods with an automated process.
 
 ### Debugging and Asserting
 
-TODO:
+For most playbooks, simply testing configuration changes and the result of commands being run as you go is all the testing you need. And having tests run *during your playbook runs* using some of Ansible's built-in utility modules means you have immediate assurance the system is in the state you want.
 
-  - `debug`
-  - `fail`/`assert`
+If at all possible, you should try to bake all simple test cases (e.g. simple comparison and state checks) into your playbooks directly. Ansible has three modules that simplify this process.
+
+#### The `debug` module
+
+When actively developing an Ansible playbook, or even for historical logging purposes (e.g. if you're running Ansible playbooks using Tower or another CI system), it's often handy to print values of variables or output of certain commands during the playbook run.
+
+For this purpose, Ansible has a `debug` module, which prints variables or messages during playbook execution.
+
+As an extremely basic example, here are two of the ways I normally use debug while building a playbook:
+
+{lang=text}
+    - hosts: 127.0.0.1
+      gather_facts: no
+      connection: local
+    
+      tasks:
+        - name: Register the output of the 'uptime' command.
+          command: uptime
+          register: system_uptime
+    
+        - name: Print the registered output of the 'uptime' command.
+          debug: var=system_uptime.stdout
+    
+        - name: Print a simple message if a command resulted in a change.
+          debug: msg="Command resulted in a change!"
+          when: system_uptime.changed
+
+Running this playbook gives the following output:
+
+{lang=text,linenos=off}
+    $ ansible-playbook debug.yml
+    
+    PLAY [127.0.0.1] ******************************************************
+    
+    TASK: [Register the output of the 'uptime' command.] ******************
+    changed: [127.0.0.1]
+    
+    TASK: [Print the registered output of the 'uptime' command.] **********
+    ok: [127.0.0.1] => {
+        "var": {
+            "system_uptime.stdout":
+                "15:01  up 15:18, 2 users, load averages: 1.23 1.33 1.42"
+        }
+    }
+    
+    TASK: [Print a simple message if a command resulted in a change.] *****
+    ok: [127.0.0.1] => {
+        "msg": "Command resulted in a change!"
+    }
+    
+    PLAY RECAP ************************************************************
+    127.0.0.1          : ok=3    changed=1    unreachable=0    failed=0
+
+Debug messages are helpful when actively debugging a playbook or when you need extra verbosity in the playbook's output, but if you need to perform an explicit test on some variable, or bail out of a playbook for some reason, Ansible provides the `fail` module, and its even simpler cousin, `assert`.
+
+#### The `fail` and `assert` modules
+
+Both `fail` and `assert`, when triggered, will abort the playbook run, and the only difference is in the simplicity of their usage. To illustrate, let's look at an example:
+
+{lang=text}
+    - hosts: 127.0.0.1
+      gather_facts: no
+      connection: local
+    
+      vars:
+        should_fail_via_fail: true
+        should_fail_via_assert: false
+        should_fail_via_complex_assert: false
+    
+      tasks:
+        - name: Fail if conditions warrant a failure.
+          fail: msg="There was an epic failure."
+          when: should_fail_via_fail
+    
+        - name: Stop playbook if an assertion isn't validated.
+          assert: that="should_fail_via_assert != true"
+    
+        - name: Assertions can have contain conditions.
+          assert:
+            that:
+              - should_fail_via_fail != true
+              - should_fail_via_assert != true
+              - should_fail_via_complex_assert != true
+
+Switch the boolean values of `should_fail_via_fail`, `should_fail_via_assert`, and `should_fail_via_complex_assert` to trigger each of the three `fail`/`assert` tasks, to see how they work.
+
+For most test cases, `debug`, `fail`, and `assert` are all you need to ensure your infrastructure is in the correct state during a playbook run.
 
 ### Checking syntax and performing dry runs
 

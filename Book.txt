@@ -16,5 +16,4 @@ chapter11.txt
 backmatter.txt
 appendix-a.txt
 appendix-b.txt
-appendix-c.txt
 changelog.txt

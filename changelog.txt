@@ -7,6 +7,9 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Current Version
 
   - Added Jenkins CI installation and usage guide in chapter 11.
+  - Added section on `debug`, `fail` and `assert` in chapter 11.
+  - Updated a few best practices and otherwise completed appendix b.
+  - Removed appendix c (on Jinja2 and Ansible); will consider adding back in post-launch.
 
 ## Version 0.94 (2015-05-16)
 

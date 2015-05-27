@@ -2,38 +2,9 @@
 
 ## TODO SOON:
 
+  - Re-do Gluster example (using new `gluster_volume` module)
   - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
-
-TODO (Add any of this?):
-
-  - Ansible Vault
-  - Re-do Gluster example (using new `gluster_volume` module)
-  - High Performance / Scalable Ansible:
-    - Asynchronous actions
-    - Polling
-    - Distributed Ansible
-    - Redis-based fact cache
-  - Error handling
-  - SSH private key management and security (see emails to/from Erik-jan Reimers)
-
-## Interesting articles / links:
-
-  - [Ansible Modules](http://blog.josephkahn.io/articles/ansible-modules/)
-  - [Ansible Training Content](https://github.com/ansible/training-content)
-  - [Tags (for debugging)](https://coderwall.com/p/ur8qnw)
-  - [Quick Ansible Debugging tip](http://nigelb.me/2014-01-07-quick-tip-ansible.html)
-  - [Ops School Curriculum](https://ops-school.readthedocs.org/en/latest/introduction.html)
-  - [Modelling credentials configuration in ansible](http://willthames.github.io/2014/04/02/modelling-credentials-configuration-in-ansible.html)
-  - [Hands on Ansible tutorial](http://blog.dhananjaynene.com/2013/10/hands-on-ansible-tutorial/)
-  - [Knightmare: A DevOps Cautionary Tale](http://dougseven.com/2014/04/17/knightmare-a-devops-cautionary-tale/)
-  - [Docker + Ansible + Jenkins testing](http://blog.mist.io/post/82383668190/move-fast-and-dont-break-things-testing-with)
-  - [TDD with Ansible](http://www.slideshare.net/ItamarHassin/monitordriven-development-using-ansible-34920480)
-  - [Serverspec + Sensu](http://www.slideshare.net/m_richardson/serverspec-and-sensu-testing-and-monitoring-collide)
-  - [DevOps in Straight English – Part 2 of 2](http://developerblog.redhat.com/2014/01/29/devops-straight-english-2-of-2/)
-  - [ansigenome - Manage your Ansible Roles](https://github.com/nickjj/ansigenome)
-  - [Using `ansible-galaxy` with self-hosted roles](http://willthames.github.io/2014/09/03/techniques-for-versioning-ansible-ii.html)
-  - [Using Packer and Ansible to Build Immutable Infrastructure](http://blog.codeship.com/packer-ansible/)
 
 ## Competition / Similar works:
 
@@ -41,12 +12,6 @@ TODO (Add any of this?):
   - [Ansible Configuration Management](http://www.packtpub.com/ansible-configuration-management/book)
   - [Ansible Up & Running](http://shop.oreilly.com/product/0636920035626.do)
   - [Learning Ansible](https://www.packtpub.com/networking-and-servers/learning-ansible)
-
-## Things to add
-
-  - Patch management with Ansible (like Pulp? See how Puppet does it?).
-  - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
-  - Jenkins - test playbook then run it
 
 ## Todo before final publication:
 
@@ -75,6 +40,20 @@ TODO (Add any of this?):
   - "Do or do not. There is no try. (Yoda)" (Used in 0.38 email 4/11/14)
   - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
 
+## For 2nd Edition
+
+  - Ansible and Jinja2
+  - High Performance / Scalable Ansible:
+    - Asynchronous actions
+    - Polling
+    - Distributed Ansible
+    - Redis-based fact cache
+  - Security and Secret management
+    - Ansible Vault
+    - SSH private key management and security (see emails to/from Erik-jan Reimers)
+    - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
+  - Patch management with Ansible (like Pulp? See how Puppet does it?).
+
 ## Publisher Offers
 
 ### O'Reilly
@@ -94,11 +73,8 @@ TODO (Add any of this?):
   - Learning Chef: Written from a dev background, reviewed by ops people
     - Ops guys wanted "show us how to do it", less the theory/principles
   - If interested in video, I could do a webcast as kind of a trial of how I work on video/audience...
-  - **TODO**:
-    - Provide a few examples of video tutorials and send them to Brian
-    - Fill out proposal for book and send to Brian
 
 ### Manning Publications
 
   - Michael Stephens - mist@manning.com; June 26, 2014 (responded that I'm not currently interested).
-  - Erin Twohey - ertw@manning.com; November 7, 2014 ()
+  - Erin Twohey - ertw@manning.com; November 7, 2014
