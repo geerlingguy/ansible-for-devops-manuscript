@@ -4,7 +4,7 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.95 (2015-05-26)
 
   - Added Jenkins CI installation and usage guide in chapter 11.
   - Added section on `debug`, `fail` and `assert` in chapter 11.
@@ -228,7 +228,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Clarified and expanded installation instructions for Mac and Linux in chapter 1.
   - Added chapter 10 - Server Security and Ansible
   - Updated chapter 1 to include a reference to chapter 10.
-  - Added notes and TODOs to a few more areas of the book (random).
+  - Added notes to a few more areas of the book (random).
 
 ## Version 0.35 (2014-02-25)
 
