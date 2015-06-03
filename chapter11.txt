@@ -501,6 +501,7 @@ TODO:
 TODO:
 
   - [server-spec](http://serverspec.org/)
+  - [Testing Ansible Roles with Test Kitchen, Serverspec and RSpec](http://www.slideshare.net/MartinEtmajer/testing-ansible-roles-with-test-kitchen-serverspec-and-rspec-48185017)
   - Caveat: Ansible already testing things as it goes. Do you really need another layer of testing?
 
 ## Summary

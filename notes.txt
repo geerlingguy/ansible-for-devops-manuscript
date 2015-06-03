@@ -26,6 +26,7 @@
   - Remove parentheses that are meaningless.
   - Search for 'ansible' (lower) and make sure non-CLI usage is capitalized.
   - Search for 'simple' and 'simply', since I overuse these words.
+  - Search for ' can' to find uses where it's removal makes sentences stronger.
 
 ## Thoughts on writing
 

@@ -504,6 +504,8 @@ TODO:
 
   - [Dynamic Inventory](http://docs.ansible.com/intro_dynamic_inventory.html)
   - [Developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html)
+  - PHP Example: [Hosted Apache Solr](https://hostedapachesolr.com/)
+  - Python Example: [Ansible and Dynamic Inventory](https://pynet.twb-tech.com/blog/ansible/dynamic-inventory.html)
 
 ## Summary
 

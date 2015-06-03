@@ -4,6 +4,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Incorporated editor's changes into chapter 4.
+  - Added dynamic inventory examples in chapter 7.
+
 ## Version 0.95 (2015-05-26)
 
   - Added Jenkins CI installation and usage guide in chapter 11.
