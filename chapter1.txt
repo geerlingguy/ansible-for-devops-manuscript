@@ -28,7 +28,7 @@ Ansible works by pushing changes out to all your servers (by default), and requi
 
 I> **Idempotence** is the ability to run an operation which produces the same result whether run once or multiple times ([source](http://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning)).
 I> 
-I> An important feature of a configuration management tool is its ability to ensure the same configuration is maintained whether you run it once or a thousand times. Many shell scripts have unintended consequences if run more than once, but Ansible can deploy the same configuration to a server over and over again without making any changes after the first deployment.
+I> An important feature of a configuration management tool is its ability to ensure the same configuration is maintained whether you run it once or a thousand times. Many shell scripts have unintended consequences if run more than once, but Ansible deploys the same configuration to a server over and over again without making any changes after the first deployment.
 I> 
 I> In fact, almost every aspect of Ansible modules and commands is idempotent, and for those that aren't, Ansible allows you to define when the given command should be run, and what constitutes a changed or failed command, so you can easily maintain an idempotent configuration on all your servers.
 
@@ -51,7 +51,7 @@ You could also install Ansible via Homebrew with `brew install ansible`. Either 
 
 **If you're running Linux**, chances are you already have Ansible's dependencies installed, but we'll cover the most common installation methods.
 
-Primarily, if you have `python-pip` and `python-devel` (`python-dev` on Debian/Ubuntu) installed, you can just use `pip` to install Ansible (this assumes you also have the 'Development Tools' package installed, so you have `gcc`, `make`, etc. available):
+If you have `python-pip` and `python-devel` (`python-dev` on Debian/Ubuntu) installed, use `pip` to install Ansible (this assumes you also have the 'Development Tools' package installed, so you have `gcc`, `make`, etc. available):
 
 {lang="text",linenos=off}
     $ sudo pip install ansible
@@ -111,7 +111,7 @@ Edit this hosts file with nano, vim, or whatever editor you'd like, but note you
 
 ...where `example` is the group of servers you're managing and `www.example.com` is the domain name (or IP address) of a server in that group. If you're not using port 22 for SSH on this server, you will need to add it to the address, like `www.example.com:2222`, since Ansible defaults to port 22 and won't get this value from your ssh config file.
 
-I> This first example assumes you have a server set up that you can test with; if you don't already have a spare server somewhere that you can connect to, you might want to create a small VM using DigitalOcean, Amazon Web Services, Linode, or some other service that bills by the hour. That way you can have a full server environment to work with when learning Ansible---and when you're finished testing, you can delete the server and you'll only be billed a few pennies!
+I> This first example assumes you have a server set up that you can test with; if you don't already have a spare server somewhere that you can connect to, you might want to create a small VM using DigitalOcean, Amazon Web Services, Linode, or some other service that bills by the hour. That way you have a full server environment to work with when learning Ansible---and when you're finished testing, delete the server and you'll only be billed a few pennies!
 I>
 I> Replace the `www.example.com` in the above example with the name or IP address of your server.
 
@@ -124,14 +124,14 @@ Now that you've installed Ansible and created an inventory file, it's time to ru
 
 ...where `[username]` is the user you use to log into the server. If everything worked, you should see a message that shows `www.example.com | success >>`, then the result of your ping. If it didn't work, run the command again with `-vvvv` on the end to see verbose output. Chances are you don't have SSH keys configured properly---if you login with `ssh username@www.example.com` and that works, the above Ansible command should work, too.
 
-W> Ansible assumes you're using passwordless (key-based) login for SSH (e.g. you login by entering `ssh username@example.com` and don't have to type a password). If you're still logging into your remote servers with a username and password, or if you need a primer on Linux remote authentication and security best practices, please read [Chapter 10 - Server Security and Ansible](#chapter-10). If you insist on using passwords, you can add the `--ask-pass` (`-k`) flag to Ansible commands, but this entire book is written assuming passwordless authentication, so you'll need to keep this in mind every time you run a command or playbook.
+W> Ansible assumes you're using passwordless (key-based) login for SSH (e.g. you login by entering `ssh username@example.com` and don't have to type a password). If you're still logging into your remote servers with a username and password, or if you need a primer on Linux remote authentication and security best practices, please read [Chapter 10 - Server Security and Ansible](#chapter-10). If you insist on using passwords, add the `--ask-pass` (`-k`) flag to Ansible commands, but this entire book is written assuming passwordless authentication, so you'll need to keep this in mind every time you run a command or playbook.
 
 Let's run a more useful command:
 
 {lang="text",linenos=off}
     $ ansible example -a "free -m" -u [username]
 
-In this example, we can quickly see memory usage (in a human readable format) on all the servers (for now, just one) in the `example` group. Commands like this can be helpful in quickly finding a server that has a value out of a normal range. I often use commands like `free -m` (to see memory statistics), `df -h` (to see disk usage statistics), and the like to make sure none of my servers is behaving erratically. While it's good to track these details in an external tool like [Nagios](http://www.nagios.org/), [Munin](http://munin-monitoring.org/), or [Cacti](http://www.cacti.net/), it's also nice to check these stats on all your servers with one simple command and one terminal window!
+In this example, we quickly see memory usage (in a human readable format) on all the servers (for now, just one) in the `example` group. Commands like this are helpful for quickly finding a server that has a value out of a normal range. I often use commands like `free -m` (to see memory statistics), `df -h` (to see disk usage statistics), and the like to make sure none of my servers is behaving erratically. While it's good to track these details in an external tool like [Nagios](http://www.nagios.org/), [Munin](http://munin-monitoring.org/), or [Cacti](http://www.cacti.net/), it's also nice to check these stats on all your servers with one simple command and one terminal window!
 
 ## Summary
 

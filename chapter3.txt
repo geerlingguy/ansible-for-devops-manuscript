@@ -2,7 +2,7 @@
 
 In the previous chapter, we ended our exploration of local infrastructure testing with Vagrant by creating a very simple Ansible playbook. Earlier still, we used a simple ansible ad-hoc command to run a one-off command on a remote server.
 
-We'll dive deeper into playbooks in coming chapters; for now, we'll explore how Ansible can help you quickly perform common tasks on, and gather data from, one or many servers with ad-hoc commands.
+We'll dive deeper into playbooks in coming chapters; for now, we'll explore how Ansible helps you quickly perform common tasks on, and gather data from, one or many servers with ad-hoc commands.
 
 ## Conducting an orchestra
 
@@ -165,13 +165,13 @@ Run the same command again, but this time, add the argument `-f 1` to tell Ansib
     192.168.60.6 | success | rc=0 >>
     orc-db.dev
 
-You can run the same command over and over again, and it will always return results in the same order. It's fairly rare that you will ever need to do this, but it's much more frequent that you'll want to *increase* the value (like `-f 10`, or `-f 25`... depending on how much your system and network connection can handle) to speed up the process of running commands on tens or hundreds of servers.
+Run the same command over and over again, and it will always return results in the same order. It's fairly rare that you will ever need to do this, but it's much more frequent that you'll want to *increase* the value (like `-f 10`, or `-f 25`... depending on how much your system and network connection can handle) to speed up the process of running commands on tens or hundreds of servers.
 
 T> Most people place the target of the action (`multi`) before the command/action itself ("on X servers, run Y command"), but if your brain works in the reverse order ("run Y command on X servers"), you could put the target *after* the other arguments (`ansible -a "hostname" multi`)---the commands are equivalent.
 
 ### Learning about your environment
 
-Now that we know we can trust Vagrant's ability to set hostnames correctly, let's make sure everything else is in order.
+Now that we trust Vagrant's ability to set hostnames correctly, let's make sure everything else is in order.
 
 First, let's make sure the servers have disk space available for our application:
 
@@ -252,7 +252,7 @@ T> To get an exhaustive list of all the environment details ('facts', in Ansible
 
 ### Make changes using Ansible modules
 
-We want to install the NTP daemon on the server so it can keep the time in sync. Instead of running the command `yum install -y ntp` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
+We want to install the NTP daemon on the server to keep the time in sync. Instead of running the command `yum install -y ntp` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
 
 {lang="text",linenos=off}
     $ ansible multi -s -m yum -a "name=ntp state=installed"
@@ -304,7 +304,7 @@ Our hypothetical web application uses Django, so we need to make sure Django and
     $ ansible app -s -m yum -a "name=python-setuptools state=present"
     $ ansible app -s -m easy_install -a "name=django"
 
-You could also install django using `pip`, which can be installed via `easy_install` (since Ansible's `easy_install` module doesn't allow you to uninstall packages like `pip` can), but for simplicity's sake, we've installed it with `easy_install`.
+You could also install django using `pip`, which can be installed via `easy_install` (since Ansible's `easy_install` module doesn't allow you to uninstall packages like `pip` does), but for simplicity's sake, we've installed it with `easy_install`.
 
 Check to make sure Django is installed and working correctly.
 
@@ -369,9 +369,9 @@ In this command, we used the `--limit` argument to limit the command to a specif
     # Limit hosts with a regular expression (prefix with a tilde).
     $ ansible app -s -a "service ntpd restart" --limit ~".*\.4"
 
-In these examples, we've been using IP addresses instead of hostnames, but in many real-world scenarios, you'll probably be using hostnames like nyc-dev-1.example.com; being able to match on regular expressions can be helpful.
+In these examples, we've been using IP addresses instead of hostnames, but in many real-world scenarios, you'll probably be using hostnames like nyc-dev-1.example.com; being able to match on regular expressions is often helpful.
 
-T> Try to reserve the `--limit` option for running commands on single servers. If you often find yourself running commands on the same set of servers using `--limit`, consider instead adding them to a group in your inventory file. That way you can just enter `ansible [my-new-group-name] [command]`, and save yourself a few keystrokes.
+T> Try to reserve the `--limit` option for running commands on single servers. If you often find yourself running commands on the same set of servers using `--limit`, consider instead adding them to a group in your inventory file. That way you can enter `ansible [my-new-group-name] [command]`, and save yourself a few keystrokes.
 
 ## Manage users and groups
 
@@ -463,7 +463,7 @@ There are many simple ways to manage files remotely using Ansible. We've briefly
 
 Some operations take quite a while (minutes or even hours). For example, when you run `yum update` or `apt-get update && apt-get dist-upgrade`, it could be a few minutes before all the packages on your servers are updated.
 
-In these situations, you can tell Ansible to run the commands asynchronously, and poll the servers to see when the commands finish. When you're only managing one server, this is not really helpful, but if you have many servers, Ansible can *very* quickly (especially if you set a higher `--forks` value) start the command on all your servers, then sit and poll the servers for status until they're all up to date.
+In these situations, you can tell Ansible to run the commands asynchronously, and poll the servers to see when the commands finish. When you're only managing one server, this is not really helpful, but if you have many servers, Ansible starts the command *very* quickly on all your servers (especially if you set a higher `--forks` value), then polls the servers for status until they're all up to date.
 
 To run a command in the background, you set the following options:
 
@@ -568,13 +568,13 @@ This command shows how many ansible commands have been run on each server (the n
 
 Periodic tasks run via cron are managed by a system's crontab. Normally, to change cron job settings on a server, you would log into the server, use `crontab -e` under the account where the cron jobs reside, and type in an entry with the interval and job.
 
-Ansible makes managing cron jobs easy with its `cron` module. If you want to run a shell script on all the servers every day at 4 a.m., you can add the cron job with:
+Ansible makes managing cron jobs easy with its `cron` module. If you want to run a shell script on all the servers every day at 4 a.m., add the cron job with:
 
 {lang="text",linenos=off}
     $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
     hour=4 job='/path/to/daily-script.sh'"
 
-Ansible will assume `*` for all values you don't specify (valid values are `day`, `hour`, `minute`, `month`, and `weekday`). You could also specify special time values like `reboot`, `yearly`, or `monthly` using `special_time=[value]`. You can also set the user the job will run under via `user=[user]`, and you can create a backup of the current crontab by passing `backup=yes`.
+Ansible will assume `*` for all values you don't specify (valid values are `day`, `hour`, `minute`, `month`, and `weekday`). You could also specify special time values like `reboot`, `yearly`, or `monthly` using `special_time=[value]`. You can also set the user the job will run under via `user=[user]`, and create a backup of the current crontab by passing `backup=yes`.
 
 What if we want to remove the cron job? Simple enough, use the same `cron` command, and pass the name of the cron job you want to delete, and `state=absent`:
 
@@ -587,7 +587,7 @@ I> Ansible denotes Ansible-managed crontab entries by adding a comment on the li
 
 ## Deploy a version-controlled application
 
-For simple application deployments, where you may need to update a git checkout, or copy a new bit of code to a group of servers, then run a command to finish the deployment, Ansible's ad-hoc mode can help. For more complicated deployments, you can use Ansible playbooks and rolling update features (which will be discussed in later chapters) to ensure successful deployments with zero downtime.
+For simple application deployments, where you may need to update a git checkout, or copy a new bit of code to a group of servers, then run a command to finish the deployment, Ansible's ad-hoc mode can help. For more complicated deployments, use Ansible playbooks and rolling update features (which will be discussed in later chapters) to ensure successful deployments with zero downtime.
 
 In the example below, I'll assume we're running a simple application on one or two servers, in the directory `/opt/myapp`. This directory is a git repository cloned from a central server or a service like GitHub, and application deployments and updates are done by updating the clone, then running a shell script at `/opt/myapp/scripts/update.sh`.
 
@@ -630,9 +630,9 @@ OpenSSH is faster, and a little more reliable, than paramiko, but there are ways
 
 ### Accelerated Mode
 
-While not too helpful for ad-hoc commands, Ansible's Accelerated mode can achieve greater performance for playbooks. Instead of connecting repeatedly via SSH, Ansible connects via SSH initially, then uses the AES key used in the initial connection to communicate further commands and transfers via a separate port (5099 by default, but this is configurable).
+While not too helpful for ad-hoc commands, Ansible's Accelerated mode achieves greater performance for playbooks. Instead of connecting repeatedly via SSH, Ansible connects via SSH initially, then uses the AES key used in the initial connection to communicate further commands and transfers via a separate port (5099 by default, but this is configurable).
 
-The only extra package required to use accelerated mode is `python-keyczar`, and almost everything you can do in normal OpenSSH/Paramiko mode works in Accelerated mode, with two exceptions when using `sudo`:
+The only extra package required to use accelerated mode is `python-keyczar`, and almost everything in normal OpenSSH/Paramiko mode works in Accelerated mode, with two exceptions when using `sudo`:
 
   - Your sudoers file needs to have `requiretty` disabled (comment out the line with it, or set it per user by changing the line to `Defaults:username  !requiretty`).
   - You must disable sudo passwords by setting `NOPASSWD` in the sudoers file.
@@ -661,11 +661,11 @@ W> The `pipelining=True` configuration option won't help much unless you have re
 
 W> If you're running a recent version of Mac OS X, Ubuntu, Windows with Cygwin, or most other OS for the host from which you run `ansible` and `ansible-playbook`, you should be running OpenSSH version 5.6 or later, which works perfectly with the `ControlPersist` setting used with all of Ansible's SSH connections settings.
 W>
-W> If the host on which Ansible runs has RHEL or CentOS, however, you might need to update your version of OpenSSH so it supports the faster/persistent connection method. Any OpenSSH version 5.6 or greater should work. To install a later version, you can either compile from source, or use a different repository (like [CentALT](http://mirror.neu.edu.cn/CentALT/readme.txt) and `yum update openssh`.
+W> If the host on which Ansible runs has RHEL or CentOS, however, you might need to update your version of OpenSSH so it supports the faster/persistent connection method. Any OpenSSH version 5.6 or greater should work. To install a later version, either compile from source, or use a different repository (like [CentALT](http://mirror.neu.edu.cn/CentALT/readme.txt) and `yum update openssh`.
 
 ## Summary
 
-In this chapter, you learned how to build a multi-server infrastructure for testing on your local workstation using Vagrant, and you configured, monitored, and managed the infrastructure without ever logging in to an individual server. You also learned how Ansible connects to remote servers, and how we can use the `ansible` command to perform tasks on many servers quickly in parallel, or one by one.
+In this chapter, you learned how to build a multi-server infrastructure for testing on your local workstation using Vagrant, and you configured, monitored, and managed the infrastructure without ever logging in to an individual server. You also learned how Ansible connects to remote servers, and how to use the `ansible` command to perform tasks on many servers quickly in parallel, or one by one.
 
 By now, you should be getting familiar with the basics of Ansible, and you should be able to start managing your own infrastructure more efficiently.
 

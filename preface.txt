@@ -42,7 +42,7 @@ Sometimes, asides are added to highlight further information about a specific to
 
 I> Informational asides will provide extra information.
 
-W> Warning asides will warn about common pitfalls and how they can be avoided.
+W> Warning asides will warn about common pitfalls and how to avoid them.
 
 T> Tip asides will give tips for deepening your understanding or optimizing your use of Ansible.
 
