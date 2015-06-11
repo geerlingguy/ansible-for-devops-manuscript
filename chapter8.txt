@@ -1651,6 +1651,8 @@ At this point, we should have a directory structure like:
         setup.yml
       Vagrantfile
 
+W> It's best practice to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed. Check out these two resources in particular for tips and tricks with managing and configuring containers with Ansible on CoreOS servers: [Managing CoreOS with Ansible](https://coreos.com/blog/managing-coreos-with-ansible/) and [Provisioning CoreOS with Ansible](http://www.tazj.in/en/1410951452).
+
 #### Data storage container
 
 For the data storage container, we don't need much; we just need to create a directory and set it as an exposed mount point using `VOLUME`:

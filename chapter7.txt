@@ -500,12 +500,309 @@ One caveat: Ansible ignores `.ini` and backup files in the directory, but will a
 
 ### Creating custom dynamic inventories
 
-TODO:
+Most infrastructure can be managed with a custom inventory file or an off-the-shelf cloud inventory script, but there are many situations where more control is needed. Ansible will accept any kind of executable file as an inventory file, so you can build your own dynamic inventory however you like, as long as you can pass it to Ansible as JSON.
 
-  - [Dynamic Inventory](http://docs.ansible.com/intro_dynamic_inventory.html)
-  - [Developing dynamic inventory sources](http://docs.ansible.com/developing_inventory.html)
-  - PHP Example: [Hosted Apache Solr](https://hostedapachesolr.com/)
-  - Python Example: [Ansible and Dynamic Inventory](https://pynet.twb-tech.com/blog/ansible/dynamic-inventory.html)
+You could create an executable binary, a script, or anything else that can be run and will output JSON to stdout, and Ansible will call it with the argument `--list` when you run, as an example, `ansible all -i my-inventory-script -m ping`.
+
+Let's start working our own custom dynamic inventory script by outlining the basic JSON format Ansible expects:
+
+{lang=json}
+    {
+        "group": {
+            "hosts": [
+                "192.168.28.71",
+                "192.168.28.72"
+            ],
+            "vars": {
+                "ansible_ssh_user": "johndoe",
+                "ansible_ssh_private_key_file": "~/.ssh/mykey",
+                "example_variable": "value"
+            }
+        },
+        "_meta": {
+            "hostvars": {
+                "192.168.28.71": {
+                    "host_specific_var": "bar"
+                },
+                "192.168.28.72": {
+                    "host_specific_var": "foo"
+                }
+            }
+        }
+    }
+
+Ansible expects a dictionary of groups (each group having a list of `hosts`, and group variables in the group's `vars` dictionary), and a `_meta` dictionary that stores host variables for all hosts individually (inside a `hostvars` dictionary).
+
+T> When you return a `_meta` dictionary in your inventory script, Ansible stores that data in its cache and doesn't call your inventory script _N_ times for all the hosts in the inventory. You can leave out the `_meta` variables if you'd rather structure your inventory file to return host variables one host at a time (Ansible will call your script with the arguments `--host [hostname]` for each host), but it's often faster and easier to simply return all variables in the first call. In this book, all the examples will use the `_meta` dictionary.
+
+The dynamic inventory script can do anything to get the data (call an external API, pull information from a database or file, etc.), and Ansible will use it as an inventory source as long as it returns a JSON structure like the one above when the script is called with the `--list`.
+
+#### Building a Custom Dynamic Inventory in Python
+
+To create a test dynamic inventory script for demonstration purposes, let's set up a quick set of two VMs using Vagrant. Create the following `Vagrantfile` in a new directory:
+
+{lang=ruby}
+    VAGRANTFILE_API_VERSION = "2"
+    
+    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      config.ssh.insert_key = false
+      config.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "256"]
+      end
+    
+      # Application server 1.
+      config.vm.define "inventory1" do |inventory|
+        inventory.vm.hostname = "inventory1.dev"
+        inventory.vm.box = "geerlingguy/ubuntu1404"
+        inventory.vm.network :private_network, ip: "192.168.28.71"
+      end
+    
+      # Application server 2.
+      config.vm.define "inventory2" do |inventory|
+        inventory.vm.hostname = "inventory2.dev"
+        inventory.vm.box = "geerlingguy/ubuntu1404"
+        inventory.vm.network :private_network, ip: "192.168.28.72"
+      end
+    end
+
+Run `vagrant up` to boot two VMs running Ubuntu 14.04, with the IP addresses `192.168.28.71`, and `192.168.28.72`. A simple inventory file could be used to control the VMs with Ansible:
+
+{lang=text}
+    [group]
+    192.168.28.71 host_specific_var=foo
+    192.168.28.72 host_specific_var=bar
+    
+    [group:vars]
+    ansible_ssh_user=vagrant
+    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+    example_variable=value
+
+However, let's assume the VMs were provisioned by another system, and you need to get the information through a dynamic inventory script. Here's a simple implementation of a dynamic inventory script in Python:
+
+{lang=python}
+    #!/usr/bin/env python
+    
+    '''
+    Example custom dynamic inventory script for Ansible, in Python.
+    '''
+    
+    import os
+    import sys
+    import argparse
+    
+    try:
+        import json
+    except ImportError:
+        import simplejson as json
+    
+    class ExampleInventory(object):
+    
+        def __init__(self):
+            self.inventory = {}
+            self.read_cli_args()
+    
+            # Called with `--list`.
+            if self.args.list:
+                self.inventory = self.example_inventory()
+            # Called with `--host [hostname]`.
+            elif self.args.host:
+                # Not implemented, since we return _meta info `--list`.
+                self.inventory = self.empty_inventory()
+            # If no groups or vars are present, return an empty inventory.
+            else:
+                self.inventory = self.empty_inventory()
+    
+            print json.dumps(self.inventory);
+    
+        # Example inventory for testing.
+        def example_inventory(self):
+            return {
+                'group': {
+                    'hosts': ['192.168.28.71', '192.168.28.72'],
+                    'vars': {
+                        'ansible_ssh_user': 'vagrant',
+                        'ansible_ssh_private_key_file':
+                            '~/.vagrant.d/insecure_private_key',
+                        'example_variable': 'value'
+                    }
+                },
+                '_meta': {
+                    'hostvars': {
+                        '192.168.28.71': {
+                            'host_specific_var': 'foo'
+                        },
+                        '192.168.28.72': {
+                            'host_specific_var': 'bar'
+                        }
+                    }
+                }
+            }
+    
+        # Empty inventory for testing.
+        def empty_inventory(self):
+            return {'_meta': {'hostvars': {}}}
+    
+        # Read the command line args passed to the script.
+        def read_cli_args(self):
+            parser = argparse.ArgumentParser()
+            parser.add_argument('--list', action = 'store_true')
+            parser.add_argument('--host', action = 'store')
+            self.args = parser.parse_args()
+    
+    # Get the inventory.
+    ExampleInventory()
+
+Save the above as `inventory.py` in the same folder as the `Vagrantfile` you created earlier (and make sure you booted the two VMs with `vagrant up`), and make the file executable `chmod +x inventory.py`.
+
+Run the inventory script manually to verify it returns the proper JSON response when run with `--list`:
+
+{lang=text,linenos=off}
+    $ ./inventory.py --list
+    {"group": {"hosts": ["192.168.28.71", "192.168.28.72"], "vars":
+    {"ansible_ssh_user": "vagrant", "ansible_ssh_private_key_file":
+    "~/.vagrant.d/insecure_private_key", "example_variable": "value
+    "}}, "_meta": {"hostvars": {"192.168.28.72": {"host_specific_va
+    r": "bar"}, "192.168.28.71": {"host_specific_var": "foo"}}}}
+
+Test Ansible's ability to use the inventory script to contact the two VMs:
+
+{lang=text,linenos=off}
+    $ ansible all -i inventory.py -m ping
+    192.168.28.71 | success >> {
+        "changed": false,
+        "ping": "pong"
+    }
+    
+    192.168.28.72 | success >> {
+        "changed": false,
+        "ping": "pong"
+    }
+
+Since Ansible can connect, verify the configured host variables (`foo` and `bar`) are set correctly on each of their respective hosts:
+
+{lang=text,linenos=off}
+    $ ansible all -i inventory.py -m debug -a "var=host_specific_var"
+    192.168.28.71 | success >> {
+        "var": {
+            "host_specific_var": "foo"
+        }
+    }
+    
+    192.168.28.72 | success >> {
+        "var": {
+            "host_specific_var": "bar"
+        }
+    }
+
+The only changes you'd need to make to the above `inventory.py` script for real-world usage is to change the `example_inventory()` method to something that incorporates the business logic you need for your own inventory---whether calling an external API with all the server data, or pulling in the information from a database or other data store.
+
+#### Building a Custom Dynamic Inventory in PHP
+
+You can build an inventory script in whatever language you'd like; the same Python script above can be ported to functional PHP as follows:
+
+{lang=php}
+    #!/usr/bin/php
+    <?php
+    
+    /**
+     * @file
+     * Example custom dynamic inventory script for Ansible, in PHP.
+     */
+    
+    /**
+     * Example inventory for testing.
+     *
+     * @return array
+     *   An example inventory with two hosts.
+     */
+    function example_inventory() {
+      return [
+        'group' => [
+          'hosts' => ['192.168.28.71', '192.168.28.72'],
+          'vars' => [
+            'ansible_ssh_user' => 'vagrant',
+            'ansible_ssh_private_key_file' => '~/.vagrant.d/insecure_private_key',
+            'example_variable' => 'value',
+          ],
+        ],
+        '_meta' => [
+          'hostvars' => [
+            '192.168.28.71' => [
+              'host_specific_var' => 'foo',
+            ],
+            '192.168.28.72' => [
+              'host_specific_var' => 'bar',
+            ],
+          ],
+        ],
+      ];
+    }
+    
+    /**
+     * Empty inventory for testing.
+     *
+     * @return array
+     *   An empty inventory.
+     */
+    function empty_inventory() {
+      return ['_meta' => ['hostvars' => new stdClass()]];
+    }
+    
+    /**
+     * Get inventory.
+     *
+     * @param array $argv
+     *   Array of command line arguments (as returned by $_SERVER['argv']).
+     *
+     * @return array
+     *   Inventory of groups or vars, depending on arguments.
+     */
+    function get_inventory($argv = []) {
+      $inventory = new stdClass();
+    
+      // Called with `--list`.
+      if (!empty($argv[1]) && $argv[1] == '--list') {
+        $inventory = example_inventory();
+      }
+      // Called with `--host [hostname]`.
+      elseif ((!empty($argv[1]) && $argv[1] == '--host') && !empty($argv[2])) {
+        // Not implemented, since we return _meta info `--list`.
+        $inventory = empty_inventory();
+      }
+      // If no groups or vars are present, return an empty inventory.
+      else {
+        $inventory = empty_inventory();
+      }
+    
+      print json_encode($inventory);
+    }
+    
+    // Get the inventory.
+    get_inventory($_SERVER['argv']);
+    
+    ?>
+
+If you were to save the code above into the file `inventory.php`, mark it executable (`chmod +x inventory.php`), and run the same Ansible command as earlier (referencing `inventory.php` instead of `inventory.py`), the command should succeed just as with the Python example.
+
+I> All the files mentioned in these dynamic inventory examples are available in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), in the `dynamic-inventory` folder.
+
+#### Managing a PaaS with a Custom Dynamic Inventory
+
+[Hosted Apache Solr](https://hostedapachesolr.com/)'s infrastructure is built using a custom dynamic inventory to allow for centrally-controlled server provisioning and configuration. Here's how the server provisioning process works on Hosted Apache Solr:
+
+  1. A Drupal website holds a 'Server' content type that stores metadata about each server (e.g. chosen hostname, data center location, choice of OS image, and memory settings).
+  2. When a new server is added, a remote Jenkins job is triggered, which:
+    1. Builds a new cloud server on DigitalOcean using an Ansible playbook.
+    2. Runs a provisioning playbook on the server to initialize the configuration.
+    3. Adds a new DNS entry for the server.
+    4. Posts additional server metadata (like the IP address) back to the Drupal website via a private API.
+  3. When a server is updated, or there is new configuration to be deployed to the server(s), a different Jenkins job is triggered, which:
+    1. Runs the same provisioning playbook on all the DigitalOcean servers. This playbook uses an inventory script which calls back to an inventory API endpoint that returns all the server information as JSON (the inventory script on the Jenkins server passes the JSON through to stdout).
+    2. Reports back success or failure of the ansible playbook to the REST API.
+
+The above process transformed the management of the entire Hosted Apache Solr platform. Instead of taking twenty to thirty minutes to build a new server (when using an Ansible playbook with a few manual steps), the process can be completed in just a few minutes, with no manual intervention.
+
+W> The security of your server inventory and infrastructure management should be a top priority; Hosted Apache Solr uses HTTPS everywhere, and has a hardened private API for inventory access and server metadata. If you have any automated processes that run over a network, you should make doubly sure you audit these processes and all the involved systems thoroughly!
 
 ## Summary
 

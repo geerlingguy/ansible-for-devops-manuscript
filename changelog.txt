@@ -4,10 +4,14 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.97 (2015-06-10)
 
   - Incorporated editor's changes into chapter 4.
   - Added dynamic inventory examples in chapter 7.
+  - Corrected a few other grammatical flaws in all chapters prior to chapter 4.
+  - Added notes about getting a Python environment configured for barebones containers/CoreOS in chapter 8 (thanks to @andypost!).
+  - Mentioned a way to bootstrap Ansible on Windows with Babun in appendix a (thanks to @jonathanhle!).
+  - Added section on custom dynamic inventory in chapter 7, as well as code examples in the book's GitHub repository.
 
 ## Version 0.95 (2015-05-26)
 

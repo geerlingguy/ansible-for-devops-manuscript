@@ -185,7 +185,7 @@ The `ansible-playbook` command also allows for some other common options:
 
 There are some other options and configuration variables that are important to get the most out of `ansible-playbook`, but this should be enough to get you started running the playbooks in this chapter on your own servers or virtual machines.
 
-I> The rest of this chapter uses more realistic Ansible playbooks. All the examples in this chapter are in Jeff Geerling's [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), and you can clone that repository to your computer (or browse the code online) to follow along more easily.
+I> The rest of this chapter uses more realistic Ansible playbooks. All the examples in this chapter are in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), and you can clone that repository to your computer (or browse the code online) to follow along more easily.
 
 ## Real-world playbook: CentOS Node.js app server
 
