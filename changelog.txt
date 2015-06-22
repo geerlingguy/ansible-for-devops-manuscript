@@ -4,6 +4,10 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Incorporated editor's changes into chapter 5.
+
 ## Version 0.97 (2015-06-10)
 
   - Incorporated editor's changes into chapter 4.

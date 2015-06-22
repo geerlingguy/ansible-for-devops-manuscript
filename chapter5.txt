@@ -1,12 +1,12 @@
 # Chapter 5 - Ansible Playbooks - Beyond the Basics
 
-The playbooks and simple playbook organization we used in the previous chapter cover many common use cases, but when discussing the breadth of system administration needs, there are thousands more little features of Ansible that you need to know.
+The playbooks and simple playbook organization we used in the previous chapter cover many common use cases. When discussing the breadth of system administration needs, there are thousands more features of Ansible you need to know.
 
-We'll cover things like how to run plays with more granularity, how to organize your tasks and playbooks for simplicity and usability, and other advanced playbook topics that will help you manage your infrastructure with even more confidence.
+We'll cover how to run plays with more granularity, how to organize your tasks and playbooks for simplicity and usability, and other advanced playbook topics that will help you manage your infrastructure with even more confidence.
 
 ## Handlers
 
-In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Apache, and certain tasks that affected Apache's configuration would notify the handler with the option `notify: restart apache`:
+In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Apache, and certain tasks that affected Apache's configuration notified the handler with the option `notify: restart apache`:
 
 {lang=text,linenos=off}
     handlers:
@@ -18,7 +18,7 @@ In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Ap
         apache2_module: name=rewrite state=present
         notify: restart apache
 
-In some circumstances, you may want to notify more than one handler, or even have handlers notify other handlers. Both are easy to do with Ansible. To notify multiple handlers from one task, use a list for the `notify` option:
+In some circumstances you may want to notify multiple handlers, or even have handlers notify additionally handlers. Both are easy to do with Ansible. To notify multiple handlers from one task, use a list for the `notify` option:
 
 {lang=text,linenos=off}
     - name: Rebuild application configuration.
@@ -27,7 +27,7 @@ In some circumstances, you may want to notify more than one handler, or even hav
         - restart apache
         - restart memcached
 
-To have one handler notify another, just add a `notify` option onto the handler---handlers are basically glorified tasks that can be called by the `notify` option, but since they act as tasks themselves, they can chain themselves to other handlers as well:
+To have one handler notify another, add a `notify` option onto the handler---handlers are basically glorified tasks that can be called by the `notify` option, but since they act as tasks themselves, they can chain themselves to other handlers:
 
 {lang=text,linenos=off}
     handlers:
@@ -52,7 +52,7 @@ Ansible allows you to work with environment variables in a variety of ways. Firs
     - name: Add an environment variable to the remote user's shell.
       lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
 
-All subsequent tasks would then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further tasks, it's recommended you use a task's `register` option to store the environment variable in a variable Ansible can use later, for example:
+All subsequent tasks will then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further tasks, it's recommended you use a task's `register` option to store the environment variable in a variable Ansible can use later, for example:
 
 {lang=text}
     - name: Add an environment variable to the remote user's shell.
@@ -390,7 +390,7 @@ By default, whenever you run an Ansible playbook, Ansible first gathers informat
     ok: [host2]
     ok: [host3]
 
-Facts can be extremely helpful when you're running playbooks; you can use gathered information like host IP addresses, CPU type, disk space, operating system information, and network interface information to change when certain tasks are run, or change certain information used in configuration files.
+Facts can be extremely helpful when you're running playbooks; you can use gathered information like host IP addresses, CPU type, disk space, operating system information, and network interface information to change when certain tasks are run, or to change certain information used in configuration files.
 
 To get a list of every gathered fact available, you can use the `ansible` command with the `setup` module:
 
@@ -509,7 +509,7 @@ For example:
 
 Jinja2 also offers a helpful set of 'tests' you can use to test a given object. For example, if you define the variable `foo` for only a certain group of servers, but not others, you can use the expression `foo is defined` with a conditional to evaluate to 'true' if the variable is defined, or false if not.
 
-There are many other checks you can perform as well, like `undefined` (the opposite of `defined`), `equalto` (works like `==`), `even` (returns true if the variable is an even number), `iterable` (if you can iterate over the object). We'll cover the full gamut later in the book, but for now, know that you can use Ansible conditionals with Jinja2 expressions to do some powerful things!
+There are many other checks you can perform as well, like `undefined` (the opposite of `defined`), `equalto` (works like `==`), `even` (returns true if the variable is an even number), and `iterable` (if you can iterate over the object). We'll cover the full gamut later in the book, but for now, know that you can use Ansible conditionals with Jinja2 expressions to do some powerful things!
 
 For the few cases where Jinja2 doesn't provide enough power and flexibility, you can invoke Python's built-in library functions (like `string.split`, `[number].is_signed()`) to manipulate variables and determine whether a given task should be run, resulted in a change, failed, etc.
 
@@ -554,7 +554,7 @@ If you only define the `is_db_server` variable on database servers (meaning ther
     - yum: name=mysql-server state=present
       when: (is_db_server is defined) and is_db_server
 
-`when` is even more powerful if used in conjunction with variables registered by previous tasks. For example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
+`when` is even more powerful if used in conjunction with variables registered by previous tasks. As an example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
 
 {lang=text,linenos=off}
     - command: my-app --status
@@ -702,7 +702,7 @@ Running a playbook with `--connection=local` is also useful when you're either r
 
 ## Prompts
 
-In rare circumstances, you may require the user to enter the value of a variable that will be used in the playbook. If the playbook requires a user's personal login information, or if you prompt for a version or other values that may change depending on who is running the playbook, or where it's being run, and if there's no other way this information can be configured (e.g. using environment variables, inventory variables, etc.), use `vars_prompt`.
+Under rare circumstances, you may require the user to enter the value of a variable that will be used in the playbook. If the playbook requires a user's personal login information, or if you prompt for a version or other values that may change depending on who is running the playbook, or where it's being run, and if there's no other way this information can be configured (e.g. using environment variables, inventory variables, etc.), use `vars_prompt`.
 
 As a simple example, you can request a user to enter a username and password that could be used to login to a network share:
 
@@ -790,7 +790,7 @@ In general, I tend to use tags for larger playbooks, especially with individual 
 
 Playbooks are Ansible's primary means of automating infrastructure management. After reading this chapter, you should know how to use (and hopefully not abuse!) variables, inventories, handlers, conditionals, tags, and more.
 
-The more you understand the fundamental components of a playbook, the more efficient you'll be building and expanding your infrastructure with Ansible.
+The more you understand the fundamental components of a playbook, the more efficient you will be at building and expanding your infrastructure with Ansible.
 
 {lang=text,linenos=off}
      ____________________________________
