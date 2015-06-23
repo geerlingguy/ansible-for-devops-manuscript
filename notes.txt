@@ -5,10 +5,10 @@
   - Re-do Gluster example (using new `gluster_volume` module)
   - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
-  - Add notes on Blocks for playbooks (Ansible v 2.0 feature)
+  - 2.0: Add notes on Blocks for playbooks (Ansible v 2.0 feature)
     - grouping related tasks
     - `block` / `rescue` / `always`
-  - Add notes on Execution Strategy (`linear`, `free`, etc.).
+  - 2.0: Add notes on Execution Strategy (`linear`, `free`, etc.).
 
 ## Competition / Similar works:
 

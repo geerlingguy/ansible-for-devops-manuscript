@@ -642,7 +642,7 @@ You could again revert back to `1.0.0`, but in the time that you were deploying 
 
 *Whew!* Everything is back online and operational, and all tests are passing with the latest version of the application.
 
-I> This contrived example should be pretty rare in the real world; it should be rare that tests fail only on production. But there are many times where networking issues or even latency in third party services causes a random failure or two. Whenever you move beyond one server (usually to provide both redundancy and cacpacity), you will eventually run into these transient issues. It's best to account for them in your automated deployment process by tuning settings like `serial` well.
+I> It should be rare that tests fail only on production. But there are many times where networking issues or even latency in third party services causes a random failure or two. Whenever you move beyond one server (usually to provide both redundancy and cacpacity), you will run into these transient issues. It's best to account for them in your automated deployment process by tuning `serial` and similar settings well.
 
 Ansible exposes two different settings that you can use to control rolling deployment failure scenarios:
 

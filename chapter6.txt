@@ -262,7 +262,7 @@ You now have a complete Ansible role that you can use in your node.js server con
     tasks:
       # Node.js app deployment tasks...
 
-I> You can view the full example of this playbook in the [ansible-for-devops code repository](https://github.com/geerlingguy/ansible-for-devops/blob/master/nodejs-role/playbook.yml).
+I> You can view the full example of this playbook in the [ansible-for-devops code repository](https://github.com/geerlingguy/ansible-for-devops/blob/master/nodejs-role/).
 
 Once you finish reformatting the main playbook, everything would run exactly the same during an `ansible-playbook`, with the exception of the tasks inside the `nodejs` role being prefixed with `nodejs | [Task name here]`.
 

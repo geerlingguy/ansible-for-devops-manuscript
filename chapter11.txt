@@ -343,11 +343,28 @@ For most test cases, `debug`, `fail`, and `assert` are all you need to ensure yo
 
 ### Checking syntax and performing dry runs
 
-TODO:
+Two of the simplest checks you should include in an automated playbook testing workflow are `--syntax-check` (which checks the playbook syntax to find simple quoting, formatting, or whitespace errors) and `--check` (which will run your entire playbook in `check` mode.
 
-  - `ansible-playbook --syntax-check`
-  - `ansible-playbook --check`
-  - [Ansible lint](https://github.com/willthames/ansible-lint)
+Syntax checking is extremely straightforward, and only requires a few seconds for even larger, more complex playbooks with dozens or hundreds of includes. You should include an `ansible-playbook my-playbook.yml --syntax-check` in any kind of CI that you do, and it's good practice to run a syntax check right before you check in playbook changes in your version control system.
+
+Running a playbook in `check` mode is a little bit more involved, as Ansible will actually run the entire playbook on your live infrastructure, but in a way that results in no changes. Instead, it will mark any tasks that _would've_ resulted in a change so you can see what will happen when you _actually_ run the playbook later.
+
+This can be helpful for two purposes:
+
+  1. To prevent 'configuration drift', where a server might have some configuration that's drifted away from your coded configuration. This could happen due to human intervention (though hopefully you don't regularly log into your servers and make changes by hand anymore!) or due to other factors. But it's good to know what configuration is incorrect without necessarily changing it.
+  2. To make sure changes you make to a playbook that shouldn't break idempotency _don't_, in fact, break idempotency. For example, if you're making a change to build a configuration file differently, but with the same resulting file, running the playbook with `--check` can alert you to the fact that you might accidentally end up changing the file as a result of your change. Time to fix your playbook!
+
+When using `--check` mode, there are sometimes tasks that you still want to run (e.g. `command` tasks that register variables used in later tasks). You can make sure those tasks are _always_ run using the `always_run` option:
+
+{lang=text,linenos=off}
+    - name: A task that runs all the time, even in check mode.
+      command: mytask --option1 --option2
+      register: my_var
+      always_run: true
+
+Finally, for even more detailed information about what changes would occur, you can add the `--diff` option, and Ansible will output all the line-by-line changes that _would've_ been made to your servers. This option will produce a lot of output if `check` mode makes a lot of changes, so it's best to use this option conservatively, unless you want to scroll through a lot of text!
+
+In addition to Ansible's robust but simple `--check-syntax` and `--check` modes, you might be interested in also running [Ansible Lint](https://github.com/willthames/ansible-lint) on your playbooks. Ansible Lint allows you to check for deprecated syntax or inefficient task structures, and is highly configurable so you can set up the linting to follow the playbook standards you and your team choose.
 
 ### Automated testing on GitHub using Travis CI
 
@@ -490,19 +507,23 @@ This style of testing is integrated into many of the `geerlingguy.*` roles on An
   - https://github.com/geerlingguy/ansible-role-gitlab
   - https://github.com/geerlingguy/ansible-role-mysql
 
-### Automated testing with `test-runner`
-
-TODO:
-
-  - [debops/test-runner](https://github.com/debops/test-runner)
+If you would like to run your tests using a slightly more simplified and more self-contained test running environment, you might be interested in the [rolespec](https://github.com/nickjj/rolespec) project, which formalizes and simplifies much of the code in the Travis CI examples shown above. Your tests will be dependent on another library for test runs, but doing this allows you to run the tests more easily in environments other than Travis CI.
 
 ### Functional testing using serverspec
 
-TODO:
+[Serverspec](http://serverspec.org/) is a tool to help automate server tests using RSpec tests, which use a Ruby-like DSL to ensure your server configuration matches your expectations. In a sense, it's another way of building well-tested infrastructure.
 
-  - [server-spec](http://serverspec.org/)
+Serverspec tests can be run locally, via SSH, through Docker's APIs, or through other means, without the need for an agent installed on your servers, so it's a lightweight tool for testing your infrastructure (just like Ansible is a lightweight tool for _managing_ your infrastructure).
+
+There's a lot of debate over whether well-written Ansible playbooks themselves (especially along with the dry-run `--check` mode) are adequate for well-tested infrastructure, but many teams are more comfortable maintaining infrastructure tests in Serverspec instead (especially if the team is already familiar with how Serverspec and Rspec works!).
+
+Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for that same task, isn't that a good enough test that your server is configured correctly?
+
+This book will not provide a detailed guide for using Serverspec with your Ansible-managed servers, but here are a few resources in case you'd like to use it:
+
+  - [A brief introduction to server testing with Serverspec](https://www.debian-administration.org/article/703/A_brief_introduction_to_server-testing_with_serverspec)
   - [Testing Ansible Roles with Test Kitchen, Serverspec and RSpec](http://www.slideshare.net/MartinEtmajer/testing-ansible-roles-with-test-kitchen-serverspec-and-rspec-48185017)
-  - Caveat: Ansible already testing things as it goes. Do you really need another layer of testing?
+  - [Testing infrastructure with serverspec](http://vincent.bernat.im/en/blog/2014-serverspec-test-infrastructure.html)
 
 ## Summary
 
