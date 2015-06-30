@@ -10,6 +10,9 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added `--check` and `--check-syntax` information to chapter 11.
   - Added information about rolespec in chapter 11.
   - Fixed missing files in book's GitHub repository Node.js role example (thanks to @geoand!).
+  - Fixed simple Node.js app server example playbook in chapter 4 (thanks to @erimar77!).
+  - Fixed `lineinfile` task regex syntax in chapter 4 (thanks to @erimar77!).
+  - Clarified EPEL requirements/installation for Enterprise Linux systems in chapter 1 (thanks to Michael S.!).
 
 ## Version 0.97 (2015-06-10)
 

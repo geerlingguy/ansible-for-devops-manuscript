@@ -199,6 +199,7 @@ The first playbook will configure a CentOS server with Node.js, and install and 
 To start things off, we need to create a YAML file (`playbook.yml` in this example) to contain our playbook. Let's keep things simple:
 
 {lang="text"}
+    ---
     - hosts: all
     
       tasks:
@@ -237,7 +238,7 @@ I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and
 
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables other nifty Ansible features we'll discuss later:
 
-{lang="text",starting-line-number=4}
+{lang="text",starting-line-number=5}
     - name: Import EPEL and Remi GPG keys.
       rpm_key: "key={{ item }} state=present"
       with_items:
@@ -313,7 +314,7 @@ Since this little app is dependent on Express (a simple http framework for Node)
 
 Now, add the following to your playbook, to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`):
 
-{lang="text",starting-line-number=31}
+{lang="text",starting-line-number=32}
     - name: Ensure Node.js app folder exists.
       file: "path={{ node_apps_location }} state=directory"
     
@@ -337,7 +338,7 @@ We're *almost* finished! The last step is to start the app.
 
 We'll now use `forever` (which we installed earlier) to start the app.
 
-{lang="text",starting-line-number=39}
+{lang="text",starting-line-number=40}
     - name: Check list of running Node.js apps.
       command: forever list
       register: forever_list
@@ -345,7 +346,7 @@ We'll now use `forever` (which we installed earlier) to start the app.
     
     - name: Start example Node.js app.
       command: "forever start {{ node_apps_location }}/app/app.js"
-      when: "forever_list.stdout.find('{{ node_apps_location}}/app/app.js') == -1"
+      when: "forever_list.stdout.find('{{ node_apps_location }}/app/app.js') == -1"
 
 In the first play, we're doing two new things:
 
@@ -548,7 +549,7 @@ We briefly mentioned `lineinfile` earlier in the book, when discussing file mana
       - name: Enable upload progress via APC.
         lineinfile:
           dest: "/etc/php5/apache2/conf.d/20-apcu.ini"
-          regexp: "^apc\.rfc1867"
+          regexp: "^apc.rfc1867"
           line: "apc.rfc1867 = 1"
           state: present
         notify: restart apache
