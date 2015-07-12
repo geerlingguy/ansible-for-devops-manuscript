@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - Incorporated editor's changes into chapter 5.
+  - Incorporated editor's changes into chapters 5 and 6.
   - Added `--check` and `--check-syntax` information to chapter 11.
   - Added information about rolespec in chapter 11.
   - Fixed missing files in book's GitHub repository Node.js role example (thanks to @geoand!).
