@@ -37,6 +37,7 @@
 
 ## Thoughts on writing
 
+  - [I self-published a learn-to-code book and made nearly $5k in pre-orders](https://news.ycombinator.com/item?id=9847965)
   - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)
   - [Self Publishing My First Technical Book on LeanPub](https://servercheck.in/blog/self-publishing-my-first-technical-book-leanpub)
   - [The Last Starving Author Has Died](http://www.luckyisgood.com/starving-authors-begone/)

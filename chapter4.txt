@@ -79,7 +79,7 @@ The above playbook will perform *exactly* like the shell script, but you can imp
           dest: "{{ item.dest }}"
           owner: root
           group: root
-          mode: 644
+          mode: 0644
         with_items:
         - {
           src: "/path/to/config/httpd.conf",
