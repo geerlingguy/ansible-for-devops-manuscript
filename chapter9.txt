@@ -372,7 +372,7 @@ Simple application update deployments will involve incrementing the `app_version
 
 ## Zero-downtime multi-server deployments
 
-A single server deployment strategy is all that's needed for many applications, but if you need to run an application on multiple servers for horizontal scalability or redundancy, deployments can be cumbersome---but not when you use Ansible!
+If you need to run an application on multiple servers for horizontal scalability or redundancy, deployments can be cumbersome, resulting in downtime and complicated deployment processes---but not when you use Ansible!
 
 [Server Check.in](https://servercheck.in/) is a simple server and website monitoring service that has a microservices-based architecture; there is a website, an API application, and a server checking application.
 
@@ -432,7 +432,7 @@ The above `Vagrantfile` defines four VMs that each use 256MB of RAM and have a u
 In the `provision` section of the playbook, we told Vagrant to provision the all the VMs with Ansible, using the inventory file `inventory`, and the playbook `playbooks/main.yml`. Create these two files in the same folder as your Vagrantfile:
 
 {lang=text,linenos=off}
-    rolling-deployments/
+    deployments-rolling/
       playbooks/
         main.yml
       inventory
@@ -490,7 +490,7 @@ Now, whenever someone new to the project wants to run the playbook, all that per
 At this point, your project directory should be structured like the following:
 
 {lang=text,linenos=off}
-    rolling-deployments/
+    deployments-rolling/
       playbooks/
         deploy.yml
         main.yml

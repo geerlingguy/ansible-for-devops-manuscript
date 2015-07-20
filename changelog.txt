@@ -4,7 +4,7 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Version 0.99 (2015-07-19)
 
   - Incorporated editor's changes into chapters 5 and 6.
   - Added `--check` and `--check-syntax` information to chapter 11.
