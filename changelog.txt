@@ -4,6 +4,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current version
+
+  - Added example of zero-downtime deployments with HAProxy to chapter 9.
+  - Completed remaining sections in chapter 9.
+
 ## Version 0.99 (2015-07-19)
 
   - Incorporated editor's changes into chapters 5 and 6.

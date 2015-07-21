@@ -660,7 +660,204 @@ For many applications, especially those with app servers close together (e.g. in
 {width=80%}
 ![Four servers behind a load balancer.](images/9-multi-server-deployment-lb.png)
 
-TODO.
+For a simple demonstration of zero-downtime deployment with a load balancer, let's build a local infrastructure with one HAProxy load balancer and two Apache webservers.
+
+First, create a new project folder `deployments-balancer`, and within it, create the following Vagrantfile:
+
+{lang=ruby}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    Vagrant.configure("2") do |config|
+      # Base VM OS configuration.
+      config.vm.box = "geerlingguy/ubuntu1404"
+      config.vm.synced_folder '.', '/vagrant', disabled: true
+      config.ssh.insert_key = false
+    
+      config.vm.provider :virtualbox do |v|
+        v.memory = 256
+        v.cpus = 1
+      end
+    
+      # Define four VMs with static private IP addresses.
+      boxes = [
+        { :name => "bal1", :ip => "192.168.4.2" },
+        { :name => "app1", :ip => "192.168.4.3" },
+        { :name => "app2", :ip => "192.168.4.4" }
+      ]
+    
+      # Provision each of the VMs.
+      boxes.each do |opts|
+        config.vm.define opts[:name] do |config|
+          config.vm.hostname = opts[:name]
+          config.vm.network :private_network, ip: opts[:ip]
+    
+          # Provision all the VMs using Ansible after the last VM is booted.
+          if opts[:name] == "app2"
+            config.vm.provision "ansible" do |ansible|
+              ansible.playbook = "playbooks/provision.yml"
+              ansible.inventory_path = "inventory"
+              ansible.limit = "all"
+            end
+          end
+        end
+      end
+    
+    end
+
+This Vagrantfile will create three servers running Ubuntu 14.04: `bal1` (the balancer), and `app1` and `app2` (the application servers). We referenced an Ansible playbook at `playbooks/provision.yml` (to install the required software on the servers), as well as a custom inventory file at `inventory`. First, create the inventory file (`inventory`, in the same directory as the Vagrantfile), with the appropriate groupings and connection variables:
+
+{lang=text}
+    [balancer]
+    192.168.4.2
+    
+    [app]
+    192.168.4.3
+    192.168.4.4
+    
+    [deployments:children]
+    balancer
+    app
+    
+    [deployments:vars]
+    ansible_ssh_user=vagrant
+    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+
+With this inventory, we can operate on just the `balancer`, just the `app` servers, or all the servers together (in the `deployments` group). Next, create a simple playbook (at `playbooks/provision.yml`) to provision the servers:
+
+{lang=text}
+    ---
+    - hosts: balancer
+      sudo: yes
+    
+      vars:
+        firewall_allowed_tcp_ports:
+          - "22"
+          - "80"
+        haproxy_backend_servers:
+          - name: 192.168.4.3
+            address: 192.168.4.3:80
+          - name: 192.168.4.4
+            address: 192.168.4.4:80
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.haproxy
+    
+    - hosts: app
+      sudo: yes
+    
+      vars:
+        firewall_allowed_tcp_ports:
+          - "22"
+          - "80"
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.apache
+
+These two plays set up a firewall on both servers, and configure HAProxy on the load balancer, and Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `haproxy_backend_servers`. We let the `geerlingguy.firewall`, `geerlingguy.haproxy`, and `geerlingguy.apache` roles do all the hard work for us.
+
+Now, to make sure we have all these roles installed, create a requirements file to install the roles from Ansible Galaxy. Create `requirements.txt` in the same directory as the Vagrantfile, with the following contents:
+
+{lang=text}
+    geerlingguy.firewall
+    geerlingguy.haproxy
+    geerlingguy.apache
+
+To install the required roles, run `sudo ansible-galaxy install -r requirements.txt`.
+
+At this point, if you want to bring up your local load-balanced infrastructure, run `vagrant up` in the `deployments-balancer` directory, and wait a few minutes. Once everything is up and running, visit `http://192.168.4.2/`, and you should see the default Ubuntu Apache2 landing page:
+
+{width=80%}
+![HAProxy is serving requests through the Apache backend servers.](images/9-deploy-haproxy.png)
+
+You can verify that round-robin load balancing is working by running the following command:
+
+{lang=text}
+    $ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; done
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+    Set-Cookie: SERVERID=192.168.4.3; path=/
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+    Set-Cookie: SERVERID=192.168.4.3; path=/
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+
+You should see that the load balancer is distributing requests between the two backend app servers.
+
+When you want to deploy new code to the application servers, you need to do it in a way that guarantees the load balancer will always have an app server from which requests can be served, so you want to use `serial` to do the deployment on each server (or groups of servers) in sequence. And to make sure the servers are properly removed from HAProxy, then added again post-deploy, you can use `pre_tasks` and `post_tasks`.
+
+Create another playbook alongside `provision.yml` called `deploy.yml`, with the following contents:
+
+{lang=text}
+    ---
+    - hosts: app
+      sudo: yes
+      serial: 1
+    
+      pre_tasks:
+        - name: Disable the backend server in HAProxy.
+          haproxy:
+            state: disabled
+            host: '{{ inventory_hostname }}'
+            socket: /var/lib/haproxy/stats
+            backend: habackend
+          delegate_to: "{{ item }}"
+          with_items: groups.balancer
+    
+      tasks:
+        - debug: msg="Deployment would be done here."
+    
+      post_tasks:
+        - name: Wait for backend to come back up.
+          wait_for:
+            host: '{{ inventory_hostname }}'
+            port: 80
+            state: started
+            timeout: 60
+    
+        - name: Enable the backend server in HAProxy.
+          haproxy:
+            state: enabled
+            host: '{{ inventory_hostname }}'
+            socket: /var/lib/haproxy/stats
+            backend: habackend
+          delegate_to: "{{ item }}"
+          with_items: groups.balancer
+
+This playbook doesn't do much in terms of actual deployment, but it does illustrate how to do a zero-downtime rolling update over two or more application servers:
+
+  1. In `pre_tasks`, the `haproxy` module disables the current `app` server (using the `inventory_hostname` variable) on all the load balancers in the `balancer` group, using `with_items`. The HAProxy task is delegated to each of the `balancer` servers (in our case, only one), since the task affects the load balancer, not the current `app` host.
+  2. In the `post_tasks`, we first `wait_for` port 80 to be available, and once it is, the `haproxy` module re-enables the current `app` server on all the load balancers.
+
+Run the playbook on the local infrastructure with the following command:
+
+{lang=text}
+    $ ansible-playbook -i inventory playbooks/deploy.yml
+
+It should only take a few seconds to run, and once it's finished, all the servers should be back in the mix for the load balancer. If you want to quickly confirm that the deployment playbook is working as it should, you can add a task which always fails, immediately following the `debug` task:
+
+{lang=text,starting-line-number=15}
+    [...]
+    tasks:
+      - debug: msg="Deployment would be done here."
+      - command: /bin/false
+
+    post_tasks:
+    [...]
+
+If you run the deployment playbook again, wait for it to fail, then run the `curl` command again, you'll notice all the requests are being directed to the second app server:
+
+{lang=text}
+    $ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; done
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+    Set-Cookie: SERVERID=192.168.4.4; path=/
+
+You can fix the deployment by removing the `/bin/false` command. Run the playbook one more time to restore the infrastructure to a fully functional state.
+
+This demonstration may seem basic, but the `pre_tasks` and `post_tasks` in the playbook are identical to what many large-scale production infrastructure deployments use!
 
 ## Capistrano-style and blue-green deployments
 
@@ -679,13 +876,43 @@ A few different technologies and concepts, like container-based infrasturcture a
 
 This book won't go through a detailed example of this style of deployment, as the process is similar to other examples provided, the only difference being an additional task of switching a load balancer from the old to the new infrastructure once it's up and running. Ansible's blog has an excellent overview of AWS-based blue-green deployments: [Immutable Systems and Ansible](http://www.ansible.com/blog/immutable-systems), and there are built-in modules to manage almost any type of load balancer you could use, including [F5's BIG-IP](http://docs.ansible.com/list_of_network_modules.html#f5), [HAProxy](http://docs.ansible.com/haproxy_module.html), [Citrix NetScaler](http://docs.ansible.com/netscaler_module.html), and [Amazon ELB](http://docs.ansible.com/ec2_elb_module.html).
 
-## Additional Deployment Scenarios
+## Additional Deployment Features
 
-TODO:
+There are a few other Ansible modules and options which are helpful in the context of deployments:
 
-  - [`run_once`](http://docs.ansible.com/playbooks_delegation.html#run-once) For things like database updates and schema changes.
-  - [`delegate_to`](http://docs.ansible.com/playbooks_delegation.html#delegation)
-  - [Notifications with Ansible](http://www.ansible.com/blog/listen-to-your-servers-talk)
+[`run_once`](http://docs.ansible.com/playbooks_delegation.html#run-once) and `delegate_to` are extremely helpful in scenarios like updating a database schema or clearing an application's cache, where you need a particular task to only run one time, on a particular server:
+
+{lang=text,linenos=off}
+    - command: /opt/app/upgrade-database-schema
+      run_once: true
+      delegate_to: app1.example.com
+
+Using `run_once` with `delegate_to` is similar to the pattern of using `when: inventory_hostname == groups.groupname[0]`, but is a little more precise in describing what you're trying to achieve---running a command once on a specific host.
+
+Another important aspect of a successful deployment is communication. If you're running playbooks as part of a CI/CD process, or in some other automated fashion, you can use one of the many built-in Ansible notification modules to share the deployment's progress via chat, email, or even text-to-speech on your Mac with the `osx_say` module! Ansible includes easy-to-use notification modules for:
+
+  - Campfire
+  - HipChat
+  - IRC
+  - Jabber
+  - Email
+  - Slack
+  - Twilio
+  - Amazon SNS
+  - etc.
+
+Many playbooks include notifications in both the `pre_tasks` and `post_tasks` sections, notifying admins in a chat channel when a deployment begins or ends. For example:
+
+{lang=text,linenos=off}
+    post_tasks:
+      - name: Tell everyone on IRC the deployment is complete.
+        irc:
+          channel: my-org
+          server: irc.example.com
+          msg: "Deployment complete!"
+        delegate_to: 127.0.0.1
+
+For a great primer on Ansible notifications, see Ansible Inc's blog post: [Listen to your Servers Talk](http://www.ansible.com/blog/listen-to-your-servers-talk).
 
 ## Summary
 
