@@ -1117,7 +1117,7 @@ Ansible is the simplest way to configure an ELK server and direct all your infra
 Modern infrastructure often involves some amount of horizontal scaling; instead of having one giant server, with one storage volume, one database, one application instance, etc., most apps use two, four, ten, or dozens of servers.
 
 {width=80%}
-![Monitoring a deluge of Nginx requests in near-realtime.](images/8-glusterfs-architecture.png)
+![GlusterFS is a distributed filesystem for servers.](images/8-glusterfs-architecture.png)
 
 Many applications can be scaled horizontally with ease, but what happens when you need shared resources, like files, application code, or other transient data, to be shared on all the servers? And how do you have this data scale out with your infrastructure, in a fast but reliable way? There are many different approaches to synchronizing or distributing files across servers:
 
@@ -1147,14 +1147,126 @@ Additionally, you need to make sure you have the following ports open on both se
 
 ### Configuring Gluster with Ansible
 
-The following example is adapted from the [gluster.yml](https://github.com/geerlingguy/raspberry-pi-dramble/blob/master/playbooks/web/gluster.yml) file I'm using for my [Raspberry Pi Dramble cluster](https://github.com/geerlingguy/raspberry-pi-dramble) (a cluster of Raspberry Pis running a Drupal website).
+For demonstration purposes, we'll set up a simple two-server infrastructure using Vagrant, and create a shared volume between the two, with two replicas (meaning all files will be replicated on each server). As your infrastructure grows, you can set other options for data consistency and transport according to your needs.
 
-First, we need to punch a hole in the firewall for all the required ports. I am using the `geerlingguy.firewall` role on all my servers, so in my vars files, I added:
+To build the two-server infrastructure locally, create a folder `gluster` containing the following `Vagrantfile`:
 
-{lang=text,linenos=off}
+{lang=ruby}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    Vagrant.configure("2") do |config|
+      # Base VM OS configuration.
+      config.vm.box = "geerlingguy/ubuntu1404"
+      config.vm.synced_folder '.', '/vagrant', disabled: true
+      config.ssh.insert_key = false
+    
+      config.vm.provider :virtualbox do |v|
+        v.memory = 256
+        v.cpus = 1
+      end
+    
+      # Define two VMs with static private IP addresses.
+      boxes = [
+        { :name => "gluster1", :ip => "192.168.29.2" },
+        { :name => "gluster2", :ip => "192.168.29.3" }
+      ]
+    
+      # Provision each of the VMs.
+      boxes.each do |opts|
+        config.vm.define opts[:name] do |config|
+          config.vm.hostname = opts[:name]
+          config.vm.network :private_network, ip: opts[:ip]
+    
+          # Provision both VMs using Ansible after the last VM is booted.
+          if opts[:name] == "gluster2"
+            config.vm.provision "ansible" do |ansible|
+              ansible.playbook = "playbooks/provision.yml"
+              ansible.inventory_path = "inventory"
+              ansible.limit = "all"
+            end
+          end
+        end
+      end
+    
+    end
+
+This configuration creates two servers, `gluster1` and `gluster2`, and will run a playbook at `playbooks/provision.yml` on the servers defined in an `inventory` file in the same directory as the Vagrantfile.
+
+Create the `inventory` file to help Ansible connect to the two servers:
+
+{lang=text}
+    [gluster]
+    192.168.29.2
+    192.168.29.3
+    
+    [gluster:vars]
+    ansible_ssh_user=vagrant
+    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+
+Now, create a playbook named `provision.yml` inside a `playbooks` directory:
+
+{lang=text}
+    ---
+    - hosts: gluster
+      sudo: yes
+    
+      vars_files:
+        - vars.yml
+    
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.glusterfs
+    
+      tasks:
+        - name: Ensure Gluster brick and mount directories exist.
+          file: "path={{ item }} state=directory mode=0775"
+          with_items:
+            - "{{ gluster_brick_dir }}"
+            - "{{ gluster_mount_dir }}"
+    
+        - name: Configure Gluster volume.
+          gluster_volume:
+            state: present
+            name: "{{ gluster_brick_name }}"
+            brick: "{{ gluster_brick_dir }}"
+            replicas: 2
+            cluster: "{{ groups.gluster | join(',') }}"
+            host: "{{ inventory_hostname }}"
+            force: yes
+          run_once: true
+    
+        - name: Ensure Gluster volume is mounted.
+          mount:
+            name: "{{ gluster_mount_dir }}"
+            src: "{{ groups.gluster[0] }}:/{{ gluster_brick_name }}"
+            fstype: glusterfs
+            opts: "defaults,_netdev"
+            state: mounted
+
+This playbook uses two roles to set up a firewall and install the required packages for GlusterFS to work. You can manually install both of the required roles with the command `ansible-galaxy install geerlingguy.firewall geerlingguy.glusterfs`, or add them to a `requirements.txt` file and install with `ansible-galaxy install -r requirements.txt`.
+
+Gluster requires a 'brick' directory to use as a virtual filesystem, and our servers also need a directory where the filesystem can be mounted, so the first `file` task ensures both directories exist (`gluster_brick_dir` and `gluster_mount_dir`). Since we need to use these directory paths more than once, we use variables which will be defined later, in `vars.yml`.
+
+Ansible's `gluster_volume` module (added in Ansible 1.9) does all the hard work of probing peer servers, setting up the brick as a Gluster filesystem, and configuring the brick for replication. Some of the most important configuration parameters for the `gluster_volume` module include:
+
+  - `state`: Setting this to `present` makes sure the brick is present. It will also start the volume when it is first created by default, though this behavior can be overridden by the `start_on_create` option.
+  - `name` and `brick` give the Gluster brick a name and location on the server, respectively. In this example, the brick will be located on the boot volume, so we also have to add `force: yes`, or Gluster will complain about not having the brick on a separate volume.
+  - `replicas` tells Gluster how many replicas to ensure exist; this number can vary depending on how many servers you have in the brick's `cluster`, and how much data redundancy you require. Setting this 1:1 with the number of servers in your infrastructure means there's a full replica on each server, which can be good for read-heavy volumes, but worse for write-heavy volumes.
+  - `cluster` defines all the hosts which will contain the distributed filesystem. In this case, all the `gluster` servers in our Ansible inventory should be included, so we use a Jinja2 `join` filter to join all the addresses into a list.
+  - `host` sets the host for peer probing explicitly. If you don't set this, you can sometimes get errors on brick creation, depending on your network configuration.
+
+We only need to run the `gluster_volume` module once for all the servers, so we add `run_once: true`.
+
+The last task ensures the Gluster volume is mounted on each of the servers, in the `gluster_mount_dir`, using Ansible's `mount` module.
+
+The last step is to define all the variables used in the playbook. Create a `vars.yml` file inside the `playbooks` directory, with the following variables defined:
+
+{lang=text}
+    ---
+    # Firewall configuration.
     firewall_allowed_tcp_ports:
       - 22
-      - 80
       # For Gluster.
       - 111
       # Port-mapper for Gluster 3.4+.
@@ -1171,101 +1283,85 @@ First, we need to punch a hole in the firewall for all the required ports. I am 
       - 38467
     firewall_allowed_udp_ports:
       - 111
-
-Next, I'll include the geerlingguy.glusterfs role in my playbook to install GlusterFS on my servers (like most of the `geerlingguy.*` roles, this role works with Debian, Ubuntu, RedHat, and CentOS):
-
-{lang=text,linenos=off}
-    roles:
-      - geerlingguy.firewall
-      - geerlingguy.glusterfs
-
-Then, I include a separate task include file with the Gluster configuration in my main playbook:
-
-{lang=text,linenos=off}
-    tasks:
-      - include: gluster.yml
-
-Inside that file:
-
-{lang=text}
-    ---
-    - name: Ensure Gluster brick and mount directories exist.
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: root
-        group: www-data
-        mode: 0775
-      with_items:
-        - "{{ gluster_brick_dir }}"
-        - "{{ gluster_mount_dir }}"
     
-    # Gluster volume configuration.
-    - name: Check if Gluster volumes already exist.
-      shell: "gluster volume info"
-      changed_when: false
-      register: gluster_volume_info
-    
-    - name: Connect to Gluster peers.
-      shell: "gluster peer probe {{ item }}"
-      register: gluster_peer_probe
-      changed_when: "'already in peer list' not in gluster_peer_probe.stdout"
-      failed_when: false
-      with_items: groups.webservers
-      when: "'Volume Name: gluster' not in gluster_volume_info.stdout"
-    
-    - name: Create Gluster volume.
-      shell: "gluster volume create {{ gluster_brick_name }} {{ gluster_brick_config }}"
-      register: gluster_volume_create
-      changed_when: "'successful' in gluster_volume_create.stdout"
-      when:
-        "inventory_hostname == groups.webservers[0]
-        and 'Volume Name: gluster' not in gluster_volume_info.stdout"
-    
-    - name: Ensure Gluster volume is started.
-      shell: "gluster volume start {{ gluster_brick_name }}"
-      register: gluster_volume_start
-      changed_when: "'successful' in gluster_volume_start.stdout"
-      when:
-        "inventory_hostname == groups.webservers[0]
-        and 'Volume Name: gluster' not in gluster_volume_info.stdout"
-    
-    # Mount configuration.
-    - name: Ensure the Gluster volume is mounted.
-      mount:
-        name: "{{ gluster_mount_dir }}"
-        src: "{{ groups.webservers[0] }}:/{{ gluster_brick_name }}"
-        fstype: glusterfs
-        opts: "defaults,_netdev"
-        state: mounted
-
-The first task ensures the brick and mount directories exist and have the appropriate permissions for our application. Next, `gluster peer probe` links all the servers together. Then, on only *one* of the servers (in this case, the first of the `webservers` inventory group), the Gluster volume is created and started.
-
-Finally, an entry is added to `/etc/fstab` and then the volume is mounted at `gluster_mount_dir` (using Ansible's `mount` module, which configures `/etc/fstab` and mounts the volume for us).
-
-There were a few different Jinja2 variables I used to make the Gluster configuration and volume mounting simple and flexible (a task include like this is very flexible and could be used for many different server configurations). Define these variables separately, like so:
-
-{lang=text}
+    # Gluster configuration.
     gluster_mount_dir: /mnt/gluster
     gluster_brick_dir: /srv/gluster/brick
     gluster_brick_name: gluster
-    # Note: This is hardcoded for 2 webservers. Adjust accordingly.
-    gluster_brick_config:
-      "replica 2 transport tcp
-      {{ groups.webservers[0] }}:{{ gluster_brick_dir }}
-      {{ groups.webservers[1] }}:{{ gluster_brick_dir }}"
 
-Most of these vars are self-explanatory, but the `gluster_brick_config` variable deserves a little more explanation. That variable tells Gluster to set up two replicas (one full replica on each server), using the tcp transport method, then it lists each server that will have a share of the volume, followed by the path to that share.
+This variables file should be pretty self-explanatory; all the ports required for Gluster are opened in the firewall, and the three Gluster-related variables we use in the playbook are defined.
 
-If you have two servers, this should work perfectly. If you have three servers, you will need to adjust the configuration to either use three replicas or use a different data partitioning scheme. If you have four or more servers, you just need an even number of replicas to allow Gluster to replicate data appropriately.
+Now that we have everything set up, the folder structure should look like this:
+
+{lang=text,linenos=off}
+    gluster/
+      playbooks/
+        provision.yml
+        main.yml
+      inventory
+      Vagrantfile
+
+Change directory into the `gluster` directory, and run `vagrant up`. After a few minutes, provisioning should have completed successfully. To ensure Gluster is working properly, you can run the following two commands, which should give information about Gluster's peer connections and the configured `gluster` volume:
+
+{lang=text,linenos=off}
+    $ ansible gluster -i inventory -a "gluster peer status" -s
+    192.168.29.2 | success | rc=0 >>
+    Number of Peers: 1
+    
+    Hostname: 192.168.29.3
+    Port: 24007
+    Uuid: 1340bcf1-1ae6-4e55-9716-2642268792a4
+    State: Peer in Cluster (Connected)
+    
+    192.168.29.3 | success | rc=0 >>
+    Number of Peers: 1
+    
+    Hostname: 192.168.29.2
+    Port: 24007
+    Uuid: 63d4a5c8-6b27-4747-8cc1-16af466e4e10
+    State: Peer in Cluster (Connected)
+
+{lang=text,linenos=off}
+    $ ansible gluster -i inventory -a "gluster volume info" -s
+    192.168.29.3 | success | rc=0 >>
+    
+    Volume Name: gluster
+    Type: Replicate
+    Volume ID: b75e9e45-d39b-478b-a642-ccd16b7d89d8
+    Status: Started
+    Number of Bricks: 1 x 2 = 2
+    Transport-type: tcp
+    Bricks:
+    Brick1: 192.168.29.2:/srv/gluster/brick
+    Brick2: 192.168.29.3:/srv/gluster/brick
+    
+    192.168.29.2 | success | rc=0 >>
+    
+    Volume Name: gluster
+    Type: Replicate
+    Volume ID: b75e9e45-d39b-478b-a642-ccd16b7d89d8
+    Status: Started
+    Number of Bricks: 1 x 2 = 2
+    Transport-type: tcp
+    Bricks:
+    Brick1: 192.168.29.2:/srv/gluster/brick
+    Brick2: 192.168.29.3:/srv/gluster/brick
+
+You can also do the following to confirm that files are being replicated/distributed correctly:
+
+  1. Log into the first server: `vagrant ssh gluster1`
+  2. Create a file in the mounted gluster volume: `sudo touch /mnt/gluster/test`
+  3. Log out of the first server: `exit`
+  4. Log into the second server: `vagrant ssh gluster2`
+  5. List the contents of the gluster directory: `ls /mnt/gluster`
+
+You should see the `test` file you created in step 2; this means Gluster is working correctly!
 
 ### Summary
 
 Deploying distributed file systems like Gluster can seem challenging, but Ansible simplifies the process, and more importantly, does so idempotently; each time you run the playbook again, it will ensure everything stays configured as you've set it.
 
-Ansible 1.9.x's inclusion of the `gluster_volume` module will make this process even simpler, since the built-in module will handle edge cases and general configuration even better than we did above.
-
-You can view this configuration in its full context in the [Raspberry Pi Dramble](https://github.com/geerlingguy/raspberry-pi-dramble) project on GitHub (see, specifically, the file `playbooks/web/gluster.yml`).
+This example Gluster configuration can be found in its entirety on GitHub, in the [Gluster example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/gluster) in the Ansible Vagrant Examples project.
 
 ## Mac Provisioning with Ansible and Homebrew
 

@@ -2,7 +2,6 @@
 
 ## TODO
 
-  - Re-do Gluster example (using new `gluster_volume` module)
   - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
   - 2.0: Add notes on Blocks for playbooks (Ansible v 2.0 feature)
@@ -38,6 +37,7 @@
 ## Thoughts on writing
 
   - [I self-published a learn-to-code book and made nearly $5k in pre-orders](https://news.ycombinator.com/item?id=9847965)
+  - [My Book Marketing Process](http://www.mooreds.com/wordpress/archives/1594)
   - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)
   - [Self Publishing My First Technical Book on LeanPub](https://servercheck.in/blog/self-publishing-my-first-technical-book-leanpub)
   - [The Last Starving Author Has Died](http://www.luckyisgood.com/starving-authors-begone/)

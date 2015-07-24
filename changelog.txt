@@ -17,7 +17,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed missing files in book's GitHub repository Node.js role example (thanks to @geoand!).
   - Fixed simple Node.js app server example playbook in chapter 4 (thanks to @erimar77!).
   - Fixed `lineinfile` task regex syntax in chapter 4 (thanks to @erimar77!).
-  - Clarified EPEL requirements/installation for Enterprise Linux systems in chapter 1 (thanks to Michael S.!).
+  - Clarified EPEL requirements/installation for Enterprise Linux systems in chapter 1 (thanks to @michel_slm!).
   - Fixed a broken configuration item in chapter 4 playbook example.
 
 ## Version 0.97 (2015-06-10)
