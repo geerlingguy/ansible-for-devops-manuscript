@@ -62,6 +62,8 @@
     - SSH private key management and security (see emails to/from Erik-jan Reimers)
     - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
   - Patch management with Ansible (like Pulp? See how Puppet does it?).
+  - Playbooks, Roles, and Variables - organization for large teams and large projects
+    - Specifically asked about this by Guy Matz (Guy.Matz.CFT@jcrew.com)
 
 ## Publisher Offers
 

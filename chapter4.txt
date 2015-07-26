@@ -210,24 +210,20 @@ First, define a set of hosts (`all`) on which this playbook will be run (see the
 
 Adding extra package repositories (yum or apt) is one thing many admins will do before any other work on a server to ensure that certain packages are available, or are at a later version than the ones in the base installation.
 
-In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL/CentOS 6.x):
+In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL/CentOS 7.x):
 
 {lang="bash"}
-    # Import EPEL GPG Key - see: https://fedoraproject.org/keys
-    wget https://fedoraproject.org/static/0608B895.txt \
-      -O /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
-    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-6
-    
     # Import Remi GPG key - see: http://rpms.famillecollet.com/RPM-GPG-KEY-remi
     wget http://rpms.famillecollet.com/RPM-GPG-KEY-remi \
       -O /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
     
-    # Install EPEL and Remi repos.
-    rpm -Uvh --quiet \
-      http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    # Install Remi repo.
     rpm -Uvh --quiet \
       http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+    
+    # Install EPEL repo.
+    yum install epel-release
     
     # Install Node.js (npm plus all its dependencies).
     yum --enablerepo=epel install node
@@ -239,26 +235,24 @@ I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables other nifty Ansible features we'll discuss later:
 
 {lang="text",starting-line-number=5}
-    - name: Import EPEL and Remi GPG keys.
+    - name: Import Remi GPG key.
       rpm_key: "key={{ item }} state=present"
       with_items:
-      - "https://fedoraproject.org/static/0608B895.txt"
-      - "http://rpms.famillecollet.com/RPM-GPG-KEY-remi"
+        - "http://rpms.famillecollet.com/RPM-GPG-KEY-remi"
     
-    - name: Install EPEL and Remi repos.
+    - name: Install Remi repo.
       command: "rpm -Uvh --force {{ item.href }} creates={{ item.creates }}"
       with_items:
-      - {
-        href: "http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm",
-        creates: "/etc/yum.repos.d/epel.repo"
-      }
-      - {
-        href: "http://rpms.famillecollet.com/enterprise/remi-release-6.rpm",
-        creates: "/etc/yum.repos.d/remi.repo"
-      }
+        - {
+          href: "http://rpms.famillecollet.com/enterprise/remi-release-6.rpm",
+          creates: "/etc/yum.repos.d/remi.repo"
+        }
     
-    - name: Disable firewall (since this is a dev environment).
-      service: name=iptables state=stopped enabled=no
+    - name: Install EPEL repo.
+      yum: name=epel-release state=present
+    
+    - name: Ensure firewalld is stopped (since this is a test server).
+      service: name=firewalld state=stopped
     
     - name: Install Node.js and npm.
       yum: name=npm state=present enablerepo=epel
@@ -268,14 +262,16 @@ Ansible makes things a little more robust. Even though the following is slightly
 
 Let's walk through this playbook step-by-step:
 
-  1. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We want to import two keys---one for EPEL from the Fedora project, and one for the Remi Repository.
-  2. Since Ansible doesn't have a built-in rpm module, we use the rpm command, but we use Ansible's `command` module, which allows us to do two things:
+  1. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
+  2. Since Ansible doesn't have a built-in rpm module, we use the rpm command with Ansible's `command` module, which allows us to do two things:
 
      1. Use the `creates` parameter to tell Ansible when to *not* run the command (in this case, we tell Ansible what file is present after the `rpm` command successfully completes).
      2. Use a multidimensional array of items (`with_items`) to define URLs and the resulting files checked with `creates`.
 
-  3. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
-  4. Since NPM is now installed, we use Ansible's `npm` module to install a Node.js utility, `forever` to launch our app and keep it running. Setting `global` to `yes` tells NPM to install the `forever` node module in `/usr/lib/node_modules/` so it will be available to all users and Node.js apps on the system.
+  3. `yum` installs the EPEL repository (much simpler than the two-step process we had to follow to get Remi's repository installed!).
+  4. Since this server is being used only for test purposes, we disable the system firewall so it won't interfere with testing (using the `service` module).
+  5. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
+  6. Since NPM is now installed, we use Ansible's `npm` module to install a Node.js utility, `forever` to launch our app and keep it running. Setting `global` to `yes` tells NPM to install the `forever` node module in `/usr/lib/node_modules/` so it will be available to all users and Node.js apps on the system.
 
 We're beginning to have a nice little Node.js app server set up. Let's set up a little Node.js app that responds to HTTP requests on port 80.
 
@@ -314,7 +310,7 @@ Since this little app is dependent on Express (a simple http framework for Node)
 
 Now, add the following to your playbook, to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`):
 
-{lang="text",starting-line-number=32}
+{lang="text",starting-line-number=30}
     - name: Ensure Node.js app folder exists.
       file: "path={{ node_apps_location }} state=directory"
     
@@ -338,7 +334,7 @@ We're *almost* finished! The last step is to start the app.
 
 We'll now use `forever` (which we installed earlier) to start the app.
 
-{lang="text",starting-line-number=40}
+{lang="text",starting-line-number=38}
     - name: Check list of running Node.js apps.
       command: forever list
       register: forever_list

@@ -173,7 +173,7 @@ As in the Varnish example, create the two files referenced in the above playbook
 
 Create a `templates` directory inside the `playbooks/www` directory, and inside, create an `index.php.j2` file. This file will use Jinja2 syntax to build a (relatively) simple PHP script to display the health and status of all the servers in our infrastructure:
 
-{lang=text}
+{lang=php}
     <?php
     /**
      * @file
