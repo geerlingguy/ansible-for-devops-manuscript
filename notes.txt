@@ -2,12 +2,12 @@
 
 ## TODO
 
-  - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
   - 2.0: Add notes on Blocks for playbooks (Ansible v 2.0 feature)
     - grouping related tasks
     - `block` / `rescue` / `always`
   - 2.0: Add notes on Execution Strategy (`linear`, `free`, etc.).
+  - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
 
 ## Competition / Similar works:
 
