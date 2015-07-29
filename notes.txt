@@ -9,6 +9,19 @@
   - 2.0: Add notes on Execution Strategy (`linear`, `free`, etc.).
   - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
 
+## Publication - Marketing / Notifications
+
+  - Reddit - /r/ansible, /r/sysadmin, /r/devops, /r/vagrant
+  - Hacker News - "Show HN" post
+  - Greg DeK (Ansible, Inc.) - some sort of promo?
+  - Matt Jaynes (Briefs on Ansible)
+  - Drupal people... who?
+  - Blog posts:
+    - Life is a Prayer
+    - Server Check.in
+    - Midwestern Mac
+  - Product Hunt?
+
 ## Competition / Similar works:
 
   - [Taste Test - Puppet - Chef - Salt - Ansible](http://devopsu.com/books/taste-test-puppet-chef-salt-stack-ansible.html)
