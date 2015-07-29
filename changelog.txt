@@ -9,6 +9,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added example of zero-downtime deployments with HAProxy to chapter 9.
   - Completed remaining sections in chapter 9.
   - Changed EPEL installation process for RHEL/CentOS 7 in chapters 1 and 4 (thanks to @opratr!).
+  - Completely rewrote GlusterFS section in chapter 8 with a more relevant example.
 
 ## Version 0.99 (2015-07-19)
 
