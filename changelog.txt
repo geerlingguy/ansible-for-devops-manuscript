@@ -10,6 +10,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Completed remaining sections in chapter 9.
   - Changed EPEL installation process for RHEL/CentOS 7 in chapters 1 and 4 (thanks to @opratr!).
   - Completely rewrote GlusterFS section in chapter 8 with a more relevant example.
+  - Rearranged first playbook example in chapter 2 so use of sudo is more obvious (thanks to @greg!).
 
 ## Version 0.99 (2015-07-19)
 

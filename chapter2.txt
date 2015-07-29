@@ -54,8 +54,6 @@ Open the Vagrantfile that was created when we used the `vagrant init` command ea
     # Provisioning configuration for Ansible.
     config.vm.provision "ansible" do |ansible|
       ansible.playbook = "playbook.yml"
-      # Run commands as root.
-      ansible.sudo = true
     end
 
 This is a very basic configuration to get you started using Ansible with Vagrant. There are [many other Ansible options](http://docs.vagrantup.com/v2/provisioning/ansible.html) you can use once we get deeper into using Ansible. For now, we just want to set up a very basic playbook---a simple file you create to tell Ansible how to configure your VM.
@@ -67,6 +65,7 @@ Let's create the Ansible `playbook.yml` file now. Create an empty text file in t
 {lang="text"}
     ---
     - hosts: all
+      sudo: yes
       tasks:
       - name: Ensure NTP (for time synchronization) is installed.
         yum: name=ntp state=installed
@@ -92,11 +91,16 @@ This first line is a marker showing that the rest of the document will be format
 This line tells Ansible to which hosts this playbook applies. `all` works here, since Vagrant is invisibly using its own Ansible inventory file (instead of the one we created earlier in `/etc/ansible/hosts`), which just defines the Vagrant VM.
 
 {lang="text",starting-line-number=3}
+      sudo: yes
+
+Since we need privileged access to install NFS and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook.
+
+{lang="text",starting-line-number=4}
       tasks:
 
 All the tasks after this line will be run on all hosts (or, in our case, our one VM).
 
-{lang="text",starting-line-number=4}
+{lang="text",starting-line-number=5}
       - name: Ensure NTP daemon (for time synchronization) is installed.
         yum: name=ntp state=installed
 
@@ -109,7 +113,7 @@ This command is the equivalent of running `yum install ntp`, but is much more in
 
 However, the above script is still not quite as robust as Ansible's `yum` command. What if ntpdate is installed, but not ntp? This script would require extra tweaking and complexity to match the simple Ansible yum command, especially after we explore the yum module more intimately (or the `apt` module, when using Ubuntu and Debian-flavored Linux).
 
-{lang="text",starting-line-number=6}
+{lang="text",starting-line-number=7}
       - name: Ensure NTP is running.
         service: name=ntpd state=started enabled=yes
 
@@ -134,6 +138,7 @@ We could be even more terse (and really demonstrate Ansible's powerful simplicit
 {lang="text"}
     ---
     - hosts: all
+      sudo: yes
       tasks:
       - yum: name=ntp state=installed
       - service: name=ntpd state=started enabled=yes
