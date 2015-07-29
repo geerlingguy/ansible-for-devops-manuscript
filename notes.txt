@@ -11,14 +11,15 @@
 
 ## Publication - Marketing / Notifications
 
+  - Server Check.in - Write about entire process (see "Thoughts on writing" and prior posts)
   - Reddit - /r/ansible, /r/sysadmin, /r/devops, /r/vagrant
+  - Reddit - /r/writing (write a more personal post)
   - Hacker News - "Show HN" post
   - Greg DeK (Ansible, Inc.) - some sort of promo?
   - Matt Jaynes (Briefs on Ansible)
   - Drupal people... who?
   - Blog posts:
     - Life is a Prayer
-    - Server Check.in
     - Midwestern Mac
   - Product Hunt?
 
