@@ -259,7 +259,7 @@ We want to install the NTP daemon on the server to keep the time in sync. Instea
 
 You should see three simple 'success' messages, reporting no change, since NTP was already installed on the three machines; this confirms everything is in working order.
 
-I> The `-s` option (alias for `--sudo`) tells Ansible to run the command with sudo. This will work fine with our Vagrant VMs, but if you're running commands against a server where your user account requires a sudo password, you should also pass in `-k` (alias for `--ask-sudo-pass`), so you can enter your sudo password when Ansible needs it.
+I> The `-s` option (alias for `--sudo`) tells Ansible to run the command with sudo. This will work fine with our Vagrant VMs, but if you're running commands against a server where your user account requires a sudo password, you should also pass in `-K` (alias for `--ask-sudo-pass`), so you can enter your sudo password when Ansible needs it.
 
 Now we'll make sure the NTP daemon is started and set to run on boot. We could use two separate commands, `service ntpd start` and `chkconfig ntpd on`, but we'll use Ansible's `service` module instead.
 

@@ -531,7 +531,7 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
     # The resulting domain will be [domain].dev (with .dev appended).
     domain: "drupaltest"
 
-Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `8.0.x` and `drupaltest` (or whatever values you'd like!).
+Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.0.x-dev` and `drupaltest` (or whatever values you'd like!).
 
 The last two tasks (lines 12-19) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 

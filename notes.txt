@@ -11,6 +11,11 @@
 
 ## Publication - Marketing / Notifications
 
+  - Publish Book on these Platforms:
+    - Amazon Kindle
+    - Apple iBooks
+    - Google Play (https://play.google.com/books/publish/u/0/)
+    - ???
   - Server Check.in - Write about entire process (see "Thoughts on writing" and prior posts)
   - Reddit - /r/ansible, /r/sysadmin, /r/devops, /r/vagrant
   - Reddit - /r/writing (write a more personal post)
