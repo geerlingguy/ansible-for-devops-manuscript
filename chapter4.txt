@@ -185,7 +185,7 @@ The `ansible-playbook` command also allows for some other common options:
 
 There are some other options and configuration variables that are important to get the most out of `ansible-playbook`, but this should be enough to get you started running the playbooks in this chapter on your own servers or virtual machines.
 
-I> The rest of this chapter uses more realistic Ansible playbooks. All the examples in this chapter are in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), and you can clone that repository to your computer (or browse the code online) to follow along more easily.
+I> The rest of this chapter uses more realistic Ansible playbooks. All the examples in this chapter are in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), and you can clone that repository to your computer (or browse the code online) to follow along more easily. The GitHub repository includes Vagrantfiles with each example, so you can build the servers on your local host using Vagrant.
 
 ## Real-world playbook: CentOS Node.js app server
 
@@ -384,6 +384,7 @@ At this point, you should be getting comfortable with Ansible playbooks and the 
 For this playbook, we're going to start organizing our playbook a little more efficiently. Instead of defining any requiring variables be passed in via the command line, let's begin the playbook by telling Ansible our variables are stored in a separate `vars.yml` file:
 
 {lang="text"}
+    ---
     - hosts: all
     
       vars_files:
@@ -391,7 +392,7 @@ For this playbook, we're going to start organizing our playbook a little more ef
 
 Using one or more included variable files cleans up your main playbook file, and lets you organize all your configurable variables in one place. At the moment, we don't have any variables to add; we'll define the contents of `vars.yml`  later. For now, create the empty file, and continue on to the next section of the playbook, `pre_tasks`:
 
-{lang="text",starting-line-number=5}
+{lang="text",starting-line-number=6}
       pre_tasks:
       - name: Update apt cache if needed.
         apt: update_cache=yes cache_valid_time=3600
@@ -400,7 +401,7 @@ Ansible lets you run tasks before or after the main set of tasks using `pre_task
 
 With that out of the way, we'll add another new section to our playbook, `handlers`:
 
-{lang="text",starting-line-number=8}
+{lang="text",starting-line-number=9}
       handlers:
       - name: restart apache
         service: name=apache2 state=restarted
@@ -417,7 +418,7 @@ I> By default, Ansible will stop all playbook execution when a task fails, and w
 
 The first step towards building an application server that depends on the LAMP stack is to build the actual LAMP part of it. This is the simplest process, but still requires a little extra work for our particular server. We want to install Apache, MySQL and PHP, but we'll also need a couple other dependencies, and we want a particular version of PHP (5.5), which is only available in an extra apt repository.
 
-{lang="text",starting-line-number=11}
+{lang="text",starting-line-number=12}
       tasks:
       - name: Get software for apt repository management.
         apt: name={{ item }} state=installed
@@ -685,7 +686,7 @@ Apache Solr is a fast and scalable search server optimized for full-text search,
 {width=40%}
 ![Apache Solr Server.](images/4-playbook-solr.png)
 
-### Include a variables file, and discover `pre_tasks` and `handlers`
+### Include a variables file, and more `pre_tasks` and `handlers`
 
 Just like the previous LAMP server example, we'll begin this playbook by telling Ansible our variables will be in a separate `vars.yml` file:
 
