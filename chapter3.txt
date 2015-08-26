@@ -643,7 +643,7 @@ Accelerated mode can offer 2-4 times faster performance (especially for things l
     ---
     - hosts: all
       accelerate: true
-      ...
+      [...]
 
 It goes without saying, if you use accelerated mode, you need to have the port through which it communicates open in your firewall (port 5099 by default, or whatever port you set with the `accelerate_port` option after `accelerate`).
 

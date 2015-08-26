@@ -101,7 +101,7 @@ Playbooks can even be included in other playbooks, using the same `include` synt
       remote_user: root
       
       tasks:
-        ...
+        [...]
       
     - include: web.yml
     - include: db.yml

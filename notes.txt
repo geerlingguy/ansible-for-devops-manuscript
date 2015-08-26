@@ -3,6 +3,7 @@
 ## TODO
 
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
+  - Ansible Vault - simple how-to in Playbooks chapter?
   - 2.0: Add notes on Blocks for playbooks (Ansible v 2.0 feature)
     - grouping related tasks
     - `block` / `rescue` / `always`

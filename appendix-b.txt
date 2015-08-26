@@ -27,7 +27,7 @@ It's also a good idea to use a `name` for every task you write, besides the most
         # access to the images used in our application.
         - name: Copy the entire file repository to the application.
           copy:
-            src: ...
+            src: [...]
 
 This advice assumes, of course, that your comments actually indicate what's happening in your playbooks! Generally, I use full sentences with a period for all comments and `name`s, but if you'd like to use a slightly different style, that's not an issue. Just try to be consistent, and remember that *bad comments are worse than no comments at all*.
 
