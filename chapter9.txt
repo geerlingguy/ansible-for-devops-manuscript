@@ -616,7 +616,7 @@ Change the `app_version` in `playbooks/vars.yml` to `1.0.1`, and run the deploym
 
 Uh oh---after we deployed the new version, our tests started failing! Since we deployed to all four servers asynchronously, all four application servers are offline, and our boss and customers are going to be very angry.
 
-In this case, rolling back is simply a matter of reverting to `1.0.0` and redeploying. Doing this now fixes the problem _this_ time, but if part of the application update changed a database schema you could be in a world of hurt!
+In this case, rolling back is simple: revert to `1.0.0` and redeploy. Doing this now fixes the problem _this_ time, but if part of the application update changed a database schema you could be in a world of hurt!
 
 Ansible has two particular settings to protect you when you deploy to many servers while maintaining your infrastructure's overall integrity during a failed deployment.
 
