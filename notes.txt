@@ -2,6 +2,7 @@
 
 ## TODO
 
+  - Delete (or rewrite?) section in beginning of book about how you can improve this book during writing.
   - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
   - Ansible Vault - simple how-to in Playbooks chapter?
   - 2.0: Add notes on Blocks for playbooks (Ansible v 2.0 feature)
@@ -41,8 +42,6 @@
 
 ## Editing notes:
 
-  - Delete (or rewrite?) section in beginning of book about how you can improve this book during writing.
-  - Add illustrations all over the place!
   - Search for "that" in text.
   - Search for `...` in code examples and make it consistent.
   - Ensure cowsay is in every chapter summary.

@@ -8,18 +8,18 @@ This section will cover different levels of infrastructure automation and testin
 
 ## Ansible Tower
 
-Throughout this book, all the examples use Ansible's CLI to run playbooks and report back the results. For smaller teams, especially when everyone on the team is well-versed in how to use Ansible, YAML syntax, and follows security best practices with playbooks and variables files, using the CLI can be a sustainable approach.
+All the examples in this book use Ansible's CLI to run playbooks and report back the results. For smaller teams, especially when everyone on the team is well-versed in how to use Ansible, YAML syntax, and security best practices, using the CLI is a sustainable approach.
 
-But for many organizations, there are needs that stretch basic CLI use too far:
+But for many organizations, basic CLI use is inadequate:
 
   - The business needs detailed reporting of infrastructure deployments and failures, especially for audit purposes.
   - Team-based infrastructure management requires varying levels of involvement in playbook management, inventory management, and key and password access.
   - A thorough visual overview of the current and historical playbook runs and server health helps identify potential issues before they affect the bottom line.
-  - Playbook scheduling can help ensure infrastructure remains in a known state.
+  - Playbook scheduling ensures infrastructure remains in a known state.
 
 Ansible Tower checks off these items---and many more---and provides a great mechanism for team-based Ansible usage. The product is currently free for teams managing ten or fewer servers (it's basically an 'unlimited trial' mode), and has flexible pricing for teams managing dozens to thousands of servers.
 
-While this book includes a brief overview of Tower, and how you can get started with Tower, it is highly recommended that you read through Ansible, Inc's extensive [Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
+While this book includes a brief overview of Tower, it is highly recommended you read through Ansible, Inc's extensive [Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
 
 ### Getting and Installing Ansible Tower
 
@@ -33,20 +33,20 @@ Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [Virt
 
 I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
 
-You can now visit the URL provided by the login welcome message (something like `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
+Visit the URL provided by the login welcome message (something like `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
 
-At this point, you will need to register a free trial license of Ansible Tower, which can be done following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
+At this point, you will need to register a free trial license of Ansible Tower following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
 
 {width=80%}
 ![Ansible Tower's Dashboard](images/11-ansible-tower-dashboard.png)
 
 ### Using Ansible Tower
 
-Ansible Tower is centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* can then be set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It can be a little overwhelming at first, but once you get the initial structure configured, you'll see how powerful and flexible Tower's Project workflow is.
+Ansible Tower is centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* are then set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It's a little overwhelming at first, but once the initial structure is configured, you'll see the power and flexibility Tower's Project workflow affords.
 
 Let's get started with our first project!
 
-The first step is to make sure you have a test playbook you can run using Ansible Tower. Generally, your playbooks should be stored in a source code repository (e.g. Git or Subversion), with Tower configured to check out the latest version of the playbook from the repository and run it. Since we're only going to run a simple example, we will create a playbook in Tower's default `projects` directory located in `/var/lib/awx/projects`:
+The first step is to make sure you have a test playbook you can run using Ansible Tower. Generally, your playbooks should be stored in a source code repository (e.g. Git or Subversion), with Tower configured to check out the latest version of the playbook from the repository and run it. For this example, however, we will create a playbook in Tower's default `projects` directory located in `/var/lib/awx/projects`:
 
   1. Log into the Tower VM: `vagrant ssh`
   2. Switch to the `awx` user: `sudo su - awx`
@@ -77,7 +77,7 @@ Switch back to your web browser and get everything set up to run the test playbo
 
 T> New *Credentials* have a somewhat dizzying array of options, and offer login and API key support for a variety of services, like SSH, AWS, Rackspace, VMWare vCenter, and SCM systems. If you can login to a system, Tower likely supports the login mechanism!
 
-Now that we have all the structure for running playbooks configured, we need only create a *Job Template* so we can run the playbook on the localhost and see whether we've succeeded. Click on 'Job Templates', and create a new Job Template with the following configuration:
+Now that we have all the structure for running playbooks configured, we need only create a *Job Template* to run the playbook on the localhost and see whether we've succeeded. Click on 'Job Templates', and create a new Job Template with the following configuration:
 
   - Name: `Tower Test`
   - Inventory: `Tower Local`
@@ -96,14 +96,14 @@ The job's dashboard page is very useful for giving an overview of how many hosts
 
 ### Other Tower Features of Note
 
-In our simple walkthrough above, we used Tower to run a simple playbook on the local server; setting up Tower to run playbooks on real-world infastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
+In our walkthrough above, we used Tower to run a playbook on the local server; setting up Tower to run playbooks on real-world infastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
 
-This book won't walk through the entirety of Ansible Tower's documentation, but a few other simple features you should try out include:
+This book won't walk through the entirety of Ansible Tower's documentation, but a few other features you should try out include:
 
   - Setting up scheduled Job runs (especially with the 'Check' option instead of 'Run') for CI/CD.
   - Integrating user accounts and Teams with LDAP users and groups for automatic team-based project management.
-  - Setting different levels of permissions for Users and Teams so certain users can edit certain jobs, others can only run certain jobs, and yet others can only view the results of job runs within an Organization.
-  - Configuring Ansible Vault credentials so you can easily and automatically use Vault-protected variables in your playbooks.
+  - Setting different levels of permissions for Users and Teams so certain users can only edit, run, or view certain jobs within an Organization.
+  - Configuring Ansible Vault credentials to easily and automatically use Vault-protected variables in your playbooks.
   - Setting up Provisioning Callbacks so newly-provisioned servers can self-provision via a URL per Job Template.
   - Surveys, which allow users to add extra information based on a 'Survey' of questions per job run.
   - Inventory Scripts, which allow you to build inventory dynamically.
@@ -121,7 +121,7 @@ All these tools provide flexiblity and security for running Ansible Playbooks, a
 
 Jenkins is a Java-based open source continuous integration tool. It was forked from the Hudson project in 2011, but has a long history as a robust build tool for most any software project.
 
-Jenkins is easy to install and configure, with the Java SDK as its only requirement. You can install Jenkins on any modern OS, but for the purposes of this demonstration, we'll build a local VM using Vagrant, install Jenkins inside the VM using Ansible, then use Jenkins to run an Ansible playbook.
+Jenkins is easy to install and configure, with the Java SDK as its only requirement. Jenkins runs on any modern OS, but for the purposes of this demonstration, we'll build a local VM using Vagrant, install Jenkins inside the VM using Ansible, then use Jenkins to run an Ansible playbook.
 
 ### Build a local Jenkins server with Ansible
 
@@ -174,7 +174,7 @@ This playbook uses a set of roles from Ansible Galaxy to install all the require
     geerlingguy.java
     geerlingguy.jenkins
 
-The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a simple firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
+The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
 
 Finally, we tell the `geerlingguy.jenkins` role a set of plugins to install through the `jenkins_plugins` variable; in this case, we just want the `ansicolor` plugin, which gives us full color display in Jenkins' console logs (so our Ansible playbook output is easier to read).
 
@@ -208,14 +208,14 @@ It's preferred to keep your playbooks and server configuration in a code reposit
           command: date
     ~~~
 
-After you create the playbook, you will head over to the Jenkins UI to create a job to run the playbook. But if you want, you can quickly test the playbook while you're logged in, with `ansible-playbook main.yml`.
+After you create the playbook, you will head over to the Jenkins UI to create a job to run the playbook. But if you want, test the playbook while you're logged in: `ansible-playbook main.yml`.
 
 ### Create a Jenkins job to run an Ansible Playbook
 
-Now that you have Jenkins running, you can configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.dev:8080/`, and once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
+With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.dev:8080/`, and once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
 
   - Under 'Build Environment', check the 'Color ANSI Console Output' option. This allows Ansible's helpful colored output to pass through the Jenkins console, so it is easier to read during and after the run.
-  - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field that appears, add the following code, which will run the local Ansible playbook:
+  - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:
 
     {lang=text}
     ~~~
@@ -231,7 +231,7 @@ Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, cl
 {width=80%}
 ![Jenkins job completed successfully!](images/11-jenkins-job-console-output.png)
 
-This is an extremely simple example, but hopefully it's enough to show you how easy it is to get at least some of your baseline CI/CD automation done using a free and open source tool. Most of the more difficult aspects of managing infrastructure through Jenkins surrounds the ability to manage SSH keys, certificates, and other credentials through Jenkins, but there is already plenty of documentation surrounding these things elsewhere online and in Jenkins documentation, so this will be left as an exercise for the reader.
+This is a basic example, but hopefully it's enough to show you how easy it is to get at least some of your baseline CI/CD automation done using a free and open source tool. Most of the more difficult aspects of managing infrastructure through Jenkins surrounds the ability to manage SSH keys, certificates, and other credentials through Jenkins, but there is already plenty of documentation surrounding these things elsewhere online and in Jenkins documentation, so this will be left as an exercise for the reader.
 
 The rest of this chapter focuses on ways to test and debug your playbooks and your infrastructure as a whole, and while many examples use Travis CI or plain command line options, anything you see can be automated with Jenkins jobs!
 
@@ -239,21 +239,21 @@ The rest of this chapter focuses on ways to test and debug your playbooks and yo
 
 When determining how you should test your infrastructure, you need to understand the different kinds of testing, and then determine the kinds of testing on which you should focus more effort.
 
-*Unit* testing, when applied to applications, is testing that applies to the smallest units of code (usually functions or class methods). In Ansible, unit testing would typically apply to individual playbooks. You could run individual playbooks in an isolated environment, but that's often not worth the effort. What *is* worth your effort is at least checking the playbook syntax, to make sure you didn't just commit a YAML file that will break an entire deployment because of a missing quotation mark, or a whitespace issue!
+*Unit* testing, when applied to applications, is testing of the smallest units of code (usually functions or class methods). In Ansible, unit testing would typically apply to individual playbooks. You could run individual playbooks in an isolated environment, but it's often not worth the effort. What *is* worth your effort is at least checking the playbook syntax, to make sure you didn't just commit a YAML file that will break an entire deployment because of a missing quotation mark, or a whitespace issue!
 
 *Integration* testing, which is definitely more valuable when it comes to Ansible, is the testing of small groupings of individual units of code, to make sure they work correctly together. Breaking your infrastructure definition into many task-specific roles and playbooks allows you to do this; if you've structured your playbooks so they have no or limited dependencies, you could test each role individually in a fresh virtual machine, before you use the role as part of a full infrastructure deployment.
 
-*Functional* testing involves the whole shebang. Basically, you set up a complete infrastructure environment, and then run tests against it to make sure *everything* was successfully installed, deployed, and configured. Ansible's own reporting is helpful in this kind of testing (and often, all that is necessary), and there are also external tools that can be used to test infrastructure even more deeply.
+*Functional* testing involves the whole shebang. Basically, you set up a complete infrastructure environment, and then run tests against it to make sure *everything* was successfully installed, deployed, and configured. Ansible's own reporting is helpful in this kind of testing, and there are external tools available to test infrastructure even more deeply.
 
-It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's often simple, inexpensive, and just as fast to test directly on cloud instances that mirror your production infrastructure!
+It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's inexpensive and just as fast to test directly on cloud instances mirroring your production infrastructure!
 
-We'll begin with some of the simplest tests you can run using Ansible, along with some common debugging techniques, then progress to full-fledged functional testing methods with an automated process.
+We'll begin with the most basic tests using Ansible, along with common debugging techniques, then progress to full-fledged functional testing methods with an automated process.
 
 ### Debugging and Asserting
 
-For most playbooks, simply testing configuration changes and the result of commands being run as you go is all the testing you need. And having tests run *during your playbook runs* using some of Ansible's built-in utility modules means you have immediate assurance the system is in the state you want.
+For most playbooks, testing configuration changes and the result of commands being run as you go is all the testing you need. And having tests run *during your playbook runs* using some of Ansible's built-in utility modules means you have immediate assurance the system is in the state you want.
 
-If at all possible, you should try to bake all simple test cases (e.g. simple comparison and state checks) into your playbooks directly. Ansible has three modules that simplify this process.
+If at all possible, you should try to bake all simple test cases (e.g. comparison and state checks) into your playbooks directly. Ansible has three modules that simplify this process.
 
 #### The `debug` module
 
@@ -306,7 +306,7 @@ Running this playbook gives the following output:
     PLAY RECAP ************************************************************
     127.0.0.1          : ok=3    changed=1    unreachable=0    failed=0
 
-Debug messages are helpful when actively debugging a playbook or when you need extra verbosity in the playbook's output, but if you need to perform an explicit test on some variable, or bail out of a playbook for some reason, Ansible provides the `fail` module, and its even simpler cousin, `assert`.
+Debug messages are helpful when actively debugging a playbook or when you need extra verbosity in the playbook's output, but if you need to perform an explicit test on some variable, or bail out of a playbook for some reason, Ansible provides the `fail` module, and its more terse cousin, `assert`.
 
 #### The `fail` and `assert` modules
 
@@ -343,18 +343,18 @@ For most test cases, `debug`, `fail`, and `assert` are all you need to ensure yo
 
 ### Checking syntax and performing dry runs
 
-Two of the simplest checks you should include in an automated playbook testing workflow are `--syntax-check` (which checks the playbook syntax to find simple quoting, formatting, or whitespace errors) and `--check` (which will run your entire playbook in `check` mode.
+Two checks you should include in an automated playbook testing workflow are `--syntax-check` (which checks the playbook syntax to find quoting, formatting, or whitespace errors) and `--check` (which will run your entire playbook in `check` mode.
 
-Syntax checking is extremely straightforward, and only requires a few seconds for even larger, more complex playbooks with dozens or hundreds of includes. You should include an `ansible-playbook my-playbook.yml --syntax-check` in any kind of CI that you do, and it's good practice to run a syntax check right before you check in playbook changes in your version control system.
+Syntax checking is extremely straightforward, and only requires a few seconds for even larger, more complex playbooks with dozens or hundreds of includes. You should include an `ansible-playbook my-playbook.yml --syntax-check` in your basic CI tests, and it's best practice to run a syntax check in a pre-commit hook when developing playbooks.
 
-Running a playbook in `check` mode is a little bit more involved, as Ansible will actually run the entire playbook on your live infrastructure, but in a way that results in no changes. Instead, it will mark any tasks that _would've_ resulted in a change so you can see what will happen when you _actually_ run the playbook later.
+Running a playbook in `check` mode is more involved, since Ansible runs the entire playbook on your live infrastructure, but without performing any changes. Instead, Ansible highlights tasks that _would've_ resulted in a change to show what will happen when you _actually_ run the playbook later.
 
-This can be helpful for two purposes:
+This is helpful for two purposes:
 
-  1. To prevent 'configuration drift', where a server might have some configuration that's drifted away from your coded configuration. This could happen due to human intervention (though hopefully you don't regularly log into your servers and make changes by hand anymore!) or due to other factors. But it's good to know what configuration is incorrect without necessarily changing it.
-  2. To make sure changes you make to a playbook that shouldn't break idempotency _don't_, in fact, break idempotency. For example, if you're making a change to build a configuration file differently, but with the same resulting file, running the playbook with `--check` can alert you to the fact that you might accidentally end up changing the file as a result of your change. Time to fix your playbook!
+  1. To prevent 'configuration drift', where a server configuration may have drifted away from your coded configuration. This could happen due to human intervention or other factors. But it's good to discover configuration drift without forcefully changing it.
+  2. To make sure changes you make to a playbook that shouldn't break idempotency _don't_, in fact, break idempotency. For example, if you're changing a configuration file's structure, but with the goal of maintaining the same resulting file, running the playbook with `--check` alerts you when you might accidentally change the live file as a result of the playbook changes. Time to fix your playbook!
 
-When using `--check` mode, there are sometimes tasks that you still want to run (e.g. `command` tasks that register variables used in later tasks). You can make sure those tasks are _always_ run using the `always_run` option:
+When using `--check` mode, certain tasks may need to always run to ensure the playbook completes successfully (e.g. `command` tasks that register variables used in later tasks). The `always_run` option indicates such tasks:
 
 {lang=text,linenos=off}
     - name: A task that runs all the time, even in check mode.
@@ -362,15 +362,15 @@ When using `--check` mode, there are sometimes tasks that you still want to run 
       register: my_var
       always_run: true
 
-Finally, for even more detailed information about what changes would occur, you can add the `--diff` option, and Ansible will output all the line-by-line changes that _would've_ been made to your servers. This option will produce a lot of output if `check` mode makes a lot of changes, so it's best to use this option conservatively, unless you want to scroll through a lot of text!
+For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
 
-In addition to Ansible's robust but simple `--check-syntax` and `--check` modes, you might be interested in also running [Ansible Lint](https://github.com/willthames/ansible-lint) on your playbooks. Ansible Lint allows you to check for deprecated syntax or inefficient task structures, and is highly configurable so you can set up the linting to follow the playbook standards you and your team choose.
+In addition to Ansible's `--check-syntax` and `--check` modes, you might be interested in also running [Ansible Lint](https://github.com/willthames/ansible-lint) on your playbooks. Ansible Lint allows you to check for deprecated syntax or inefficient task structures, and is highly configurable so you can set up the linting to follow the playbook standards you and your team choose.
 
 ### Automated testing on GitHub using Travis CI
 
 Automated testing using a continuous integration tool like Travis CI (which is free for public projects and integrated very well with GitHub) allows you to run tests against Ansible playbooks or roles you have hosted on GitHub with every commit.
 
-There are four main things that should be tested when building and maintaining Ansible playbooks or roles:
+There are four main things to test when building and maintaining Ansible playbooks or roles:
 
   1. The playbook or role's syntax (are all the .yml files formatted correctly?).
   2. Whether the playbook or role will run through all the included tasks without failing.
@@ -379,11 +379,11 @@ There are four main things that should be tested when building and maintaining A
 
 Ultimately, the most important aspect is #4, because what's the point of a playbook or role if it doesn't do what you want it to do (e.g. start a web server, configure a database, deploy an app, etc.)?
 
-We're going to assume, for the rest of this example, that you're testing a role you have on GitHub, though the example can be applied just as easily for standalone Ansible playbooks.
+We're going to assume you're testing a role you have on GitHub, though the example can be applied just as easily for standalone Ansible playbooks.
 
 #### Setting up a role for testing
 
-Since you're going to need a simple Ansible playbook and inventory file to test your role, you can create both inside a new 'tests' directory in your Ansible role:
+Since you're going to need an Ansible playbook and inventory file to test your role, create both inside a new 'tests' directory in your Ansible role:
 
 {lang=text}
     # Directory structure:
@@ -410,7 +410,7 @@ Inside `test.yml`, add:
 
 Substitude your own role name for `github-role-project-name` (e.g. `ansible-role-django`). This is a typical Ansible playbook, and we tell Ansible to run the tasks on localhost, with the `root` user (otherwise, you could run tasks with `travis` if you want, and use `sudo` on certain tasks). You can add `vars`, `vars_files`, etc. if you want, but we'll keep things simple, because for many smaller roles, the role is pre-packaged with sane defaults and all the other info it needs to run.
 
-The next step is to add a `.travis.yml` file to your role so Travis CI will pick it up and use it for testing. Add that file to the root level of your role, and add the following to kick things off:
+The next step is to add a `.travis.yml` file to your role so Travis CI will pick it up and use it for testing. Add the file to the root level of your role, and add the following to kick things off:
 
 {lang=yaml}
     ---
@@ -431,13 +431,13 @@ The next step is to add a `.travis.yml` file to your role so Travis CI will pick
     script:
       # We'll add some commands to test the role here.
 
-The only surprising part here is the `printf` line in the `install` section; I've added that line to create a quick and dirty `ansible.cfg` configuration file Ansible will use to set the `roles_path` one directory up from the current working directory. That way, we can include roles like `github-role-project-name`, or if we use `ansible-galaxy` to download dependencies (as another command in the install section), we can just use `- galaxy-role-name-here` to include that role in our `test.yml` playbook.
+The only surprising part here is the `printf` line in the `install` section; I've added that line to create a quick and dirty `ansible.cfg` configuration file Ansible will use to set the `roles_path` one directory up from the current working directory. That way, we can include roles like `github-role-project-name`, or if we use `ansible-galaxy` to download dependencies (as another command in the install section), we can use `- galaxy-role-name-here` to include the role in our `test.yml` playbook.
 
 Now that we have the basic structure, it's time to start adding the commands to test our role.
 
 #### Testing the role's syntax
 
-This is the easiest test; `ansible-playbook` has a built in command that will check a playbook's syntax (including all the included files and roles), and return `0` if there are no problems, or an error code and some output if there were any syntax issues.
+This is the easiest test; `ansible-playbook` has a built in command to check a playbook's syntax (including all the included files and roles), and return `0` if there are no problems, or an error code and some output if there were any syntax issues.
 
 {lang=text}
     ansible-playbook -i tests/inventory tests/test.yml --syntax-check
@@ -479,7 +479,7 @@ This command runs the exact same command as before, but pipes the results throug
 
 #### Role success - final result
 
-The last thing I check is whether the role actually did what it was supposed to do. If it configured a web server, is the server responding on port 80 or 443 without any errors? If it configured a command line application, does that command line application work when invoked, and do the things it's supposed to do?
+The last thing I check is whether the role actually did what it was supposed to do. If it configured a web server, is the server responding on port 80 or 443 without any errors? If it configured a command line application, does the application work when invoked, and do the things it's supposed to do?
 
 {lang=text}
     # Request a page via the web server, to make sure it's running and responds.
@@ -487,7 +487,7 @@ The last thing I check is whether the role actually did what it was supposed to 
 
 In this example, I'm testing a web server by loading 'localhost'; curl will exit with a 0 status (and dump the output of the web server's response) if the server responds with a 200 OK status, or will exit with a non-zero status if the server responds with an error status (like 500) or is unavailable.
 
-Taking this a step further, you could even run a deployed application or service's own automated tests after ansible is finished with the deployment, thus testing your infrastructure and application in one go---but we're getting ahead of ourselves here... that's a topic for later!
+Taking this a step further, you could even run a deployed application or service's own automated tests after Ansible is finished with the deployment, thus testing your infrastructure and application in one go---but we're getting ahead of ourselves here... that's a topic for later!
 
 #### Some notes about Travis CI
 
@@ -495,13 +495,13 @@ There are a few things you need to know about Travis CI, especially if you're te
 
   - **Ubuntu 12.04**: As of this writing, the only OS available via Travis CI is Ubuntu 12.04. Most of my roles work with Ubuntu/Debian/RedHat/CentOS, so it's not an issue for me... but if your roles strictly target a non-Debian-flavored distro, you probably won't get much mileage out of Travis. (There is an [open issue](https://github.com/travis-ci/travis-ci/issues/2046) to get Travis upgraded to Ubuntu 14.04, at least).
   - **Preinstalled packages**: Travis CI comes with a bunch of services installed out of the box, like MySQL, Elasticsearch, Ruby, etc. In the `.travis.yml` `before_install` section, you may need to do some `apt-get remove --purge [package]` commands and/or other cleanup commands to make sure the VM is fresh for your Ansible role's run.
-  - **Networking/Disk/Memory**: Travis CI continously shifts the VM specs you're using, so don't assume you'll have X amount of RAM, disk space, or network capacity. You can add commands like `cat /proc/cpuinfo`, `cat /proc/meminfo`, `free -m`, etc. in the `.travis.yml` `before_install` section if you need to figure out the resources available in your VM.
+  - **Networking/Disk/Memory**: Travis CI continously shifts the VM specs you're using, so don't assume you'll have X amount of RAM, disk space, or network capacity. Add commands like `cat /proc/cpuinfo`, `cat /proc/meminfo`, `free -m`, etc. in the `.travis.yml` `before_install` section if you need to figure out the resources available in your VM.
 
 See much more information about the VM environment on the [Travis CI Build Environment page](http://docs.travis-ci.com/user/ci-environment/).
 
 #### Real-world examples
 
-This style of testing is integrated into many of the `geerlingguy.*` roles on Ansible Galaxy; here are a few example roles that use Travis CI integration in the way outlined above:
+This style of testing is integrated into many of the `geerlingguy.*` roles on Ansible Galaxy; here are a few example roles using Travis CI integration in the way outlined above:
 
   - https://github.com/geerlingguy/ansible-role-apache
   - https://github.com/geerlingguy/ansible-role-gitlab
@@ -517,7 +517,7 @@ Serverspec tests can be run locally, via SSH, through Docker's APIs, or through 
 
 There's a lot of debate over whether well-written Ansible playbooks themselves (especially along with the dry-run `--check` mode) are adequate for well-tested infrastructure, but many teams are more comfortable maintaining infrastructure tests in Serverspec instead (especially if the team is already familiar with how Serverspec and Rspec works!).
 
-Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for that same task, isn't that a good enough test that your server is configured correctly?
+Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for the same task, isn't that a good enough test your server is configured correctly?
 
 This book will not provide a detailed guide for using Serverspec with your Ansible-managed servers, but here are a few resources in case you'd like to use it:
 

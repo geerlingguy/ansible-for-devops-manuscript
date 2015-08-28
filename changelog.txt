@@ -12,7 +12,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Completely rewrote GlusterFS section in chapter 8 with a more relevant example.
   - Rearranged first playbook example in chapter 2 so use of sudo is more obvious (thanks to @gkedge!).
   - Fixed types in chapters 3 and 4 (thanks to Borys Borysenko!).
-  - Incorporated editorial changes in chapter 9.
+  - Incorporated editorial changes in chapters 9 and 10.
 
 ## Version 0.99 (2015-07-19)
 
