@@ -6,7 +6,7 @@ To use SSH on Windows, you need additional software. But Ansible also requires o
 
 This appendix will guide Windows users through the author's preferred method of using Ansible on a Windows workstation.
 
-I> Ansible 1.7 and later can be used to manage Windows hosts (see Ansible's [Windows Support](http://docs.ansible.com/intro_windows.html) documentation), but it can't be run from within Windows natively. You will still need to follow the instructions here to run the Ansible client on a Windows host, if you are stuck on Windows and want to use Ansible to manage other (Windows, Linux, Mac, etc.) hosts.
+I> Ansible 1.7 and later can manage Windows hosts (see Ansible's [Windows Support](http://docs.ansible.com/intro_windows.html) documentation), but doesn't run within Windows natively. You still need to follow the instructions here to run the Ansible client on a Windows host.
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Precise (12.04) 64-bit
 {lang="text",linenos=off}
     PS > vagrant up
 
-After a few minutes, the box will be downloaded and a new virtual machine set up inside VirtualBox. Vagrant will boot and configure the machine according to the defaults defined in the Vagrantfile. Once the VM is booted, and you're back at the command prompt, it's time to log into the VM.
+After a few minutes, the box will be downloaded and a new virtual machine set up inside VirtualBox. Vagrant will boot and configure the machine according to the defaults defined in the Vagrantfile. Once the VM is booted and you're back at the command prompt, it's time to log into the VM.
 
 ## Log into the Virtual Machine
 
@@ -72,7 +72,7 @@ Launch PuTTY, and enter the connection details:
   - **Host Name (or IP address)**: 127.0.0.1
   - **Port**: 2222
 
-Click Open to connect (you can save the connection details by entering a name in the 'Saved Sessions' field and clicking 'Save' to save the details), and if you receive a Security Alert concerning the server's host key, click 'Yes' to tell PuTTY to trust the host.
+Click Open to connect, and if you receive a Security Alert concerning the server's host key, click 'Yes' to tell PuTTY to trust the host. You can save the connection details by entering a name in the 'Saved Sessions' field and clicking 'Save' to save the details.
 
 PuTTY will ask for login credentials; we'll use the default login for a Vagrant box (`vagrant` for both the username and password):
 
@@ -101,12 +101,12 @@ Before installing Ansible, make sure your package list is up to date by updating
 {lang="text",linenos=off}
     $ sudo apt-get update
 
-Ansible can be installed in a variety of ways, but the easiest is to use `pip`, a simple Python package manager. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
+The easiest way to install Ansible is to use `pip`, a package manager for Python. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
 
 {lang="text",linenos=off}
     $ sudo apt-get install -y python-pip python-dev
 
-After the installation is complete, installing Ansible is simple:
+After the installation is complete, install Ansible:
 
 {lang="text",linenos=off}
     $ sudo pip install ansible
@@ -121,7 +121,7 @@ T>Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansib
 
 ## Summary
 
-You should now have Ansible installed within a virtual machine running on your Windows workstation. You can control the virtual machine with Vagrant (`cd` to the location of the Vagrantfile), using `up` to boot or wake the VM, `halt` to shut down the VM, or `suspend` to sleep the VM. You can log into the VM using PuTTY and manually entering a username and password, or using Cygwin or Git's Windows shell and the `vagrant ssh` command.
+You should now have Ansible installed within a virtual machine running on your Windows workstation. You can control the virtual machine with Vagrant (`cd` to the location of the Vagrantfile), using `up` to boot or wake the VM, `halt` to shut down the VM, or `suspend` to sleep the VM. Log into the VM manually using PuTTY or via `vagrant ssh` with Cygwin or Git's Windows shell.
 
 Use Ansible from within the virtual machine just as you would on a Linux or Mac workstation directly. If you need to share files between your Windows environment and the VM, Vagrant conveniently maps `/vagrant` on the VM to the same folder where your Vagrantfile is located. You can also connect between the two via other methods (SSH, SMB, SFTP etc.) if you so desire.
 
