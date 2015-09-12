@@ -2,14 +2,9 @@
 
 ## TODO
 
-  - Delete (or rewrite?) section in beginning of book about how you can improve this book during writing.
-  - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
   - Ansible Vault - simple how-to in Playbooks chapter?
-  - 2.0: Add notes on Blocks for playbooks (Ansible v 2.0 feature)
-    - grouping related tasks
-    - `block` / `rescue` / `always`
   - 2.0: Add notes on Execution Strategy (`linear`, `free`, etc.).
-  - How I test my roles on 4 distros: [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
+  - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
 
 ## Publication - Marketing / Notifications
 
@@ -70,6 +65,9 @@
 
 ## For 2nd Edition
 
+  - Testing:
+    - [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
+    - Example of TestKitchen?
   - Ansible and Jinja2
   - High Performance / Scalable Ansible:
     - Asynchronous actions
@@ -77,7 +75,6 @@
     - Distributed Ansible
     - Redis-based fact cache
   - Security and Secret management
-    - Ansible Vault
     - SSH private key management and security (see emails to/from Erik-jan Reimers)
     - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
   - Patch management with Ansible (like Pulp? See how Puppet does it?).

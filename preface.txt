@@ -50,9 +50,9 @@ When displaying commands run in a terminal session, if the commands are run unde
 
 ## Please help improve this book!
 
-This book is a work in progress, and is being expanded and updated on LeanPub at a rather rapid clip. If you think a particular section needs improvement or find something missing, please contact me via Twitter ([@geerlingguy](https://twitter.com/geerlingguy)), [Google+](https://plus.google.com/+JeffGeerling), a comment on [this book's Feedback page on LeanPub](https://leanpub.com/ansible-for-devops/feedback), or whatever method is convenient for you.
+New revisions of this book are published on a regular basis. If you think a particular section needs improvement or find something missing, please contact me via Twitter ([@geerlingguy](https://twitter.com/geerlingguy)), [Google+](https://plus.google.com/+JeffGeerling), a comment on [this book's Feedback page on LeanPub](https://leanpub.com/ansible-for-devops/feedback), or whatever method is convenient for you.
 
-Please note that, since the book is still being written and proofread, the book contains certain imperfections and oddities. I've tried to ensure every line of code, at least, works perfectly, but I may have an occasional typo. You've been warned!
+All known issues with Ansible for DevOps will be aggregated on the book's online [Errata](http://www.ansiblefordevops.com/errata) page, as well as in the book's Changelog (for the benefit of those who purchase the book on a platform that allows frequent releases between editions).
 
 ## About the Author
 

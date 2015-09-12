@@ -788,14 +788,15 @@ In general, I tend to use tags for larger playbooks, especially with individual 
 
 ## Blocks
 
-Introduced in Ansible 2.0.0, Blocks allow you to group together 'blocks' of tasks and apply particular task parameters on the block level. They also allow you to handle errors inside the blocks in a way similar to exception handling in most programming languages.
+Introduced in Ansible 2.0.0, Blocks allow you to group related tasks together and apply particular task parameters on the block level. They also allow you to handle errors inside the blocks in a way similar to most programming languages' exception handling.
 
-Here's an example playbook that uses blocks to quickly do a group of tasks specific to one platform, without requiring redundant `when` parameters on each task:
+Here's an example playbook that uses blocks with `when` to run group of tasks specific to one platform without `when` parameters on each task:
 
 {lang=text}
     ---
     - hosts: web
       tasks:
+        # Install and configure Apache on RedHat/CentOS hosts.
         - block:
             - yum: name=httpd state=installed
             - template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
@@ -803,6 +804,7 @@ Here's an example playbook that uses blocks to quickly do a group of tasks speci
           when: ansible_os_family == 'RedHat'
           sudo: yes
     
+        # Install and configure Apache on Debian/Ubuntu hosts.
         - block:
             - apt: name=apache2 state=installed
             - template: src=httpd.conf.j2 dest=/etc/apache2/apache2.conf
@@ -810,7 +812,7 @@ Here's an example playbook that uses blocks to quickly do a group of tasks speci
           when: ansible_os_family == 'RedHat'
           sudo: yes
 
-There may be even more efficient to organize cross-platform tasks than using blocks, but in many cases, if you want to perform a series of tasks with one set of task parameters (e.g. `with_items`, `when`, or `sudo`) applied, blocks are quite handy.
+If you want to perform a series of tasks with one set of task parameters (e.g. `with_items`, `when`, or `sudo`) applied, blocks are quite handy.
 
 Blocks are also useful if you want to be able to gracefully handle failures in certain tasks. There might be a task that connects your app to a monitoring service that's not essential for a deployment to succeed, so it would be better to gracefully handle a failure than to bail out of the entire deployment!
 
@@ -828,9 +830,9 @@ Here's how to use a block to gracefully handle task failures:
           - name: This will always run, no matter what.
             debug: msg="This always executes."
 
-Even if a task fails inside the `rescue` block, the `always` task will run. Just like exceptions in programming languages, `block`/`rescue`/`always` failure handling can make things more complicated than they're worth. I rarely use blocks for exception handling, and only when I know I can gracefully recover from a task failure with a follow-up task in `rescue`.
+Tasks inside the `block` will be run first. If there is a failure in any task in `block`, tasks inside `rescue` will be run. The tasks inside `always` will always be run, whether or not there were failures in either `block` or `rescue`.
 
-It's easier to maintain idempotency using `failed_when` per-task to define acceptable failure conditions, but blocks afford better recovery from failed tasks.
+Blocks can be very helpful for building reliable playbooks, but just like exceptions in programming languages, `block`/`rescue`/`always` failure handling can overcomplicate things. If it's easier to maintain idempotency using `failed_when` per-task to define acceptable failure conditions, or to structure your playbook in a different way, it may not be necessary to use `block`/`rescue`/`always`.
 
 ## Summary
 
