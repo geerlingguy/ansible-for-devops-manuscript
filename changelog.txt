@@ -14,6 +14,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed types in chapters 3 and 4 (thanks to Borys Borysenko!).
   - Incorporated editorial changes in chapters 9, 10, and 11.
   - Incorporated editorial changes in appendices a and b.
+  - Removed link to Ansible Guru, as it is no longer active (thanks to @mrjester888!).
 
 ## Version 0.99 (2015-07-19)
 

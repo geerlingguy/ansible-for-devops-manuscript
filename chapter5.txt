@@ -786,6 +786,52 @@ There is one caveat when adding one or multiple tags using the `tags` option in 
 
 In general, I tend to use tags for larger playbooks, especially with individual roles and plays, but unless I'm debugging a set of tasks, I generally avoid adding tags to individual tasks or includes (not adding tags everywhere reduces visual clutter). You will need to find a tagging style that suits your needs and lets you run (or *not* run) the specific parts of your playbooks you desire.
 
+## Blocks
+
+Introduced in Ansible 2.0.0, Blocks allow you to group together 'blocks' of tasks and apply particular task parameters on the block level. They also allow you to handle errors inside the blocks in a way similar to exception handling in most programming languages.
+
+Here's an example playbook that uses blocks to quickly do a group of tasks specific to one platform, without requiring redundant `when` parameters on each task:
+
+{lang=text}
+    ---
+    - hosts: web
+      tasks:
+        - block:
+            - yum: name=httpd state=installed
+            - template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
+            - service: name=httpd state=started enabled=yes
+          when: ansible_os_family == 'RedHat'
+          sudo: yes
+    
+        - block:
+            - apt: name=apache2 state=installed
+            - template: src=httpd.conf.j2 dest=/etc/apache2/apache2.conf
+            - service: name=apache2 state=started enabled=yes
+          when: ansible_os_family == 'RedHat'
+          sudo: yes
+
+There may be even more efficient to organize cross-platform tasks than using blocks, but in many cases, if you want to perform a series of tasks with one set of task parameters (e.g. `with_items`, `when`, or `sudo`) applied, blocks are quite handy.
+
+Blocks are also useful if you want to be able to gracefully handle failures in certain tasks. There might be a task that connects your app to a monitoring service that's not essential for a deployment to succeed, so it would be better to gracefully handle a failure than to bail out of the entire deployment!
+
+Here's how to use a block to gracefully handle task failures:
+
+{lang=text}
+    tasks:
+      - block:
+          - name: Shell script to connect the app to a monitoring service.
+            script: monitoring-connect.sh
+        rescue:
+          - name: This will only run in case of an error in the block.
+            debug: msg="There was an error in the block."
+        always:
+          - name: This will always run, no matter what.
+            debug: msg="This always executes."
+
+Even if a task fails inside the `rescue` block, the `always` task will run. Just like exceptions in programming languages, `block`/`rescue`/`always` failure handling can make things more complicated than they're worth. I rarely use blocks for exception handling, and only when I know I can gracefully recover from a task failure with a follow-up task in `rescue`.
+
+It's easier to maintain idempotency using `failed_when` per-task to define acceptable failure conditions, but blocks afford better recovery from failed tasks.
+
 ## Summary
 
 Playbooks are Ansible's primary means of automating infrastructure management. After reading this chapter, you should know how to use (and hopefully not abuse!) variables, inventories, handlers, conditionals, tags, and more.
