@@ -454,6 +454,99 @@ W> While it may be tempting to use local facts rather than host_vars or other va
 
 W> Note that `setup` module options (like `filter`) won't work on remote Windows hosts, as of this writing.
 
+### Ansible Vault - Keeping secrets secret
+
+If you use Ansible to fully automate the provisioning and configuration of your servers, chances are you will need to use passwords or other sensitive data for some tasks, whether it's setting a default admin password, synchronizing a private key, or authenticating to a remote service.
+
+Some projects store such data in a normal variables file, in version control with the rest of the playbook, but in this case, the data is easily accessed by anyone with a copy of the project. It's better to treat passwords and sensitive data specially, and there are two primary ways to do this:
+
+  1. Use a separate secret management service, such as [Vault](https://vaultproject.io/) by HashiCorp, [Keywhiz](http://square.github.io/keywhiz/) by Square, or a hosted service like AWS's [Key Management Service](https://aws.amazon.com/kms/) or Microsoft Azure's [Key Vault](http://azure.microsoft.com/en-us/services/key-vault/).
+  2. Use Ansible Vault, which is built into Ansible and stores encrypted passwords and other sensitive data alongside the rest of your playbook.
+
+For most projects, Ansible's built-in Vault is adequate, but if you need some of the more advanced features found in the other projects listed in option #1 above, Ansible Vault might be too limiting.
+
+Ansible Vault works much like a real-world vault:
+
+  1. You take any YAML file you would normally have in your playbook (e.g. a variables file, host vars, group vars, role default vars, or even task includes!), and store it in the vault.
+  2. Ansible encrypts the vault ('closes the door'), using a key (a password you set).
+  3. You store the key (your vault's password) separately from the playbook in a location only you control or can access.
+  4. You use the key to let Ansible decrypt the encrypted vault whenever you run your playbook.
+
+Let's see how it works in practice. Here's a playbook that connects to a service's API, and requires a secure API key to do so:
+
+{lang=text}
+    ---
+    - hosts: appserver
+    
+      vars_files:
+        - vars/api_key.yml
+    
+      tasks:
+        - name: Connect to service with our API key.
+          command: connect_to_service
+          environment:
+            SERVICE_API_KEY: "{{ myapp_service_api_key }}"
+
+The vars_file, which is stored alongside the playbook, in plain text, looks like:
+
+{lang=text}
+    ---
+    myapp_service_api_key: "yJJvPqhqgxyPZMispRycaVMBmBWPqYDf3DFanPxAMAm4UZcw"
+
+This is convenient, but it's not safe to store the API key in plain text. Even when running the playbook locally on an access-restricted computer, secrets should be encrypted. If you're running the playbook via a central server (e.g. using Ansible Tower or Jenkins), or if you have this playbook in a shared repository, it's even more important. _You_ may follow best practices for physical and OS security, but can you guarantee _every_ developer and sysadmin who has access to this file does the same?
+
+For the best security, use Ansible Vault to encrypt the file. If you ever checked the original file into version control, it's also a good time to expire the old key and generate a new one, since the old key is part of the plaintext history of your project!
+
+To encrypt the file with Vault, run:
+
+{lang=text,linenos=off}
+    $ ansible-vault encrypt api_key.yml
+
+Enter a secure password for the file, and Ansible will encrypt it. If you open the file now, you should see something like:
+
+{lang=text}
+    $ANSIBLE_VAULT;1.1;AES256
+    653635363963663439383865313262396665353063663839616266613737616539303
+    530313663316264336133626266336537616463366465653862366231310a30633064
+    633234306335333739623661633132376235666563653161353239383664613433663
+    1303132303566316232373865356237383539613437653563300a3263386336393866
+    376535646562336664303137346432313563373534373264363835303739366362393
+    639646137656633656630313933323464333563376662643336616534353234663332
+    656138326530366434313161363562333639383864333635333766316161383832383
+    831626166623762643230313436386339373437333830306438653833666364653164
+    6633613132323738633266363437
+
+Next time you run the playbook, you will need to provide the password you used for the vault so Ansible can decrypt the playbook in memory for the brief period in which it will be used. If you don't specify the password, you'll receive an error:
+
+{lang=text,linenos=off}
+    $ ansible-playbook test.yml
+    ERROR: A vault password must be specified to decrypt vars/api_key.yml
+
+There are a number of ways you can provide the password, depending on how you run playbooks. Providing the password at playbook runtime works well when running a playbook interactively:
+
+{lang=text,linenos=off}
+    # Use --ask-vault-pass to supply the vault password at runtime.
+    $ ansible-playbook test.yml --ask-vault-pass
+    Vault password:
+
+After supplying the password, Ansible decrypts the vault (in memory) and runs the playbook with the decrypted data.
+
+You can edit the encrypted file with `ansible-vault edit`. You can also `rekey` a file (change it's password), `create` a new file, `view` an existing file, or `decrypt` a file. All these commands work with one or multiple files (e.g. `ansible-vault create x.yml y.yml z.yml`).
+
+For convenience, or for automated playbook runs (e.g. on a continuous integration server), you can supply vault passwords via a password file. Just like secure keys in your `~/.ssh` folder, you should treat these files carefully: never check them into source control, and set strict permissions (e.g. `600`) so only _you_ can read or write this file. Create the file `~/.ansible/vault_pass.txt` with your password in it, set permissions to `600`, and tell Ansible the location of the file when you run the playbook:
+
+{lang=text,linenos=off}
+    # Use --vault-password-file to supply the password via file or script.
+    $ ansible-playbook test.yml --vault-password-file ~/.ansible/vault_pass.txt
+
+You could also use an executable script (e.g. `~/.ansible/vault_pass.py` with execute permissions, `700`), as long as the script outputs a single line of text, the vault password.
+
+T> You can make Ansible's Vault operations slightly faster by installing Python's `cryptography` library, with `pip install cryptography`.
+
+I> Are you worried about the security of Vault-encrypted files? AES-256 encryption is extremely secure; it would take _billions of billions_ of years to decrypt this single file, even if all of today's fastest supercomputer clusters were all put to the task 24x7. Of course, every vault is only as secure as its password, so make sure you use a secure password and store _it_ securely!
+
+More options and examples are available in the [official documentation for Ansible Vault](http://docs.ansible.com/ansible/playbooks_vault.html).
+
 ### Variable Precedence
 
 It should be rare that you would need to dig into the details of which variable is used when you define the same variable in five different places, but since there are odd occasions where this is the case, Ansible's documentation provides the following ranking:
@@ -809,7 +902,7 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
             - apt: name=apache2 state=installed
             - template: src=httpd.conf.j2 dest=/etc/apache2/apache2.conf
             - service: name=apache2 state=started enabled=yes
-          when: ansible_os_family == 'RedHat'
+          when: ansible_os_family == 'Debian'
           sudo: yes
 
 If you want to perform a series of tasks with one set of task parameters (e.g. `with_items`, `when`, or `sudo`) applied, blocks are quite handy.

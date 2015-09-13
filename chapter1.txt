@@ -129,6 +129,8 @@ Now that you've installed Ansible and created an inventory file, it's time to ru
 
 W> Ansible assumes you're using passwordless (key-based) login for SSH (e.g. you login by entering `ssh username@example.com` and don't have to type a password). If you're still logging into your remote servers with a username and password, or if you need a primer on Linux remote authentication and security best practices, please read [Chapter 10 - Server Security and Ansible](#chapter-10). If you insist on using passwords, add the `--ask-pass` (`-k`) flag to Ansible commands, but this entire book is written assuming passwordless authentication, so you'll need to keep this in mind every time you run a command or playbook.
 
+T> Need a primer on SSH key-based authentication? Please read through Ubuntu's community documentation on [SSH/OpenSSH/Keys](https://help.ubuntu.com/community/SSH/OpenSSH/Keys).
+
 Let's run a more useful command:
 
 {lang="text",linenos=off}

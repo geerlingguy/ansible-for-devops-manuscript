@@ -18,6 +18,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Incorporated editorial changes in chapters 9, 10, and 11.
   - Incorporated editorial changes in appendices a and b.
   - Removed link to Ansible Guru, as it is no longer active (thanks to @mrjester888!).
+  - Added link to SSH passwordless login/key-based authentication in chapter 1.
+  - Added section on Ansible Vault in chapter 5.
 
 ## Version 0.99 (2015-07-19)
 

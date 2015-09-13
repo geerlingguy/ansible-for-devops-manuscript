@@ -2,9 +2,8 @@
 
 ## TODO
 
-  - Ansible Vault - simple how-to in Playbooks chapter?
-  - 2.0: Add notes on Execution Strategy (`linear`, `free`, etc.).
-  - "Running first Ad-Hoc command" - Add an `I>` or tip or something about "passwordless SSH 101"
+  - Incorporate Katie's notes from Ch 7 and Ch 8.
+  - Spellcheck on Ch 4, 5, and anywhere else?
 
 ## Publication - Marketing / Notifications
 
@@ -12,6 +11,7 @@
     - Amazon Kindle
     - Apple iBooks
     - Google Play (https://play.google.com/books/publish/u/0/)
+    - Goodreads
     - ???
   - Server Check.in - Write about entire process (see "Thoughts on writing" and prior posts)
   - Reddit - /r/ansible, /r/sysadmin, /r/devops, /r/vagrant
@@ -37,6 +37,7 @@
 
 ## Editing notes:
 
+  - Spellcheck.
   - Search for "that" in text.
   - Search for `...` in code examples and make it consistent.
   - Ensure cowsay is in every chapter summary.
@@ -69,6 +70,8 @@
     - [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
     - Example of TestKitchen?
   - Ansible and Jinja2
+  - New features
+    - 2.0: Playbook Execution Strategies (`linear`, `free`, etc.).
   - High Performance / Scalable Ansible:
     - Asynchronous actions
     - Polling
