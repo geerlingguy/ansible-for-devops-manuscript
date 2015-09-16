@@ -3,7 +3,6 @@
 ## TODO
 
   - Incorporate Katie's notes from Ch 7 and Ch 8.
-  - Spellcheck on Ch 4, 5, and anywhere else?
 
 ## Publication - Marketing / Notifications
 
@@ -20,6 +19,7 @@
   - Greg DeK (Ansible, Inc.) - some sort of promo?
   - Matt Jaynes (Briefs on Ansible)
   - Drupal people... who?
+  - Personal email to those who helped fix the book? w/ a free coupon for someone else?
   - Blog posts:
     - Life is a Prayer
     - Midwestern Mac

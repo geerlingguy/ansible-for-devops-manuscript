@@ -124,7 +124,7 @@ If we run the playbooks in the examples above (which are set to run on `all` hos
 
 ### Limiting playbooks to particular hosts and groups
 
-You can limit a playbook to specific groups or individual hosts by changing the `hosts:` definition. The value can be set to `all` hosts, a `group` of hosts defined in your inventory, multiple groups of hosts (e.g. `webservers,dbservers`), individual hosts (e.g. `atl.example.com`), or a mixture of hosts. You can even do wildcard matches, like `*.example.com`, to match all subdomains of a top-level domain.
+You can limit a playbook to specific groups or individual hosts by changing the `hosts:` definition. The value can be set to `all` hosts, a `group` of hosts defined in your inventory, multiple groups of hosts (e.g. `webservers,dbservers`), individual hosts (e.g. `atl.example.com`), or a mixture of hosts. You can even do wild card matches, like `*.example.com`, to match all subdomains of a top-level domain.
 
 You can also limit the hosts on which the playbook is run via the `ansible-playbook` command:
 
@@ -623,13 +623,13 @@ Now, we'll install Drush using the latest version from GitHub:
 
 Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the master branch, pass in the `repo` (repository URL) and `dest` (destination path) parameters.
 
-After drush is downloaded to `/opt/drush`, we use Composer to install all the required dependencies. In this case, we want Ansible to run `composer install` in the directory `/opt/drush` (this is so Composer finds drush's `composer.json` file automatically), so we pass along the parameter `chdir=/opt/drush`. Once Composer is finished, the file `/opt/drush/vendor/autoload.php` will be created, so we use the `creates` parameter to tell Ansible to skip this step if the file already exists (for idempotency).
+After Drush is downloaded to `/opt/drush`, we use Composer to install all the required dependencies. In this case, we want Ansible to run `composer install` in the directory `/opt/drush` (this is so Composer finds Drush's `composer.json` file automatically), so we pass along the parameter `chdir=/opt/drush`. Once Composer is finished, the file `/opt/drush/vendor/autoload.php` will be created, so we use the `creates` parameter to tell Ansible to skip this step if the file already exists (for idempotency).
 
 Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/opt/drush/drush`, so we can call the `drush` command anywhere on the system.
 
 ### Install Drupal with Git and Drush
 
-We'll use `git` again to clone Drupal to the apache document root we defined earlier in our virtual host configuration, then we'll run Drupal's installation via drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
+We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, then we'll run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
 {lang="text",starting-line-number=108}
       - name: Check out Drupal Core to the Apache docroot.
@@ -744,11 +744,11 @@ Ubuntu 12.04 includes a package for Apache Solr, but it installs a very old vers
 {lang="text",starting-line-number=20}
     - name: Download Solr.
       get_url:
-        url: http://apache.osuosl.org/lucene/solr/4.9.1/solr-4.9.1.tgz
-        dest: "{{ download_dir }}/solr-4.9.1.tgz"
+        url: http://apache.osuosl.org/lucene/solr/4.10.4/solr-4.10.4.tgz
+        dest: "{{ download_dir }}/solr-4.10.4.tgz"
         sha256sum: 4a546369a31d34b15bc4b99188984716bf4c0c158c0e337f3c1f98088aec70ee
 
-We're installing Apache Solr 4.9.1, a recent stable version. When downloading files from remote servers, the `get_url` module provides more flexibility and convenience than raw `wget` or `curl` commands.
+We're installing Apache Solr 4.10.4, a recent stable version. When downloading files from remote servers, the `get_url` module provides more flexibility and convenience than raw `wget` or `curl` commands.
 
 You have to pass `get_url` a `url` (the source of the file to be downloaded), and a `dest` (the location where the file will be downloaded). If you pass a directory to the `dest` parameter, Ansible will place the file inside, but will always re-download the file on subsequent runs of the playbook (and overwrite the existing download if it has changed). To avoid this extra overhead, we give the full path to the downloaded file.
 
@@ -757,13 +757,13 @@ We also use `sha256sum`, an optional parameter, for peace of mind; if you are do
 {lang="text",starting-line-number=25}
     - name: Expand Solr.
       command: >
-        tar -C /tmp -xvzf {{ download_dir }}/solr-4.9.1.tgz
-        creates={{ download_dir }}/solr-4.9.1/dist/solr-4.9.1.war
+        tar -C /tmp -xvzf {{ download_dir }}/solr-4.10.4.tgz
+        creates={{ download_dir }}/solr-4.10.4/dist/solr-4.10.4.war
     
     - name: Copy Solr into place.
       command: >
-        cp -r {{ download_dir }}/solr-4.9.1 {{ solr_dir }}
-        creates={{ solr_dir }}/dist/solr-4.9.1.war
+        cp -r {{ download_dir }}/solr-4.10.4 {{ solr_dir }}
+        creates={{ solr_dir }}/dist/solr-4.10.4.war
 
 We need to expand the Apache Solr archive, then copy it into place. For both of these steps, use the built-in `tar` and `cp` utilities (with the appropriate options) to do the work. Setting `creates` tells Ansible to skip these steps in subsequent runs, since the Solr war file will already be in place.
 
@@ -864,7 +864,7 @@ Run the playbook with `$ ansible-playbook [playbook-name.yml]`, and after a few 
 
 ### Apache Solr server summary
 
-The configuration we used when deploying Apache Solr allows for a multicore setup, so you could add more 'search cores' via the admin interface (as long as the directories and core schema configuration is in place in the filesystem), and have multiple indexes for multiple websites and applications.
+The configuration we used when deploying Apache Solr allows for a multi core setup, so you could add more 'search cores' via the admin interface (as long as the directories and core schema configuration is in place in the filesystem), and have multiple indexes for multiple websites and applications.
 
 A playbook similar to the one above is used as part of the infrastructure for [Hosted Apache Solr](http://hostedapachesolr.com/), a service I run which hosts Apache Solr search cores for Drupal websites.
 
