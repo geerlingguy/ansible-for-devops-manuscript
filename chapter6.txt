@@ -522,7 +522,7 @@ The second syntax is much more expressive, and allows you to install roles from 
 
 Installing roles defined in this file is similar to the `.txt` example: `ansible-galaxy install -r requirements.yml`. For more documentation on Ansible requirements files, see the official documentation: [Advanced Control over Role Requirements Files](http://docs.ansible.com/galaxy.html#advanced-control-over-role-requirements-files).
 
-### A LAMP server in six lines of YAML
+### A LAMP server in eight lines of YAML
 
 With the Apache, MySQL, and PHP roles installed, we can quickly create a LAMP server. This example assumes you already have a CentOS-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
 
@@ -531,6 +531,8 @@ First, create an Ansible playbook named `lamp.yml` with the following contents:
 {lang="text"}
     ---
     - hosts: all
+      sudo: true
+    
       roles:
         - geerlingguy.mysql
         - geerlingguy.apache
@@ -547,7 +549,7 @@ We've effectively reduced about thirty lines of YAML (from previous examples dea
 
 You could think of Galaxy roles as glorified packages; they not only install software, but they configure it *exactly* how you want it, every time, with minimal adjustment. Additionally, many of these roles work across different flavors of Linux and UNIX, so you have better configuration portability!
 
-### A Solr server in six lines of YAML
+### A Solr server in eight lines of YAML
 
 Let's grab a few more roles and build an Apache Solr search server, which requires Java and Apache Tomcat to be installed and configured.
 
@@ -559,6 +561,8 @@ Then create a playbook named `solr.yml` with the following contents:
 {lang="text"}
     ---
     - hosts: all
+      sudo: yes
+    
       roles:
         - geerlingguy.java
         - geerlingguy.tomcat6
