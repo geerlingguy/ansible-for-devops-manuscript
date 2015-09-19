@@ -33,17 +33,18 @@ To run the shell script (in this case, a file named `shell-script.sh` with the c
 {lang="text"}
     ---
     - hosts: all
+    
       tasks:
-      - name: Install Apache.
-        command: yum install --quiet -y httpd httpd-devel
-      - name: Copy configuration files.
-        command: >
-          cp /path/to/config/httpd.conf /etc/httpd/conf/httpd.conf
-      - command: >
-          cp /path/to/config/httpd-vhosts.conf /etc/httpd/conf/httpd-vhosts.conf
-      - name: Start Apache and configure it to run at boot.
-        command: service httpd start
-      - command: chkconfig httpd on
+        - name: Install Apache.
+          command: yum install --quiet -y httpd httpd-devel
+        - name: Copy configuration files.
+          command: >
+            cp /path/to/config/httpd.conf /etc/httpd/conf/httpd.conf
+        - command: >
+            cp /path/to/config/httpd-vhosts.conf /etc/httpd/conf/httpd-vhosts.conf
+        - name: Start Apache and configure it to run at boot.
+          command: service httpd start
+        - command: chkconfig httpd on
 
 To run the Ansible Playbook (in this case, a file named `playbook.yml` with the contents as above), you would call it using the `ansible-playbook` command:
 
@@ -67,37 +68,38 @@ The above playbook will perform *exactly* like the shell script, but you can imp
     ---
     - hosts: all
       sudo: yes
+    
       tasks:
-      - name: Install Apache.
-        yum: name={{ item }} state=present
-        with_items:
-        - httpd
-        - httpd-devel
-      - name: Copy configuration files.
-        copy:
-          src: "{{ item.src }}"
-          dest: "{{ item.dest }}"
-          owner: root
-          group: root
-          mode: 0644
-        with_items:
-        - {
-          src: "/path/to/config/httpd.conf",
-          dest: "/etc/httpd/conf/httpd.conf"
-        }
-        - {
-          src: "/path/to/config/httpd-vhosts.conf",
-          dest: "/etc/httpd/conf/httpd-vhosts.conf"
-        }
-      - name: Make sure Apache is started and configure it to run at boot.
-        service: name=httpd state=started enabled=yes
+        - name: Install Apache.
+          yum: name={{ item }} state=present
+          with_items:
+          - httpd
+          - httpd-devel
+        - name: Copy configuration files.
+          copy:
+            src: "{{ item.src }}"
+            dest: "{{ item.dest }}"
+            owner: root
+            group: root
+            mode: 0644
+          with_items:
+          - {
+            src: "/path/to/config/httpd.conf",
+            dest: "/etc/httpd/conf/httpd.conf"
+          }
+          - {
+            src: "/path/to/config/httpd-vhosts.conf",
+            dest: "/etc/httpd/conf/httpd-vhosts.conf"
+          }
+        - name: Make sure Apache is started and configure it to run at boot.
+          service: name=httpd state=started enabled=yes
 
 Now we're getting somewhere. Let me walk you through this simple playbook:
 
   1. The first line, `---`, is how we mark this document as using YAML syntax (like using `<html>` at the top of an HTML document, or `<?php` at the top of a block of PHP code).
   2. The second line, `- hosts: all` defines the first (and in this case, only) _play_, and tells Ansible to run the play on `all` hosts that it knows about.
   3. The third line, `sudo: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
-  4. The fourth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
+  4. The fifth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
   5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
 
      - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the `items` array we pass in (`{{ variable }}` references a variable in Ansible's playbooks). We tell yum to make sure the packages we define are installed with `state=present`, but we could also use `state=latest` to ensure the latest version is installed, or `state=absent` to make sure the package is *not* installed.
@@ -189,7 +191,7 @@ I> The rest of this chapter uses more realistic Ansible playbooks. All the examp
 
 ## Real-world playbook: CentOS Node.js app server
 
-The first example, while being helpful for someone who might want to post a simple static web page to a clunky old Apache server, is not a good representation of a real-world scenario. I'm going to run through some more complex playbooks that do many different things, most of which are actually being used to manage production infrastructure today.
+The first example, while being helpful for someone who might want to post a simple static web page to a clunky old Apache server, is not a good representation of a real-world scenario. I'm going to run through more complex playbooks that do many different things, most of which are actually being used to manage production infrastructure today.
 
 The first playbook will configure a CentOS server with Node.js, and install and start a simple Node.js application. The server will have a very simple architecture:
 
@@ -204,7 +206,7 @@ To start things off, we need to create a YAML file (`playbook.yml` in this examp
     
       tasks:
 
-First, define a set of hosts (`all`) on which this playbook will be run (see the section above about limiting the playbook to particular groups and hosts), then tell ansible that what follows will be a list of tasks to run on the hosts.
+First, define a set of hosts (`all`) on which this playbook will be run (see the section above about limiting the playbook to particular groups and hosts), then tell Ansible that what follows will be a list of tasks to run on the hosts.
 
 ### Add extra repositories
 
@@ -234,31 +236,31 @@ I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and
 
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables other nifty Ansible features we'll discuss later:
 
-{lang="text",starting-line-number=5}
-    - name: Import Remi GPG key.
-      rpm_key: "key={{ item }} state=present"
-      with_items:
-        - "http://rpms.famillecollet.com/RPM-GPG-KEY-remi"
+{lang="text",starting-line-number=9}
+        - name: Import Remi GPG key.
+          rpm_key: "key={{ item }} state=present"
+          with_items:
+            - "http://rpms.famillecollet.com/RPM-GPG-KEY-remi"
     
-    - name: Install Remi repo.
-      command: "rpm -Uvh --force {{ item.href }} creates={{ item.creates }}"
-      with_items:
-        - {
-          href: "http://rpms.famillecollet.com/enterprise/remi-release-6.rpm",
-          creates: "/etc/yum.repos.d/remi.repo"
-        }
+        - name: Install Remi repo.
+          command: "rpm -Uvh --force {{ item.href }} creates={{ item.creates }}"
+          with_items:
+            - {
+              href: "http://rpms.famillecollet.com/enterprise/remi-release-6.rpm",
+              creates: "/etc/yum.repos.d/remi.repo"
+            }
     
-    - name: Install EPEL repo.
-      yum: name=epel-release state=present
+        - name: Install EPEL repo.
+          yum: name=epel-release state=present
     
-    - name: Ensure firewalld is stopped (since this is a test server).
-      service: name=firewalld state=stopped
+        - name: Ensure firewalld is stopped (since this is a test server).
+          service: name=firewalld state=stopped
     
-    - name: Install Node.js and npm.
-      yum: name=npm state=present enablerepo=epel
+        - name: Install Node.js and npm.
+          yum: name=npm state=present enablerepo=epel
     
-    - name: Install Forever (to run our Node.js app).
-      npm: name=forever global=yes state=latest
+        - name: Install Forever (to run our Node.js app).
+          npm: name=forever global=yes state=latest
 
 Let's walk through this playbook step-by-step:
 
@@ -310,15 +312,15 @@ Since this little app is dependent on Express (a simple http framework for Node)
 
 Now, add the following to your playbook, to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`):
 
-{lang="text",starting-line-number=30}
-    - name: Ensure Node.js app folder exists.
-      file: "path={{ node_apps_location }} state=directory"
+{lang="text",starting-line-number=34}
+        - name: Ensure Node.js app folder exists.
+          file: "path={{ node_apps_location }} state=directory"
     
-    - name: Copy example Node.js app to server.
-      copy: "src=app dest={{ node_apps_location }}"
+        - name: Copy example Node.js app to server.
+          copy: "src=app dest={{ node_apps_location }}"
     
-    - name: Install app dependencies defined in package.json.
-      npm: path={{ node_apps_location }}/app
+        - name: Install app dependencies defined in package.json.
+          npm: path={{ node_apps_location }}/app
 
 First, we ensure the directory where our app will be installed exists, using the `file` module. The `{{ node_apps_location }}` variable used in each command can be defined under a `vars` section at the top of our playbook, in your inventory, or on the command line when calling `ansible-playbook`.
 
@@ -334,15 +336,15 @@ We're *almost* finished! The last step is to start the app.
 
 We'll now use `forever` (which we installed earlier) to start the app.
 
-{lang="text",starting-line-number=38}
-    - name: Check list of running Node.js apps.
-      command: forever list
-      register: forever_list
-      changed_when: false
+{lang="text",starting-line-number=43}
+        - name: Check list of running Node.js apps.
+          command: forever list
+          register: forever_list
+          changed_when: false
     
-    - name: Start example Node.js app.
-      command: "forever start {{ node_apps_location }}/app/app.js"
-      when: "forever_list.stdout.find('{{ node_apps_location }}/app/app.js') == -1"
+        - name: Start example Node.js app.
+          command: "forever start {{ node_apps_location }}/app/app.js"
+          when: "forever_list.stdout.find('{{ node_apps_location }}/app/app.js') == -1"
 
 In the first play, we're doing two new things:
 
@@ -379,35 +381,9 @@ At this point, you should be getting comfortable with Ansible playbooks and the 
 {width=40%}
 ![Drupal LAMP server.](images/4-playbook-drupal.png)
 
-To get started, create a new directory with the following Vagrantfile inside:
-
-{lang=ruby}
-    # -*- mode: ruby -*-
-    # vi: set ft=ruby :
-    
-    VAGRANTFILE_API_VERSION = "2"
-    
-    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.vm.box = "geerlingguy/ubuntu1204"
-      config.vm.network :private_network, ip: "192.168.88.8"
-      config.ssh.insert_key = false
-    
-      config.vm.provider :virtualbox do |vb|
-        vb.customize ["modifyvm", :id, "--memory", "512"]
-      end
-    
-      # Ansible provisioning.
-      config.vm.provision "ansible" do |ansible|
-        ansible.playbook = "provisioning/playbook.yml"
-        ansible.sudo = true
-      end
-    end
-
-Create a provisioning folder, and create a new playbook file, `playbook.yml`, inside.
-
 ### Include a variables file, and discover `pre_tasks` and `handlers`
 
-To make our playbook more efficient and readable, let's begin the playbook by telling Ansible to load in variables from a separate `vars.yml` file:
+To make our playbook more efficient and readable, let's begin the playbook (named `playbook.yml`) by instructing Ansible to load in variables from a separate `vars.yml` file:
 
 {lang="text"}
     ---
@@ -697,9 +673,16 @@ Also, Drupal's installation process results in the creation of a 'settings.php' 
 
 The final two tasks set permissions on Drupal's settings.php and files folder to 744 and 777, respectively.
 
+TODOTODO
+
 ### Drupal LAMP server summary
 
-At this point, if you access the server at http://drupaltest.dev/ (assuming you've pointed drupaltest.dev to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
+To run the playbook on a server (either via a local VM for testing or on another server), use the following command:
+
+{lang="text",linenos=off}
+    $ ansible-playbook playbook.yml
+
+After the playbook completes, if you access the server at http://drupaltest.dev/ (assuming you've pointed drupaltest.dev to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
 
 A similar server configuration, running Apache, MySQL, and PHP, can be used to run many popular web frameworks and CMSes besides Drupal, including Symfony, Wordpress, Joomla, Laravel, etc.
 
@@ -714,7 +697,7 @@ Apache Solr is a fast and scalable search server optimized for full-text search,
 
 ### Include a variables file, and more `pre_tasks` and `handlers`
 
-Just like the previous LAMP server example, we'll begin this playbook by telling Ansible our variables will be in a separate `vars.yml` file:
+Just like the previous LAMP server example, we'll begin this playbook (again named `playbook.yml`) by telling Ansible our variables will be in a separate `vars.yml` file:
 
 {lang="text"}
     ---
@@ -889,7 +872,7 @@ Before the task runs, the local template file will need to be created. Create a 
       value="{{ solr_dir }}" override="true"/>
     </Context>
 
-Run the playbook with `$ ansible-playbook [playbook-name.yml]`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://example.com:8080/solr (where 'example.com' is your server's hostname or IP address).
+Run the playbook with `$ ansible-playbook playbook.yml`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://example.com:8080/solr (where 'example.com' is your server's hostname or IP address).
 
 ### Apache Solr server summary
 
