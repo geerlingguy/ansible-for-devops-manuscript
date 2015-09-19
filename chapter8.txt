@@ -1,21 +1,21 @@
 # Chapter 8 - Ansible Cookbooks
 
-Most of the book up to this point has demonstrated individual aspects of Ansible---inventory, playbooks, ad-hoc tasks, etc.---but this chapter will start to synthesize everything and show how Ansible is applied to real-world infrastructure management scenarios.
+Until now, most of this book has demonstrated individual aspects of Ansible---inventory, playbooks, ad-hoc tasks, etc. But this chapter synthesizes everything we've gone over in the previous chapters and shows how Ansible is applied to real-world infrastructure management scenarios.
 
 ## Highly-Available Infrastructure with Ansible
 
-Real-world web applications require redundancy and horizontal scalability with multi-server infrastructure. In the following example, we'll use Ansible to configure a complex infrastructure (illustrated below) on servers provisioned either locally via Vagrant and VirtualBox, or on a set of automatically-provisioned instances running on either DigitalOcean or Amazon Web Services:
+Real-world web applications require redundancy and horizontal scalability with multi-server infrastructure. In the following example, we'll use Ansible to configure a complex infrastructure on servers provisioned either locally (via Vagrant and VirtualBox) or on a set of automatically-provisioned instances (running on either DigitalOcean or Amazon Web Services):
 
 {width=60%}
 ![Highly-Available Infrastructure.](images/8-highly-available-infrastructure.png)
 
-**Varnish** acts as a load balancer and reverse proxy, fronting web requests and routing them to the application servers. We could just as easily use something like **Nginx** or **HAProxy**, or even a proprietary cloud-based solution like an Amazon's **Elastic Load Balancer** or Linode's **NodeBalancer**, but for simplicity's sake, and for flexibility in deployment, we'll use Varnish.
+**Varnish** acts as a load balancer and reverse proxy, fronting web requests and routing them to the application servers. We could just as easily use something like **Nginx** or **HAProxy**, or even a proprietary cloud-based solution like an Amazon's **Elastic Load Balancer** or Linode's **NodeBalancer**, but for simplicity's sake and for flexibility in deployment, we'll use Varnish.
 
 **Apache** and mod_php run a PHP-based application that displays the entire stack's current status and outputs the current server's IP address for load balancing verification.
 
 A **Memcached** server provides a caching layer that can be used to store and retrieve frequently-accessed objects in lieu of slower database storage.
 
-Two **MySQL** servers, configured as a master and slave, offer redundant and performant database access; all data will be replicated from the master to the slave, and the slave can also be used as a secondary server for read-only queries to take some load off the master.
+Two **MySQL** servers, configured as a master and slave, offer redundant and performant database access; all data will be replicated from the master to the slave, and in addition, the slave can be used as a secondary server for read-only queries to take some load off the master.
 
 ### Directory Structure
 
@@ -270,9 +270,9 @@ T> Don't try transcribing this example manually; you can get the code from this 
 
 As this is the heart of the example application we're deploying to the infrastructure, it's necessarily a bit more complex than most examples in the book, but a quick run through follows:
 
-  - (9-23) Iterate through all the `lamp-db` MySQL hosts defined in the playbook inventory, and test the ability to connect to them, and whether they are configured as master or slave, using the `mysql_test_connection()` function defined later (40-73).
-  - (25-39) Check the first defined `lamp-memcached` Memcached host defined in the playbook inventory, confirming the ability to connect and create, retrieve, and delete a value from the cache.
-  - (41-76) Define the `mysql_test_connection()` function which tests the the ability to connect to a MySQL server and also returns its replication status.
+  - (9-23) Iterate through all the `lamp-db` MySQL hosts defined in the playbook inventory and test the ability to connect to them---as well as whether they are configured as master or slave, using the `mysql_test_connection()` function defined later (40-73).
+  - (25-39) Check the first defined `lamp-memcached` Memcached host defined in the playbook inventory, confirming the ability to connect with the cache and to create, retrieve, or delete a cached value.
+  - (41-76) Define the `mysql_test_connection()` function, which tests the the ability to connect to a MySQL server and also returns its replication status.
   - (78-91) Print the results of all the MySQL and Memcached tests, along with `{{ inventory_hostname }}` as the page title, so we can easily see which web server is serving the viewed page.
 
 At this point, the heart of our infrastructure---the application that will test and display the status of all our servers---is ready to go.
@@ -366,7 +366,7 @@ We'll need a few other normal variables to configure MySQL, so we'll add them al
 
 We're opening port 3306 to anyone, but according to the **principle of least privilege** discussed earlier, you would be justified in restricting this port to only the servers and users that need access to MySQL (similar to the memcached server configuration). In this case, the attack vector is mitigated because MySQL's own authentication layer is used through the `mysql_user` variable generated in `main.yml`.
 
-We are defining two MySQL variables, `mysql_replication_user` to be used as for master and slave replication, and `mysql_databases` to define a list of databases that will be created (if they don't already exist) on the database servers.
+We are defining two MySQL variables: `mysql_replication_user` to be used for master and slave replication, and `mysql_databases` to define a list of databases that will be created (if they don't already exist) on the database servers.
 
 With the configuration of the database servers complete, the server-specific playbooks are ready to go.
 
@@ -381,7 +381,7 @@ A simple playbook including each of the group-specific playbooks is all we need 
     - include: playbooks/db/main.yml
     - include: playbooks/memcached/main.yml
 
-At this point, if you had some already-booted servers and statically defined inventory groups like `lamp-www`, `lamp-db`, etc., you could run `ansible-playbook configure.yml` and you'd have a full HA infrastructure at the ready!
+At this point, if you had some already-booted servers and statically defined inventory groups like `lamp-www`, `lamp-db`, etc., you could run `ansible-playbook configure.yml` and have a full HA infrastructure at the ready!
 
 But we're going to continue to make our playbooks more flexible and useful.
 
@@ -532,9 +532,9 @@ Now `cd` into the project's root directory, run `vagrant up`, and after ten or f
 {width=80%}
 ![Highly Available Infrastructure - Success!](images/8-ha-infrastructure-success.png)
 
-You should see something like the above screenshot; the PHP app displays the current app server's IP address, the individual MySQL servers' status, and the Memcached server status. Refresh the page a few times to verify Varnish is distributing requests randomly between the two app servers.
+You should see something like the above screenshot. The PHP app displays the current app server's IP address, the individual MySQL servers' status, and the Memcached server status. Refresh the page a few times to verify Varnish is distributing requests randomly between the two app servers.
 
-We have local infrastructure development covered, and Ansible makes it easy to use the exact same configuration to build our infrastructure in the cloud.
+We now have local infrastructure development covered, and Ansible makes it easy to use the exact same configuration to build our infrastructure in the cloud.
 
 ### Provisioner Configuration: DigitalOcean
 
@@ -583,13 +583,13 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
           register: created_droplets
           with_items: droplets
 
-Many of the options (e.g. `size_id`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size_id: 72` (or whatever valid value you'd like), and it would override the default value set in the task.
+Many of the options (e.g. `size_id`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size_id: 72` (or another valid value), and it would override the default value set in the task.
 
-T> You could specify an SSH public key per droplet, or (as in this instance) use the same key for all hosts by providing a default. In this case, I added an SSH key to my DigitalOcean account, then used the DigitalOcean API to retrieve the key's numeric ID (as described in the previous chapter).
+T> You could specify an SSH public key per droplet, or use the same key for all hosts by providing a default (as I did above). In this example, I added an SSH key to my DigitalOcean account, then used the DigitalOcean API to retrieve the key's numeric ID (as described in the previous chapter).
 T> 
-T> It's best to use key-based authentication and add at least one SSH key to your DigitalOcean account so Ansible can connect using keys instead of insecure passwords, especially since these instances will be created with only a root account.
+T> It's best to use key-based authentication and add at least one SSH key to your DigitalOcean account so Ansible can connect using secure keys instead of insecure passwords---especially since these instances will be created with only a root account.
 
-We loop through all the defined `droplets` using `with_items: droplets`, and after each droplet is created add the droplet's metadata (name, IP address, etc.) to the `created_droplets` variable. Next, we'll loop through that variable to build our inventory on-the-fly so our configuration applies to the correct servers:
+We loop through all the defined `droplets` using `with_items: droplets`, and after each droplet is created, we add the droplet's metadata (name, IP address, etc.) to the `created_droplets` variable. Next, we'll loop through that variable to build our inventory on-the-fly so our configuration applies to the correct servers:
 
 {lang=text,starting-line-number=30}
         - name: Add DigitalOcean hosts to their respective inventory groups.
@@ -607,13 +607,13 @@ We loop through all the defined `droplets` using `with_items: droplets`, and aft
 
 You'll notice a few interesting things happening in this task:
 
-  - This is the first time we've used `with_indexed_items`. The reason for using this less-common loop feature is to add a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's simplest to dynamically create the variable for every server, so it's available when needed. `with_indexed_items` sets `item.0` to the key of the item, and `item.1` to the value of the item.
-  - `with_indexed_items` also helps us reliably set each droplet's group. Because the v1 DigitalOcean API doesn't support features like tags for Droplets, we need to set up the groups on our own. Using the `droplets` variable we manually created earlier allows us to set the proper group for a particular droplet.
-  - Finally we add inventory variables per-host in `add_host` by adding the variable name as a key, and the variable value as the key's value. Simple, but powerful!
+  - This is the first time we've used `with_indexed_items`. Though less common, this is a valuable loop feature because it adds a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's more simple to dynamically create the variable for every server so each is available when needed. `with_indexed_items` sets `item.0` to the key of the item and `item.1` to the value of the item.
+  - In addition to helping us create server IDs, `with_indexed_items` also helps us to reliably set each droplet's group. Because the v1 DigitalOcean API doesn't support features like tags for Droplets, we have to set up the groups on our own. By using the `droplets` variable we manually created earlier, we can set the proper group for a particular droplet.
+  - Finally, we add inventory variables per-host in `add_host`. To do this, we add the variable name as a key and the variable value as that key's value. Simple, but powerful!
 
-T> There are a few different ways you can approach dynamic provisioning and inventory management for your infrastructure, and, especially if you are only targeting one cloud hosting provider, there are ways to avoid using more exotic features of Ansible (e.g. `with_indexed_items`) and complex if/else conditions. This example is slightly more complex due to the fact that the playbook is being created to be interchangeable with other similar provisioning playbooks.
+T> There are a few different ways you can approach dynamic provisioning and inventory management for your infrastructure. There are ways to avoid using more exotic features of Ansible (e.g. `with_indexed_items`) and complex if/else conditions, especially if you only use one cloud infrastructure provider. This example is slightly more complex because the playbook is being created to be interchangeable with similar provisioning playbooks.
 
-The final step in our provisioning is to make sure all the droplets are booted and can be reached via SSH, so at the end of the `digitalocean.yml` playbook, add another play to be run on hosts in the `do` group we just defined:
+The final step in our provisioning is to make sure all the droplets are booted and can be reached via SSH. So at the end of the `digitalocean.yml` playbook, add another play to be run on hosts in the `do` group we just defined:
 
 {lang=text,starting-line-number=43}
     - hosts: do
@@ -626,7 +626,7 @@ The final step in our provisioning is to make sure all the droplets are booted a
 
 Once we know port 22 is reachable, we know the droplet is up and ready for configuration.
 
-We're *almost* ready to provision and configure our entire infrastructure on DigitalOcean, but we need to create one last playbook to tie everything together. Create `provision.yml` in the project root with the following contents:
+We're now *almost* ready to provision and configure our entire infrastructure on DigitalOcean, but first we need to create one last playbook to tie everything together. Create `provision.yml` in the project root with the following contents:
 
 {lang=text}
     ---
@@ -635,7 +635,7 @@ We're *almost* ready to provision and configure our entire infrastructure on Dig
 
 That's it! Now, assuming you set the environment variables `DO_CLIENT_ID` and `DO_API_KEY`, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on DigitalOcean.
 
-The entire process should take about 15 minutes, and once it's complete, you should see something like:
+The entire process should take about 15 minutes; once it's complete, you should see something like this:
 
 {lang=text,linenos=off}
     PLAY RECAP *****************************************************************
@@ -647,24 +647,24 @@ The entire process should take about 15 minutes, and once it's complete, you sho
     192.241.181.197            : ok=40   changed=18   unreachable=0    failed=0
     localhost                  : ok=2    changed=1    unreachable=0    failed=0
 
-Visit the IP address of the varnish server and you should be greeted with a status page similar to the one generated by the Vagrant-based infrastructure:
+Visit the IP address of the varnish server, and you will be greeted with a status page similar to the one generated by the Vagrant-based infrastructure:
 
 {width=80%}
 ![Highly Available Infrastructure on DigitalOcean.](images/8-ha-infrastructure-digitalocean.png)
 
-Because everything in this playbook is idempotent, running `$ ansible-playbook provision.yml` again should report no changes, and helps you verify that everything is running correctly.
+Because everything in this playbook is idempotent, running `$ ansible-playbook provision.yml` again should report no changes, and this will help you verify that everything is running correctly.
 
-Ansible will also rebuild and reconfigure any droplets that may be missing from your infrastructure. If you're daring, and want to test this feature, just log into your DigitalOcean account, delete one of the droplets just created by this playbook (maybe one of the two app servers), then run the playbook again.
+Ansible will also rebuild and reconfigure any droplets that might be missing from your infrastructure. If you're daring and would like to test this feature, just log into your DigitalOcean account, delete one of the droplets just created by this playbook (perhaps one of the two app servers), and then run the playbook again.
 
-Now that we've tested our infrastructure on DigitalOcean, we can destroy the droplets just as easily (change the `state` parameter in `provisioners/digitalocean.yml` to default to `'absent'` and run `$ ansible-playbook provision.yml` again).
+Now that we've tested our infrastructure on DigitalOcean, we can destroy the droplets just as easily as we can create them. To do this, change the `state` parameter in `provisioners/digitalocean.yml` to default to `'absent'` and run `$ ansible-playbook provision.yml` once more.
 
 Next up, we'll build the infrastructure a third time---on Amazon's infrastructure.
 
 ### Provisioner Configuration: Amazon Web Services (EC2)
 
-For Amazon Web Services, provisioning works slightly different. Amazon has a broader ecosystem of services surrounding EC2 instances, and for our particular example, we will need to configure security groups prior to provisioning instances.
+For Amazon Web Services, provisioning is slightly different. Amazon has a broader ecosystem of services surrounding EC2 instances, so for our particular example we will need to configure security groups prior to provisioning instances.
 
-To begin, create `aws.yml` inside the `provisioners` directory and begin the playbook the same ways as with DigitalOcean:
+To begin, create `aws.yml` inside the `provisioners` directory and begin the playbook the same way as for DigitalOcean:
 
 {lang=text}
     ---
@@ -713,7 +713,7 @@ Inside the `instances` variable, each instance is an object with three keys:
 
   - `name`: The name of the instance, which we'll use to tag the instance and ensure only one instance is created per name.
   - `group`: The Ansible inventory group in which the instance should belong.
-  - `security_group`: A list of security groups into which the instance will be placed. The `default` security group comes is added to your AWS account upon creation, and has one rule to allow outgoing traffic on any port to any IP address.
+  - `security_group`: A list of security groups into which the instance will be placed. The `default` security group is added to your AWS account upon creation, and has one rule to allow outgoing traffic on any port to any IP address.
 
 I> If you use AWS exclusively, it would be best to autoscaling groups and change the design of this infrastructure a bit. For this example, we just need to ensure that the six instances we explicitly define are created, so we're using particular `name`s and an `exact_count` to enforce the 1:1 relationship.
 
@@ -737,11 +737,11 @@ With our instances defined, we'll next define a `security_groups` variable conta
               - { proto: tcp, from_port: 22, to_port: 22, cidr_ip: 0.0.0.0/0 }
             rules_egress: []
 
-Each security group has a `name` (which was used to identify the security group in the `instances` list), `rules` (a list of firewall rules like protocol, ports, and IP ranges to limit *incoming* traffic), and `rules_egress` (a list of firewall rules to limit *outgoing* traffic).
+Each security group has a `name` (which was used to identify the security group in the `instances` list), `rules` (a list of firewall rules---like protocol, ports, and IP ranges---to limit *incoming* traffic), and `rules_egress` (a list of firewall rules to limit *outgoing* traffic).
 
 We need three security groups: `a4d_lamp_http` to open port 80, `a4d_lamp_db` to open port 3306, and `a4d_lamp_memcached` to open port 11211.
 
-Now that we have all the data we need to set up security groups and instances, the first task needs to to create or verify the existence of the security groups:
+Now that we have all the data we need to set up security groups and instances, our first task is to create or verify the existence of the security groups:
 
 {lang=text,starting-line-number=56}
       tasks:
@@ -755,7 +755,7 @@ Now that we have all the data we need to set up security groups and instances, t
             rules_egress: "{{ item.rules_egress }}"
           with_items: security_groups
 
-The `ec2_group` requires a name, region, and rules for each security group. Security groups will be created if they don't exist, modified to match the supplied values if they do exist, or verified if they exist and match the given values.
+The `ec2_group` requires a name, region, and rules for each security group. Security groups will be created if they don't exist, modified to match the supplied values if they do exist, or verified if they both exist and match the given values.
 
 With the security groups configured, we can provision the defined EC2 instances by looping through `instances` with the `ec2` module:
 
@@ -786,7 +786,7 @@ This example is slightly more complex than the DigitalOcean example, and a few p
   - `t2.micro` was used as the default instance type, since it falls within EC2's free tier usage. If you just set up an account and keep all AWS resource usage within free tier limits, you won't be billed anything.
   - `exact_count` and `count_tag` work together to ensure AWS provisions only one of each of the instances we defined. The `count_tag` tells the `ec2` module to match the given group + host and then `exact_count` tells the module to only provision `1` instance. If you wanted to *remove* all your instances, you could set `exact_count` to 0 and run the playbook again.
 
-Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we'll use to build Ansible inventory groups for the server configuration playbooks.
+Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we will use to build Ansible inventory groups for the server configuration playbooks.
 
 {lang=text,starting-line-number=86}
         - name: Add EC2 instances to their respective inventory groups.
@@ -806,7 +806,7 @@ This `add_host` example is slightly simpler than the one for DigitalOcean, becau
 
 We still use `with_indexed_items` so we can use the index to generate a unique ID per server for use in building the MySQL master-slave replication.
 
-The final step in provisioning the EC2 instances is to ensure we can connect to them before continuing, and to set `selinux` into permissive mode so the configuration we supply will work correctly.
+The final steps in provisioning the EC2 instances are to ensure we can connect to them, and to set `selinux` into permissive mode so the configuration we supply will work correctly.
 
 {lang=text,starting-line-number=86}
     # Run some general configuration on all AWS hosts.
@@ -821,9 +821,9 @@ The final step in provisioning the EC2 instances is to ensure we can connect to 
           selinux: policy=targeted state=permissive
           sudo: yes
 
-Since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs with `sudo` explicitly.
+Since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs explicitly with `sudo`.
 
-Now, modify the `provision.yml` file in the root of the project folder, and change the provisioners include to look like the following:
+Now, modify the `provision.yml` file in the root of the project folder and change the provisioners include to look like the following:
 
 {lang=text}
     ---
@@ -832,7 +832,7 @@ Now, modify the `provision.yml` file in the root of the project folder, and chan
 
 Assuming the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set in your current terminal session, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on AWS.
 
-The entire process should take about 15 minutes, and once it's complete, you should see something like:
+The entire process should take about 15 minutes, and once it's complete, you should see something like this:
 
 {lang=text,linenos=off}
     PLAY RECAP *****************************************************************
@@ -844,12 +844,12 @@ The entire process should take about 15 minutes, and once it's complete, you sho
     54.69.86.187               : ok=19   changed=14   unreachable=0    failed=0
     localhost                  : ok=3    changed=1    unreachable=0    failed=0
 
-Visit the IP address of the varnish server (the first server configured) and you should be greeted with a status page similar to the one generated by the Vagrant and DigitalOcean-based infrastructure:
+Visit the IP address of the Varnish server, and you will be greeted with a status page similar to the one generated by the Vagrant and DigitalOcean-based infrastructure:
 
 {width=80%}
 ![Highly Available Infrastructure on AWS EC2.](images/8-ha-infrastructure-aws.png)
 
-As with the earlier examples, running `ansible-playbook provision.yml` again should produce no changes, because everything in this playbook is idempotent. And if one of your instances were terminated, running the playbook again would recreate and reconfigure the instance in a few minutes.
+As with the earlier examples, running `ansible-playbook provision.yml` again should produce no changes, because everything in this playbook is idempotent. If one of your instances was somehow terminated, running the playbook again would recreate and reconfigure the instance in a few minutes.
 
 To terminate all the provisioned instances, you can change the `exact_count` in the `ec2` task to `0`, and run `$ ansible-playbook provision.yml` again.
 
@@ -857,9 +857,9 @@ To terminate all the provisioned instances, you can change the `exact_count` in 
 
 In the above example, an entire highly-available PHP application infrastructure was defined in a series of short Ansible playbooks, and then provisioning configuration was created to build the infrastructure on either local VMs, DigitalOcean droplets, or AWS EC2 instances.
 
-Once you start working on building infrastructure this way---abstracting individual servers, then abstracting cloud provisioning---you'll start to see some of Ansible's true power in being more than just a configuration management tool. Imagine being able to create your own multi-datacenter, multi-provider infrastructure with Ansible and some basic configuration.
+Once you start working on building infrastructure this way---by abstracting individual servers, then abstracting cloud provisioning---you'll start to see some of Ansible's true power of being more than just a configuration management tool. Imagine being able to create your own multi-datacenter, multi-provider infrastructure with Ansible and some basic configuration.
 
-While Amazon, DigitalOcean, Rackspace and other hosting providers have their own tooling and unique infrastructure merits, the agility and flexibility afforded by building infrastructure in a provider-agnostic fashion lets you treat hosting providers as commodities, and gives you freedom to build more reliable, performant, and simple application infrastructure.
+Amazon, DigitalOcean, Rackspace and other hosting providers have their own tooling and unique infrastructure merits. However, building infrastructure in a provider-agnostic fashion provides the agility and flexibility that allow you to treat hosting providers as commodities, and gives you the freedom to build more reliable and more performant application infrastructure.
 
 Even if you plan on running everything within one hosting provider's network (or in a private cloud, or even on a few bare metal servers), Ansible provides deep stack-specific integration so you can do whatever you need to do and manage the provider's services within your playbooks.
 
@@ -869,7 +869,7 @@ I> You can find the entire contents of this example in the [Ansible for DevOps G
 
 Though application, database, and backup servers may be some of the most mission-critical components of a well-rounded infrastructure, one area that is equally important is a decent logging system.
 
-In the old days, when one or two servers could handle an entire website or application, you could work with built-in logfiles and rsyslog to troubleshoot an issue or check trends in performance, errors, or overall traffic. With a typical modern infrastructure---like the example above, with six separate servers---it pays dividends to find a better solution for application, server, and firewall/authentication logging. Plain text files, logrotate, and grep don't cut it anymore.
+In the old days when one or two servers could handle an entire website or application, you could work with built-in logfiles and rsyslog to troubleshoot issues or check trends in performance, errors, or overall traffic. With a typical modern infrastructure---like the example above, with six separate servers---it pays dividends to find a better solution for application, server, and firewall/authentication logging. Plain text files, logrotate, and grep don't cut it anymore.
 
 Among various modern logging and reporting toolsets, the 'ELK' stack (Elasticsearch, Logstash, and Kibana) has come to the fore as one of the best-performing and easiest-to-configure open source centralized logging solutions.
 
@@ -880,9 +880,9 @@ In our example, we'll configure a single ELK server to handle aggregation, searc
 
 ### ELK Playbook
 
-Just like our previous example, we're going to let a few roles from Ansible Galaxy do the heavy lifting of actually installing and configuring Elasticsearch, Logstash, and Kibana. If you're interested in reading through the roles that do this work, feel free to peruse them after you've downloaded them.
+Just like our previous example, we're going to let a few roles from Ansible Galaxy do the heavy lifting of actually installing and configuring Elasticsearch, Logstash, and Kibana. If you're interested in reading through the roles that do this work, feel free to peruse them after they've been downloaded.
 
-In this example, rather than walking through each role and variable in detail, I'm going to highlight the important parts, but then jump immediately into how you can use this base server to aggregate logs, then how to point your other servers' log files to it using Logstash Forwarder.
+In this example, I'm going to highlight the important parts rather than walk through each role and variable in detail. Then I'll show how you can use this base server to aggregate logs, then how to point your other servers' log files to it using Logstash Forwarder.
 
 Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
 
@@ -928,9 +928,9 @@ This assumes you have a `logs` group in your inventory with at least one server 
         fields:
           type: syslog
 
-You'll want to use a different password besides 'password' for `kibana_password`. Other options are straightforward, with the exception of the two `logstash_*` variables.
+You'll want to use something other than 'password' for `kibana_password`. Other options are straightforward, with the exception of the two `logstash_*` variables.
 
-The first variable tells the `geerlingguy.logstash` role to ignore the local syslog file (in this case, we're only interested in logging authorization attempts through the local `auth.log`).
+The first variable tells the `geerlingguy.logstash` role to ignore the local syslog file, because in this case, we're only interested in logging authorization attempts through the local `auth.log`.
 
 The second variable gives the `geerlingguy.logstash-forwarder` role a list of files to monitor, along with metadata to tell logstash what kind of file is being monitored. In this case, we are only worried about the `auth.log` file, and we know it's a syslog-style file. (Logstash needs to know what kind of file you're monitoring so it can parse the logged messages correctly).
 
@@ -981,13 +981,13 @@ Kibana helpfully links to an example dashboard for Logstash (under the "Are you 
 {width=80%}
 ![Kibana's default Logstash dashboard.](images/8-elk-kibana-logstash-dashboard.png)
 
-This example won't dive too deep into customizing Kibana's dashboard customization, since there are many guides to using Kibana available freely, including [Kibana's official guide](http://www.elasticsearch.org/guide/en/kibana/current/index.html). For our purposes, we'll use the default dashboard.
+In this example, we won't dive too deep into customizing Kibana's dashboard customization, since there are many guides to using Kibana available freely, including [Kibana's official guide](http://www.elasticsearch.org/guide/en/kibana/current/index.html). For our purposes, we'll use the default dashboard.
 
 I> This example uses Kibana 3.x, but a stable release of Kibana 4.x is on the horizon (as of early 2015). Some of the screenshots may show a different interface than the latest release, but this book will likely be updated with newer screenshots and updated guides once the 4.x release comes out.
 
 ### Forwarding Logs from Other Servers
 
-It's great that we have the ELK stack running; Elasticsearch will store and make available log data with one search index per day, Logstash will listening for log entries, Logstash Forwarder will send entries in `/var/log/auth.log` to Logstash, and Kibana will organize the logged data with useful visualizations.
+It's great that we have the ELK stack running. Elasticsearch will store and make available log data with one search index per day, Logstash will listen for log entries, Logstash Forwarder will send entries in `/var/log/auth.log` to Logstash, and Kibana will organize the logged data in useful visualizations.
 
 Configuring additional servers to direct their logs to our new Logstash server is fairly simple using Logstash Forwarder. The basic steps we'll follow are:
 
@@ -995,7 +995,7 @@ Configuring additional servers to direct their logs to our new Logstash server i
   2. Set up an Ansible playbook to install and configure Logstash Forwarder alongside the application running on the server.
   3. Boot the server and watch as the logs are forwarded to the main ELK server.
 
-Let's begin by creating a new Nginx web server. It's useful to monitor webserver access logs for a variety of reasons, not the least of which is to watch for traffic spikes and increases in non-200 responses for certain resources. Add the following server definition inside the Vagrantfile, just after the `end` of the ELK server definition:
+Let's begin by creating a new Nginx web server. (It's useful to monitor webserver access logs for a variety of reasons, especially to watch for traffic spikes and increases in non-200 responses for certain resources.) Add the following server definition inside the Vagrantfile, just after the `end` of the ELK server definition:
 
 {lang=ruby,starting-line-number=28}
       # Web server.
@@ -1037,7 +1037,7 @@ We'll next set up the simple playbook to install and configure both Nginx and Lo
             mode: 0644
           notify: restart nginx
 
-This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forwarder` roles, and in the `tasks`, there is an additional task to configure one virtualhost in a Nginx configuration directory, via the file `example.conf`. Create that file now (at the path `provisioning/web/files/example.conf`), and define one Nginx virtualhost for our testing:
+This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forwarder` roles, and in the `tasks`, there is an additional task to configure one virtualhost in a Nginx configuration directory, via the file `example.conf`. Create that file now at the path `provisioning/web/files/example.conf`, and define one Nginx virtualhost for our testing:
 
 {lang=text}
     server {
@@ -1050,7 +1050,7 @@ This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forward
       error_log /var/log/nginx/error.log debug;
     }
 
-Since this is the only `server` definition, and it's set as the `default_server` on port 80, all requests will be directed to it. We routed the `access_log` to `/var/log/nginx/access.log`, and told Nginx to write log entries using the `combined` format, which is what our Logstash server will expect for nginx access logs.
+Since this is the only `server` definition, and it's set as the `default_server` on port 80, all requests will be directed to it. We routed the `access_log` to `/var/log/nginx/access.log`, and told Nginx to write log entries using the `combined` format, which is how our Logstash server will expect nginx access logs to be formatted.
 
 Next, set up the required variables to tell the `nginx` and `logstash-forwarder` roles how to configure their respective services. Inside `provisioning/web/vars/main.yml`:
 
@@ -1073,12 +1073,12 @@ Next, set up the required variables to tell the `nginx` and `logstash-forwarder`
         fields:
           type: nginx
 
-The `nginx` variables ensure Nginx will run optimally on our Ubuntu server, and remove the default virtualhost entry. The `logstash_forwarder` variables tell `geerlingguy.logstash-forwarder` what logs to forward to our central log server:
+The `nginx` variables remove the default virtualhost entry and ensure Nginx will run optimally on our Ubuntu server. The `logstash_forwarder` variables tell `geerlingguy.logstash-forwarder` what logs to forward to our central log server:
 
   - `logstash_forwarder_logstash_server` and `_port`: Defines the server IP or domain and port to which logs should be transported.
   - `logstash_forwarder_files`: Defines a list of `paths` and `fields`, which identify a file or list of files to be transported to the log server, along with a `type` for the files. In this case, the authentication log (`/var/log/secure`) is a `syslog`-formatted log file, and `/var/log/nginx/access.log` is of type `nginx` (which will be parsed correctly on the Logstash server since it's in the combined log format popularized by Apache).
 
-W> Note that this demonstration configuration is not using a custom certificate to authenticate logging connections. You should normally configure your own secure certificate and give the logstash-forwarder role the path to the certificate using the `logstash_forwarder_ssl_certificate_file` variable. If you use the example provided with the project, you could expose your logging infrastructure to the outside, plus you'll get a `***SECURITY RISK***` warning in the logs every time the Logstash role is run.
+W> Note that this demonstration configuration does not use a custom certificate to authenticate logging connections. You should normally configure your own secure certificate and give the logstash-forwarder role the path to the certificate using the `logstash_forwarder_ssl_certificate_file` variable. If you use the example provided with the project, you could expose your logging infrastructure to the outside, and you'll get a `***SECURITY RISK***` warning in the logs every time the Logstash role is run.
 
 To allow Vagrant to pass the proper connection details to Ansible, create `provisioning/web/inventory` with the `webs` host details:
 
@@ -1099,7 +1099,7 @@ A few requests being logged through logstash forwarder isn't all that exciting. 
 {lang=text,linenos=off}
     ab -n 20000 -c 50 http://webs/
 
-During the course of the load test, I set Kibana to show only the past 5 minutes of log data, automatically refreshed every 5 seconds, and I could monitor the requests on the ELK server just a few seconds after they were served by Nginx:
+During the course of the load test, I set Kibana to show only the past 5 minutes of log data (automatically refreshed every 5 seconds) and I could monitor the requests on the ELK server just a few seconds after they were served by Nginx:
 
 {width=80%}
 ![Monitoring a deluge of Nginx requests in near-realtime.](images/8-logstash-forwarding-ab-load.png)
@@ -1114,12 +1114,12 @@ Ansible is the simplest way to configure an ELK server and direct all your infra
 
 ## GlusterFS Distributed File System Configuration with Ansible
 
-Modern infrastructure often involves some amount of horizontal scaling; instead of having one giant server, with one storage volume, one database, one application instance, etc., most apps use two, four, ten, or dozens of servers.
+Modern infrastructure often involves some amount of horizontal scaling; instead of having one giant server with one storage volume, one database, one application instance, etc., most apps use two, four, ten, or dozens of servers.
 
 {width=80%}
 ![GlusterFS is a distributed filesystem for servers.](images/8-glusterfs-architecture.png)
 
-Many applications can be scaled horizontally with ease, but what happens when you need shared resources, like files, application code, or other transient data, to be shared on all the servers? And how do you have this data scale out with your infrastructure, in a fast but reliable way? There are many different approaches to synchronizing or distributing files across servers:
+Many applications can be scaled horizontally with ease. But what happens when you need shared resources, like files, application code, or other transient data, to be shared on all the servers? And how do you have this data scale out with your infrastructure, in a fast but reliable way? There are many different approaches to synchronizing or distributing files across servers:
 
   - Set up rsync either on cron or via inotify to synchronize smaller sets of files on a regular basis.
   - Store everything in a code repository (e.g. Git, SVN, etc.) and deploy files to each server using Ansible.
@@ -1133,7 +1133,7 @@ GlusterFS is licensed under the AGPL license, has good documentation, and a fair
 
 ### Configuring Gluster - Basic Overview
 
-To get Gluster working on a basic two-server setup (so you can have one folder that's synchronized and replicated across the two servers---allowing one server to go down completely, and the other to still have access to the files), you need to do the following:
+To get Gluster working on a basic two-server setup (so you can have one folder synchronized and replicated across the two servers---allowing one server to go down completely, and the other to still have access to the files), you need to do the following:
 
   1. Install Gluster server and client on each server, and start the server daemon.
   2. (On both servers) Create a 'brick' directory (where Gluster will store files for a given volume).
@@ -1143,7 +1143,7 @@ To get Gluster working on a basic two-server setup (so you can have one folder t
   6. (On one server) Use `gluster volume start` to start the new Gluster volume.
   7. (On both servers) Mount the gluster volume (adding a record to `/etc/fstab` to make the mount permanent).
 
-Additionally, you need to make sure you have the following ports open on both servers (so Gluster can communicate): TCP ports 111, 24007-24011, 49152-49153, and UDP port 111. (You need to add an additional TCP port in the 49xxx range for each extra server in your Gluster cluster.)
+Additionally, you need to make sure you have the following ports open on both servers (so Gluster can communicate): TCP ports 111, 24007-24011, 49152-49153, and UDP port 111. For each extra server in your Gluster cluster, you need to add an additional TCP port in the 49xxx range.
 
 ### Configuring Gluster with Ansible
 
