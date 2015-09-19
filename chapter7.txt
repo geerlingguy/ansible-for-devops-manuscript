@@ -531,11 +531,11 @@ Let's start working our own custom dynamic inventory script by outlining the bas
         }
     }
 
-Ansible expects a dictionary of groups (each group having a list of `hosts`, and group variables in the group's `vars` dictionary), and a `_meta` dictionary that stores host variables for all hosts individually (inside a `hostvars` dictionary).
+Ansible expects a dictionary of groups (with each group having a list of `hosts`, and group variables in the group's `vars` dictionary), and a `_meta` dictionary that stores host variables for all hosts individually inside a `hostvars` dictionary.
 
 T> When you return a `_meta` dictionary in your inventory script, Ansible stores that data in its cache and doesn't call your inventory script _N_ times for all the hosts in the inventory. You can leave out the `_meta` variables if you'd rather structure your inventory file to return host variables one host at a time (Ansible will call your script with the arguments `--host [hostname]` for each host), but it's often faster and easier to simply return all variables in the first call. In this book, all the examples will use the `_meta` dictionary.
 
-The dynamic inventory script can do anything to get the data (call an external API, pull information from a database or file, etc.), and Ansible will use it as an inventory source as long as it returns a JSON structure like the one above when the script is called with the `--list`.
+The dynamic inventory script can do anything to get the data (call an external API, pull information from a database or file, etc.), and Ansible will use it as an inventory source, so long as it returns a JSON structure like the one above when the script is called with the `--list`.
 
 #### Building a Custom Dynamic Inventory in Python
 
@@ -652,7 +652,7 @@ However, let's assume the VMs were provisioned by another system, and you need t
     # Get the inventory.
     ExampleInventory()
 
-Save the above as `inventory.py` in the same folder as the `Vagrantfile` you created earlier (and make sure you booted the two VMs with `vagrant up`), and make the file executable `chmod +x inventory.py`.
+Save the above as `inventory.py` in the same folder as the `Vagrantfile` you created earlier (make sure you booted the two VMs with `vagrant up`), and make the file executable `chmod +x inventory.py`.
 
 Run the inventory script manually to verify it returns the proper JSON response when run with `--list`:
 
@@ -678,7 +678,7 @@ Test Ansible's ability to use the inventory script to contact the two VMs:
         "ping": "pong"
     }
 
-Since Ansible can connect, verify the configured host variables (`foo` and `bar`) are set correctly on each of their respective hosts:
+Since Ansible can connect, verify the configured host variables (`foo` and `bar`) are set correctly on their respective hosts:
 
 {lang=text,linenos=off}
     $ ansible all -i inventory.py -m debug -a "var=host_specific_var"
@@ -694,11 +694,11 @@ Since Ansible can connect, verify the configured host variables (`foo` and `bar`
         }
     }
 
-The only changes you'd need to make to the above `inventory.py` script for real-world usage is to change the `example_inventory()` method to something that incorporates the business logic you need for your own inventory---whether calling an external API with all the server data, or pulling in the information from a database or other data store.
+The only alteration for real-world usage you'd need to make to the above `inventory.py` script would be changing the `example_inventory()` method to something that incorporates the business logic you would need for your own inventory, whether it would be calling an external API with all the server data or pulling in the information from a database or other data store.
 
 #### Building a Custom Dynamic Inventory in PHP
 
-You can build an inventory script in whatever language you'd like; the same Python script above can be ported to functional PHP as follows:
+You can build an inventory script in whatever language you'd like. For example, the Python script from above can be ported to functional PHP as follows:
 
 {lang=php}
     #!/usr/bin/php
@@ -782,7 +782,7 @@ You can build an inventory script in whatever language you'd like; the same Pyth
     
     ?>
 
-If you were to save the code above into the file `inventory.php`, mark it executable (`chmod +x inventory.php`), and run the same Ansible command as earlier (referencing `inventory.php` instead of `inventory.py`), the command should succeed just as with the Python example.
+If you were to save the code above into the file `inventory.php`, mark it executable (`chmod +x inventory.php`), and run the same Ansible command as earlier (referencing `inventory.php` instead of `inventory.py`), the command should succeed, just as with the previous Python example.
 
 I> All the files mentioned in these dynamic inventory examples are available in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), in the `dynamic-inventory` folder.
 
@@ -800,13 +800,13 @@ I> All the files mentioned in these dynamic inventory examples are available in 
     1. Runs the same provisioning playbook on all the DigitalOcean servers. This playbook uses an inventory script which calls back to an inventory API endpoint that returns all the server information as JSON (the inventory script on the Jenkins server passes the JSON through to stdout).
     2. Reports back success or failure of the ansible playbook to the REST API.
 
-The above process transformed the management of the entire Hosted Apache Solr platform. Instead of taking twenty to thirty minutes to build a new server (when using an Ansible playbook with a few manual steps), the process can be completed in just a few minutes, with no manual intervention.
+The above process transformed the management of the entire Hosted Apache Solr platform. Instead of taking twenty to thirty minutes to build a new server (even when using an Ansible playbook with a few manual steps), the process can be completed in just a few minutes, with no manual intervention.
 
-W> The security of your server inventory and infrastructure management should be a top priority; Hosted Apache Solr uses HTTPS everywhere, and has a hardened private API for inventory access and server metadata. If you have any automated processes that run over a network, you should make doubly sure you audit these processes and all the involved systems thoroughly!
+W> The security of your server inventory and infrastructure management should be a top priority; Hosted Apache Solr uses HTTPS everywhere, and has a hardened private API for inventory access and server metadata. If you have any automated processes that run over a network, you should take extra care to audit these processes and all the involved systems thoroughly!
 
 ## Summary
 
-From the most basic infrastructure consisting of one server to a multi-tenant, dynamic infrastructure with thousands of servers, Ansible offers many options for describing your servers, and overriding playbook and role variables for specific hosts or groups. You should be able to describe all your servers, however they're managed and wherever they're hosted, with Ansible's flexible inventory system.
+From the most basic infrastructure consisting of one server to a multi-tenant, dynamic infrastructure with thousands of them, Ansible offers many options for describing your servers and overriding playbook and role variables for specific hosts or groups. With Ansible's flexible inventory system, you should be able to describe all your servers, however they're managed and wherever they're hosted.
 
 {lang=text,linenos=off}
      ___________________________________
