@@ -26,6 +26,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Various small styling fixes in chapter 5 (thanks to Barry M!).
   - More helpful exposition of Git-related ad-hoc commands in chapter 3 (thanks to Stephen H!).
   - Replaced uses of 'installed' for state with 'present' (thanks to @b_borysenko!).
+  - Fixed example of async_status usage in chapter 3 (thanks to @b_borysenko!).
 
 ## Version 0.99 (2015-07-19)
 

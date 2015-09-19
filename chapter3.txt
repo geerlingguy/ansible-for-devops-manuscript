@@ -507,7 +507,7 @@ Wait a little while (or a *long* while, depending on how old the system image is
 While a background task is running, you can also check on the status elsewhere using Ansible's `async_status` module, as long as you have the `ansible_job_id` value to pass in as `jid`:
 
 {lang="text",linenos=off}
-    $ ansible multi -m async_status -a "jid=763350539037"
+    $ ansible multi -s -m async_status -a "jid=763350539037"
 
 ### Fire-and-forget tasks
 
@@ -528,11 +528,11 @@ You may also need to run occasional long-running maintenance scripts, or other t
     
     $
 
-You won't be able to track progress using the `jid` anymore, but it's helpful for 'fire-and-forget' tasks.
+Running the command this way doesn't allow status updates via `async_status` and a jid, but you can still inspect the file `~/.ansible_async/<jid>` on the remote server. This option is usually more helpful for 'fire-and-forget' tasks.
 
 W> For tasks you don't track remotely, it's usually a good idea to log the progress of the task *somewhere*, and also send some sort of alert on failure---especially, for example, when running backgrounded tasks that perform backup operations, or when running business-critical database maintenance tasks.
 
-You can also run tasks in Ansible playbooks in the background, asynchronously, by defining an `async` and `poll` parameter on the play. We'll discuss playbook task backgrounding more in later chapters.
+You can also run tasks in Ansible playbooks in the background, asynchronously, by defining an `async` and `poll` parameter on the play. We'll discuss playbook task backgrounding in later chapters.
 
 ## Check log files
 
