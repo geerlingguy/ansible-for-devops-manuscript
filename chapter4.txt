@@ -379,23 +379,49 @@ At this point, you should be getting comfortable with Ansible playbooks and the 
 {width=40%}
 ![Drupal LAMP server.](images/4-playbook-drupal.png)
 
+To get started, create a new directory with the following Vagrantfile inside:
+
+{lang=ruby}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    VAGRANTFILE_API_VERSION = "2"
+    
+    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      config.vm.box = "geerlingguy/ubuntu1204"
+      config.vm.network :private_network, ip: "192.168.88.8"
+      config.ssh.insert_key = false
+    
+      config.vm.provider :virtualbox do |vb|
+        vb.customize ["modifyvm", :id, "--memory", "512"]
+      end
+    
+      # Ansible provisioning.
+      config.vm.provision "ansible" do |ansible|
+        ansible.playbook = "provisioning/playbook.yml"
+        ansible.sudo = true
+      end
+    end
+
+Create a provisioning folder, and create a new playbook file, `playbook.yml`, inside.
+
 ### Include a variables file, and discover `pre_tasks` and `handlers`
 
-For this playbook, we're going to start organizing our playbook a little more efficiently. Instead of defining any requiring variables be passed in via the command line, let's begin the playbook by telling Ansible our variables are stored in a separate `vars.yml` file:
+To make our playbook more efficient and readable, let's begin the playbook by telling Ansible to load in variables from a separate `vars.yml` file:
 
 {lang="text"}
     ---
     - hosts: all
     
       vars_files:
-      - vars.yml
+        - vars.yml
 
 Using one or more included variable files cleans up your main playbook file, and lets you organize all your configurable variables in one place. At the moment, we don't have any variables to add; we'll define the contents of `vars.yml`  later. For now, create the empty file, and continue on to the next section of the playbook, `pre_tasks`:
 
 {lang="text",starting-line-number=6}
       pre_tasks:
-      - name: Update apt cache if needed.
-        apt: update_cache=yes cache_valid_time=3600
+        - name: Update apt cache if needed.
+          apt: update_cache=yes cache_valid_time=3600
 
 Ansible lets you run tasks before or after the main set of tasks using `pre_tasks` and `post_tasks`. In this case, we need to ensure that our apt cache is updated before we run the rest of the playbook, so we have the latest package versions on our server. We use Ansible's `apt` module and tell it to update the cache if it's been more than 3600 seconds (1 hour) since the last update.
 
@@ -403,8 +429,8 @@ With that out of the way, we'll add another new section to our playbook, `handle
 
 {lang="text",starting-line-number=9}
       handlers:
-      - name: restart apache
-        service: name=apache2 state=restarted
+        - name: restart apache
+          service: name=apache2 state=restarted
 
 `handlers` are special kinds of tasks you run at the end of a group of tasks by adding the `notify` option to any of the tasks in that group. The handler will only be called if one of the tasks notifying the handler makes a change to the server (and doesn't fail), and it will only be notified at the *end* of the group of tasks.
 
@@ -420,43 +446,43 @@ The first step towards building an application server that depends on the LAMP s
 
 {lang="text",starting-line-number=12}
       tasks:
-      - name: Get software for apt repository management.
-        apt: name={{ item }} state=installed
-        with_items:
-          - python-apt
-          - python-pycurl
-      
-      - name: Add ondrej repository for later versions of PHP.
-        apt_repository: repo='ppa:ondrej/php5' update_cache=yes
-      
-      - name: "Install Apache, MySQL, PHP, and other dependencies."
-        apt: name={{ item }} state=installed
-        with_items:
-          - git
-          - curl
-          - sendmail
-          - apache2
-          - php5
-          - php5-common
-          - php5-mysql
-          - php5-cli
-          - php5-curl
-          - php5-gd
-          - php5-dev
-          - php5-mcrypt
-          - php-apc
-          - php-pear
-          - python-mysqldb
-          - mysql-server
-      
-      - name: Disable the firewall (since this is for local dev only).
-        service: name=ufw state=stopped
-      
-      - name: "Start Apache, MySQL, and PHP."
-        service: "name={{ item }} state=started enabled=yes"
-        with_items:
-          - apache2
-          - mysql
+        - name: Get software for apt repository management.
+          apt: name={{ item }} state=installed
+          with_items:
+            - python-apt
+            - python-pycurl
+    
+        - name: Add ondrej repository for later versions of PHP.
+          apt_repository: repo='ppa:ondrej/php5' update_cache=yes
+    
+        - name: "Install Apache, MySQL, PHP, and other dependencies."
+          apt: name={{ item }} state=installed
+          with_items:
+            - git
+            - curl
+            - sendmail
+            - apache2
+            - php5
+            - php5-common
+            - php5-mysql
+            - php5-cli
+            - php5-curl
+            - php5-gd
+            - php5-dev
+            - php5-mcrypt
+            - php-apc
+            - php-pear
+            - python-mysqldb
+            - mysql-server
+    
+        - name: Disable the firewall (since this is for local dev only).
+          service: name=ufw state=stopped
+    
+        - name: "Start Apache, MySQL, and PHP."
+          service: "name={{ item }} state=started enabled=yes"
+          with_items:
+            - apache2
+            - mysql
 
 In this playbook, I've decided to add a simple prefix to each named play, so I can more easily follow the playbook's progress when it's running. I've begun with the common LAMP setup:
 
@@ -473,31 +499,31 @@ The next step is configuring Apache so it will work correctly with Drupal. Out o
 Additionally, we need to add a VirtualHost entry to tell Apache where the site's document root is, and any other options for the site.
 
 {lang="text",starting-line-number=50}
-      - name: Enable Apache rewrite module (required for Drupal).
-        apache2_module: name=rewrite state=present
-        notify: restart apache
-      
-      - name: Add Apache virtualhost for Drupal 8 development.
-        template:
-          src: "templates/drupal.dev.conf.j2"
-          dest: "/etc/apache2/sites-available/{{ domain }}.dev.conf"
-          owner: root
-          group: root
-          mode: 0644
-        notify: restart apache
-      
-      - name: Symlink Drupal virtualhost to sites-enabled.
-        file:
-          src: "/etc/apache2/sites-available/{{ domain }}.dev.conf"
-          dest: "/etc/apache2/sites-enabled/{{ domain }}.dev.conf"
-          state: link
-        notify: restart apache
-      
-      - name: Remove default virtualhost file.
-        file:
-          path: "/etc/apache2/sites-enabled/000-default"
-          state: absent
-        notify: restart apache
+        - name: Enable Apache rewrite module (required for Drupal).
+          apache2_module: name=rewrite state=present
+          notify: restart apache
+    
+        - name: Add Apache virtualhost for Drupal 8 development.
+          template:
+            src: "templates/drupal.dev.conf.j2"
+            dest: "/etc/apache2/sites-available/{{ domain }}.dev.conf"
+            owner: root
+            group: root
+            mode: 0644
+          notify: restart apache
+    
+        - name: Symlink Drupal virtualhost to sites-enabled.
+          file:
+            src: "/etc/apache2/sites-available/{{ domain }}.dev.conf"
+            dest: "/etc/apache2/sites-enabled/{{ domain }}.dev.conf"
+            state: link
+          notify: restart apache
+    
+        - name: Remove default virtualhost file.
+          file:
+            path: "/etc/apache2/sites-enabled/000-default"
+            state: absent
+          notify: restart apache
 
 The first command enables all the required Apache modules by symlinking them from `/etc/apache2/mods-available` to `/etc/apache2/mods-enabled`.
 
@@ -543,13 +569,13 @@ At this point, you could start the server, but Apache will likely throw an error
 We briefly mentioned `lineinfile` earlier in the book, when discussing file management and ad-hoc task execution. Modifying PHP's configuration is a perfect way to demonstrate `lineinfile`'s simplicity and usefulness:
 
 {lang="text",starting-line-number=74}
-      - name: Enable upload progress via APC.
-        lineinfile:
-          dest: "/etc/php5/apache2/conf.d/20-apcu.ini"
-          regexp: "^apc.rfc1867"
-          line: "apc.rfc1867 = 1"
-          state: present
-        notify: restart apache
+        - name: Enable upload progress via APC.
+          lineinfile:
+            dest: "/etc/php5/apache2/conf.d/20-apcu.ini"
+            regexp: "^apc.rfc1867"
+            line: "apc.rfc1867 = 1"
+            state: present
+          notify: restart apache
 
 Ansible's `lineinfile` module does a simple task: ensures that a particular line of text exists (or doesn't exist) in a file.
 
@@ -564,11 +590,11 @@ Ansible will take the regular expression, and see if there's a matching line. If
 The next step is to remove MySQL's default test database, and create a database (named for the domain we specified earlier) for our Drupal installation to use.
 
 {lang="text",starting-line-number=80}
-      - name: Remove the MySQL test database.
-        mysql_db: db=test state=absent
-      
-      - name: Create a database for Drupal.
-        mysql_db: "db={{ domain }} state=present"
+        - name: Remove the MySQL test database.
+          mysql_db: db=test state=absent
+    
+        - name: Create a database for Drupal.
+          mysql_db: "db={{ domain }} state=present"
 
 MySQL installs a database named `test` by default, and it is recommended that you remove the database as part of MySQL's included `mysql_secure_installation` tool. The first step in configuring MySQL is removing this database. Next, we create a database named `{{ domain }}`---the database is named the same as the domain we're using for the Drupal site.
 
@@ -583,15 +609,15 @@ Drupal has a command-line companion in the form of Drush. Drush is developed ind
 We could just download Drupal and perform some setup in the browser by hand at this point, but the goal of this playbook is to have a fully-automated and idempotent Drupal installation. So, we need to install Composer, then Drush:
 
 {lang="text",starting-line-number=85}
-      - name: Install Composer into the current directory.
-        shell: >
-          curl -sS https://getcomposer.org/installer | php
-          creates=/usr/local/bin/composer
-      
-      - name: Move Composer into globally-accessible location.
-        shell: >
-          mv composer.phar /usr/local/bin/composer
-          creates=/usr/local/bin/composer
+        - name: Install Composer into the current directory.
+          shell: >
+            curl -sS https://getcomposer.org/installer | php
+            creates=/usr/local/bin/composer
+    
+        - name: Move Composer into globally-accessible location.
+          shell: >
+            mv composer.phar /usr/local/bin/composer
+            creates=/usr/local/bin/composer
 
 The first command runs Composer's php-based installer, which generates a 'composer.phar' PHP application archive. This archive is then copied (using the `mv` shell command) to the location `/usr/local/bin/composer` so we can use the simple `composer` command to install all of Drush's dependencies. Both commands are set to run only if the `/usr/local/bin/composer` file doesn't already exist (using the `creates` parameter).
 
@@ -604,22 +630,22 @@ T> It's best to use an Ansible module for every task. If you have to resort to a
 Now, we'll install Drush using the latest version from GitHub:
 
 {lang="text",starting-line-number=94}
-      - name: Check out drush master branch.
-        git:
-          repo: https://github.com/drush-ops/drush.git
-          dest: /opt/drush
-      
-      - name: Install Drush dependencies with Composer.
-        shell: >
-          /usr/local/bin/composer install
-          chdir=/opt/drush
-          creates=/opt/drush/vendor/autoload.php
-      
-      - name: Create drush bin symlink.
-        file:
-          src: /opt/drush/drush
-          dest: /usr/local/bin/drush
-          state: link
+        - name: Check out drush master branch.
+          git:
+            repo: https://github.com/drush-ops/drush.git
+            dest: /opt/drush
+    
+        - name: Install Drush dependencies with Composer.
+          shell: >
+            /usr/local/bin/composer install
+            chdir=/opt/drush
+            creates=/opt/drush/vendor/autoload.php
+    
+        - name: Create drush bin symlink.
+          file:
+            src: /opt/drush/drush
+            dest: /usr/local/bin/drush
+            state: link
 
 Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the master branch, pass in the `repo` (repository URL) and `dest` (destination path) parameters.
 
@@ -632,32 +658,32 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, then we'll run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
 {lang="text",starting-line-number=108}
-      - name: Check out Drupal Core to the Apache docroot.
-        git:
-          repo: http://git.drupal.org/project/drupal.git
-          version: "{{ drupal_core_version }}"
-          dest: "{{ drupal_core_path }}"
-      
-      - name: Install Drupal.
-        command: >
-          drush si -y --site-name="{{ drupal_site_name }}" --account-name=admin
-          --account-pass=admin --db-url=mysql://root@localhost/{{ domain }}
-          chdir={{ drupal_core_path }}
-          creates={{ drupal_core_path }}/sites/default/settings.php
-        notify: restart apache
-      
-      # SEE: https://drupal.org/node/2121849#comment-8413637
-      - name: Set permissions properly on settings.php.
-        file:
-          path: "{{ drupal_core_path }}/sites/default/settings.php"
-          mode: 0744
-      
-      - name: Set permissions on files directory.
-        file:
-          path: "{{ drupal_core_path }}/sites/default/files"
-          mode: 0777
-          state: directory
-          recurse: yes
+        - name: Check out Drupal Core to the Apache docroot.
+          git:
+            repo: http://git.drupal.org/project/drupal.git
+            version: "{{ drupal_core_version }}"
+            dest: "{{ drupal_core_path }}"
+    
+        - name: Install Drupal.
+          command: >
+            drush si -y --site-name="{{ drupal_site_name }}" --account-name=admin
+            --account-pass=admin --db-url=mysql://root@localhost/{{ domain }}
+            chdir={{ drupal_core_path }}
+            creates={{ drupal_core_path }}/sites/default/settings.php
+          notify: restart apache
+    
+        # SEE: https://drupal.org/node/2121849#comment-8413637
+        - name: Set permissions properly on settings.php.
+          file:
+            path: "{{ drupal_core_path }}/sites/default/settings.php"
+            mode: 0744
+    
+        - name: Set permissions on files directory.
+          file:
+            path: "{{ drupal_core_path }}/sites/default/files"
+            mode: 0777
+            state: directory
+            recurse: yes
 
 First, we cloned Drupal's git repository, using the `version` defined in our `vars.yml` file as `drupal_core_version`. The `git` module's `version` parameter defines the branch (`master`, `8.0.x`, etc.), tag (`1.0.1`, `7.24`, etc.), or individual commit hash (`50a1877`, etc.) to clone.
 

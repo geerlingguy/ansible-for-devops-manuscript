@@ -21,6 +21,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added link to SSH passwordless login/key-based authentication in chapter 1.
   - Added section on Ansible Vault in chapter 5.
   - Incorporated editorial changes in chapters 7 and 8.
+  - Added Vagrantfile to Drupal/Ubuntu server example in chapter 4 (thanks to @erimar77!).
 
 ## Version 0.99 (2015-07-19)
 

@@ -2,7 +2,7 @@
 
 ## TODO
 
-  - Incorporate Katie's notes from Ch 7 and Ch 8.
+  - Run through emailed fixes.
 
 ## Publication - Marketing / Notifications
 
@@ -48,9 +48,11 @@
   - Search for 'ansible' (lower) and make sure non-CLI usage is capitalized.
   - Search for 'simple' and 'simply', since I overuse these words.
   - Search for ' can' to find uses where it's removal makes sentences stronger.
+  - Search for proper names (companies, software, etc.) and make sure they're capitalized.
 
 ## Thoughts on writing
 
+  - [$25K in book sales, and I'm about to publish](TODO - Server Check.in link here)
   - [I self-published a learn-to-code book and made nearly $5k in pre-orders](https://news.ycombinator.com/item?id=9847965)
   - [My Book Marketing Process](http://www.mooreds.com/wordpress/archives/1594)
   - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)
