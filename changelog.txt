@@ -22,6 +22,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added section on Ansible Vault in chapter 5.
   - Incorporated editorial changes in chapters 7 and 8.
   - Fixed various formatting issues in chapter 4 (thanks to @erimar77!).
+  - Fixed incorrect reference to VirtualBox in chapter 2 (thanks to @chesterbr!).
 
 ## Version 0.99 (2015-07-19)
 

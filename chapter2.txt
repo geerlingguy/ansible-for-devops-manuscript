@@ -42,7 +42,7 @@ Now that you have a running server, you can use it just like you would any other
 Vagrant's ability to bring up preconfigured boxes is convenient on its own, but you could do similar things with the same efficiency using VirtualBox's (or VMWare's, or Parallels') GUI. Vagrant has some other tricks up its sleeve:
 
   - [**Network interface management**](http://docs.vagrantup.com/v2/networking/index.html): You can forward ports to a VM, share the public network connection, or use private networking for inter-VM and host-only communication.
-  - [**Shared folder management**](http://docs.vagrantup.com/v2/synced-folders/index.html): VirtualBox sets up shares between your host machine and VMs using NFS or (much slower) native folder sharing in VirtualBox.
+  - [**Shared folder management**](http://docs.vagrantup.com/v2/synced-folders/index.html): Vagrant sets up shares between your host machine and VMs using NFS or (much slower) native folder sharing in VirtualBox.
   - [**Multi-machine management**](http://docs.vagrantup.com/v2/multi-machine/index.html): Vagrant is able to configure and control multiple VMs within one Vagrantfile. This is important because, as stated in the documentation, "Historically, running complex environments was done by flattening them onto a single machine. The problem with that is that it is an inaccurate model of the production setup, which behaves far differently."
   - [**Provisioning**](http://docs.vagrantup.com/v2/provisioning/index.html): When running `vagrant up` the first time, Vagrant automatically *provisions* the newly-minted VM using whatever provisioner you have configured in the Vagrantfile. You can also run `vagrant provision` after the VM has been created to explicitly run the provisioner again.
 
