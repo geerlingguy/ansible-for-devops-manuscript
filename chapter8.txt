@@ -1363,19 +1363,19 @@ This example Gluster configuration can be found in its entirety on GitHub, in th
 
 ## Mac Provisioning with Ansible and Homebrew
 
-The next example will be specific to the Mac (since that's the author's platform of choice), but the principle behind it applies universally. How many times have you wanted to hit the 'reset' button on your day-to-day workstation or personal computer? How much time to you spend automating configuration and testing of applications and infrastructure at your day job, and how little do you spend automating your *own* local environment?
+The next example will be specific to the Mac, but the principle behind it applies universally. How many times have you wanted to hit the 'reset' button on your day-to-day workstation or personal computer? How much time to you spend automating configuration and testing of applications and infrastructure at your day job, and how little do you spend automating your *own* local environment?
 
-Over the past few years, as I've gone through four Macs (one personal, three employer-provided), I decided to start fresh on each new Mac (rather than transfer all my cruft from my old Mac to my new Mac through Apple's Migration Assistant). I had a problem, though; I had to spend at least 4-6 hours on each Mac, downloading, installing, and configuring everything. Another problem: since I actively used at least two separate Macs, I had to manually install and configure new software on both Macs whenever I wanted to try a new tool.
+Over the past few years, as I've gone through four Macs (one personal, three employer-provided), I decided to start fresh on each new Mac (rather than transfer all my cruft from my old Mac to my new Mac through Apple's Migration Assistant). I had a problem, though; I had to spend at least 4-6 hours on each Mac, downloading, installing, and configuring everything. And I had another problem---since I actively used at least two separate Macs, I had to manually install and configure new software on both Macs whenever I wanted to try a new tool.
 
 To restore order to this madness, I wrapped up all the configuration I could into a set of [dotfiles](https://github.com/geerlingguy/dotfiles) and used git to synchronize the dotfiles to all my workstations.
 
-However, even with the assistance of [Homebrew](http://brew.sh/), a great package manager for OS X, there was still a lot of manual labor involved in installing and configuring my favorite apps and command line tools.
+However, even with the assistance of [Homebrew](http://brew.sh/), an excellent package manager for OS X, there was still a lot of manual labor involved in installing and configuring my favorite apps and command line tools.
 
 ### Running Ansible playbooks locally
 
-We've seen examples of running playbooks with `connection: local` earlier, when provisioning virtual machines in the cloud through our local workstation; but you can perform _any_ Ansible task using a local connection. This is how we'll configure our local workstation using Ansible.
+We saw examples of running playbooks with `connection: local` earlier while provisioning virtual machines in the cloud through our local workstation. But in fact, you can perform _any_ Ansible task using a local connection. This is how we will configure our local workstation, using Ansible.
 
-I usually begin building a playbook with the basic scaffolding in place, and fill in details as I go. You can follow along by creating the playbook `main.yml` with:
+I usually begin building a playbook by adding the basic scaffolding first, then filling in details as I go. You can follow along by creating the playbook `main.yml` with:
 
 {lang=text}
     ---
@@ -1390,13 +1390,13 @@ I usually begin building a playbook with the basic scaffolding in place, and fil
     
       tasks: []
 
-We'll store any variables we need in the included `vars/main.yml` file. The `user` is set to my local user account, in this case, `jgeerling`, so file permissions are set for my account, and tasks are run under my own account to minimize surprises.
+We'll store any variables we need in the included `vars/main.yml` file. The `user` is set to my local user account (in this case, `jgeerling`), so file permissions are set for my account, and tasks are run under my own account in order to minimize surprises.
 
-T> If certain tasks need to be run with sudo privileges, you can add `sudo: yes` to the task, and either run the playbook with `--ask-sudo-pass` (in which case, Ansible will prompt you for your sudo password before running the playbook), or run the playbook normally, and wait for Ansible to prompt you for your sudo password.
+T> If certain tasks need to be run with sudo privileges, you can add `sudo: yes` to the task, and either run the playbook with `--ask-sudo-pass` (in which case, Ansible will prompt you for your sudo password before running the playbook) or run the playbook normally, and wait for Ansible to prompt you for your sudo password.
 
 ### Automating Homebrew package and app management
 
-Since I use Homebrew (billed as "the missing package manager for OS X") for most of my application installation and configuration, I created the role `geerlingguy.homebrew`, which installs homebrew, then installs all the applications and packages I configure in a few simple variables.
+Since I use Homebrew (billed as "the missing package manager for OS X") for most of my application installation and configuration, I created the role `geerlingguy.homebrew`, which first installs Homebrew and then installs all the applications and packages I configure in a few simple variables.
 
 The next step, then, is to add the Homebrew role and configure the required variables. Inside `main.yml`, update the `roles` section:
 
@@ -1440,13 +1440,13 @@ Then add the following into `vars/main.yml`:
 
 Homebrew has a few tricks up its sleeve, like being able to manage general packages like PHP, MySQL, Python, Pipe Viewer, etc. natively (using commands like `brew install [package]` and `brew uninstall package`), and can also install and manage general application installation for many Mac apps, like Chrome, Firefox, VLC, etc. using `brew cask`.
 
-To anyone who's set up a new Mac the old-fashioned way---download 15 .dmg files, mount them, drag the applications to the Applications folder, eject them, delete the .dmg files---Homebrew's simplicity and speed are a godsend. This Ansible playbook has so far automated that process completely, so you don't even need to run the Homebrew commands manually! The `geerlingguy.homebrew` role uses Ansible's built-in `homebrew` module to manage package installation, and some custom tasks to manage cask applications.
+To anyone who's set up a new Mac the old-fashioned way---download 15 .dmg files, mount them, drag the applications to the Applications folder, eject them, delete the .dmg files---Homebrew's simplicity and speed are a true godsend. This Ansible playbook has so far automated that process completely, so you don't even have to run the Homebrew commands manually! The `geerlingguy.homebrew` role uses Ansible's built-in `homebrew` module to manage package installation, along with some custom tasks to manage cask applications.
 
 ### Configuring Mac OS X through dotfiles
 
-Just like there's a `homebrew` role on Galaxy made for configuring and installing packages via Homebrew, there's a `dotfiles` role you can use to download and configure your local dotfiles.
+Just like there's a `homebrew` role on Ansible Galaxy, made for configuring and installing packages via Homebrew, there's a `dotfiles` role you can use to download and configure your local dotfiles.
 
-I> Dotfiles are named as such because they are, simply, files that begin with a `.` placed in your home directory. Many programs and shell environments read local configuration from dotfiles, so dotfiles are a simple, efficient, and easily-synchronized method of customizing your development environment for maximum efficiency.
+I> Dotfiles are named as such because they are files in your home directory that begin with a `.`. Many programs and shell environments read local configuration from dotfiles, so dotfiles are a simple, efficient, and easily-synchronized method of customizing your development environment for maximum efficiency.
 
 In this example, we'll use the author's dotfiles, but you can tell the role to use whatever set of dotfiles you want.
 
@@ -1484,11 +1484,11 @@ In this case, the `.osx` dotfile allows a `--no-restart` flag to be passed to pr
 
 At this point, you already have the majority of your local environment set up. Copying additional settings and tweaking things further is an exercise in adjusting your dotfiles or including another playbook that copies or links preference files into the right places.
 
-I'm constantly tweaking my own development workstation, and for the most part, all my configuration is wrapped up in my [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook), available on GitHub. I'd encourage you to fork that project, as well as my dotfiles, if you'd like to get started automating the build of your own development workstation. Even if you don't use a Mac, most of the structure is similar; just substitute a different package manager, and start automating everything!
+I'm constantly tweaking my own development workstation, and for the most part, all my configuration is wrapped up in my [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook), available on GitHub. I'd encourage you to fork that project, as well as my dotfiles, if you'd like to get started automating the build of your own development workstation. Even if you don't use a Mac, most of the structure is similar; just substitute a different package manager, and start automating!
 
 ### Summary
 
-Ansible is the best way to automate infrastructure provisioning and configuration. Ansible can also be used to configure your own worstation or workstations, saving you time and frustration in doing so yourself. Unfortunately, you can't yet provision yourself a new top-of-the-line workstation with Ansible!
+Ansible is the best way to automate infrastructure provisioning and configuration. Ansible can also be used to configure your own workstation, saving you the time and frustration it takes to do so yourself. Unfortunately, you can't yet provision yourself a new top-of-the-line workstation with Ansible!
 
 You can find the full playbook I'm currently using to configure my Macs on GitHub: [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook).
 
@@ -1496,11 +1496,11 @@ You can find the full playbook I'm currently using to configure my Macs on GitHu
 
 Docker is a highly optimized platform for building and running containers on local machines and servers in a highly efficient manner. You can think of Docker containers as sort-of lightweight virtual machines. This book won't go into the details of how Docker and Linux containers work, but will provide an introduction to how Ansible can integrate with Docker to build, manage, and deploy containers.
 
-I> Prior to running example Docker commands or building and managing containers using Ansible, you'll need to make sure Docker is installed on either your workstation or a VM or server where you'll be testing everything. Please see the [installation guide for Docker](https://docs.docker.com/installation/) for help installing Docker on whatever platform you're using.
+I> Prior to running example Docker commands or building and managing containers using Ansible, you'll need to make sure Docker is installed either on your workstation or a VM or server where you'll be testing everything. Please see the [installation guide for Docker](https://docs.docker.com/installation/) for help installing Docker on whatever platform you're using.
 
 ### A brief introduction to Docker containers
 
-Starting with an extremely simple example, let's build a docker image from a Dockerfile. In this case, we just want to show how Dockerfiles work, and how we can use Ansible to build the image in the same way you could using the command line with `docker build`.
+Starting with an extremely simple example, let's build a Docker image from a Dockerfile. In this case, we want to show how Dockerfiles work and how we can use Ansible to build the image in the same way as if we were to use the command line with `docker build`.
 
 Let's start with a really simple Dockerfile:
 
@@ -1519,7 +1519,7 @@ Save the above file as `Dockerfile` inside a new directory, and then on the comm
 {lang=text,linenos=off}
     $ docker build -t test .
 
-After a few seconds, the docker image should be built, and if you list all local images with `docker image`, you should see your new test image (along with the busybox image, which was used as a base):
+After a few seconds, the Docker image should be built, and if you list all local images with `docker image`, you should see your new test image (along with the busybox image, which was used as a base):
 
 {lang=text,linenos=off}
     $ docker images
@@ -1532,7 +1532,7 @@ If you want to run the container image you just created, enter the following:
 {lang=text,linenos=off}
     $ docker run --name=test test
 
-This creates a docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps -a` command:
+This creates a Docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps -a` command:
 
 {lang=text,linenos=off}
     $ docker ps -a
@@ -1541,7 +1541,7 @@ This creates a docker container with the name `test`, and starts the container. 
 
 You can control the container using either the container ID (in this case, `bae0972c26d4`) or the name (`test`); start with `docker start [container]`, stop with `docker stop [container]`, delete/remove with `docker rm [container]`.
 
-If you delete the container (`docker rm test`) and delete the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image (with `docker build`), and running the resulting image (with `docker run`). As an example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show that the container exited with the status code `1` instead of `0`.
+If you delete the container (`docker rm test`) and the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image with `docker build`, then running the resulting image with `docker run`. For example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show that the container exited with the status code `1` instead of `0`.
 
 For our purposes, this is a simple enough introduction to how Docker works. To summarize:
 
@@ -1555,7 +1555,7 @@ When developing Dockerfiles to containerize your own applications, you will like
 
 ### Using Ansible to build and manage containers
 
-Ansible has a built-in [Docker module](http://docs.ansible.com/docker_module.html) that integrates nicely with Docker for container management. We're going to use it to automate the building and running of the container managed by the Dockerfile we just created.
+Ansible has a built-in [Docker module](http://docs.ansible.com/docker_module.html) that integrates nicely with Docker for container management. We're going to use it to automate the building and running of the container (managed by the Dockerfile) we just created.
 
 Move the Dockerfile you had into a subdirectory, and create a new Ansible playbook (call it `main.yml`) in the project root directory. The directory layout should look like:
 
@@ -1596,7 +1596,7 @@ Run `docker ps -a` again, though, and you'll see that the new `test` image was n
         name: test
         state: running
 
-If you run the playbook again, Ansible will run the docker container. Check the list of containers with `docker ps -a`, and you'll note that the `test` container is again present.
+If you run the playbook again, Ansible will run the Docker container. Check the list of containers with `docker ps -a`, and you'll note that the `test` container is again present.
 
 You can remove the container and the image via ansible by changing the `state` parameter to `absent` for both tasks.
 
@@ -1669,7 +1669,7 @@ Angstwad's `docker_ubuntu` role requires no additional settings or configuration
 
 Ansible needs the `docker-py` library in order to control Docker via Python, so we install `pip`, then use it to install `docker-py`.
 
-Next is the meat of the playbook, `docker.yml` (also in the `provisioning` directory). The first task is building docker images for our data, application, and database containers:
+Next is the meat of the playbook: `docker.yml` (also in the `provisioning` directory). The first task is to build Docker images for our data, application, and database containers:
 
 {lang=text}
     ---
@@ -1684,9 +1684,9 @@ Next is the meat of the playbook, `docker.yml` (also in the `provisioning` direc
         - { name: www, tag: "flask", directory: www }
         - { name: db, tag: mysql, directory: db }
 
-Don't worry that we haven't created the actual Dockerfiles required to create the Docker images yet; we'll do that after we finish structuring everything with Ansible.
+Don't worry that we haven't yet created the actual Dockerfiles required to create the Docker images; we'll do that after we finish structuring everything with Ansible.
 
-Like our earlier usage of `docker_image`, we supply a `name`, `path`, and `state` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `www`, and `db`, and we're pointing docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
+Like our earlier usage of `docker_image`, we supply a `name`, `path`, and `state` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `www`, and `db`, and we're pointing Docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
 
 After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker` tasks:
 
@@ -1717,7 +1717,7 @@ After building the images, we will need to start each of them (or at least make 
 
 Each of these containers' configuration is a little more involved than the previous. In the case of the first container, it's just `present`; Ansible will ensure a `data` container is present.
 
-For the Flask container, we need to make sure our app is running, and *continues* running, so in this case (unlike our earlier usage of `/bin/true` to run a container briefly and exit), we are providing an explicit command to run:
+For the Flask container, we need to make sure our app is not only running, but *continues* to run. So, unlike our earlier usage of `/bin/true` to run a container briefly and exit, in this case we will provide an explicit command to run:
 
 {lang=text,starting-line-number=26}
         command: python /opt/www/index.py
@@ -1726,9 +1726,9 @@ Calling the script directly will launch the app in the foreground and log everyt
 
 Additionally, we want to map the container's port 80 to the host's port 80, so external users can load pages over HTTP. This is done using the `ports` option, passing data just as you would using Docker's `--publish` syntax.
 
-The Flask container will have a static web application running on it, and has no need for extra non-transient file storage, but the MySQL container will mount a data volume from the `data` container so it has a place to store data that won't vanish when the container dies and is restarted.
+The Flask container will have a static web application running on it, and has no need for extra non-transient file storage, but the MySQL container will mount a data volume from the `data` container, so it has a place to store data that won't vanish when the container dies and is restarted.
 
-Thus, for the `db` container, we have two special options; the `volumes_from` option, which mounts volumes from the specified container (in this case, the `data` container), and the `command`, which calls a shell script to start MySQL. We'll get to why we're running a shell script and not launching a MySQL daemon directly in a bit.
+Thus, for the `db` container, we have two special options: the `volumes_from` option, which mounts volumes from the specified container (in this case, the `data` container), and the `command`, which calls a shell script to start MySQL. We'll get to why we're running a shell script and not launching a MySQL daemon directly in a bit.
 
 Now that we have the playbook structured to build our simple Docker-based infrastructure, we'll build out each of the three Dockerfiles and related configuration to support the `data`, `www`, and `db` containers.
 
@@ -1745,7 +1745,7 @@ At this point, we should have a directory structure like:
         setup.yml
       Vagrantfile
 
-W> It's best practice to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed. Check out these two resources in particular for tips and tricks with managing and configuring containers with Ansible on CoreOS servers: [Managing CoreOS with Ansible](https://coreos.com/blog/managing-coreos-with-ansible/) and [Provisioning CoreOS with Ansible](http://www.tazj.in/en/1410951452).
+W> It's best to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed. Check out these two resources in particular for tips and tricks with managing and configuring containers with Ansible on CoreOS servers: [Managing CoreOS with Ansible](https://coreos.com/blog/managing-coreos-with-ansible/) and [Provisioning CoreOS with Ansible](http://www.tazj.in/en/1410951452).
 
 #### Data storage container
 
@@ -1760,9 +1760,9 @@ For the data storage container, we don't need much; we just need to create a dir
     RUN mkdir /var/lib/mysql
     VOLUME /var/lib/mysql
 
-We create a directory (line 6) and expose the directory as a volume (line 7) which can be mounted by the host or other containers. Save the above into a new file, `docker/provisioning/data/Dockerfile`.
+We create a directory (line 6), and expose the directory as a volume (line 7) which can be mounted by the host or other containers. Save the above into a new file, `docker/provisioning/data/Dockerfile`.
 
-T> This container builds on top of the official `busybox` base image. Busybox is an extremely simple distribution that's linux-like, but doesn't contain every option or application generally found in popular distributions like Debian, Ubuntu, or RedHat. Since we only need to create and share a directory, we don't need any additional 'baggage' inside the container. In the Docker world, it's best to use the most minimal base images possible, and only install and run the bare necessities inside each container to support the container's app.
+T> This container builds on top of the official `busybox` base image. Busybox is an extremely simple distribution that is Linux-like but does not contain every option or application generally found in popular distributions like Debian, Ubuntu, or RedHat. Since we only need to create and share a directory, we don't need any additional 'baggage' inside the container. In the Docker world, it's best to use the most minimal base images possible, and to only install and run the bare necessities inside each container to support the container's app.
 
 #### Flask container
 
@@ -1824,7 +1824,7 @@ Since we are using a Jinja2 template to render the page, let's create that templ
 
 In this case, the `.html` template contains a Jinja2 variable (`{{ result }}`), and Flask will fill in that variable with the status of the MySQL connection.
 
-Now that we have the app defined, we need to build the container to run the app. Here's a Dockerfile that will install all the required dependencies, then copy a simple Ansible playbook and the app itself into place, so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
+Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy a simple Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
 
 {lang=text}
     # A simple Flask app container.
@@ -1846,11 +1846,11 @@ Now that we have the app defined, we need to build the container to run the app.
 
 Instead of installing apt and pip packages using Ansible, we'll install them using `RUN` commands in the Dockerfile. This allows those commands to be cached by Docker. Generally, more complicated package installation and configuration is easier and more maintainable inside Ansible, but in the case of simple package installation, having Docker cache the steps so future `docker build` commands take seconds instead of minutes is worth the verbosity of the Dockerfile.
 
-At the end of the Dockerfile, we run a playbook (which should be located in the same directory as the Dockerfile), and expose port 80 so the app can be accessed via HTTP by the outside world. We'll create the app deployment playbook next.
+At the end of the Dockerfile, we run a playbook (which should be located in the same directory as the Dockerfile) and expose port 80 so the app can be accessed via HTTP by the outside world. Next we'll create the app deployment playbook.
 
 W> Purists might cringe at the sight of an Ansible playbook inside a Dockerfile, and for good reason! Commands like the `ansible-playbook` command cover up configuration that might normally be done (and cached) within Docker. Additionally, using the `ansible/ubuntu14.04-ansible` base image (which includes Ansible) requires an initial download that's 50+ MB larger than a comparable debian or ubuntu image without Ansible. However, for brevity and ease of maintenance, we're using Ansible to manage all the app configuration inside the container (otherwise we'd need to run a bunch of verbose and incomprehensible shell commands to replace Ansible's `template` functionality).
 
-For the Flask app to function properly, we'll need to get the `host_ip_address`, then replace the variable in the `index.py.j2` template. Create the Flask deployment playbook at `docker/provisioning/www/playbook.yml`:
+In order for the Flask app to function properly, we need to get the `host_ip_address`, then replace the variable in the `index.py.j2` template. Create the Flask deployment playbook at `docker/provisioning/www/playbook.yml`:
 
 {lang=text}
     ---
@@ -1879,7 +1879,7 @@ For the Flask app to function properly, we'll need to get the `host_ip_address`,
             dest: /opt/www
             mode: 0755
 
-The shell command that registers the `host_ip` (which is used in the next task to generate the `host_ip_address` variable) is a simple way to retrieve the IP while still letting Docker do it's own virtual network management.
+The shell command that registers the `host_ip` is a simple way to retrieve the IP while still letting Docker do it's own virtual network management.
 
 The last two tasks copy the flask app and templates directory into place.
 
@@ -1895,7 +1895,7 @@ The `docker/provisioning/www` directory should now contain the following:
 
 #### MySQL container
 
-We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL is configured to work inside a docker container, with a persistent data volume from the previously-configured `data` container.
+We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL is configured to work inside a Docker container, with a persistent data volume from the previously-configured `data` container.
 
 First, we'll create a really simple Ansible playbook to install and configure MySQL using the `geerlingguy.mysql` role:
 
@@ -1914,16 +1914,16 @@ First, we'll create a really simple Ansible playbook to install and configure My
       roles:
         - geerlingguy.mysql
 
-This playbook is quite simple; it just sets up one MySQL user using the `mysql_users` variable, and then runs `geerlingguy.mysql`. Save it as `docker/provisioning/db/playbook.yml`.
+This playbook sets up one MySQL user using the `mysql_users` variable and runs the `geerlingguy.mysql` role. Save it as `docker/provisioning/db/playbook.yml`.
 
 Next, we need to account for the fact that there are two conditions under which MySQL will be started:
 
   1. When Docker builds the container initially (using `docker build` through Ansible's `docker_image` module).
   2. When we launch the container and pass in the `data` volume (using `docker run` through Ansible's `docker` module).
 
-In the latter case, the data volume's `/var/lib/mysql` directory will supplant the container's own directory, but it will be empty! Therefore, instead of just launching the MySQL daemon as we launched the Flask app in the `www` container, we need to build a small shell script to run on container start to detect if MySQL has already been setup inside `/var/lib/mysql`, and if not, reconfigure MySQL so the data is there.
+In the latter case, the data volume's `/var/lib/mysql` directory will supplant the container's own directory, but it will be empty! Therefore, instead of just launching the MySQL daemon like we launched the Flask app in the `www` container, we need to build a small shell script that will run on container start to detect whether MySQL has already been setup inside `/var/lib/mysql`, and if it hasn't, to reconfigure MySQL so the data is there.
 
-Here's a simple script to do just that---using the playbook we just created to do most of the heavy lifting. Save this as `docker/provisioning/db/start-mysql.sh`:
+Here's a simple script to do just that, using the playbook we just created to do most of the heavy lifting. Save this as `docker/provisioning/db/start-mysql.sh`:
 
 {lang=bash}
     #!/bin/bash
@@ -1964,7 +1964,7 @@ Next comes the Dockerfile, where we'll make sure the `playbook.yml` playbook and
 
 Just as with the Flask app container, we're using a base image with Ubuntu 14.04 and Ansible. This time, since we're doing a bit more configuration via the playbook, we also need to install the `geerlingguy.mysql` role via Ansible Galaxy.
 
-The `start-mysql.sh` script needs to be in the location where we're calling it with `command: /opt/start-mysql.sh` in the `docker.yml` file we set up much earlier, so we copy it in place, then give `+x` permissions so Docker can execute the file.
+The `start-mysql.sh` script needs to be located in the `docker.yml` file we set up much earlier, where we're calling it with `command: /opt/start-mysql.sh`, so we copy it in place, then give `+x` permissions so Docker can execute the file.
 
 Finally, the Ansible playbook that configures MySQL is copied into place, then run, and port 3306 is exposed.
 
@@ -1987,9 +1987,9 @@ If you see "MySQL Connection: PASS", congratulations, everything worked! If it s
 
 ### Summary
 
-The entire [Docker LAMP example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you want to clone it and try it locally.
+The entire [Docker LAMP example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 
-The Docker examples in this book barely scratch the surface of what makes Docker a fascinating and useful application deployment tool. As of the writing of this book, Docker is still in its infancy, so there are dozens of ways to manage the building of Dockerfiles, the deployment of images, and the running and linking of containers. Ansible is a solid contender in this space, and can even be used within a Dockerfile to simplify complex container configurations.
+The Docker examples shown here barely scratch the surface of what makes Docker a fascinating and useful application deployment tool. As of the writing of this book, Docker is still in its infancy, so there are dozens of ways to manage the building of Dockerfiles, the deployment of images, and the running and linking of containers. Ansible is a solid contender for managing Docker containers (_and_ the infrastruction on which they run), and can even be used within a Dockerfile to simplify complex container configurations.
 
 {lang=text,linenos=off}
      _________________________________________
