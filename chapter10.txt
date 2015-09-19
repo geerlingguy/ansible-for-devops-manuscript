@@ -281,7 +281,7 @@ RedHat 6 and later (and modern versions of Fedora, and RedHat derivatives like C
 
 {lang=text}
     - name: Install yum-cron.
-      yum: name=yum-cron state=installed
+      yum: name=yum-cron state=present
     
     - name: Ensure yum-cron is running and enabled on boot.
       service: name=yum-cron state=started enabled=yes
@@ -294,7 +294,7 @@ Debian and its derivatives typically use the `unattended-upgrades` package to co
 
 {lang=text}
     - name: Install unattended upgrades package.
-      apt: name=unattended-upgrades state=installed
+      apt: name=unattended-upgrades state=present
     
     - name: Copy unattended-upgrades configuration files in place.
       template:
@@ -481,7 +481,7 @@ To enable SELinux in `targeted` mode (which is the most secure mode without bein
 
 {lang=text,linenos=off}
     - name: Install Python SELinux library.
-      yum: name=libselinux-python state=installed
+      yum: name=libselinux-python state=present
     
     - Ensure SELinux is enabled in `targeted` mode.
       selinux: policy=targeted state=enforcing

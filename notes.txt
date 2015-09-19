@@ -3,6 +3,7 @@
 ## TODO
 
   - Run through emailed fixes.
+  - Run _every single example_ in Ansible 2.0.0.
 
 ## Publication - Marketing / Notifications
 

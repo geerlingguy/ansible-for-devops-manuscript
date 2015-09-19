@@ -126,7 +126,7 @@ The resulting Python:
 A few things to note with both of the above examples:
 
   - YAML will try to determine the type of an item automatically. So `foo` in the first example would be translated as a string, `true` or `false` would be a boolean, and `123` would be an integer. Read the official documentation for further insight, but for our purposes, declaring strings with quotes (`''` or `""`) will minimize surprises.
-  - Whitespace matters! YAML uses spaces (literal space characters---*not* tabs) to define structure (mappings, array lists, etc.), so set your editor to use spaces for tabs. You can use either a tab or a space to delimit parameters (like `apt: name=foo state=installed`---either a tab or a space between parameters), but it's preferred to use spaces everywhere, to minimize errors and display irregularities across editors and platforms.
+  - Whitespace matters! YAML uses spaces (literal space characters---*not* tabs) to define structure (mappings, array lists, etc.), so set your editor to use spaces for tabs. You can use either a tab or a space to delimit parameters (like `apt: name=foo state=present`---either a tab or a space between parameters), but it's preferred to use spaces everywhere, to minimize errors and display irregularities across editors and platforms.
   - YAML syntax is robust and well-documented. Read through the official [YAML Specification](http://www.yaml.org/spec/1.2/spec.html) and/or the [PyYAMLDocumentation](http://pyyaml.org/wiki/PyYAMLDocumentation) to dig deeper.
 
 ### YAML for Ansible tasks
@@ -135,7 +135,7 @@ Consider the following task:
 
 {lang=text,linenos=off}
     - name: Install foo.
-      apt: name=foo state=installed
+      apt: name=foo state=present
 
 All well and good, right? Well, as you get deeper into Ansible and start defining more complex configuration, you might start seeing tasks like the following:
 
@@ -145,7 +145,7 @@ All well and good, right? Well, as you get deeper into Ansible and start definin
 
 The one-line syntax (which uses Ansible-specific `key=value` shorthand for defining parameters) has some positive attributes:
 
-  - Simpler tasks (like installations and copies) are compact and readable. `apt: name=apache2 state=installed` and `apt-get install -y apache2` are similarly concise; in this way, an Ansible playbook feels very much like a shell script.
+  - Simpler tasks (like installations and copies) are compact and readable. `apt: name=apache2 state=present` and `apt-get install -y apache2` are similarly concise; in this way, an Ansible playbook feels very much like a shell script.
   - Playbooks are more compact, and more configuration is be displayed on one screen.
   - Ansible's official documentation follows this format, as do many existing roles and playbooks.
 
@@ -167,9 +167,9 @@ Ansible's shorthand syntax uses `key=value` parameters after the name of a modul
 
 {lang=text,linenos=off}
     - name: Install Nginx.
-      yum: name=nginx state=installed
+      yum: name=nginx state=present
 
-For any situation where an equivalent shell command would roughly match what I'm writing in the YAML, I prefer this method, since it's immediately obvious what's happening, and it's highly unlikely any of the parameters (like `state=installed`) will change frequently during development.
+For any situation where an equivalent shell command would roughly match what I'm writing in the YAML, I prefer this method, since it's immediately obvious what's happening, and it's highly unlikely any of the parameters (like `state=present`) will change frequently during development.
 
 Ansible's official documentation generally uses this syntax, so it maps nicely to examples you'll find from Ansible, Inc. and many other sources.
 

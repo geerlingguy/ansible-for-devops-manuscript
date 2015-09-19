@@ -1660,7 +1660,7 @@ Angstwad's `docker_ubuntu` role requires no additional settings or configuration
 {lang=text}
     ---
     - name: Install Pip.
-      apt: name=python-pip state=installed
+      apt: name=python-pip state=present
       sudo: yes
     
     - name: Install Docker Python library.

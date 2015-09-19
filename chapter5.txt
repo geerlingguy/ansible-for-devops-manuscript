@@ -891,7 +891,7 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
       tasks:
         # Install and configure Apache on RedHat/CentOS hosts.
         - block:
-            - yum: name=httpd state=installed
+            - yum: name=httpd state=present
             - template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
             - service: name=httpd state=started enabled=yes
           when: ansible_os_family == 'RedHat'
@@ -899,7 +899,7 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
     
         # Install and configure Apache on Debian/Ubuntu hosts.
         - block:
-            - apt: name=apache2 state=installed
+            - apt: name=apache2 state=present
             - template: src=httpd.conf.j2 dest=/etc/apache2/apache2.conf
             - service: name=apache2 state=started enabled=yes
           when: ansible_os_family == 'Debian'

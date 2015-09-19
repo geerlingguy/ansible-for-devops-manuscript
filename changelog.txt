@@ -14,7 +14,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Changed EPEL installation process for RHEL/CentOS 7 in chapters 1 and 4 (thanks to @opratr!).
   - Completely rewrote GlusterFS section in chapter 8 with a more relevant example.
   - Rearranged first playbook example in chapter 2 so use of sudo is more obvious (thanks to @gkedge!).
-  - Fixed types in chapters 3 and 4 (thanks to Borys Borysenko!).
+  - Fixed typos in chapters 3 and 4 (thanks to @b_borysenko!).
   - Incorporated editorial changes in chapters 9, 10, and 11.
   - Incorporated editorial changes in appendices a and b.
   - Removed link to Ansible Guru, as it is no longer active (thanks to @mrjester888!).
@@ -24,6 +24,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed various formatting issues in chapter 4 (thanks to @erimar77!).
   - Fixed incorrect reference to VirtualBox in chapter 2 (thanks to @chesterbr!).
   - Various small styling fixes in chapter 5 (thanks to Barry M!).
+  - More helpful exposition of Git-related ad-hoc commands in chapter 3 (thanks to Stephen H!).
+  - Replaced uses of 'installed' for state with 'present' (thanks to @b_borysenko!).
 
 ## Version 0.99 (2015-07-19)
 

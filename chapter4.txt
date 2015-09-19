@@ -58,7 +58,7 @@ In the above playbook, we use Ansible's `command` module to run standard shell c
 
 T> The greater-than sign (`>`) immediately following the `command:` module directive tells YAML "automatically quote the next set of indented lines as one long string, with each line separated by a space". It helps improve task readability in some cases. There are different ways of describing configuration using valid YAML syntax, and these methods are discussed in-depth in the [YAML Conventions and Best Practices](#yaml-best-practices) section in Appendix B.
 T> 
-T> This book uses three different task-formatting techniques: For tasks which require one or two simple parameters, Ansible's shorthand syntax (e.g. `yum: name=apache2 state=installed`) is used. For most uses of `command` or `shell`, where longer commands are entered, the `>` technique mentioned above is used. For tasks which require many parameters, YAML object notation is used---placing each key and variable on its own line. This assists with readability and allows for version control systems to easily distinguish changes line-by-line.
+T> This book uses three different task-formatting techniques: For tasks which require one or two simple parameters, Ansible's shorthand syntax (e.g. `yum: name=apache2 state=present`) is used. For most uses of `command` or `shell`, where longer commands are entered, the `>` technique mentioned above is used. For tasks which require many parameters, YAML object notation is used---placing each key and variable on its own line. This assists with readability and allows for version control systems to easily distinguish changes line-by-line.
 
 The above playbook will perform *exactly* like the shell script, but you can improve things greatly by using some of Ansible's built-in modules to handle the heavy lifting:
 
@@ -100,7 +100,7 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
   2. The second line, `- hosts: all` defines the first (and in this case, only) _play_, and tells Ansible to run the play on `all` hosts that it knows about.
   3. The third line, `sudo: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
   4. The fifth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
-  5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=installed"... but if you drop the name line completely, that won't cause any problem.
+  5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=present"... but if you drop the name line completely, that won't cause any problem.
 
      - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the `items` array we pass in (`{{ variable }}` references a variable in Ansible's playbooks). We tell yum to make sure the packages we define are installed with `state=present`, but we could also use `state=latest` to ensure the latest version is installed, or `state=absent` to make sure the package is *not* installed.
      - Ansible allows simple lists to be passed into tasks using `with_items`: Define a list of items below, and each line will be passed into the play, one by one. In this case, each of the items will be substituted for the `{{ item }}` variable.
@@ -423,7 +423,7 @@ The first step towards building an application server that depends on the LAMP s
 {lang="text",starting-line-number=12}
       tasks:
         - name: Get software for apt repository management.
-          apt: name={{ item }} state=installed
+          apt: name={{ item }} state=present
           with_items:
             - python-apt
             - python-pycurl
@@ -432,7 +432,7 @@ The first step towards building an application server that depends on the LAMP s
           apt_repository: repo='ppa:ondrej/php5' update_cache=yes
     
         - name: "Install Apache, MySQL, PHP, and other dependencies."
-          apt: name={{ item }} state=installed
+          apt: name={{ item }} state=present
           with_items:
             - git
             - curl
@@ -739,7 +739,7 @@ It's easy enough to install Tomcat 7 on an Ubuntu Precise server; there are pack
 {lang="text",starting-line-number=15}
       tasks:
         - name: Install Tomcat 7.
-          apt: "name={{ item }} state=installed"
+          apt: "name={{ item }} state=present"
           with_items:
             - tomcat7
             - tomcat7-admin

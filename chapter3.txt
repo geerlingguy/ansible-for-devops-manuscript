@@ -255,7 +255,7 @@ T> To get an exhaustive list of all the environment details ('facts', in Ansible
 We want to install the NTP daemon on the server to keep the time in sync. Instead of running the command `yum install -y ntp` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m yum -a "name=ntp state=installed"
+    $ ansible multi -s -m yum -a "name=ntp state=present"
 
 You should see three simple 'success' messages, reporting no change, since NTP was already installed on the three machines; this confirms everything is in working order.
 
@@ -598,6 +598,10 @@ First, update the git checkout to the application's new version branch, 1.2.4, o
     dest=/opt/myapp update=yes version=1.2.4"
 
 Ansible's git module lets you specify a branch, tag, or even a specific commit with the `version` parameter (in this case, we chose to checkout tag `1.2.4`, but if you run the command again with a branch name, like `prod`, Ansible will happily do that instead). To force Ansible to update the checked-out copy, we passed in `update=yes`. The `repo` and `dest` options should be self-explanatory.
+
+I> If you get a message saying "Failed to find required executable git", you will need to install Git on the server. To do so, run the ad-hoc command `ansible app -s -m yum -a "name=git state=present"` (substitute your OS's package manager for `yum`).
+I> 
+I> If you get a message saying the Git server has an "unknown hostkey", add the option `accept_hostkey=yes` to the command, or add the hostkey to your server's `known_hosts` file before running this command.
 
 Then, run the application's `update.sh` shell script:
 

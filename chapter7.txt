@@ -384,7 +384,7 @@ Since `do` contains the new droplet's IP address (alongside other relevant infor
           local_action: "wait_for port=22 host={{ inventory_hostname }}"
     
         - name: Install tcpdump.
-          yum: name=tcpdump state=installed
+          yum: name=tcpdump state=present
 
 At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it should create a new droplet (if it has not already been created), then add that droplet to the `do` inventory group, and finally, run a new play on all the `do` hosts (including the new droplet). Here are the results:
 
