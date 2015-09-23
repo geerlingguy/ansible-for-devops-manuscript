@@ -32,7 +32,7 @@ In order to keep our configuration organized, we'll use the following structure 
       provisioners/
       configure.yml
       provision.yml
-      requirements.txt
+      requirements.yml
       Vagrantfile
 
 Organizing things this way allows us to focus on each server configuration individually, then build playbooks for provisioning and configuring instances on different hosting providers later. This organization also keeps server playbooks completely independent, so we can modularize and reuse individual server configurations.
@@ -387,20 +387,21 @@ But we're going to continue to make our playbooks more flexible and useful.
 
 ### Getting the required roles
 
-As mentioned in the Chapter 6, Ansible allows you to define all the required Ansible Galaxy roles for a given project in a `requirements.txt` file. Instead of having to remember to run `ansible-galaxy install -y [role1] [role2] [role3]` for each of the roles we're using, we can create `requirements.txt` in the root of our project, with the following contents:
+As mentioned in the Chapter 6, Ansible allows you to define all the required Ansible Galaxy roles for a given project in a `requirements.yml` file. Instead of having to remember to run `ansible-galaxy install -y [role1] [role2] [role3]` for each of the roles we're using, we can create `requirements.yml` in the root of our project, with the following contents:
 
 {lang=text}
-    geerlingguy.firewall
-    geerlingguy.repo-epel
-    geerlingguy.varnish
-    geerlingguy.apache
-    geerlingguy.php
-    geerlingguy.php-mysql
-    geerlingguy.php-memcached
-    geerlingguy.mysql
-    geerlingguy.memcached
+    ---
+    - src: geerlingguy.firewall
+    - src: geerlingguy.repo-epel
+    - src: geerlingguy.varnish
+    - src: geerlingguy.apache
+    - src: geerlingguy.php
+    - src: geerlingguy.php-mysql
+    - src: geerlingguy.php-memcached
+    - src: geerlingguy.mysql
+    - src: geerlingguy.memcached
 
-To make sure all the required dependencies are installed, run `ansible-galaxy install -r requirements.txt` from within the project's root.
+To make sure all the required dependencies are installed, run `ansible-galaxy install -r requirements.yml` from within the project's root.
 
 ### Vagrantfile for Local Infrastructure via VirtualBox
 
@@ -1244,7 +1245,7 @@ Now, create a playbook named `provision.yml` inside a `playbooks` directory:
             opts: "defaults,_netdev"
             state: mounted
 
-This playbook uses two roles to set up a firewall and install the required packages for GlusterFS to work. You can manually install both of the required roles with the command `ansible-galaxy install geerlingguy.firewall geerlingguy.glusterfs`, or add them to a `requirements.txt` file and install with `ansible-galaxy install -r requirements.txt`.
+This playbook uses two roles to set up a firewall and install the required packages for GlusterFS to work. You can manually install both of the required roles with the command `ansible-galaxy install geerlingguy.firewall geerlingguy.glusterfs`, or add them to a `requirements.yml` file and install with `ansible-galaxy install -r requirements.yml`.
 
 Gluster requires a 'brick' directory to use as a virtual filesystem, and our servers also need a directory where the filesystem can be mounted, so the first `file` task ensures both directories exist (`gluster_brick_dir` and `gluster_mount_dir`). Since we need to use these directory paths more than once, we use variables which will be defined later, in `vars.yml`.
 

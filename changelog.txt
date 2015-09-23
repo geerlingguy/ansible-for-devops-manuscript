@@ -6,9 +6,10 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current version
 
-  - Ansible 2.0 goodness! Ansible 2.0.0 is in alpha state as of September 2015, but it's not too early to start adding 2.0-specific sections:
+  - Ansible 2.0 goodness! Ansible 2.0.0 is in alpha state as of September 2015, but it's not too early to start adding 2.0-specific sections and fixing things that are deprecated:
     - Added Blocks examples in chapter 5.
     - Added Dynamic includes section in chapter 6.
+    - Replaced uses of `requirements.txt` with `requirements.yml` since the former is now deprecated.
   - Added example of zero-downtime deployments with HAProxy to chapter 9.
   - Completed remaining sections in chapter 9.
   - Changed EPEL installation process for RHEL/CentOS 7 in chapters 1 and 4 (thanks to @opratr!).

@@ -289,17 +289,18 @@ The structure of your project folder should look like this:
         vars.yml
       Vagrantfile
 
-Before running the playbook, we need to make sure all the role dependencies are present. If you were building everything from scratch, you might have a `roles` directory with all the roles inside, but in this case, since we're using roles from Ansible Galaxy, it's best to not include the role files directly with our playbook, but instead, add a `requirements.txt` file to the project and install the roles automatically with Galaxy.
+Before running the playbook, we need to make sure all the role dependencies are present. If you were building everything from scratch, you might have a `roles` directory with all the roles inside, but in this case, since we're using roles from Ansible Galaxy, it's best to not include the role files directly with our playbook, but instead, add a `requirements.yml` file to the project and install the roles automatically with Galaxy.
 
-Inside `requirements.txt`:
+Inside `requirements.yml`:
 
 {lang=text}
-    geerlingguy.git
-    geerlingguy.ruby
-    geerlingguy.nodejs
-    geerlingguy.passenger
+    ---
+    - src: geerlingguy.git
+    - src: geerlingguy.ruby
+    - src: geerlingguy.nodejs
+    - src: geerlingguy.passenger
 
-In the same directory as the requirements file, run the command `$ ansible-galaxy install -r requirements.txt`, and after a minute, all the required roles will be downloaded to your default Ansible roles directory, if they're not already present.
+In the same directory as the requirements file, run the command `$ ansible-galaxy install -r requirements.yml`, and after a minute, all the required roles will be downloaded to your default Ansible roles directory, if they're not already present.
 
 Change directory back to the main directory containing the `Vagrantfile`, and run `vagrant up`. Assuming everything runs correctly, you should see the playbook complete successfully after a few minutes:
 
@@ -479,13 +480,14 @@ This playbook runs on all the servers defined in our inventory file, and runs tw
 
 Since we're using two roles from Ansible Galaxy, it's best practice to also include those roles in a requirements file so CI tools and others using this playbook can install all the required roles.
 
-Create a `requirements.txt` file in the root folder and add the following:
+Create a `requirements.yml` file in the root folder and add the following:
 
 {lang=text}
-    geerlingguy.firewall
-    geerlingguy.nodejs
+    ---
+    - src: geerlingguy.firewall
+    - src: geerlingguy.nodejs
 
-Whenever someone wants to run the playbook, the command `ansible-galaxy install -r requirements.txt` will install all the required roles.
+Whenever someone wants to run the playbook, the command `ansible-galaxy install -r requirements.yml` will install all the required roles.
 
 At this point, your project directory should be structured like the following:
 
@@ -496,7 +498,7 @@ At this point, your project directory should be structured like the following:
         main.yml
         provision.yml
       inventory
-      requirements.txt
+      requirements.yml
       Vagrantfile
 
 Before we run `vagrant up` and see our infrastructure in action, we need to build out the `deploy.yml` playbook, which will ensure our app is present and running correctly on all the servers.
@@ -758,14 +760,15 @@ With this inventory, we can operate on just the `balancer`, just the `app` serve
 
 These two plays set up a firewall on both servers, and configure HAProxy on the load balancer, and Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `haproxy_backend_servers`. We let the `geerlingguy.firewall`, `geerlingguy.haproxy`, and `geerlingguy.apache` roles do all the hard work for us.
 
-Now, to make sure we have all these roles installed, create a requirements file to install the roles from Ansible Galaxy. Create `requirements.txt` in the same directory as the Vagrantfile, with the following contents:
+Now, to make sure we have all these roles installed, create a requirements file to install the roles from Ansible Galaxy. Create `requirements.yml` in the same directory as the Vagrantfile, with the following contents:
 
 {lang=text}
-    geerlingguy.firewall
-    geerlingguy.haproxy
-    geerlingguy.apache
+    ---
+    - src: geerlingguy.firewall
+    - src: geerlingguy.haproxy
+    - src: geerlingguy.apache
 
-To install the required roles, run `sudo ansible-galaxy install -r requirements.txt`.
+To install the required roles, run `sudo ansible-galaxy install -r requirements.yml`.
 
 At this point, if you want to bring up your local load-balanced infrastructure, run `vagrant up` in the `deployments-balancer` directory, and wait a few minutes. Once everything is up and running, visit `http://192.168.4.2/`, and you should see the default Ubuntu Apache2 landing page:
 

@@ -166,13 +166,14 @@ This Vagrantfile will create a new VM running CentOS 7, with the IP address `192
         - geerlingguy.java
         - geerlingguy.jenkins
 
-This playbook uses a set of roles from Ansible Galaxy to install all the required components for our Jenkins CI server. To make sure you have all the required roles installed on your host machine, add a `requirements.txt` file in the `jenkins` folder, containing all the roles being used in the playbook:
+This playbook uses a set of roles from Ansible Galaxy to install all the required components for our Jenkins CI server. To make sure you have all the required roles installed on your host machine, add a `requirements.yml` file in the `jenkins` folder, containing all the roles being used in the playbook:
 
 {lang=text}
-    geerlingguy.firewall
-    geerlingguy.ansible
-    geerlingguy.java
-    geerlingguy.jenkins
+    ---
+    - src: geerlingguy.firewall
+    - src: geerlingguy.ansible
+    - src: geerlingguy.java
+    - src: geerlingguy.jenkins
 
 The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
 
@@ -182,7 +183,7 @@ T> There is an official [Ansible plugin for Jenkins](https://wiki.jenkins-ci.org
 
 To build the VM and run the playbook, do the following (inside the `jenkins` folder):
 
-  1. Run `ansible-galaxy install -r requirements.txt` to install the required roles.
+  1. Run `ansible-galaxy install -r requirements.yml` to install the required roles.
   2. Run `vagrant up` to build the VM and install and configure Jenkins.
 
 After a few minutes, the provisioning should complete, and you should be able to access Jenkins at `http://jenkins.dev:8080/` (if you configured the hostname in your hosts file).
