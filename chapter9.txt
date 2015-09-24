@@ -169,6 +169,7 @@ Most of these tasks will use Ansible's modules, but for a few, we'll just wrap t
             version: "{{ app_version }}"
             dest: "{{ app_directory }}"
             accept_hostkey: true
+            force: yes
           register: app_updated
           notify: restart nginx
     
@@ -217,12 +218,12 @@ The first thing you'll notice (besides the fact we've included the `vars.yml` fi
 
 Let's walk through the tasks, one-by-one:
 
-  1. (Lines 12-19) We put all the application files in place by checking out the git repository at the version `app_version` into the directory `app_directory`. We set `accept_hostkey` to true so this task doesn't hang the first time we deploy the app (since we haven't yet accepted the Git server's hostkey).
-  2. (Lines 21-28) We copy a `secrets.yml` file to the application's configuration directory. There are different ways to deploy app secrets, but this is the easiest, and allows us to store the app secrets in an Ansible Vault-protected vars file if we so desire.
-  3. (Lines 30-33) If the `app_updated` variable shows a change occurred as part of the first `git` task, we'll run a bundler command to ensure all the latest bundled dependencies are installed in the `vendor/bundle` directory.
-  4. (Lines 35-42) Create the application database with `rake db:create` if it doesn't already exist. Since this application uses a SQLite database, it's a matter of checking if the .sqlite3 file exists, and if not, running the `db:create` task.
-  5. (Lines 44-51) If the `app_updated` variable shows a change occurred as part of the first `git` task, we'll also run a couple `rake` tasks to make sure the database schema is up to date, and all assets (like scripts and stylesheets) are compiled.
-  6. (Lines 53-60) Make sure all app files have the correct permissions for Passenger/Nginx to serve them correctly.
+  1. (Lines 12-20) We put all the application files in place by checking out the git repository at the version `app_version` into the directory `app_directory`. We set `accept_hostkey` to true so this task doesn't hang the first time we deploy the app (since we haven't yet accepted the Git server's hostkey).
+  2. (Lines 22-29) We copy a `secrets.yml` file to the application's configuration directory. There are different ways to deploy app secrets, but this is the easiest, and allows us to store the app secrets in an Ansible Vault-protected vars file if we so desire.
+  3. (Lines 31-34) If the `app_updated` variable shows a change occurred as part of the first `git` task, we'll run a bundler command to ensure all the latest bundled dependencies are installed in the `vendor/bundle` directory.
+  4. (Lines 36-43) Create the application database with `rake db:create` if it doesn't already exist. Since this application uses a SQLite database, it's a matter of checking if the .sqlite3 file exists, and if not, running the `db:create` task.
+  5. (Lines 45-52) If the `app_updated` variable shows a change occurred as part of the first `git` task, we'll also run a couple `rake` tasks to make sure the database schema is up to date, and all assets (like scripts and stylesheets) are compiled.
+  6. (Lines 54-61) Make sure all app files have the correct permissions for Passenger/Nginx to serve them correctly.
 
 Because many of the tasks result in filesystem changes that could change the behavior of the application, they all notify the `restart nginx` handler provided by the `geerlingguy.passenger` role, so Passenger reloads the configuration and restarts the app.
 
