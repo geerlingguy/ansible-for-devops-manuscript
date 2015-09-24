@@ -394,7 +394,7 @@ To make our playbook more efficient and readable, let's begin the playbook (name
 
 Using one or more included variable files cleans up your main playbook file, and lets you organize all your configurable variables in one place. At the moment, we don't have any variables to add; we'll define the contents of `vars.yml`  later. For now, create the empty file, and continue on to the next section of the playbook, `pre_tasks`:
 
-{lang="text",starting-line-number=6}
+{lang="text",starting-line-number=7}
       pre_tasks:
         - name: Update apt cache if needed.
           apt: update_cache=yes cache_valid_time=3600
@@ -403,7 +403,7 @@ Ansible lets you run tasks before or after the main set of tasks using `pre_task
 
 With that out of the way, we'll add another new section to our playbook, `handlers`:
 
-{lang="text",starting-line-number=9}
+{lang="text",starting-line-number=11}
       handlers:
         - name: restart apache
           service: name=apache2 state=restarted
@@ -420,7 +420,7 @@ I> By default, Ansible will stop all playbook execution when a task fails, and w
 
 The first step towards building an application server that depends on the LAMP stack is to build the actual LAMP part of it. This is the simplest process, but still requires a little extra work for our particular server. We want to install Apache, MySQL and PHP, but we'll also need a couple other dependencies, and we want a particular version of PHP (5.5), which is only available in an extra apt repository.
 
-{lang="text",starting-line-number=12}
+{lang="text",starting-line-number=15}
       tasks:
         - name: Get software for apt repository management.
           apt: name={{ item }} state=present
@@ -474,7 +474,7 @@ The next step is configuring Apache so it will work correctly with Drupal. Out o
 
 Additionally, we need to add a VirtualHost entry to tell Apache where the site's document root is, and any other options for the site.
 
-{lang="text",starting-line-number=50}
+{lang="text",starting-line-number=54}
         - name: Enable Apache rewrite module (required for Drupal).
           apache2_module: name=rewrite state=present
           notify: restart apache
@@ -544,7 +544,7 @@ At this point, you could start the server, but Apache will likely throw an error
 
 We briefly mentioned `lineinfile` earlier in the book, when discussing file management and ad-hoc task execution. Modifying PHP's configuration is a perfect way to demonstrate `lineinfile`'s simplicity and usefulness:
 
-{lang="text",starting-line-number=74}
+{lang="text",starting-line-number=80}
         - name: Enable upload progress via APC.
           lineinfile:
             dest: "/etc/php5/apache2/conf.d/20-apcu.ini"
@@ -565,7 +565,7 @@ Ansible will take the regular expression, and see if there's a matching line. If
 
 The next step is to remove MySQL's default test database, and create a database (named for the domain we specified earlier) for our Drupal installation to use.
 
-{lang="text",starting-line-number=80}
+{lang="text",starting-line-number=88}
         - name: Remove the MySQL test database.
           mysql_db: db=test state=absent
     
@@ -584,18 +584,25 @@ Drupal has a command-line companion in the form of Drush. Drush is developed ind
 
 We could just download Drupal and perform some setup in the browser by hand at this point, but the goal of this playbook is to have a fully-automated and idempotent Drupal installation. So, we need to install Composer, then Drush:
 
-{lang="text",starting-line-number=85}
-        - name: Install Composer into the current directory.
-          shell: >
-            curl -sS https://getcomposer.org/installer | php
+{lang="text",starting-line-number=94}
+        - name: Download Composer installer.
+          get_url:
+            url: https://getcomposer.org/installer
+            dest: /tmp/composer-installer.php
+            mode: 0755
+    
+        - name: Run Composer installer.
+          command: >
+            php composer-installer.php
+            chdir=/tmp
             creates=/usr/local/bin/composer
     
         - name: Move Composer into globally-accessible location.
           shell: >
-            mv composer.phar /usr/local/bin/composer
+            mv /tmp/composer.phar /usr/local/bin/composer
             creates=/usr/local/bin/composer
 
-The first command runs Composer's php-based installer, which generates a 'composer.phar' PHP application archive. This archive is then copied (using the `mv` shell command) to the location `/usr/local/bin/composer` so we can use the simple `composer` command to install all of Drush's dependencies. Both commands are set to run only if the `/usr/local/bin/composer` file doesn't already exist (using the `creates` parameter).
+The first two commands download and run Composer's php-based installer, which generates a 'composer.phar' PHP application archive in `/tmp`. This archive is then copied (using the `mv` shell command) to the location `/usr/local/bin/composer` so we can use the simple `composer` command to install all of Drush's dependencies. The latter two commands commands are set to run only if the `/usr/local/bin/composer` file doesn't already exist (using the `creates` parameter).
 
 T> Why use `shell` instead of `command`? Ansible's `command` module is the preferred option for running commands on a host (when an Ansible module won't suffice), and it works in most scenarios. However, `command` doesn't run the command via the remote shell `/bin/sh`, so options like `<`, `>`, `|`, and `&`, and local environment variables like `$HOME` won't work. `shell` allows you to pipe command output to other commands, access the local environment, etc.
 T> 
@@ -605,7 +612,7 @@ T> It's best to use an Ansible module for every task. If you have to resort to a
 
 Now, we'll install Drush using the latest version from GitHub:
 
-{lang="text",starting-line-number=94}
+{lang="text",starting-line-number=111}
         - name: Check out drush master branch.
           git:
             repo: https://github.com/drush-ops/drush.git
@@ -633,7 +640,7 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 
 We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, then we'll run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
-{lang="text",starting-line-number=108}
+{lang="text",starting-line-number=128}
         - name: Check out Drupal Core to the Apache docroot.
           git:
             repo: http://git.drupal.org/project/drupal.git
@@ -672,8 +679,6 @@ Next, we used Drush's `si` command (short for `site-install`) to run Drupal's in
 Also, Drupal's installation process results in the creation of a 'settings.php' file, so we use the location of that file with the `creates` parameter to let Ansible know if the site's already installed (so we don't accidentally try installing it again!). Once the site is installed, we also restart Apache for good measure (using `notify` again, like we did when updating Apache's configuration).
 
 The final two tasks set permissions on Drupal's settings.php and files folder to 744 and 777, respectively.
-
-TODOTODO
 
 ### Drupal LAMP server summary
 
