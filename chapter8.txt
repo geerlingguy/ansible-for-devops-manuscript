@@ -304,8 +304,10 @@ In our `vars.yml` file (again, alongside `main.yml`), add the following:
     firewall_additional_rules:
       - "iptables -A INPUT -p tcp --dport 11211 -s {{ groups['lamp-www'][0] }} -j ACCEPT"
       - "iptables -A INPUT -p tcp --dport 11211 -s {{ groups['lamp-www'][1] }} -j ACCEPT"
+    
+    memcached_listen_ip: "{{ groups['lamp-memcached'][0] }}"
 
-We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the the generated `groups` variable that Ansible uses to track all inventory groups currently available.
+We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to the server's IP address so it will accept connections through IP.
 
 W> The **principle of least privilege** "requires that in a particular abstraction layer of a computing environment, every module ... must be able to access only the information and resources that are necessary for its legitimate purpose" (Source: [Wikipedia](http://en.wikipedia.org/wiki/Principle_of_least_privilege)). Always restrict services and ports to only those servers or users that need access!
 

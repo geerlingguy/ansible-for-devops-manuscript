@@ -29,7 +29,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Replaced uses of 'installed' for state with 'present' (thanks to @b_borysenko!).
   - Fixed example of async_status usage in chapter 3 (thanks to @b_borysenko!).
   - Fixed line numbering and Composer installation in Drupal example in chapter 4.
-  - Update Ruby on Rails deployment example in chapter 9.
+  - Updated Ruby on Rails deployment example in chapter 9.
+  - Updated LAMP Infrastructure example in chapter 8.
 
 ## Version 0.99 (2015-07-19)
 
