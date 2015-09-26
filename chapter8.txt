@@ -1760,7 +1760,7 @@ For the data storage container, we don't need much; we just need to create a dir
     MAINTAINER Jeff Geerling <geerlingguy@mac.com>
     
     # Create data volume for MySQL.
-    RUN mkdir /var/lib/mysql
+    RUN mkdir -p /var/lib/mysql
     VOLUME /var/lib/mysql
 
 We create a directory (line 6), and expose the directory as a volume (line 7) which can be mounted by the host or other containers. Save the above into a new file, `docker/provisioning/data/Dockerfile`.
