@@ -714,8 +714,8 @@ Let's quickly create the `vars.yml` file, while we're thinking about it. Create 
 {lang="text"}
     download_dir: /tmp
     solr_dir: /opt/solr
-    solr_version: 4.9.1
-    solr_sha256sum: 4a546369a31d34b15bc4b99188984716bf4c0c158c0e337f3c1f98088aec70ee
+    solr_version: 4.10.4
+    solr_sha256sum: ac3543880f1b591bcaa962d7508b528d7b42e2b5548386197940b704629ae851
 
 These two variables define two paths we'll use while downloading and installing Apache Solr.
 
@@ -761,7 +761,7 @@ Ubuntu 12.04 includes a package for Apache Solr, but it installs a very old vers
           get_url:
             url: "http://apache.osuosl.org/lucene/solr/{{ solr_version }}/solr-{{ solr_version }}.tgz"
             dest: "{{ download_dir }}/solr-{{ solr_version }}.tgz"
-            sha256sum: {{ solr_sha256sum }}
+            sha256sum: "{{ solr_sha256sum }}"
 
 When downloading files from remote servers, the `get_url` module provides more flexibility and convenience than raw `wget` or `curl` commands.
 
@@ -772,13 +772,13 @@ We also use `sha256sum`, an optional parameter, for peace of mind; if you are do
 {lang="text",starting-line-number=31}
         - name: Expand Solr.
           command: >
-            tar -C /tmp -xvzf {{ download_dir }}/solr-4.10.4.tgz
-            creates={{ download_dir }}/solr-4.10.4/dist/solr-4.10.4.war
-    
+            tar -C /tmp -xvzf {{ download_dir }}/solr-{{ solr_version }}.tgz
+            creates={{ download_dir }}/solr-{{ solr_version }}/dist/solr-{{ solr_version }}.war
+
         - name: Copy Solr into place.
           command: >
-            cp -r {{ download_dir }}/solr-4.10.4 {{ solr_dir }}
-            creates={{ solr_dir }}/dist/solr-4.10.4.war
+            cp -r {{ download_dir }}/solr-{{ solr_version }} {{ solr_dir }}
+            creates={{ solr_dir }}/dist/solr-{{ solr_version }}.war
 
 We need to expand the Apache Solr archive, then copy it into place. For both of these steps, use the built-in `tar` and `cp` utilities (with the appropriate options) to do the work. Setting `creates` tells Ansible to skip these steps in subsequent runs, since the Solr war file will already be in place.
 
