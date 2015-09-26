@@ -3,6 +3,8 @@
 ## TODO
 
   - Run _every single example_ in Ansible 2.0.0.
+  - Make sure https://github.com/ansible/ansible/issues/12527 is fixed for deployments-balancer example.
+  - Make sure https://github.com/ansible/ansible/issues/12524 is fixed for lamp-infrastructure example.
 
 ## Publication - Marketing / Notifications
 

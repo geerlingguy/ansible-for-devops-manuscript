@@ -31,6 +31,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed line numbering and Composer installation in Drupal example in chapter 4.
   - Updated Ruby on Rails deployment example in chapter 9.
   - Updated LAMP Infrastructure example in chapter 8.
+  - Updated Solr example in chapter 4.
 
 ## Version 0.99 (2015-07-19)
 
