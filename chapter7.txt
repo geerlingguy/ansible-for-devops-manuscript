@@ -143,7 +143,7 @@ There are a number of different ways you can structure your infrastructure-manag
 
 Using the above playbook and the globally-configured Ansible inventory file is great for your production infrastructure, but what happens when you want to configure a separate but similar infrastructure for, say a development or user certification environment?
 
-In this case, it's easiest to use individual inventory files, rather than the central, locally-managed Ansible inventory file. For typical team-managed infrastructure, I would recommend including an inventory file for each environment in the same version-controlled repository as your Ansible playbooks, perhaps within an 'inventories' directory.
+In this case, it's easiest to use individual inventory files, rather than the central Ansible inventory file. For typical team-managed infrastructure, I would recommend including an inventory file for each environment in the same version-controlled repository as your Ansible playbooks, perhaps within an 'inventories' directory.
 
 For example, I could take the entire contents of `/etc/ansible/hosts` above, and stash that inside an inventory file named `inventory-prod`, then duplicate it, changing server names where appropriate (e.g. the `[servercheck-web]` group would only have `www-dev1.servercheck.in` for the development environment), and naming the files for the environments:
 
@@ -158,7 +158,7 @@ For example, I could take the entire contents of `/etc/ansible/hosts` above, and
 Now, when running `playbook.yml` to configure the development infrastructure, I would pass in the path to the dev inventory (assuming my current working directory is `servercheck/`):
 
 {lang=text,linenos=off}
-    $ ansible-playbook playbook.yml -i inventory-dev
+    $ ansible-playbook playbook.yml -i inventories/inventory-dev
 
 Using inventory variables (which will be explored further), and well-constructed roles and/or tasks that use the variables effectively, you could architect your entire infrastructure, with environment-specific configurations, by changing some things in your inventory files.
 
