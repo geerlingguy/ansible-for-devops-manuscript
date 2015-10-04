@@ -1,11 +1,5 @@
 # Notes
 
-## TODO
-
-  - Run _every single example_ in Ansible 2.0.0.
-  - Make sure https://github.com/ansible/ansible/issues/12527 is fixed for deployments-balancer example.
-  - Make sure https://github.com/ansible/ansible/issues/12524 is fixed for lamp-infrastructure example.
-
 ## Publication - Marketing / Notifications
 
   - Publish Book on these Platforms:
@@ -54,7 +48,7 @@
 
 ## Thoughts on writing
 
-  - [$25K in book sales, and I'm about to publish](TODO - Server Check.in link here)
+  - [$25K in book sales, and I'm about to publish](https://servercheck.in/blog/25k-book-sales-and-im-almost-ready-publish)
   - [I self-published a learn-to-code book and made nearly $5k in pre-orders](https://news.ycombinator.com/item?id=9847965)
   - [My Book Marketing Process](http://www.mooreds.com/wordpress/archives/1594)
   - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)

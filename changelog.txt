@@ -33,6 +33,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Updated LAMP Infrastructure example in chapter 8.
   - Updated Solr example in chapter 4.
   - Fixed Docker Flask app example in chapter 8.
+  - Added foreword by Tim Gerla, Ansible, Inc. Co-Founder & CTO.
 
 ## Version 0.99 (2015-07-19)
 
