@@ -40,7 +40,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Version 0.99 (2015-07-19)
 
   - Incorporated editor's changes into chapters 5 and 6.
-  - Added `--check` and `--check-syntax` information to chapter 11.
+  - Added `--check` and `--syntax-check` information to chapter 11.
   - Added information about rolespec in chapter 11.
   - Fixed missing files in book's GitHub repository Node.js role example (thanks to @geoand!).
   - Fixed simple Node.js app server example playbook in chapter 4 (thanks to @erimar77!).

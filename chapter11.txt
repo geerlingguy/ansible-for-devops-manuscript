@@ -365,7 +365,7 @@ When using `--check` mode, certain tasks may need to always run to ensure the pl
 
 For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
 
-In addition to Ansible's `--check-syntax` and `--check` modes, you might be interested in also running [Ansible Lint](https://github.com/willthames/ansible-lint) on your playbooks. Ansible Lint allows you to check for deprecated syntax or inefficient task structures, and is highly configurable so you can set up the linting to follow the playbook standards you and your team choose.
+In addition to Ansible's `--syntax-check` and `--check` modes, you might be interested in also running [Ansible Lint](https://github.com/willthames/ansible-lint) on your playbooks. Ansible Lint allows you to check for deprecated syntax or inefficient task structures, and is highly configurable so you can set up the linting to follow the playbook standards you and your team choose.
 
 ### Automated testing on GitHub using Travis CI
 
