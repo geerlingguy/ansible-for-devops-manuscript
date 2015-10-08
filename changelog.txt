@@ -36,6 +36,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added foreword by Tim Gerla, Ansible, Inc. Co-Founder & CTO.
   - Added note about installing `sshpass` package (thanks to Larry B!).
   - Corrected playbook command under the "separate inventory files" section in chapter 7 (thanks to @lekum!).
+  - Corrected an incorrect use of `--syntax-check` in chapter 11 (thanks to @lekum!).
 
 ## Version 0.99 (2015-07-19)
 
