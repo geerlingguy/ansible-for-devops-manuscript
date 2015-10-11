@@ -179,7 +179,7 @@ The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run An
 
 Finally, we tell the `geerlingguy.jenkins` role a set of plugins to install through the `jenkins_plugins` variable; in this case, we just want the `ansicolor` plugin, which gives us full color display in Jenkins' console logs (so our Ansible playbook output is easier to read).
 
-T> There is an official [Ansible plugin for Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Ansible+Plugin), which can be used to run Ansible Ad-Hoc tasks and Playbooks, but as of the writing of this book, the plugin was still in early development stages and is not yet the recommended way to run Ansible playbooks via Jenkins.
+T> There is an official [Ansible plugin for Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Ansible+Plugin) which can be used to run Ansible Ad-Hoc tasks and Playbooks, and may help you integrate Ansible and Jenkins more easily.
 
 To build the VM and run the playbook, do the following (inside the `jenkins` folder):
 
@@ -413,7 +413,7 @@ Substitude your own role name for `github-role-project-name` (e.g. `ansible-role
 
 The next step is to add a `.travis.yml` file to your role so Travis CI will pick it up and use it for testing. Add the file to the root level of your role, and add the following to kick things off:
 
-{lang=yaml}
+{lang=none}
     ---
     language: python
     python: "2.7"

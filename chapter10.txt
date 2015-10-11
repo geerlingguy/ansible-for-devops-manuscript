@@ -118,18 +118,12 @@ For our secure server, we want to disable password-based SSH authentication (mak
             line: "{{ item.line }}"
             state: present
           with_items:
-            - {
-              regexp: "^PasswordAuthentication",
+            - regexp: "^PasswordAuthentication"
               line: "PasswordAuthentication no"
-            }
-            - {
-              regexp: "^PermitRootLogin",
+            - regexp: "^PermitRootLogin"
               line: "PermitRootLogin no"
-            }
-            - {
-              regexp: "^Port",
+            - regexp: "^Port"
               line: "Port 2849"
-            }
           notify: restart ssh
 
       handlers:

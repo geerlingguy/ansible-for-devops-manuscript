@@ -329,18 +329,14 @@ Let's first create the main playbook, `playbooks/db/main.yml`:
         - name: Create dynamic MySQL variables.
           set_fact:
             mysql_users:
-              - {
-                name: mycompany_user,
-                host: "{{ groups['lamp-www'][0] }}",
-                password: secret,
+              - name: mycompany_user
+                host: "{{ groups['lamp-www'][0] }}"
+                password: secret
                 priv: "*.*:SELECT"
-              }
-              - {
-                name: mycompany_user,
-                host: "{{ groups['lamp-www'][1] }}",
-                password: secret,
+              - name: mycompany_user
+                host: "{{ groups['lamp-www'][1] }}"
+                password: secret
                 priv: "*.*:SELECT"
-              }
             mysql_replication_master: "{{ groups['a4d.lamp.db.1'][0] }}"
     
       roles:
@@ -681,36 +677,24 @@ We will need to define a list of `security_groups` alongside our EC2 `instances`
 {lang=text,starting-line-number=6}
       vars:
         instances:
-          - {
-            name: a4d.lamp.varnish,
-            group: "lamp-varnish",
+          - name: a4d.lamp.varnish
+            group: "lamp-varnish"
             security_group: ["default", "a4d_lamp_http"]
-          }
-          - {
-            name: a4d.lamp.www.1,
-            group: "lamp-www",
+          - name: a4d.lamp.www.1
+            group: "lamp-www"
             security_group: ["default", "a4d_lamp_http"]
-          }
-          - {
-            name: a4d.lamp.www.2,
-            group: "lamp-www",
+          - name: a4d.lamp.www.2
+            group: "lamp-www"
             security_group: ["default", "a4d_lamp_http"]
-          }
-          - {
-            name: a4d.lamp.db.1,
-            group: "lamp-db",
+          - name: a4d.lamp.db.1
+            group: "lamp-db"
             security_group: ["default", "a4d_lamp_db"]
-          }
-          - {
-            name: a4d.lamp.db.2,
-            group: "lamp-db",
+          - name: a4d.lamp.db.2
+            group: "lamp-db"
             security_group: ["default", "a4d_lamp_db"]
-          }
-          - {
-            name: a4d.lamp.memcached,
-            group: "lamp-memcached",
+          - name: a4d.lamp.memcached
+            group: "lamp-memcached"
             security_group: ["default", "a4d_lamp_memcached"]
-          }
 
 Inside the `instances` variable, each instance is an object with three keys:
 
@@ -722,7 +706,7 @@ I> If you use AWS exclusively, it would be best to autoscaling groups and change
 
 With our instances defined, we'll next define a `security_groups` variable containing all the required security group configuration for each server:
 
-{lang=text,starting-line-number=39}
+{lang=text,starting-line-number=27}
         security_groups:
           - name: a4d_lamp_http
             rules:
@@ -746,7 +730,7 @@ We need three security groups: `a4d_lamp_http` to open port 80, `a4d_lamp_db` to
 
 Now that we have all the data we need to set up security groups and instances, our first task is to create or verify the existence of the security groups:
 
-{lang=text,starting-line-number=56}
+{lang=text,starting-line-number=44}
       tasks:
         - name: Configure EC2 Security Groups.
           ec2_group:
@@ -762,7 +746,7 @@ The `ec2_group` requires a name, region, and rules for each security group. Secu
 
 With the security groups configured, we can provision the defined EC2 instances by looping through `instances` with the `ec2` module:
 
-{lang=text,starting-line-number=67}
+{lang=text,starting-line-number=55}
         - name: Provision EC2 instances.
           ec2:
             key_name: "{{ item.ssh_key | default('jeff_mba_home') }}"
@@ -791,7 +775,7 @@ This example is slightly more complex than the DigitalOcean example, and a few p
 
 Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we will use to build Ansible inventory groups for the server configuration playbooks.
 
-{lang=text,starting-line-number=86}
+{lang=text,starting-line-number=74}
         - name: Add EC2 instances to their respective inventory groups.
           add_host:
             name: "{{ item.1.tagged_instances.0.public_ip }}"
@@ -811,7 +795,7 @@ We still use `with_indexed_items` so we can use the index to generate a unique I
 
 The final steps in provisioning the EC2 instances are to ensure we can connect to them, and to set `selinux` into permissive mode so the configuration we supply will work correctly.
 
-{lang=text,starting-line-number=86}
+{lang=text,starting-line-number=87}
     # Run some general configuration on all AWS hosts.
     - hosts: aws
       gather_facts: false
@@ -1992,7 +1976,7 @@ If you see "MySQL Connection: PASS", congratulations, everything worked! If it s
 
 The entire [Docker LAMP example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 
-The Docker examples shown here barely scratch the surface of what makes Docker a fascinating and useful application deployment tool. As of the writing of this book, Docker is still in its infancy, so there are dozens of ways to manage the building of Dockerfiles, the deployment of images, and the running and linking of containers. Ansible is a solid contender for managing Docker containers (_and_ the infrastruction on which they run), and can even be used within a Dockerfile to simplify complex container configurations.
+The Docker examples shown here barely scratch the surface of what makes Docker a fascinating and useful application deployment tool. Docker is still in its infancy, so there are dozens of ways to manage the building of Dockerfiles, the deployment of images, and the running and linking of containers. Ansible is a solid contender for managing Docker containers (_and_ the infrastruction on which they run), and can even be used within a Dockerfile to simplify complex container configurations.
 
 {lang=text,linenos=off}
      _________________________________________

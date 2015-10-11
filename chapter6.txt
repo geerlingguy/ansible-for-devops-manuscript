@@ -492,7 +492,7 @@ If your infrastructure configuration requires five, ten, fifteen or more Ansible
 
 Ansible allows a simple `.txt` format that is very basic (though this format is deprecated and may be removed), but you should generally use the more standard and expressive YAML format, which allows you to install roles from Ansible Galaxy, GitHub, an HTTP download, BitBucket, or your own repository. It also allows you to specify the path into which the roles should be downloaded. An example `requirements.yml` file looks like this:
 
-{lang=none}
+{lang=text}
     ---
     # From Ansible Galaxy, latest version.
     - src: geerlingguy.firewall

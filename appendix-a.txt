@@ -29,15 +29,15 @@ Open PowerShell (open the Start Menu or go to the Windows home and type in 'Powe
     PS > md -Name VMs
     PS > cd VMs
     # Make a 'Ubuntu64' directory and cd to it.
-    PS > md -Name ubuntu-precise-64
-    PS > cd ubuntu-precise-64
+    PS > md -Name ubuntu-trusty-64
+    PS > cd ubuntu-trusty-64
 
 Now, use `vagrant` to create the scaffolding for our new virtual machine:
 
 {lang="text",linenos=off}
-    PS > vagrant init precise64 http://files.vagrantup.com/precise64.box
+    PS > vagrant init ubuntu/trusty64
 
-Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Precise (12.04) 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
+Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Trusty (14.04) 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
 
 {lang="text",linenos=off}
     PS > vagrant up
@@ -88,7 +88,7 @@ You should now be connected to the virtual machine, and see the message of the d
       * Documentation: https://help.ubuntu.com/
     Welcome to your Vagrant-built virtual machine.
     Last login: <date> from <IP address>
-    vagrant@precise64:~$
+    vagrant@trusty64:~$
 
 If you see this prompt, you're logged in, and you can start administering the VM. The next (and final) step is to install Ansible.
 

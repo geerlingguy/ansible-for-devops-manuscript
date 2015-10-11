@@ -83,14 +83,10 @@ The above playbook will perform *exactly* like the shell script, but you can imp
             group: root
             mode: 0644
           with_items:
-          - {
-            src: "/path/to/config/httpd.conf",
+          - src: "/path/to/config/httpd.conf"
             dest: "/etc/httpd/conf/httpd.conf"
-          }
-          - {
-            src: "/path/to/config/httpd-vhosts.conf",
+          - src: "/path/to/config/httpd-vhosts.conf"
             dest: "/etc/httpd/conf/httpd-vhosts.conf"
-          }
         - name: Make sure Apache is started and configure it to run at boot.
           service: name=httpd state=started enabled=yes
 

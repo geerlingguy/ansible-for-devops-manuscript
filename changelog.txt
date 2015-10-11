@@ -4,9 +4,9 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current version
+## Version 1.0 (2015-10-10)
 
-  - Ansible 2.0 goodness! Ansible 2.0.0 is in alpha state as of September 2015, but it's not too early to start adding 2.0-specific sections and fixing things that are deprecated:
+  - Ansible 2.0! Ansible 2-specific sections and fixing things that are deprecated:
     - Added Blocks examples in chapter 5.
     - Added Dynamic includes section in chapter 6.
     - Replaced uses of `requirements.txt` with `requirements.yml` since the former is now deprecated.
@@ -37,6 +37,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Added note about installing `sshpass` package (thanks to Larry B!).
   - Corrected playbook command under the "separate inventory files" section in chapter 7 (thanks to @lekum!).
   - Corrected an incorrect use of `--syntax-check` in chapter 11 (thanks to @lekum!).
+  - Various tiny pre-launch tweaks and fixes.
 
 ## Version 0.99 (2015-07-19)
 
