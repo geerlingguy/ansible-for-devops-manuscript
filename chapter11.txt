@@ -27,13 +27,20 @@ Ansible has a very thorough [Ansible Tower User Guide](http://releases.ansible.c
 
 Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then create a directory (e.g. `tower`) and do the following within the directory:
 
-  1. `vagrant init tower http://vms.ansible.com/ansible-tower-2.1.4-virtualbox.box` (Create a new Vagrantfile using the Tower base box from Ansible).
-  2. `vagrant up` (Build the Tower VM).
-  3. `vagrant ssh` (Log into the VM, and Tower will display a message with connection information).
+{lang="text",linenos=off}
+    # Create a new Vagrantfile using the Tower base box from Ansible.
+    $ vagrant init tower http://vms.ansible.com/ansible-tower-2.3.1-\
+    virtualbox.box
+    
+    # Build the Tower VM.
+    $ vagrant up
+    
+    # Log into the VM (Tower will display connection information).
+    $ vagrant ssh
 
 I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
 
-Visit the URL provided by the login welcome message (something like `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
+Visit the URL provided by the login welcome message (e.g. `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
 
 At this point, you will need to register a free trial license of Ansible Tower following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
 

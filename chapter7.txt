@@ -216,7 +216,17 @@ The `inventory/hosts` file contains a simple definition of all the servers by gr
     [log]
     log.hostedapachesolr.com
 
-Ansible will search for a file at either `hostedapachesolr/host_vars/nyc1.hostedapachesolr.com` or `hostedapachesolr/inventory/host_vars/nyc1.hostedapachesolr.com`, and if there are any variables defined in the file (in YAML format), those variables will override all other playbook and role variables and gathered facts, *only for the single host*.
+Ansible will search for a file at either:
+
+{lang="text",linenos=off}
+    hostedapachesolr/host_vars/nyc1.hostedapachesolr.com
+
+Or:
+
+{lang="text",linenos=off}
+    hostedapachesolr/inventory/host_vars/nyc1.hostedapachesolr.com
+
+If there are any variables defined in the file (in YAML format), those variables will override all other playbook and role variables and gathered facts, *only for the single host*.
 
 The `nyc1.hostedapachesolr.com` host_vars file looks like:
 

@@ -8,6 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   - Fixed incorrect reference to NFS in NTP example setup in chapter 2 (thanks to @atweb!).
   - Replaced mention of `service` command with `systemctl` for CentOS 7 in chapter 2 (thanks to @briants5!).
+  - Fixed a number of formatting issues in code and paragraphs for print rendering.
 
 ## Version 1.0 (2015-10-10)
 
