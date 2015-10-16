@@ -28,7 +28,7 @@ The vast majority of small applications and websites are easily run on a single 
 
 In this instance, we are managing a Ruby on Rails site that allows users to perform CRUD operations on articles (database records with a title and body).
 
-The code repository for this app is located on GitHub at `https://github.com/geerlingguy/demo-rails-app`.
+The code repository for this app is located on GitHub in the [demo-rails-app repository](https://github.com/geerlingguy/demo-rails-app).
 
 Begin by creating a new Vagrant VM for local testing using the following Vagrantfile:
 
@@ -384,7 +384,7 @@ If you need to run an application on multiple servers for horizontal scalability
 
 The server checking application needs to run on a variety of servers hosted around the world by different providers to provide redundancy and reliability. Server Check.in uses Ansible to manage *rolling deployments* for this application, so new code is deployed across all the servers in minutes while maintaining 100% uptime!
 
-We'll emulate part of Server Check.in's infrastructure (the check server application) by deploying and updating a small Node.js application to a set of virtual machines. The code repository for this app is located on GitHub at `https://github.com/geerlingguy/demo-nodejs-api`. Here's a diagram of the infrastructure we'll be building:
+We'll emulate part of Server Check.in's infrastructure (the check server application) by deploying and updating a small Node.js application to a set of virtual machines. The code repository for this app is located on GitHub in the [demo-nodejs-api repository](https://github.com/geerlingguy/demo-nodejs-api). Here's a diagram of the infrastructure we'll be building:
 
 {width=80%}
 ![Four servers connected to the Internet.](images/9-multi-server-deployment-cloud.png)
