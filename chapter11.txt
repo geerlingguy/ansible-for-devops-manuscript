@@ -207,7 +207,7 @@ It's preferred to keep your playbooks and server configuration in a code reposit
         - name: Check the date on the server.
           command: date
 
-After you create the playbook, you will head over to the Jenkins UI to create a job to run the playbook. But if you want, test the playbook while you're logged in: `ansible-playbook main.yml`.
+If you want, test the playbook while you're logged in: `ansible-playbook main.yml`.
 
 ### Create a Jenkins job to run an Ansible Playbook
 
@@ -217,13 +217,13 @@ With Jenkins running, configure a Jenkins job to run a playbook on the local ser
   - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:
 
     {lang="text"}
-    ~~~
+    ~~~~~~~~
     # Force Ansible to output jobs with color.
     export ANSIBLE_FORCE_COLOR=true
     
     # Run the local test playbook.
     ansible-playbook /opt/ansible-for-devops/main.yml
-    ~~~
+    ~~~~~~~~
 
 Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, click the 'Build Now' link to start a build. After a few seconds, you should see a new item in the 'Build History' block. Click on the (hopefully) blue circle to the left of '#1', and it will take you to the console output of the job. It should look something like this:
 

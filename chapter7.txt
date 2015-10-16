@@ -422,30 +422,40 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
 
   1. Install `dopy` via pip (the DigitalOcean Python library):
 
-    {line-numbers=off}
-        $ pip install dopy
+     {lang="text",line-numbers=off}
+     ~~~~~~~~
+     $ pip install dopy
+     ~~~~~~~~
 
   2. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py) from Ansible on GitHub:
 
-    {line-numbers=off}
-        $ curl -O https://raw.githubusercontent.com/ansible/ansible/devel/\
-        plugins/inventory/digital_ocean.py
+     {lang="text",line-numbers=off}
+     ~~~~~~~~
+     $ curl -O https://raw.githubusercontent.com/ansible/ansible/devel/\
+     plugins/inventory/digital_ocean.py
+     ~~~~~~~~
 
   3. Make the inventory script executable:
 
-    {line-numbers=off}
-        $ chmod +x digital_ocean.py
+     {lang="text",line-numbers=off}
+     ~~~~~~~~
+     $ chmod +x digital_ocean.py
+     ~~~~~~~~
 
   4. Make sure you have the credentials configured in `digital_ocean.ini` (as explained earlier in this chapter). Alternatively, you can set `DO_CLIENT_ID` and `DO_API_KEY` in your environment, or pass the command line options `--client-id` and `--api-key`.
   5. Make sure the script is working by running the script directly (with the commande below). After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
 
-    {line-numbers=off}
-        $ ./digital_- ocean.py --pretty
+     {lang="text",line-numbers=off}
+     ~~~~~~~~
+     $ ./digital_- ocean.py --pretty
+     ~~~~~~~~
 
   6. Ping all your DigitalOcean droplets:
 
-    {line-numbers=off}
-        $ ansible all -m ping -i digital_ocean.py -u root`
+     {lang="text",line-numbers=off}
+     ~~~~~~~~
+     $ ansible all -m ping -i digital_ocean.py -u root
+     ~~~~~~~~
 
 Now that you have all your hosts being loaded through the dynamic inventory script, you can use `add_hosts` to build groups of the Droplets for use in your playbooks. Alternatively, if you want to fork the `digital_ocean.py` inventory script, you can modify it to suit your needs; exclude certain servers, build groups based on certain criteria, etc.
 

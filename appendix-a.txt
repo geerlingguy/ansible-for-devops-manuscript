@@ -83,11 +83,8 @@ PuTTY will ask for login credentials; we'll use the default login for a Vagrant 
 You should now be connected to the virtual machine, and see the message of the day:
 
 {lang="text",linenos=off}
-    Welcome to Ubuntu 12.04 LTS (GN/Linux 3.2.0-23-generic x86_64)
+    Welcome to Ubuntu 14.04.3 LTS (GNU/Linux 3.13.0-43-generic x86_64)
     
-      * Documentation: https://help.ubuntu.com/
-    Welcome to your Vagrant-built virtual machine.
-    Last login: <date> from <IP address>
     vagrant@trusty64:~$
 
 If you see this prompt, you're logged in, and you can start administering the VM. The next (and final) step is to install Ansible.
