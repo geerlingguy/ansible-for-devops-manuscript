@@ -4,6 +4,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
+## Current Version
+
+  - Fixed incorrect reference to NFS in NTP example setup in chapter 2 (thanks to @atweb!).
+  - Replaced mention of `service` command with `systemctl` for CentOS 7 in chapter 2 (thanks to @briants5!).
+
 ## Version 1.0 (2015-10-10)
 
   - Ansible 2.0! Ansible 2-specific sections and fixing things that are deprecated:
@@ -267,7 +272,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed formatting of some code examples to prevent line wrapping.
   - Added section on Ansible Galaxy in chapter 6.
   - Updated installation section in chapter 1 with simplified install processes.
-  - Added warnings concerning faster SSH in Ansible 1.5+ (thanks to [@LeeVanSteerthem](https://twitter.com/LeeVanSteerthem)).
+  - Added warnings concerning faster SSH in Ansible 1.5+ (thanks to @LeeVanSteerthem!).
 
 ## Version 0.42 (2014-03-25)
 

@@ -75,8 +75,8 @@ Let's create the Ansible `playbook.yml` file now. Create an empty text file in t
 I'll get into what this playbook is doing in a minute. For now, let's run the playbook on our VM. Make sure you're in the same directory as the Vagrantfile and new playbook.yml file, and enter `vagrant provision`. You should see status messages for each of the 'tasks' you defined, and then a recap showing what Ansible did on your VM---something like the following:
 
 {lang="text",linenos=off}
-    PLAY RECAP ********************************************************************
-    default                    : ok=3    changed=1    unreachable=0    failed=0
+    PLAY RECAP **********************************************************
+    default              : ok=3    changed=1    unreachable=0    failed=0
 
 Ansible just took the simple playbook you defined, parsed the YAML syntax, and ran a bunch of commands via SSH to configure the server as you specified. Let's go through the playbook, step by step:
 
@@ -93,7 +93,7 @@ This line tells Ansible to which hosts this playbook applies. `all` works here, 
 {lang="text",starting-line-number=3}
       sudo: yes
 
-Since we need privileged access to install NFS and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook.
+Since we need privileged access to install NTP and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook.
 
 {lang="text",starting-line-number=4}
       tasks:
@@ -125,11 +125,11 @@ This final task both checks and ensures that the ntpd service is started and run
     then
         echo "ntpd is running." > /dev/null
     else
-        /sbin/service ntpd restart > /dev/null
+        systemctl start ntpd.service > /dev/null
         echo "Started ntpd."
     fi
     # Make sure ntpd is enabled on system startup.
-    chkconfig ntpd on
+    systemctl enable ntpd.service
 
 You can see how things start getting complex in the land of shell scripts! And this shell script is still not as robust as what you get with Ansible. To maintain idempotency and handle error conditions, you'll have to do a lot more extra work with basic shell scripts than you do with Ansible.
 

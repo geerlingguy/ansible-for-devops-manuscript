@@ -12,7 +12,7 @@ We've already seen one of the most basic ways of including other files in Chapte
     - hosts: all
     
       vars_files:
-      - vars.yml
+        - vars.yml
 
 Tasks can easily be included in a similar way. In the `tasks:` section of your playbook, you can add `include` directives like so:
 
@@ -44,32 +44,35 @@ Just like with variable include files, tasks are formatted in a flat list in the
     - name: Restart example service.
       service: name=example state=restarted
 
-In this case, you'd probably want to name the file `user-config.yml`, since it's used to configure a user account and restart some service. Now, in this and any other playbook that provisions or configures a server, if you want to configure a particular user's account, add the following in your playbook's `tasks` section:
+In this case, you'd probably want to name the file `user.yml`, since it's used to configure a user account and restart some service. Now, in this and any other playbook that provisions or configures a server, if you want to configure a particular user's account, add the following in your playbook's `tasks` section:
 
 {lang="text",linenos=off}
-    - include: example-app-config.yml
+    tasks:
+      - include: user.yml
 
 We used `{{ username }}` and `{{ ssh_private_keys }}` variables in this include file instead of hard-coded values so we could make this include file reusable. You could define the variables in your playbook's inline variables or an included variables file, but Ansible also lets you pass variables directly into includes using normal YAML syntax. For example:
 
 {lang="text",linenos=off}
-    - { include: user-config.yml, username: johndoe, ssh_private_keys: [] }
-    - { include: user-config.yml, username: janedoe, ssh_private_keys: [] }
+    tasks:
+      - { include: user.yml, username: johndoe, ssh_private_keys: [] }
+      - { include: user.yml, username: janedoe, ssh_private_keys: [] }
 
 To make the syntax more readable, you can use structured variables, like so:
 
 {lang="text",linenos=off}
-    - include: user-config.yml
-      vars:
-        username: johndoe
-        ssh_private_keys:
-          - { src: /path/to/johndoe/key1, dest: id_rsa }
-          - { src: /path/to/johndoe/key2, dest: id_rsa_2 }
-    - include: user-config.yml
-      vars:
-        username: janedoe
-        ssh_private_keys:
-          - { src: /path/to/janedoe/key1, dest: id_rsa }
-          - { src: /path/to/janedoe/key2, dest: id_rsa_2 }
+    tasks:
+      - include: user.yml
+        vars:
+          username: johndoe
+          ssh_private_keys:
+            - { src: /path/to/johndoe/key1, dest: id_rsa }
+            - { src: /path/to/johndoe/key2, dest: id_rsa_2 }
+      - include: user.yml
+        vars:
+          username: janedoe
+          ssh_private_keys:
+            - { src: /path/to/janedoe/key1, dest: id_rsa }
+            - { src: /path/to/janedoe/key2, dest: id_rsa_2 }
 
 Include files can even include other files, so you could have something like the following:
 
@@ -187,7 +190,7 @@ It's much easier to maintain small groupings of related tasks than one long play
 
 You can also use tags (demonstrated in the previous chapter) to limit the playbook run to a certain include file. Using the above example, if you wanted to add a 'drush' tag to the included drush file (so you could run `ansible-playbook playbook.yml --tags=drush` and only run the drush tasks), you can change line 20 to the following:
 
-{lang=text,starting-line-number=20}
+{lang="text",starting-line-number=20}
     - include: tasks/drush.yml tags=drush
 
 T> You can find the entire example Drupal LAMP server playbook using include files in this book's code repository at [https://github.com/geerlingguy/ansible-for-devops](https://github.com/geerlingguy/ansible-for-devops), in the `includes` directory.
@@ -210,14 +213,14 @@ Instead of requiring you to explicitly include certain files and playbooks in a 
 
 There are only two directories required to make a working Ansible role:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     role_name/
       meta/
       tasks/
 
 If you create a directory structure like the one shown above, with a `main.yml` file in each directory, Ansible will run all the tasks defined in `tasks/main.yml` if you call the role from your playbook using the following syntax:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: all
       roles:
@@ -235,7 +238,7 @@ Create a `roles` folder in the same directory as the main `playbook.yml` file li
 
 Inside the `meta` folder, add a simple `main.yml` file with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     dependencies: []
 
@@ -243,7 +246,7 @@ The meta information for your role is defined in this file. In basic examples an
 
 Create a `main.yml` file in this folder, and add the following contents (basically copying and pasting the configuration from the Chapter 4 example):
 
-{lang=text}
+{lang="text"}
     ---
     - name: Install Node.js (npm plus all its dependencies).
       yum: name=npm state=present enablerepo=epel
@@ -253,7 +256,7 @@ Create a `main.yml` file in this folder, and add the following contents (basical
 
 The Node.js directory structure should now look like the following:
 
-{lang=text}
+{lang="text"}
     nodejs-app/
       app/
         app.js
@@ -268,7 +271,7 @@ The Node.js directory structure should now look like the following:
 
 You now have a complete Ansible role that you can use in your node.js server configuration playbook. Delete the Node.js app installation lines from `playbook.yml`, and reformat the playbook so the other tasks run first (in a `pre_tasks:` section instead of `tasks:`), then the role, then the rest of the tasks (in the main `tasks:` section). Something like:
 
-{lang=text,linenos="off"}
+{lang="text",linenos="off"}
     pre_tasks:
       # EPEL/GPG setup, firewall configuration...
     
@@ -294,7 +297,7 @@ When running a role's tasks, Ansible picks up variables defined in a role's `var
 
 Modify the `tasks/main.yml` file to use a list variable and iterate through the list to install as many packages as your playbook wants:
 
-{lang=text}
+{lang="text"}
     ---
     - name: Install Node.js (npm plus all its dependencies).
       yum: name=npm state=present enablerepo=epel
@@ -305,14 +308,14 @@ Modify the `tasks/main.yml` file to use a list variable and iterate through the 
 
 Let's provide a sane default for the new `node_npm_modules` variable in `defaults/main.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     node_npm_modules:
       - forever
 
 Now, if you run the playbook as-is, it will still do the exact same thing---install the `forever` module. But since the role is more flexible, we could create a new playbook like our first, but add a variable (either in a `vars` section or in an included file via `vars_files`) to override the default, like so:
 
-{lang=text}
+{lang="text"}
     node_npm_modules:
       - forever
       - async
@@ -324,7 +327,7 @@ Hopefully you're beginning to see how this can be powerful!
 
 Imagine if you had a playbook structure like:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: appservers
       roles:
@@ -351,17 +354,17 @@ T> **Variable precedence**: Note that Ansible handles variables placed in includ
 
 In one of the prior examples, we introduced handlers---tasks that could be called via the `notify` option after any playbook task resulted in a change---and an example handler for restarting Apache was given:
 
-{lang=text}
+{lang="text"}
     handlers:
       - name: restart apache
         service: name=apache2 state=restarted
 
 In Ansible roles, handlers are first-class citizens, alongside tasks, variables, and other configuration. You can store handlers directly inside a `main.yml` file inside a role's `handlers` directory. So if we had a role for Apache configuration, our `handlers/main.yml` file could look like this:
 
-{lang=text}
+{lang="text"}
     ---
     - name: restart apache
-      command: service apache2 restart
+      service: name=apache2 state=restarted
 
 You can call handlers defined in a role's handlers folder just like those included directly in your playbooks (e.g. `notify: restart apache`).
 
@@ -369,7 +372,7 @@ You can call handlers defined in a role's handlers folder just like those includ
 
 For the following examples, let's assume our role is structured with files and templates inside `files` and `templates` directories, respectively:
 
-{lang=text}
+{lang="text"}
     roles/
       example/
         files/
@@ -385,19 +388,19 @@ when copying a file directly to the server, add the filename or the full path fr
 
 {lang="text",linenos="off"}
     - name: Copy configuration file to server directly.
-      copy: >
-        src=example.conf
-        dest=/etc/myapp/example.conf
-        mode=644
+      copy:
+        src: example.conf
+        dest: /etc/myapp/example.conf
+        mode: 0644
 
 Similarly, when specifying a template, add the filename or the full path from within a role's `templates` directory, like so:
 
 {lang="text",linenos="off"}
     - name: Copy configuration file to server using a template.
-      template: >
-        src=example.xml.j2
-        dest=/etc/myapp/example.xml
-        mode=644
+      template:
+        src: example.xml.j2
+        dest: /etc/myapp/example.xml
+        mode: 0644
 
 The `copy` module copies files from within the module's `files` folder, and the `template` module runs given template files through the Jinja2 templating engine, merging in any variables available during your playbook run before copying the file to the server.
 
@@ -411,7 +414,7 @@ Let's take a look at the way my `geerlingguy.apache` role is set up (it's [avail
 
 Initially, the role's main `tasks/main.yml` file looked something like the following (generally speaking):
 
-{lang=text}
+{lang="text"}
     - name: Ensure Apache is installed (via apt).
     
     - name: Configure Apache with lineinfile.
@@ -420,7 +423,7 @@ Initially, the role's main `tasks/main.yml` file looked something like the follo
 
 Soon after creating the role, though, I wanted to make the role work with both Debian and RedHat hosts. I could've added two sets of tasks in the `main.yml` file, resulting in twice the number of tasks and a bunch of extra `when` statements:
 
-{lang=text}
+{lang="text"}
     - name: Ensure Apache is installed (via apt).
       when: ansible_os_family == 'Debian'
     
@@ -440,7 +443,7 @@ Soon after creating the role, though, I wanted to make the role work with both D
 
 If I had gone this route, and continued with the rest of the playbook tasks in one file, I would've quickly surpassed my informal 100-line limit. So I chose to use includes in my main tasks file:
 
-{lang=text}
+{lang="text"}
     - name: Include OS-specific variables.
       include_vars: "{{ ansible_os_family }}.yml"
     
@@ -492,7 +495,7 @@ If your infrastructure configuration requires five, ten, fifteen or more Ansible
 
 Ansible allows a simple `.txt` format that is very basic (though this format is deprecated and may be removed), but you should generally use the more standard and expressive YAML format, which allows you to install roles from Ansible Galaxy, GitHub, an HTTP download, BitBucket, or your own repository. It also allows you to specify the path into which the roles should be downloaded. An example `requirements.yml` file looks like this:
 
-{lang=text}
+{lang="text"}
     ---
     # From Ansible Galaxy, latest version.
     - src: geerlingguy.firewall
@@ -501,7 +504,7 @@ Ansible allows a simple `.txt` format that is very basic (though this format is 
     - src: geerlingguy.php
       version: 1.4.1
     
-    # From GitHub, into a particular path, with a custom name and version.
+    # From GitHub, to a given path, with a custom name and version.
     - src: https://github.com/geerlingguy/ansible-role-passenger
       path: /etc/ansible/roles/
       name: passenger
@@ -545,7 +548,8 @@ You could think of Galaxy roles as glorified packages; they not only install sof
 Let's grab a few more roles and build an Apache Solr search server, which requires Java and Apache Tomcat to be installed and configured.
 
 {lang="text",linenos="off"}
-    $ ansible-galaxy install geerlingguy.java geerlingguy.tomcat6 geerlingguy.solr
+    $ ansible-galaxy install geerlingguy.java geerlingguy.tomcat6 \
+    geerlingguy.solr
 
 Then create a playbook named `solr.yml` with the following contents:
 

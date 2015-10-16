@@ -28,7 +28,7 @@ Ansible uses a simple syntax (YAML) and simple command-line tools (using common 
     ---
     # This is the beginning of a YAML file.
 
-Some lines of YAML and other code examples require more than 80 characters per line, resulting in the code wrapping to a new line. Wrapping code is indicated by a `\` at the end of the line of code. For example:
+Some lines of YAML and other code examples require more than 70 characters per line, resulting in the code wrapping to a new line. Wrapping code is indicated by a `\` at the end of the line of code. For example:
 
 {lang="text"}
     # The line of code wraps due to the extremely long URL.
@@ -50,10 +50,10 @@ When displaying commands run in a terminal session, if the commands are run unde
 
 ## Please help improve this book!
 
-New revisions of this book are published on a regular basis. If you think a particular section needs improvement or find something missing, please contact me via Twitter ([@geerlingguy](https://twitter.com/geerlingguy)), [Google+](https://plus.google.com/+JeffGeerling), a comment on [this book's Feedback page on LeanPub](https://leanpub.com/ansible-for-devops/feedback), or whatever method is convenient for you.
+New revisions of this book are published on a regular basis. If you think a particular section needs improvement or find something missing, please contact me via Twitter ([@geerlingguy](https://twitter.com/geerlingguy)), a comment on [this book's Feedback page on LeanPub](https://leanpub.com/ansible-for-devops/feedback), or whatever method is convenient for you.
 
-All known issues with Ansible for DevOps will be aggregated on the book's online [Errata](http://www.ansiblefordevops.com/errata) page, as well as in the book's Changelog (for the benefit of those who purchase the book on a platform that allows frequent releases between editions).
+All known issues with Ansible for DevOps will be aggregated on the book's online [Errata](http://www.ansiblefordevops.com/errata) page.
 
 ## About the Author
 
-[Jeff Geerling](http://jeffgeerling.com/) is a developer who has worked in programming and devops for companies with anywhere between one to thousands of servers. He also manages many virtual servers for services offered by [Midwestern Mac, LLC](http://www.midwesternmac.com/) and has been using Ansible to manage infrastructure since early 2013.
+Jeff Geerling is a developer who has worked in programming and devops for companies with anywhere between one to thousands of servers. He also manages many virtual servers for services offered by Midwestern Mac, LLC and has been using Ansible to manage infrastructure since early 2013.

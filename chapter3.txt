@@ -86,7 +86,7 @@ There are many ways you can tell Ansible about the servers you manage, but the m
 
 Add the following to the file:
 
-{lang=text}
+{lang="text"}
     # Lines beginning with a # are comments, and are only included for
     # illustration. These comments are overkill for most inventory files.
     
@@ -214,22 +214,22 @@ Second, let's also make sure there is enough memory on our servers:
 {lang="text",linenos=off}
     $ ansible multi -a "free -m"
     192.168.60.4 | success | rc=0 >>
-                 total       used       free     shared    buffers     cached
-    Mem:           238        187         50          4          1         69
-    -/+ buffers/cache:        116        121
-    Swap:         1055          0       1055
+                 total     used     free   shared   buffers   cached
+    Mem:           238      187       50        4         1       69
+    -/+ buffers/cache:      116      121
+    Swap:         1055        0     1055
     
     192.168.60.6 | success | rc=0 >>
-                 total       used       free     shared    buffers     cached
-    Mem:           238        190         47          4          1         72
-    -/+ buffers/cache:        116        121
-    Swap:         1055          0       1055
+                 total     used     free   shared   buffers   cached
+    Mem:           238      190       47        4         1       72
+    -/+ buffers/cache:      116      121
+    Swap:         1055        0     1055
     
     192.168.60.5 | success | rc=0 >>
-                 total       used       free     shared    buffers     cached
-    Mem:           238        186         52          4          1         67
-    -/+ buffers/cache:        116        121
-    Swap:         1055          0       1055
+                 total     used     free   shared   buffers   cached
+    Mem:           238      186       52        4         1       67
+    -/+ buffers/cache:      116      121
+    Swap:         1055        0     1055
 
 Memory is pretty tight, but since we're running three VMs on our localhost, we need to be a little conservative.
 
@@ -264,7 +264,8 @@ I> The `-s` option (alias for `--sudo`) tells Ansible to run the command with su
 Now we'll make sure the NTP daemon is started and set to run on boot. We could use two separate commands, `service ntpd start` and `chkconfig ntpd on`, but we'll use Ansible's `service` module instead.
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m service -a "name=ntpd state=started enabled=yes"
+    $ ansible multi -s -m service -a "name=ntpd state=started \
+    enabled=yes"
 
 All three servers should show a success message like:
 
@@ -309,12 +310,13 @@ You could also install django using `pip`, which can be installed via `easy_inst
 Check to make sure Django is installed and working correctly.
 
 {lang="text",linenos=off}
-    $ ansible app -a "python -c 'import django; print django.get_version()'"
+    $ ansible app -a "python -c 'import django; \
+    print django.get_version()'"
     192.168.60.4 | success | rc=0 >>
-    1.8
+    1.9
     
     192.168.60.5 | success | rc=0 >>
-    1.8
+    1.9
 
 Things look like they're working correctly on our app servers. We can now move on to our database server.
 
@@ -328,7 +330,8 @@ Let's install MariaDB, start it, and configure the server's firewall to allow ac
 
 {lang="text",linenos=off}
     $ ansible db -s -m yum -a "name=mariadb-server state=present"
-    $ ansible db -s -m service -a "name=mariadb state=started enabled=yes"
+    $ ansible db -s -m service -a "name=mariadb state=started \
+    enabled=yes"
     $ ansible db -s -a "iptables -F"
     $ ansible db -s -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp \
     -m tcp --dport 3306 -j ACCEPT"
@@ -579,7 +582,8 @@ Ansible will assume `*` for all values you don't specify (valid values are `day`
 What if we want to remove the cron job? Simple enough, use the same `cron` command, and pass the name of the cron job you want to delete, and `state=absent`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' state=absent"
+    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
+    state=absent"
 
 You can also use Ansible to manage custom crontab files; use the same syntax as you used earlier, but specify the location to the cron file with: `cron_file=cron_file_name` (where `cron_file_name` is a cron file located in `/etc/cron.d`).
 

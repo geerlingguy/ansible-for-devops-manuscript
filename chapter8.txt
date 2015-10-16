@@ -21,7 +21,7 @@ Two **MySQL** servers, configured as a master and slave, offer redundant and per
 
 In order to keep our configuration organized, we'll use the following structure for our playbooks and configuration:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     lamp-infrastructure/
       inventories/
       playbooks/
@@ -45,7 +45,7 @@ Let's start building our individual server playbooks (in the `playbooks` directo
 
 Create a `main.yml` file within the the `playbooks/varnish` directory, with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: lamp-varnish
       sudo: yes
@@ -75,7 +75,7 @@ Finally, a task copies over a custom `default.vcl` that configures Varnish, tell
 
 Let's create the two files referenced in the above playbook. First, `vars.yml`, in the same directory as `main.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     firewall_allowed_tcp_ports:
       - "22"
@@ -87,7 +87,7 @@ The first variable tells the `geerlingguy.firewall` role to open TCP ports 22 an
 
 Create a `templates` directory inside the `playbooks/varnish` directory, and inside, create a `default.vcl.j2` file. This file will use Jinja2 syntax to build Varnish's custom `default.vcl` file:
 
-{lang=text}
+{lang="text"}
     vcl 4.0;
     
     import directors;
@@ -128,7 +128,7 @@ In terms of our caching/load balancing layer, this should suffice. For a true pr
 
 Create a `main.yml` file within the the `playbooks/www` directory, with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: lamp-www
       sudo: yes
@@ -165,7 +165,7 @@ Two final tasks remove the default `index.html` home page included with Apache, 
 
 As in the Varnish example, create the two files referenced in the above playbook. First, `vars.yml`, alongside `main.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     firewall_allowed_tcp_ports:
       - "22"
@@ -190,7 +190,8 @@ Create a `templates` directory inside the `playbooks/www` directory, and inside,
     $mysql_results = array();
     foreach ($mysql_servers as $host) {
       if ($result = mysql_test_connection($host)) {
-        $mysql_results[$host] = '<span style="color: green;">PASS</span>';
+        $mysql_results[$host] = '<span style="color: green;">PASS\
+    </span>';
         $mysql_results[$host] .= ' (' . $result['status'] . ')';
       }
       else {
@@ -221,7 +222,7 @@ Create a `templates` directory inside the `playbooks/www` directory, and inside,
      *   IP Address or hostname of the server.
      *
      * @return array
-     *   Array with keys 'success' (bool) and 'status' ('slave' or 'master').
+     *   Array with 'success' (bool) and 'status' ('slave' or 'master').
      *   Empty if connection failure.
      */
     function mysql_test_connection($host) {
@@ -260,7 +261,8 @@ Create a `templates` directory inside the `playbooks/www` directory, and inside,
     <body>
       <h1>Host {{ inventory_hostname }}</h1>
       <?php foreach ($mysql_results as $host => $result): ?>
-        <p>MySQL Connection (<?php print $host; ?>): <?php print $result; ?></p>
+        <p>MySQL Connection (<?php print $host; ?>): 
+        <?php print $result; ?></p>
       <?php endforeach; ?>
       <p>Memcached Connection: <?php print $memcached_result; ?></p>
     </body>
@@ -281,7 +283,7 @@ At this point, the heart of our infrastructure---the application that will test 
 
 Compared to the earlier playbooks, the Memcached playbook is quite simple. Create `playbooks/memcached/main.yml` with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: lamp-memcached
       sudo: yes
@@ -297,13 +299,15 @@ As with the other servers, we need to ensure only the required TCP ports are ope
 
 In our `vars.yml` file (again, alongside `main.yml`), add the following:
 
-{lang=text}
+{lang="text"}
     ---
     firewall_allowed_tcp_ports:
       - "22"
     firewall_additional_rules:
-      - "iptables -A INPUT -p tcp --dport 11211 -s {{ groups['lamp-www'][0] }} -j ACCEPT"
-      - "iptables -A INPUT -p tcp --dport 11211 -s {{ groups['lamp-www'][1] }} -j ACCEPT"
+      - "iptables -A INPUT -p tcp --dport 11211 -s \
+      {{ groups['lamp-www'][0] }} -j ACCEPT"
+      - "iptables -A INPUT -p tcp --dport 11211 -s \
+      {{ groups['lamp-www'][1] }} -j ACCEPT"
     
     memcached_listen_ip: "{{ groups['lamp-memcached'][0] }}"
 
@@ -317,7 +321,7 @@ The MySQL configuration is more complex than the other servers because we need t
 
 Let's first create the main playbook, `playbooks/db/main.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: lamp-db
       sudo: yes
@@ -352,7 +356,7 @@ Most of the playbook is straightforward, but in this instance, we're using `set_
 
 We'll need a few other normal variables to configure MySQL, so we'll add them alongside the firewall variable in `playbooks/db/vars.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     firewall_allowed_tcp_ports:
       - "22"
@@ -360,7 +364,9 @@ We'll need a few other normal variables to configure MySQL, so we'll add them al
     
     mysql_replication_user: {name: 'replication', password: 'secret'}
     mysql_databases:
-      - { name: mycompany_database, collation: utf8_general_ci, encoding: utf8 }
+      - name: mycompany_database
+        collation: utf8_general_ci
+        encoding: utf8
 
 We're opening port 3306 to anyone, but according to the **principle of least privilege** discussed earlier, you would be justified in restricting this port to only the servers and users that need access to MySQL (similar to the memcached server configuration). In this case, the attack vector is mitigated because MySQL's own authentication layer is used through the `mysql_user` variable generated in `main.yml`.
 
@@ -372,7 +378,7 @@ With the configuration of the database servers complete, the server-specific pla
 
 A simple playbook including each of the group-specific playbooks is all we need for the overall configuration to take place. Create `configure.yml` in the project's root directory, with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     - include: playbooks/varnish/main.yml
     - include: playbooks/www/main.yml
@@ -387,7 +393,7 @@ But we're going to continue to make our playbooks more flexible and useful.
 
 As mentioned in the Chapter 6, Ansible allows you to define all the required Ansible Galaxy roles for a given project in a `requirements.yml` file. Instead of having to remember to run `ansible-galaxy install -y [role1] [role2] [role3]` for each of the roles we're using, we can create `requirements.yml` in the root of our project, with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     - src: geerlingguy.firewall
     - src: geerlingguy.repo-epel
@@ -486,7 +492,8 @@ Here's the Vagrantfile in all its glory:
           ansible.limit = "all"
           ansible.extra_vars = {
             ansible_ssh_user: 'vagrant',
-            ansible_ssh_private_key_file: "~/.vagrant.d/insecure_private_key"
+            ansible_ssh_private_key_file: \
+    "~/.vagrant.d/insecure_private_key"
           }
         end
       end
@@ -499,7 +506,8 @@ Most of the Vagrantfile is straightforward, and similar to other examples used i
           ansible.limit = "all"
           ansible.extra_vars = {
             ansible_ssh_user: 'vagrant',
-            ansible_ssh_private_key_file: "~/.vagrant.d/insecure_private_key"
+            ansible_ssh_private_key_file: \
+    "~/.vagrant.d/insecure_private_key"
           }
 
   1. `ansible.inventory_path` defines an inventory file to be used with the `ansible.playbook`. You could certainly create a dynamic inventory script for use with Vagrant, but because we know the IP addresses ahead of time, and are expecting a few specially-crafted inventory group names, it's simpler to build the inventory file for Vagrant provisioning by hand (we'll do this next).
@@ -508,7 +516,7 @@ Most of the Vagrantfile is straightforward, and similar to other examples used i
 
 Before running `vagrant up` to see the fruits of our labor, we need to create an inventory file for Vagrant at `inventories/vagrant/inventory`:
 
-{lang=text}
+{lang="text"}
     [lamp-varnish]
     192.168.2.2
     
@@ -541,7 +549,7 @@ In Chapter 7, we learned provisioning and configuring DigitalOcean droplets in a
 
 For the sake of flexibility, let's create a playbook for our DigitalOcean droplets in `provisioners/digitalocean.yml`. This will allow us to add other provisioner configurations later, alongside the `digitalocean.yml` playbook. As with our example in Chapter 7, we will use a local connection to provision cloud instances. Begin the playbook with:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: localhost
       connection: local
@@ -549,7 +557,7 @@ For the sake of flexibility, let's create a playbook for our DigitalOcean drople
 
 Next we need to define some metadata to describe each of our droplets. For simplicity's sake, we'll inline the `droplets` variable in this playbook:
 
-{lang=text,starting-line-number=6}
+{lang="text",starting-line-number=6}
       vars:
         droplets:
           - { name: a4d.lamp.varnish, group: "lamp-varnish" }
@@ -566,7 +574,7 @@ Each droplet is an object with two keys:
 
 Next we need to add a task to create the droplets, using the `droplets` list as a guide, and as part of the same task, register each droplet's information in a separate dictionary, `created_droplets`:
 
-{lang=text,starting-line-number=15}
+{lang="text",starting-line-number=15}
       tasks:
         - name: Provision DigitalOcean droplets.
           digital_ocean:
@@ -575,9 +583,9 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
             name: "{{ item.name }}"
             private_networking: yes
             size_id: "{{ item.size | default(66) }}" # 512mb
-            image_id: "{{ item.image | default(6372108) }}" # CentOS 6 x64.
+            image_id: "{{ item.image | default(6372108) }}" # CentOS 6
             region_id: "{{ item.region | default(4) }}" # NYC2
-            ssh_key_ids: "{{ item.ssh_key | default('138954') }}" # geerlingguy
+            ssh_key_ids: "{{ item.ssh_key | default('138954') }}"
             unique_name: yes
           register: created_droplets
           with_items: droplets
@@ -590,11 +598,12 @@ T> It's best to use key-based authentication and add at least one SSH key to you
 
 We loop through all the defined `droplets` using `with_items: droplets`, and after each droplet is created, we add the droplet's metadata (name, IP address, etc.) to the `created_droplets` variable. Next, we'll loop through that variable to build our inventory on-the-fly so our configuration applies to the correct servers:
 
-{lang=text,starting-line-number=30}
-        - name: Add DigitalOcean hosts to their respective inventory groups.
+{lang="text",starting-line-number=30}
+        - name: Add DigitalOcean hosts to inventory groups.
           add_host:
             name: "{{ item.1.droplet.ip_address }}"
-            groups: "do,{{ droplets[item.0].group }},{{ item.1.droplet.name }}"
+            groups: "do,{{ droplets[item.0].group }},\
+    {{ item.1.droplet.name }}"
             # You can dynamically add inventory variables per-host.
             ansible_ssh_user: root
             mysql_replication_role: >
@@ -614,7 +623,7 @@ T> There are a few different ways you can approach dynamic provisioning and inve
 
 The final step in our provisioning is to make sure all the droplets are booted and can be reached via SSH. So at the end of the `digitalocean.yml` playbook, add another play to be run on hosts in the `do` group we just defined:
 
-{lang=text,starting-line-number=43}
+{lang="text",starting-line-number=43}
     - hosts: do
       remote_user: root
       gather_facts: no
@@ -627,7 +636,7 @@ Once we know port 22 is reachable, we know the droplet is up and ready for confi
 
 We're now *almost* ready to provision and configure our entire infrastructure on DigitalOcean, but first we need to create one last playbook to tie everything together. Create `provision.yml` in the project root with the following contents:
 
-{lang=text}
+{lang="text"}
     ---
     - include: provisioners/digitalocean.yml
     - include: configure.yml
@@ -636,15 +645,15 @@ That's it! Now, assuming you set the environment variables `DO_CLIENT_ID` and `D
 
 The entire process should take about 15 minutes; once it's complete, you should see something like this:
 
-{lang=text,linenos=off}
-    PLAY RECAP *****************************************************************
-    107.170.27.137             : ok=19   changed=13   unreachable=0    failed=0
-    107.170.3.23               : ok=13   changed=8    unreachable=0    failed=0
-    107.170.51.216             : ok=40   changed=18   unreachable=0    failed=0
-    107.170.54.218             : ok=27   changed=16   unreachable=0    failed=0
-    162.243.20.29              : ok=24   changed=15   unreachable=0    failed=0
-    192.241.181.197            : ok=40   changed=18   unreachable=0    failed=0
-    localhost                  : ok=2    changed=1    unreachable=0    failed=0
+{lang="text",linenos=off}
+    PLAY RECAP **********************************************************
+    107.170.27.137       : ok=19   changed=13   unreachable=0    failed=0
+    107.170.3.23         : ok=13   changed=8    unreachable=0    failed=0
+    107.170.51.216       : ok=40   changed=18   unreachable=0    failed=0
+    107.170.54.218       : ok=27   changed=16   unreachable=0    failed=0
+    162.243.20.29        : ok=24   changed=15   unreachable=0    failed=0
+    192.241.181.197      : ok=40   changed=18   unreachable=0    failed=0
+    localhost            : ok=2    changed=1    unreachable=0    failed=0
 
 Visit the IP address of the varnish server, and you will be greeted with a status page similar to the one generated by the Vagrant-based infrastructure:
 
@@ -665,7 +674,7 @@ For Amazon Web Services, provisioning is slightly different. Amazon has a broade
 
 To begin, create `aws.yml` inside the `provisioners` directory and begin the playbook the same way as for DigitalOcean:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: localhost
       connection: local
@@ -674,7 +683,7 @@ To begin, create `aws.yml` inside the `provisioners` directory and begin the pla
 EC2 instances use security groups as an AWS-level firewall (which operates outside the individual instance's OS).
 We will need to define a list of `security_groups` alongside our EC2 `instances`. First, the `instances`:
 
-{lang=text,starting-line-number=6}
+{lang="text",starting-line-number=6}
       vars:
         instances:
           - name: a4d.lamp.varnish
@@ -706,22 +715,42 @@ I> If you use AWS exclusively, it would be best to autoscaling groups and change
 
 With our instances defined, we'll next define a `security_groups` variable containing all the required security group configuration for each server:
 
-{lang=text,starting-line-number=27}
+{lang="text",starting-line-number=27}
         security_groups:
           - name: a4d_lamp_http
             rules:
-              - { proto: tcp, from_port: 80, to_port: 80, cidr_ip: 0.0.0.0/0 }
-              - { proto: tcp, from_port: 22, to_port: 22, cidr_ip: 0.0.0.0/0 }
+              - proto: tcp
+                from_port: 80
+                to_port: 80
+                cidr_ip: 0.0.0.0/0
+              - proto: tcp
+                from_port: 22
+                to_port: 22
+                cidr_ip: 0.0.0.0/0
             rules_egress: []
+    
           - name: a4d_lamp_db
             rules:
-              - { proto: tcp, from_port: 3306, to_port: 3306, cidr_ip: 0.0.0.0/0 }
-              - { proto: tcp, from_port: 22, to_port: 22, cidr_ip: 0.0.0.0/0 }
+              - proto: tcp
+                from_port: 3306
+                to_port: 3306
+                cidr_ip: 0.0.0.0/0
+              - proto: tcp
+                from_port: 22
+                to_port: 22
+                cidr_ip: 0.0.0.0/0
             rules_egress: []
+    
           - name: a4d_lamp_memcached
             rules:
-              - { proto: tcp, from_port: 11211, to_port: 11211, cidr_ip: 0.0.0.0/0 }
-              - { proto: tcp, from_port: 22, to_port: 22, cidr_ip: 0.0.0.0/0 }
+              - proto: tcp
+                from_port: 11211
+                to_port: 11211
+                cidr_ip: 0.0.0.0/0
+              - proto: tcp
+                from_port: 22
+                to_port: 22
+                cidr_ip: 0.0.0.0/0
             rules_egress: []
 
 Each security group has a `name` (which was used to identify the security group in the `instances` list), `rules` (a list of firewall rules---like protocol, ports, and IP ranges---to limit *incoming* traffic), and `rules_egress` (a list of firewall rules to limit *outgoing* traffic).
@@ -730,7 +759,7 @@ We need three security groups: `a4d_lamp_http` to open port 80, `a4d_lamp_db` to
 
 Now that we have all the data we need to set up security groups and instances, our first task is to create or verify the existence of the security groups:
 
-{lang=text,starting-line-number=44}
+{lang="text",starting-line-number=64}
       tasks:
         - name: Configure EC2 Security Groups.
           ec2_group:
@@ -746,7 +775,7 @@ The `ec2_group` requires a name, region, and rules for each security group. Secu
 
 With the security groups configured, we can provision the defined EC2 instances by looping through `instances` with the `ec2` module:
 
-{lang=text,starting-line-number=55}
+{lang="text",starting-line-number=75}
         - name: Provision EC2 instances.
           ec2:
             key_name: "{{ item.ssh_key | default('jeff_mba_home') }}"
@@ -754,8 +783,8 @@ With the security groups configured, we can provision the defined EC2 instances 
               inventory_group: "{{ item.group | default('') }}"
               inventory_host: "{{ item.name | default('') }}"
             group: "{{ item.security_group | default('') }}"
-            instance_type: "{{ item.type | default('t2.micro')}}" # Free Tier
-            image: "{{ item.image | default('ami-11125e21') }}" # RHEL6 x64 hvm
+            instance_type: "{{ item.type | default('t2.micro')}}" # Free
+            image: "{{ item.image | default('ami-11125e21') }}" # RHEL6
             region: "{{ item.region | default('us-west-2') }}" # Oregon
             wait: yes
             wait_timeout: 500
@@ -775,8 +804,8 @@ This example is slightly more complex than the DigitalOcean example, and a few p
 
 Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we will use to build Ansible inventory groups for the server configuration playbooks.
 
-{lang=text,starting-line-number=74}
-        - name: Add EC2 instances to their respective inventory groups.
+{lang="text",starting-line-number=94}
+        - name: Add EC2 instances to inventory groups.
           add_host:
             name: "{{ item.1.tagged_instances.0.public_ip }}"
             groups: "aws,{{ item.1.item.group }},{{ item.1.item.name }}"
@@ -795,7 +824,7 @@ We still use `with_indexed_items` so we can use the index to generate a unique I
 
 The final steps in provisioning the EC2 instances are to ensure we can connect to them, and to set `selinux` into permissive mode so the configuration we supply will work correctly.
 
-{lang=text,starting-line-number=87}
+{lang="text",starting-line-number=107}
     # Run some general configuration on all AWS hosts.
     - hosts: aws
       gather_facts: false
@@ -812,7 +841,7 @@ Since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated i
 
 Now, modify the `provision.yml` file in the root of the project folder and change the provisioners include to look like the following:
 
-{lang=text}
+{lang="text"}
     ---
     - include: provisioners/aws.yml
     - include: configure.yml
@@ -821,15 +850,15 @@ Assuming the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KE
 
 The entire process should take about 15 minutes, and once it's complete, you should see something like this:
 
-{lang=text,linenos=off}
-    PLAY RECAP *****************************************************************
-    54.148.100.44              : ok=24   changed=16   unreachable=0    failed=0
-    54.148.120.23              : ok=40   changed=19   unreachable=0    failed=0
-    54.148.41.134              : ok=40   changed=19   unreachable=0    failed=0
-    54.148.56.137              : ok=13   changed=9    unreachable=0    failed=0
-    54.69.160.32               : ok=27   changed=17   unreachable=0    failed=0
-    54.69.86.187               : ok=19   changed=14   unreachable=0    failed=0
-    localhost                  : ok=3    changed=1    unreachable=0    failed=0
+{lang="text",linenos=off}
+    PLAY RECAP **********************************************************
+    54.148.100.44        : ok=24   changed=16   unreachable=0    failed=0
+    54.148.120.23        : ok=40   changed=19   unreachable=0    failed=0
+    54.148.41.134        : ok=40   changed=19   unreachable=0    failed=0
+    54.148.56.137        : ok=13   changed=9    unreachable=0    failed=0
+    54.69.160.32         : ok=27   changed=17   unreachable=0    failed=0
+    54.69.86.187         : ok=19   changed=14   unreachable=0    failed=0
+    localhost            : ok=3    changed=1    unreachable=0    failed=0
 
 Visit the IP address of the Varnish server, and you will be greeted with a status page similar to the one generated by the Vagrant and DigitalOcean-based infrastructure:
 
@@ -873,7 +902,7 @@ In this example, I'm going to highlight the important parts rather than walk thr
 
 Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
 
-{lang=text}
+{lang="text"}
     - hosts: logs
       gather_facts: yes
     
@@ -895,7 +924,7 @@ Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
 
 This assumes you have a `logs` group in your inventory with at least one server listed. The playbook includes a vars file located in `provisioning/elk/vars/main.yml`, so create that file, and then put the following inside:
 
-{lang=text}
+{lang="text"}
     ---
     java_packages:
       - openjdk-7-jdk
@@ -955,7 +984,7 @@ If you want to get this ELK server up and running quickly, you can create a loca
 
 This Vagrant configuration expects an inventory file at `provisioning/elk/inventory`, so quickly create one with the following contents:
 
-{lang=text}
+{lang="text"}
     logs ansible_ssh_host=192.168.9.90 ansible_ssh_port=22
 
 Now, run `vagrant up`. The build should take about five minutes, and upon completion, if you add a line like `logs  192.168.9.90` to your `/etc/hosts` file, you can visit `http://logs/` in your browser and see Kibana's default homepage:
@@ -999,7 +1028,7 @@ Let's begin by creating a new Nginx web server. (It's useful to monitor webserve
 
 We'll next set up the simple playbook to install and configure both Nginx and Logstash Forwarder, at `provisioning/web/playbook.yml`:
 
-{lang=text}
+{lang="text"}
     - hosts: webs
       gather_facts: yes
     
@@ -1026,7 +1055,7 @@ We'll next set up the simple playbook to install and configure both Nginx and Lo
 
 This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forwarder` roles, and in the `tasks`, there is an additional task to configure one virtualhost in a Nginx configuration directory, via the file `example.conf`. Create that file now at the path `provisioning/web/files/example.conf`, and define one Nginx virtualhost for our testing:
 
-{lang=text}
+{lang="text"}
     server {
       listen 80 default_server;
     
@@ -1041,7 +1070,7 @@ Since this is the only `server` definition, and it's set as the `default_server`
 
 Next, set up the required variables to tell the `nginx` and `logstash-forwarder` roles how to configure their respective services. Inside `provisioning/web/vars/main.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     nginx_user: www-data
     nginx_worker_connections: 1024
@@ -1069,7 +1098,7 @@ W> Note that this demonstration configuration does not use a custom certificate 
 
 To allow Vagrant to pass the proper connection details to Ansible, create `provisioning/web/inventory` with the `webs` host details:
 
-{lang=text}
+{lang="text"}
     webs ansible_ssh_host=192.168.9.91 ansible_ssh_port=22
 
 Run `vagrant up` again. Vagrant should verify that the first server (`logs`) is running, then create and run the Ansible provisioner on the newly-defined `webs` Nginx server.
@@ -1083,7 +1112,7 @@ T> If you refresh the page a few times, and no entries show up in the Kibana Log
 
 A few requests being logged through logstash forwarder isn't all that exciting. Let's use the popular `ab` tool available most anywhere to put some load on the web server. On a modest MacBook Air, running the command below resulted in Nginx serving around 1,200 requests per second.
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     ab -n 20000 -c 50 http://webs/
 
 During the course of the load test, I set Kibana to show only the past 5 minutes of log data (automatically refreshed every 5 seconds) and I could monitor the requests on the ELK server just a few seconds after they were served by Nginx:
@@ -1182,7 +1211,7 @@ This configuration creates two servers, `gluster1` and `gluster2`, and will run 
 
 Create the `inventory` file to help Ansible connect to the two servers:
 
-{lang=text}
+{lang="text"}
     [gluster]
     192.168.29.2
     192.168.29.3
@@ -1193,7 +1222,7 @@ Create the `inventory` file to help Ansible connect to the two servers:
 
 Now, create a playbook named `provision.yml` inside a `playbooks` directory:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: gluster
       sudo: yes
@@ -1249,7 +1278,7 @@ The last task in the playbook uses Ansible's `mount` module to ensure the Gluste
 
 After the playbook is created, we need to define all the variables used in the playbook. Create a `vars.yml` file inside the `playbooks` directory, with the following variables:
 
-{lang=text}
+{lang="text"}
     ---
     # Firewall configuration.
     firewall_allowed_tcp_ports:
@@ -1278,7 +1307,7 @@ This variables file should be pretty self-explanatory; all the ports required fo
 
 Now that we have everything set up, the folder structure should look like this:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     gluster/
       playbooks/
         provision.yml
@@ -1288,7 +1317,7 @@ Now that we have everything set up, the folder structure should look like this:
 
 Change directory into the `gluster` directory, and run `vagrant up`. After a few minutes, provisioning should have completed successfully. To ensure Gluster is working properly, you can run the following two commands, which should give information about Gluster's peer connections and the configured `gluster` volume:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible gluster -i inventory -a "gluster peer status" -s
     192.168.29.2 | success | rc=0 >>
     Number of Peers: 1
@@ -1306,7 +1335,7 @@ Change directory into the `gluster` directory, and run `vagrant up`. After a few
     Uuid: 63d4a5c8-6b27-4747-8cc1-16af466e4e10
     State: Peer in Cluster (Connected)
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible gluster -i inventory -a "gluster volume info" -s
     192.168.29.3 | success | rc=0 >>
     
@@ -1364,7 +1393,7 @@ We saw examples of running playbooks with `connection: local` earlier while prov
 
 I usually begin building a playbook by adding the basic scaffolding first, then filling in details as I go. You can follow along by creating the playbook `main.yml` with:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: localhost
       user: jgeerling
@@ -1387,13 +1416,13 @@ Since I use Homebrew (billed as "the missing package manager for OS X") for most
 
 The next step, then, is to add the Homebrew role and configure the required variables. Inside `main.yml`, update the `roles` section:
 
-{lang=text,starting-line-number=9}
+{lang="text",starting-line-number=9}
       roles:
         - geerlingguy.homebrew
 
 Then add the following into `vars/main.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     homebrew_installed_packages:
       - ansible
@@ -1439,14 +1468,14 @@ In this example, we'll use the author's dotfiles, but you can tell the role to u
 
 Add another role to the `roles` list:
 
-{lang=text,starting-line-number=9}
+{lang="text",starting-line-number=9}
       roles:
         - geerlingguy.homebrew
         - geerlingguy.dotfiles
 
 Then, add the following three variables to your `vars/main.yml` file:
 
-{lang=text,starting-line-number=2}
+{lang="text",starting-line-number=2}
     dotfiles_repo: https://github.com/geerlingguy/dotfiles.git
     dotfiles_repo_local_destination: ~/repositories/dotfiles
     dotfiles_files:
@@ -1491,7 +1520,7 @@ Starting with an extremely simple example, let's build a Docker image from a Doc
 
 Let's start with a really simple Dockerfile:
 
-{lang=text}
+{lang="text"}
     # Build an example Docker container image.
     FROM busybox
     MAINTAINER Jeff Geerling <geerlingguy@mac.com>
@@ -1503,12 +1532,12 @@ This Docker container doesn't do much, but that's okay; we just want to build it
 
 Save the above file as `Dockerfile` inside a new directory, and then on the command line, run the following command to build the container:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ docker build -t test .
 
 After a few seconds, the Docker image should be built, and if you list all local images with `docker image`, you should see your new test image (along with the busybox image, which was used as a base):
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ docker images
     REPOSITORY  TAG     IMAGE ID      CREATED             VIRTUAL SIZE
     test        latest  50d6e6479bc7  About a minute ago  2.433 MB
@@ -1516,15 +1545,15 @@ After a few seconds, the Docker image should be built, and if you list all local
 
 If you want to run the container image you just created, enter the following:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ docker run --name=test test
 
 This creates a Docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps -a` command:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ docker ps -a
     CONTAINER ID  IMAGE        [...]  CREATED        STATUS
-    bae0972c26d4  test:latest  [...]  3 seconds ago  Exited (0) 2 seconds ago
+    bae0972c26d4  test:latest  [...]  3 seconds ago  Exited (0) 2s ago
 
 You can control the container using either the container ID (in this case, `bae0972c26d4`) or the name (`test`); start with `docker start [container]`, stop with `docker stop [container]`, delete/remove with `docker rm [container]`.
 
@@ -1546,7 +1575,7 @@ Ansible has a built-in [Docker module](http://docs.ansible.com/docker_module.htm
 
 Move the Dockerfile you had into a subdirectory, and create a new Ansible playbook (call it `main.yml`) in the project root directory. The directory layout should look like:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     docker/
       main.yml
       test/
@@ -1554,7 +1583,7 @@ Move the Dockerfile you had into a subdirectory, and create a new Ansible playbo
 
 Inside the new playbook, add the following:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: localhost
       connection: local
@@ -1576,7 +1605,7 @@ Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker i
 
 Run `docker ps -a` again, though, and you'll see that the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
 
-{lang=text,starting-line-number=12}
+{lang="text",starting-line-number=12}
     - name: Run the test container.
       docker:
         image: test:latest
@@ -1628,7 +1657,7 @@ We'll create a VM using Vagrant to run our Docker containers so the same Docker 
 
 We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `angstwad.docker_ubuntu`), then run some additional setup tasks, and finally build and start the required Docker containers:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: all
       sudo: yes
@@ -1644,7 +1673,7 @@ We're using `sudo` for everything because Docker either requires root privileges
 
 Angstwad's `docker_ubuntu` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
 
-{lang=text}
+{lang="text"}
     ---
     - name: Install Pip.
       apt: name=python-pip state=present
@@ -1658,7 +1687,7 @@ Ansible needs the `docker-py` library in order to control Docker via Python, so 
 
 Next is the meat of the playbook: `docker.yml` (also in the `provisioning` directory). The first task is to build Docker images for our data, application, and database containers:
 
-{lang=text}
+{lang="text"}
     ---
     - name: Build Docker images from Dockerfiles.
       docker_image:
@@ -1677,7 +1706,7 @@ Like our earlier usage of `docker_image`, we supply a `name`, `path`, and `state
 
 After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker` tasks:
 
-{lang=text,starting-line-number=13}
+{lang="text",starting-line-number=13}
     # Data containers don't need to be running to be utilized.
     - name: Run a Data container.
       docker:
@@ -1706,7 +1735,7 @@ Each of these containers' configuration is a little more involved than the previ
 
 For the Flask container, we need to make sure our app is not only running, but *continues* to run. So, unlike our earlier usage of `/bin/true` to run a container briefly and exit, in this case we will provide an explicit command to run:
 
-{lang=text,starting-line-number=26}
+{lang="text",starting-line-number=26}
         command: python /opt/www/index.py
 
 Calling the script directly will launch the app in the foreground and log everything to stdout, making it easy to inspect what's going on with `docker logs [container]` if needed.
@@ -1721,7 +1750,7 @@ Now that we have the playbook structured to build our simple Docker-based infras
 
 At this point, we should have a directory structure like:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     docker/
       provisioning/
         data/
@@ -1738,7 +1767,7 @@ W> It's best to use lightweight base images without any extra frills instead of 
 
 For the data storage container, we don't need much; we just need to create a directory and set it as an exposed mount point using `VOLUME`:
 
-{lang=text}
+{lang="text"}
     # Build a simple MySQL data volume Docker container.
     FROM busybox
     MAINTAINER Jeff Geerling <geerlingguy@mac.com>
@@ -1768,7 +1797,8 @@ Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.
     
     # Configure MySQL connection.
     db = SQLAlchemy()
-    db_uri = 'mysql://admin:admin@{{ host_ip_address }}/information_schema'
+    db_uri = 'mysql://admin:admin@{{ host_ip_address }}/\
+    information_schema'
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     db.init_app(app)
     
@@ -1813,7 +1843,7 @@ In this case, the `.html` template contains a Jinja2 variable (`{{ result }}`), 
 
 Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy a simple Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
 
-{lang=text}
+{lang="text"}
     # A simple Flask app container.
     FROM ansible/ubuntu14.04-ansible
     MAINTAINER Jeff Geerling <geerlingguy@mac.com>
@@ -1839,7 +1869,7 @@ W> Purists might cringe at the sight of an Ansible playbook inside a Dockerfile,
 
 In order for the Flask app to function properly, we need to get the `host_ip_address`, then replace the variable in the `index.py.j2` template. Create the Flask deployment playbook at `docker/provisioning/www/playbook.yml`:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: localhost
       sudo: yes
@@ -1872,7 +1902,7 @@ The last two tasks copy the flask app and templates directory into place.
 
 The `docker/provisioning/www` directory should now contain the following:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     www/
       templates/
         index.html
@@ -1886,7 +1916,7 @@ We've configured MySQL a few times throughout this book, so little time will be 
 
 First, we'll create a really simple Ansible playbook to install and configure MySQL using the `geerlingguy.mysql` role:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: localhost
       sudo: yes
@@ -1931,7 +1961,7 @@ Once that's all done (or if the persistent `data` volume has already been set up
 
 Next comes the Dockerfile, where we'll make sure the `playbook.yml` playbook and `start-mysql.sh` script are put in the right places, and expose the MySQL port so other containers can connect to MySQL.
 
-{lang=text}
+{lang="text"}
     # A simple MySQL container.
     FROM ansible/ubuntu14.04-ansible
     MAINTAINER Jeff Geerling <geerlingguy@mac.com>
@@ -1957,7 +1987,7 @@ Finally, the Ansible playbook that configures MySQL is copied into place, then r
 
 The `docker/provisioning/db` directory should now contain the following:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     db/
       Dockerfile
       playbook.yml
@@ -1978,7 +2008,7 @@ The entire [Docker LAMP example](https://github.com/geerlingguy/ansible-vagrant-
 
 The Docker examples shown here barely scratch the surface of what makes Docker a fascinating and useful application deployment tool. Docker is still in its infancy, so there are dozens of ways to manage the building of Dockerfiles, the deployment of images, and the running and linking of containers. Ansible is a solid contender for managing Docker containers (_and_ the infrastruction on which they run), and can even be used within a Dockerfile to simplify complex container configurations.
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
      _________________________________________
     / Any sufficiently advanced technology is \
     | indistinguishable from magic.           |

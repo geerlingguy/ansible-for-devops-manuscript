@@ -1,5 +1,12 @@
 # Notes
 
+## TODO NOW
+
+  - Pick an actual 'release' date, write blog posts.
+  - Order CreateSpace Book, rush shipping.
+  - Link Paperback to KDP book.
+  - Get more reviews on Amazon.com.
+
 ## Publication - Marketing / Notifications
 
   - Publish Book on these Platforms:
@@ -45,6 +52,12 @@
   - Search for 'simple' and 'simply', since I overuse these words.
   - Search for ' can' to find uses where it's removal makes sentences stronger.
   - Search for proper names (companies, software, etc.) and make sure they're capitalized.
+  - Search for ' a the' and fix those instances.
+  - Search for "PLAY RECAP" and make sure code blocks are 74 lines (70 max without indent).
+
+## Pre-publication
+
+  - Make sure Changelog is removed.
 
 ## Thoughts on writing
 

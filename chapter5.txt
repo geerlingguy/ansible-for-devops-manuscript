@@ -8,7 +8,7 @@ We'll cover how to run plays with more granularity, how to organize your tasks a
 
 In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Apache, and certain tasks that affected Apache's configuration notified the handler with the option `notify: restart apache`:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     handlers:
       - name: restart apache
         service: name=apache2 state=restarted
@@ -20,7 +20,7 @@ In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Ap
 
 In some circumstances you may want to notify multiple handlers, or even have handlers notify additionally handlers. Both are easy to do with Ansible. To notify multiple handlers from one task, use a list for the `notify` option:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - name: Rebuild application configuration.
       command: /opt/app/rebuild.sh
       notify:
@@ -29,7 +29,7 @@ In some circumstances you may want to notify multiple handlers, or even have han
 
 To have one handler notify another, add a `notify` option onto the handler---handlers are basically glorified tasks that can be called by the `notify` option, but since they act as tasks themselves, they can chain themselves to other handlers:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     handlers:
       - name: restart apache
         service: name=apache2 state=restarted
@@ -48,15 +48,17 @@ There are a few other considerations when dealing with handlers:
 
 Ansible allows you to work with environment variables in a variety of ways. First of all, if you need to set some environment variables for your remote user account, you can do that by adding lines to the remote user's `.bash_profile`, like so:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - name: Add an environment variable to the remote user's shell.
-      lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
+      lineinfile: "dest=~/.bash_profile regexp=^ENV_VAR= \
+      line=ENV_VAR=value"
 
 All subsequent tasks will then have access to this environment variable (remember, of course, only the `shell` module will understand shell commands that use environment variables!). To use an environment variable in further tasks, it's recommended you use a task's `register` option to store the environment variable in a variable Ansible can use later, for example:
 
-{lang=text}
+{lang="text"}
     - name: Add an environment variable to the remote user's shell.
-      lineinfile: dest=~/.bash_profile regexp=^ENV_VAR= line=ENV_VAR=value
+      lineinfile: "dest=~/.bash_profile regexp=^ENV_VAR= \
+      line=ENV_VAR=value"
     
     - name: Get the value of the environment variable we just added.
       shell: 'source ~/.bash_profile && echo $ENV_VAR'
@@ -73,9 +75,10 @@ I> Why `~/.bash_profile`? There are many different places you can store environm
 
 Linux will also read global environment variables added to `/etc/environment`, so you can add your variable there:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - name: Add a global environment variable.
-      lineinfile: dest=/etc/environment regexp=^ENV_VAR= line=ENV_VAR=value
+      lineinfile: "dest=/etc/environment regexp=^ENV_VAR= \
+      line=ENV_VAR=value"
       sudo: yes
 
 In any case, it's pretty simple to manage environment variables on the server with `lineinfile`. If your application requires many environment variables (as is the case in many Java applications), you might consider using `copy` or `template` with a local file instead of using `lineinfile` with a large list of items.
@@ -84,7 +87,7 @@ In any case, it's pretty simple to manage environment variables on the server wi
 
 You can also set the environment for just one play, using the `environment` option for that play. As an example, let's say you need to set an http proxy for a certain file download. This can be done with:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - name: Download a file, using example-proxy as a proxy.
       get_url: url=http://www.example.com/file.tar.gz dest=~/Downloads/
       environment:
@@ -92,7 +95,7 @@ You can also set the environment for just one play, using the `environment` opti
 
 That could be rather cumbersome, though, especially if you have many tasks that require a proxy or some other environment variable. In this case, you can pass an environment in via a variable in your playbook's `vars` section (or via an included variables file), like so:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     vars:
       var_proxy:
         http_proxy: http://example-proxy:80/
@@ -106,7 +109,7 @@ That could be rather cumbersome, though, especially if you have many tasks that 
 
 If a proxy needs to be set system-wide (as is the case behind many corporate firewalls), I like to do so using the global `/etc/environment` file:
 
-{lang=text}
+{lang="text"}
     # In the 'vars' section of the playbook (set to 'absent' to disable proxy):
     proxy_state: present
     
@@ -118,9 +121,12 @@ If a proxy needs to be set system-wide (as is the case behind many corporate fir
         line: "{{ item.line }}"
         state: "{{ proxy_state }}"
       with_items:
-        - { regexp: "^http_proxy=", line: "http_proxy=http://example-proxy:80/" }
-        - { regexp: "^https_proxy=", line: "https_proxy=https://example-proxy:443/" }
-        - { regexp: "^ftp_proxy=", line: "ftp_proxy=http://example-proxy:80/" }
+        - regexp: "^http_proxy="
+          line: "http_proxy=http://example-proxy:80/"
+        - regexp: "^https_proxy="
+          line: "https_proxy=https://example-proxy:443/"
+        - regexp: "^ftp_proxy="
+          line: "ftp_proxy=http://example-proxy:80/"
 
 Doing it this way allows me to configure whether the proxy is enabled per-server (using the `proxy_state` variable), and with one play, set the http, https, and ftp proxies. You can use a similar kind of play for any other types of environment variables you need to set system-wide.
 
@@ -136,12 +142,12 @@ Invalid variable names include `_foo`, `foo-bar`, `5_foo_bar`, `foo.bar` and `fo
 
 In an inventory file, a variable's value is assigned using an equals sign, like so:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     foo=bar
 
 In a playbook or variables include file, a variable's value is assigned using a colon, like so:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     foo: bar
 
 ### Playbook Variables
@@ -150,14 +156,14 @@ There are many different ways you can define variables to use in tasks.
 
 Variables can be passed in via the command line, when calling `ansible-playbook`, with the `--extra-vars` option:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     ansible-playbook example.yml --extra-vars "foo=bar"
 
 You can also pass in extra variables using quoted JSON, YAML, or even by passing a JSON or YAML file directly, like `--extra-vars "@even_more_vars.json"` or `--extra-vars "@even_more_vars.yml`, but at this point, you might be better off using one of the other methods below.
 
 Variables may be included inline with the rest of a playbook, in a `vars` section:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: example
       vars:
@@ -168,7 +174,7 @@ Variables may be included inline with the rest of a playbook, in a `vars` sectio
 
 Variables may also be included in a separate file, using the `vars_files` section:
 
-{lang=text}
+{lang="text"}
     ---
     # Main playbook file.
     - hosts: example
@@ -177,7 +183,7 @@ Variables may also be included in a separate file, using the `vars_files` sectio
       tasks:
         - debug: msg="Variable 'foo' is set to {{ foo }}"
 
-{lang=text}
+{lang="text"}
     ---
     # Variables file 'vars.yml' in the same folder as the playbook.
     foo: bar
@@ -186,7 +192,7 @@ Notice how the variables are all at the root level of the YAML file. They don't 
 
 Variable files can also be imported conditionally. Say, for instance, you have one set of variables for your CentOS servers (where the Apache service is named `httpd`), and another for your Debian servers (where the Apache service is named `apache2`). In this case, you could use a conditional `vars_files` include:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: example
       vars_files:
@@ -202,7 +208,7 @@ As long as your remote server has `facter` or `ohai` installed, Ansible will be 
 
 Variables may also be added via Ansible inventory files, either inline with a host definition, or after a group:
 
-{lang=text}
+{lang="text"}
     # Host-specific variables (defined inline).
     [washington]
     app1.example.com proxy_state=present
@@ -217,7 +223,7 @@ If you need to define more than a few variables, especially variables that apply
 
 For example, to apply a set of variables to the host `app1.example.com`, create a blank file named `app1.example.com` at the location `/etc/ansible/host_vars/app1.example.com`, and add variables as you would in an included `vars_files` YAML file:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     ---
     foo: bar
     baz: qux
@@ -234,7 +240,7 @@ There are many times that you will want to run a command, then use its return co
 
 In the previous chapter, we used `register` to get the output of the `forever list` command, then used the output to determine whether we needed to start our Node.js app:
 
-{lang=text,starting-line-number=39}
+{lang="text",starting-line-number=39}
     - name: "Node: Check list of Node.js apps running."
       command: forever list
       register: forever_list
@@ -242,7 +248,8 @@ In the previous chapter, we used `register` to get the output of the `forever li
     
     - name: "Node: Start example Node.js app."
       command: forever start {{ node_apps_location }}/app/app.js
-      when: "forever_list.stdout.find('{{ node_apps_location}}/app/app.js') == -1"
+      when: "forever_list.stdout.find('{{ node_apps_location}}/\
+    app/app.js') == -1"
 
 In that example, we used a string function built into Python (`find`) to search for the path to our app, and if it was not present, the Node.js app was started.
 
@@ -252,7 +259,7 @@ We will explore the use of `register` further later in this chapter.
 
 Simple variables (gathered by Ansible, defined in inventory files, or defined in playbook or variable files) can be used as part of a task using syntax like `{{ variable }}`. For example:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - command: /opt/my-app/rebuild {{ my_environment }}
 
 When the command is run, Ansible will substitute the contents of `my_environment` for `{{ my_environment }}`. So the resulting command would be something like `/opt/my-app/rebuild dev`.
@@ -261,7 +268,7 @@ Many variables you will use are structured as arrays (or 'lists'), and accessing
 
 If you define a list variable like so:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     foo_list:
       - one
       - two
@@ -269,7 +276,7 @@ If you define a list variable like so:
 
 You could access the first item in that array with either of the following syntax:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     foo[0]
     foo|first
 
@@ -277,13 +284,13 @@ Note that the first line uses standard Python array access syntax ('retrieve the
 
 For larger and more structured arrays (for example, when retrieving the IP address of the server using the facts Ansible gathers from your server), you can access any part of the array by drilling through the array keys, either using bracket (`[]`) or dot (`.`) syntax. For example, if you would like to retrieve the information about the `eth0` network interface, you could first take a look at the entire array using `debug` in your playbook:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     # In your playbook.
     tasks:
       - debug: var=ansible_eth0
 
-{lang=text,linenos=off}
-    TASK: [debug var=ansible_eth0] *****************************************
+{lang="text",linenos=off}
+    TASK: [debug var=ansible_eth0] **************************************
     ok: [webserver] => {
         "ansible_eth0": {
             "active": true,
@@ -310,7 +317,7 @@ For larger and more structured arrays (for example, when retrieving the IP addre
 
 Now that you know the overall structure of the variable, you can use either of the following techniques to retrieve only the IPv4 address of the server:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     {{ ansible_eth0.ipv4.address }}
     {{ ansible_eth0['ipv4']['address'] }}
 
@@ -318,14 +325,14 @@ Now that you know the overall structure of the variable, you can use either of t
 
 Ansible conveniently lets you define or override variables on a per-host or per-group basis. As we learned earlier, your inventory file can define groups and hosts like so:
 
-{lang=text}
+{lang="text"}
     [group]
     host1
     host2
 
 The simplest way to define variables on a per-host or per-group basis is to do so directly within the inventory file:
 
-{lang=text}
+{lang="text"}
     [group]
     host1 admin_user=jane
     host2 admin_user=jack
@@ -344,12 +351,12 @@ Ansible will search within the same directory as your inventory file (or inside 
 
 You can place YAML files inside these directories named after the group name or hostname defined in your inventory file. Continuing our example above, let's move the specific variables into place:
 
-{lang=text}
+{lang="text"}
     ---
     # File: /etc/ansible/group_vars/group
     admin_user: john
 
-{lang=text}
+{lang="text"}
     ---
     # File: /etc/ansible/host_vars/host1
     admin_user: jane
@@ -362,7 +369,7 @@ You can also define a `group_vars/all` file that would apply to *all* groups, as
 
 If you ever need to retrieve a specific host's variables from another host, Ansible provides a magic `hostvars` variable containing all the defined host variables (from inventory files and any discovered YAML files inside `host_vars` directories).
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     # From any host, returns "jane".
     {{ hostvars['host1']['admin_user'] }}
 
@@ -380,12 +387,12 @@ Please see [Magic Variables, and How To Access Information About Other Hosts](ht
 
 By default, whenever you run an Ansible playbook, Ansible first gathers information ("facts") about each host in the play. You may have noticed this whenever we ran playbooks in earlier chapters:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible-playbook playbook.yml
     
-    PLAY [group] **********************************************************
+    PLAY [group] ********************************************************
     
-    GATHERING FACTS *******************************************************
+    GATHERING FACTS *****************************************************
     ok: [host1]
     ok: [host2]
     ok: [host3]
@@ -394,7 +401,7 @@ Facts can be extremely helpful when you're running playbooks; you can use gather
 
 To get a list of every gathered fact available, you can use the `ansible` command with the `setup` module:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible munin -m setup
     munin.midwesternmac.com | success >> {
         "ansible_facts": {
@@ -407,7 +414,7 @@ To get a list of every gathered fact available, you can use the `ansible` comman
 
 If you don't need to use facts, and would like to save a few seconds per-host when running playbooks (this can be especially helpful when running an Ansible playbook against dozens or hundreds of servers), you can set `gather_facts: no` in your playbook:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - hosts: db
       gather_facts: no
 
@@ -421,14 +428,14 @@ T> If you run a playbook against similar servers or virtual machines (e.g. all y
 
 Another way of defining host-specific facts is to place `.fact` file in a special directory on remote hosts, `/etc/ansible/facts.d/`. These files can be either JSON or INI files, or you could use executables that return JSON. As an example, create the file `/etc/ansible/facts.d/settings.fact` on a remote host, with the following contents:
 
-{lang=text}
+{lang="text"}
     [users]
     admin=jane,john
     normal=jim
 
 Next, use Ansible's `setup` module to display the new facts on the remote host:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible hostname -m setup -a "filter=ansible_local"
     munin.midwesternmac.com | success >> {
         "ansible_facts": {
@@ -446,7 +453,7 @@ Next, use Ansible's `setup` module to display the new facts on the remote host:
 
 If you are using a playbook to provision a new server, and part of that playbook adds a local `.fact` file which generates local facts that are used later, you can explicitly tell Ansible to reload the local facts using a task like the following:
 
-{lang=text}
+{lang="text"}
     - name: Reload local facts.
       setup: filter=ansible_local
 
@@ -474,7 +481,7 @@ Ansible Vault works much like a real-world vault:
 
 Let's see how it works in practice. Here's a playbook that connects to a service's API, and requires a secure API key to do so:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: appserver
     
@@ -489,7 +496,7 @@ Let's see how it works in practice. Here's a playbook that connects to a service
 
 The vars_file, which is stored alongside the playbook, in plain text, looks like:
 
-{lang=text}
+{lang="text"}
     ---
     myapp_service_api_key: "yJJvPqhqgxyPZMispRycaVMBmBWPqYDf3DFanPxAMAm4UZcw"
 
@@ -499,12 +506,12 @@ For the best security, use Ansible Vault to encrypt the file. If you ever checke
 
 To encrypt the file with Vault, run:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible-vault encrypt api_key.yml
 
 Enter a secure password for the file, and Ansible will encrypt it. If you open the file now, you should see something like:
 
-{lang=text}
+{lang="text"}
     $ANSIBLE_VAULT;1.1;AES256
     653635363963663439383865313262396665353063663839616266613737616539303
     530313663316264336133626266336537616463366465653862366231310a30633064
@@ -518,13 +525,13 @@ Enter a secure password for the file, and Ansible will encrypt it. If you open t
 
 Next time you run the playbook, you will need to provide the password you used for the vault so Ansible can decrypt the playbook in memory for the brief period in which it will be used. If you don't specify the password, you'll receive an error:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ ansible-playbook test.yml
     ERROR: A vault password must be specified to decrypt vars/api_key.yml
 
 There are a number of ways you can provide the password, depending on how you run playbooks. Providing the password at playbook runtime works well when running a playbook interactively:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     # Use --ask-vault-pass to supply the vault password at runtime.
     $ ansible-playbook test.yml --ask-vault-pass
     Vault password:
@@ -535,9 +542,10 @@ You can edit the encrypted file with `ansible-vault edit`. You can also `rekey` 
 
 For convenience, or for automated playbook runs (e.g. on a continuous integration server), you can supply vault passwords via a password file. Just like secure keys in your `~/.ssh` folder, you should treat these files carefully: never check them into source control, and set strict permissions (e.g. `600`) so only _you_ can read or write this file. Create the file `~/.ansible/vault_pass.txt` with your password in it, set permissions to `600`, and tell Ansible the location of the file when you run the playbook:
 
-{lang=text,linenos=off}
-    # Use --vault-password-file to supply the password via file or script.
-    $ ansible-playbook test.yml --vault-password-file ~/.ansible/vault_pass.txt
+{lang="text",linenos=off}
+    # Use --vault-password-file to supply the password via file/script.
+    $ ansible-playbook test.yml --vault-password-file ~/.ansible/\
+    vault_pass.txt
 
 You could also use an executable script (e.g. `~/.ansible/vault_pass.py` with execute permissions, `700`), as long as the script outputs a single line of text, the vault password.
 
@@ -588,7 +596,7 @@ If you're familiar with almost any programming language, you will probably pick 
 
 For example:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     # The following expressions evaluate to 'true':
     1 in [1, 2, 3]
     'see' in 'Can you see me?'
@@ -608,7 +616,7 @@ For the few cases where Jinja2 doesn't provide enough power and flexibility, you
 
 As an example, I need to parse version strings from time to time, to find the major version of a particular project. Assuming the variable `software_version` is set to `4.6.1`, I can get the major version by splitting the string on the `.` character, then using the first element of the array. I can check if the major version is `4` using `when`, and choose to run (or not run) a certain task:
 
-{lang=text}
+{lang="text"}
     - name: Do something only for version 4 of the software.
       [task here]
       when: software_version.split('.')[0] == '4'
@@ -621,7 +629,7 @@ In Ansible, any play can 'register' a variable, and once registered, that variab
 
 Many times, you may need the output (stdout or stderr) of a shell command, and you can get that in a variable using the following syntax:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - shell: my_command_here
       register: my_command_result
 
@@ -635,7 +643,7 @@ T> If you want to see the different properties of a particular registered variab
 
 One of the most helpful extra keys you can add to a play is a `when` statement. Let's take a look at a simple use of `when`:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - yum: name=mysql-server state=present
       when: is_db_server
 
@@ -643,13 +651,13 @@ The above statement assumes you've defined the `is_db_server` variable as a bool
 
 If you only define the `is_db_server` variable on database servers (meaning there are times when the variable may not be defined at all), you could run tasks conditionally like so:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - yum: name=mysql-server state=present
       when: (is_db_server is defined) and is_db_server
 
 `when` is even more powerful if used in conjunction with variables registered by previous tasks. As an example, we want to check the status of a running application, and run a play only when that application reports it is 'ready' in its output:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - command: my-app --status
       register: myapp_result
     
@@ -658,7 +666,7 @@ If you only define the `is_db_server` variable on database servers (meaning ther
 
 These examples are a little contrived, but they illustrate basic uses of `when` in your tasks. Here are some examples of uses of `when` in real-world playbooks:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     # From our Node.js playbook - register a command's output, then see
     # if the path to our app is in the output. Start the app if it's
     # not present.
@@ -699,25 +707,26 @@ It is difficult for Ansible to determine if a given command results in changes, 
 
 When using PHP Composer as a command to install project dependencies, it's useful to know when Composer installed something, or when nothing changed. Here's an example:
 
-{lang=text}
+{lang="text"}
     - name: Install dependencies via Composer.
-      command: "/usr/local/bin/composer global require phpunit/phpunit --prefer-dist"
+      command: "/usr/local/bin/composer global require phpunit/phpunit \
+      --prefer-dist"
       register: composer
-      changed_when: "'Nothing to install or update' not in composer.stdout"
+      changed_when: "'Nothing to install' not in composer.stdout"
 
 You can see we used `register` to store the results of the command, then we checked whether a certain string was in the registered variable's stdout. Only when Composer doesn't do anything will it print "Nothing to install or update", so we use that string to tell Ansible if the task resulted in a change.
 
 Many command-line utilities print results to stderr instead of stdout, so `failed_when` can be used to tell Ansible when a task has *actually* failed and is not just reporting its results in the wrong way. Here's an example where we need to parse the stderr of a Jenkins CLI command to see if Jenkins did, in fact, fail to perform the command we requested:
 
-{lang=text}
+{lang="text"}
     - name: Import a Jenkins job via CLI.
       shell: >
         java -jar /opt/jenkins-cli.jar -s http://localhost:8080/
         create-job "My Job" < /usr/local/my-job.xml
       register: import
-      failed_when: "import.stderr and 'already exists' not in import.stderr"
+      failed_when: "import.stderr and 'exists' not in import.stderr"
 
-In this case, we only want Ansible to report a failure when the command returns an error, **and** that error doesn't contain 'already exists'. It's debatable whether the command should report a job already exists via stderr, or just print the result to stdout... but it's easy to account for whatever the command does with Ansible!
+In this case, we only want Ansible to report a failure when the command returns an error, **and** that error doesn't contain 'exists'. It's debatable whether the command should report a job already exists via stderr, or just print the result to stdout... but it's easy to account for whatever the command does with Ansible!
 
 ### `ignore_errors`
 
@@ -729,21 +738,21 @@ For these situations, you can add `ignore_errors: true` to the task, and Ansible
 
 Some tasks, like sending a notification, communicating with load balancers, or making changes to DNS, networking, or monitoring servers, require Ansible to run the task on the host machine (running the playbook) or another host besides the one(s) being managed by the playbook. Ansible allows any task to be delegated to a particular host using `delegate_to`:
 
-{lang=text}
+{lang="text"}
     - name: Add server to Munin monitoring configuration.
       command: monitor-server webservers {{ inventory_hostname }}
       delegate_to: "{{ monitoring_master }}"
 
 Delegation is often used to manage a server's participation in a load balancer or replication pool; you might either run a particular command locally (as in the example below), or you could use one of Ansible's built-in load balancer modules and `delegate_to` a specific load balancer host directly:
 
-{lang=text}
+{lang="text"}
     - name: Remove server from load balancer.
       command: remove-from-lb {{ inventory_hostname }}
       delegate_to: 127.0.0.1
 
 If you're delegating a task to localhost, Ansible has a convenient shorthand you can use, `local_action`, instead of adding the entire `delegate_to` line:
 
-{lang=text}
+{lang="text"}
     - name: Remove server from load balancer.
       local_action: command remove-from-lb {{ inventory_hostname }}
 
@@ -751,7 +760,7 @@ If you're delegating a task to localhost, Ansible has a convenient shorthand you
 
 You might also use `local_action` in the middle of a playbook to wait for a freshly-booted server or application to start listening on a particular port:
 
-{lang=text}
+{lang="text"}
     - name: Wait for webserver to start.
       local_action:
         module: wait_for
@@ -776,7 +785,7 @@ When running playbooks on the server or workstation where the tasks need to be r
 
 As a quick example, here's a short playbook that you can run with the command `ansible-playbook test.yml --connection=local`:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: 127.0.0.1
       gather_facts: no
@@ -799,7 +808,7 @@ Under rare circumstances, you may require the user to enter the value of a varia
 
 As a simple example, you can request a user to enter a username and password that could be used to login to a network share:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: all
     
@@ -827,14 +836,14 @@ Tags allow you to run (or exclude) subsets of a playbook's tasks.
 
 You can tag roles, included files, individual tasks, and even entire plays. The syntax is simple, and below are examples of the different ways you can add tags:
 
-{lang=text}
+{lang="text"}
     ---
     # You can apply tags to an entire play.
     - hosts: webservers
       tags: deploy
     
       roles:
-        # Tags applied to a role will be applied to the tasks in the role.
+        # Tags applied to a role will be applied to tasks in the role.
         - { role: tomcat, tags: ['tomcat', 'app'] }
     
       tasks:
@@ -852,19 +861,19 @@ You can tag roles, included files, individual tasks, and even entire plays. The 
 
 Assuming we save the above playbook as `tags.yml`, you could run the command below to only run the `tomcat` role and the `Notify on completion` task:
 
-{lang=text}
+{lang="text"}
     $ ansible-playbook tags.yml --tags "tomcat,say"
 
 If you want to exclude anything tagged with `notifications`, you can use `--skip-tags`.
 
-{lang=text}
+{lang="text"}
     $ ansible-playbook tags.yml --skip-tags "notifications"
 
 This is incredibly handy if you have a decent tagging structure; when you want to only run a particular portion of a playbook, or one play in a series (or, alternatively, if you want to exclude a play or included tasks), then it's easy to do using `--tags` or `--skip-tags`.
 
 There is one caveat when adding one or multiple tags using the `tags` option in a playbook: you can use the shorthand `tags: tagname` when adding just one tag, but if adding more than one tag, you have to use YAML's list syntax, for example:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     # Shorthand list syntax.
     tags: ['one', 'two', 'three']
     
@@ -885,7 +894,7 @@ Introduced in Ansible 2.0.0, Blocks allow you to group related tasks together an
 
 Here's an example playbook that uses blocks with `when` to run group of tasks specific to one platform without `when` parameters on each task:
 
-{lang=text}
+{lang="text"}
     ---
     - hosts: web
       tasks:
@@ -911,10 +920,10 @@ Blocks are also useful if you want to be able to gracefully handle failures in c
 
 Here's how to use a block to gracefully handle task failures:
 
-{lang=text}
+{lang="text"}
     tasks:
       - block:
-          - name: Shell script to connect the app to a monitoring service.
+          - name: Script to connect the app to a monitoring service.
             script: monitoring-connect.sh
         rescue:
           - name: This will only run in case of an error in the block.
@@ -933,7 +942,7 @@ Playbooks are Ansible's primary means of automating infrastructure management. A
 
 The more you understand the fundamental components of a playbook, the more efficient you will be at building and expanding your infrastructure with Ansible.
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
      ____________________________________
     / Men have become the tools of their \
     \ tools. (Henry David Thoreau)       /

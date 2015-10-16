@@ -184,7 +184,7 @@ Before the widespread use of configuration management tools for servers, when sn
 
 If you're not actively using a piece of software, or there's an obsolete cron task, get rid of it. If you're using Ansible for your entire infrastructure, this shouldn't be an issue, since you could just bring up new servers to replace old ones when you have major configuration and/or package changes. But if not, consider adding in a 'cleanup' role or at least a task to remove packages that shouldn't be installed, like:
 
-{lang=text}
+{lang="text"}
     - name: Remove unused packages.
       apt: name={{ item }} state=absent purge=yes
       with_items:
@@ -217,7 +217,7 @@ For the former method, please read the next section on file permissions to learn
 
 Every Ansible module that deals with files has file ownership and permission parameters available, including `owner`, `group`, and `mode`. Almost every time you handle files (using `copy`, `template`, `file`, etc.), you should explicitly define the correct permissions and ownership. For example, for a configuration file (in our example, the GitLab configuration file) that should *only* be readable or writeable by the root user, set the following:
 
-{lang=text}
+{lang="text"}
     - name: Configure the GitLab global configuration file.
       file:
         path: /etc/gitlab/gitlab.rb
@@ -253,12 +253,12 @@ At a minimum, you should schedule regular patch maintenance and package upgrade 
 
 With Ansible, since you already have your entire infrastructure described via Ansible inventories, you should be able to use a command like the following to upgrade all installed packages on a RedHat-based system:
 
-{lang=text,linenos="off"}
+{lang="text",linenos="off"}
     $ ansible webservers -m yum -a "name=* state=latest"
 
 On a Debian-based system, the syntax is similar:
 
-{lang=text,linenos="off"}
+{lang="text",linenos="off"}
     $ ansible webservers -m apt -a "upgrade=dist update_cache=yes"
 
 The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `yum` or `apt` to tell them what to do (edit `/etc/yum.conf` for `yum` on RedHat-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
@@ -273,7 +273,7 @@ W> As mentioned in an earlier sidebar, GPG package signature checking is enabled
 
 RedHat 6 and later (and modern versions of Fedora, and RedHat derivatives like CentOS) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
 
-{lang=text}
+{lang="text"}
     - name: Install yum-cron.
       yum: name=yum-cron state=present
     
@@ -286,7 +286,7 @@ Further configuration (such as packages to exclude from automatic updates) is do
 
 Debian and its derivatives typically use the `unattended-upgrades` package to configure automatic updates. Like `yum-cron`, it is easy to install, and its configuration is placed in a variety of files within `/etc/apt/apt.conf.d/`:
 
-{lang=text}
+{lang="text"}
     - name: Install unattended upgrades package.
       apt: name=unattended-upgrades state=present
     
@@ -303,7 +303,7 @@ Debian and its derivatives typically use the `unattended-upgrades` package to co
 
 The template files copied in the second task should look something like the following:
 
-{lang=text}
+{lang="text"}
     # File: /etc/apt/apt.conf.d/10periodic
     APT::Periodic::Update-Package-Lists "1";
     APT::Periodic::Download-Upgradeable-Packages "1";
@@ -312,7 +312,7 @@ The template files copied in the second task should look something like the foll
 
 This file provides configuration for the `apt` script that runs as part of the unattended upgrades package, and tells apt whether to enable unattended upgrades.
 
-{lang=text}
+{lang="text"}
     # File: /etc/apt/apt.conf.d/50unattended-upgrades
     Unattended-Upgrade::Automatic-Reboot "false";
     
@@ -337,7 +337,7 @@ Ansible includes built-in support for configuring server firewalls with `ufw` (c
 
 Below is an entire firewall configuration to lock down most everything on a Debian or Ubuntu server, allowing traffic only through ports 22 (SSH), 80 (HTTP), and 123 (NTP):
 
-{lang=text}
+{lang="text"}
     - name: Configure open ports with ufw.
       ufw:
         rule: "{{ item.rule }}"
@@ -359,7 +359,7 @@ Below is an entire firewall configuration to lock down most everything on a Debi
 
 If you run a playbook with the above rules, the log into the machine (or use the `ansible` command) and run `sudo ufw status verbose`, you should see the configuration has been updated to the following:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ sudo ufw status verbose
     Status: active
     Logging: on (low)
@@ -379,7 +379,7 @@ If you run a playbook with the above rules, the log into the machine (or use the
 
 The same firewall configuration can be done via `firewalld` for RedHat-based systems with similar ease:
 
-{lang=text}
+{lang="text"}
     - name: Configure open ports with firewalld.
       firewalld:
         state: "{{ item.state }}"
@@ -398,7 +398,7 @@ I> `firewalld` doesn't have an explicit command to allow setting default inbound
 
 If you run `sudo firewall-cmd --zone=external --list-all`, you should see the open ports:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     $ sudo firewall-cmd --zone=external --list-all
     external
       interfaces:
@@ -422,7 +422,7 @@ Checking server logs is one of the most effective ways to not only see what atta
 
 But logs are completely worthless if they aren't being populated with effective data, aren't being monitored in any way, or are *the cause* of an outage! Many root cause analyses conclude, "the server's disk was full because log file *x* took up all the free space".
 
-{title="I have my eyes on you, 218.78.214.9...",lang=text}
+{title="I have my eyes on you, 218.78.214.9...",lang="text"}
     sshd[19731]: input_userauth_request: invalid user db2admin
     sshd[19731]: Received disconnect from 218.78.214.9: 11: Bye Bye
     sshd[19732]: Invalid user jenkins from 218.78.214.9
@@ -447,7 +447,7 @@ If you allow password-based login (for SSH, for your web app, or for anything el
 
 Here's a set of tasks you could add to your playbook to install Fail2Ban and make sure it's started on either Debian or RedHat-based distributions:
 
-{lang=text}
+{lang="text"}
     - name: Install fail2ban (RedHat).
       yum: name=fail2ban state=present enablerepo=epel
       when: ansible_os_family == 'RedHat'
@@ -473,7 +473,7 @@ SELinux is usually installed and enabled by default on Fedora, RedHat and CentOS
 
 To enable SELinux in `targeted` mode (which is the most secure mode without being almost impossible to work with), make sure the Python SELinux library is installed, then use Ansible's `selinux` module:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - name: Install Python SELinux library.
       yum: name=libselinux-python state=present
     
@@ -482,7 +482,7 @@ To enable SELinux in `targeted` mode (which is the most secure mode without bein
 
 Ansible also has a `seboolean` module that allows setting SELinux booleans. A very common setting for web servers involves setting the `httpd_can_network_connect` boolean:
 
-{lang=text,linenos=off}
+{lang="text",linenos=off}
     - name: Ensure httpd can connect to the network.
       seboolean: name=httpd_can_network_connect state=yes persistent=yes
 

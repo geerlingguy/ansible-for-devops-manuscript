@@ -1,0 +1,7 @@
+# Afterword
+
+If you've made it through this book, you should be well on your way towards streamlined infrastructure management. Many developers and sysadmins have been helped by this book, and many have even gone further and contributed _back_ to the book, in the form of corrections, suggestions, and fruitful discussion!
+
+Thanks to you for purchasing and reading this book, and a special thanks to all those who have given direct feedback to improve the book:
+
+@LeeVanSteerthem, Jonathan Nakatsui, Joel Shprentz, Hugo Posca, Jon Forrest, Rohit Bhute, George Boobyer (@ibluebag), Jason Baker (@diermakeralch), Jonathan Le (@jonathanhle), Barry McClendon, Nestor Feliciano, @dan_bohea, @lekum, Juan Martinez, @wimvandijck, André, @39digits, @aazon, Ned Schumann, @andypost, @michel_slm, @erimar77, @geoand, Larry B, Tim Gerla, @b_borysenko, Stephen H, @chesterbr, @mrjester888, @gkedge, @opratr, @briants5, and @atweb
