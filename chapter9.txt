@@ -636,7 +636,7 @@ Open the deployment playbook (`playbooks/deploy.yml`) and modify the initial set
       sudo: yes
       serial: 2
 
-Note the addition of `serial: 1`. This tells Ansible to run the entire playbook on two servers at a time. If you update `app_version` to `1.0.1` again, and run the playbook, you should see it run on two of the four servers, and once it hits the test failure, the playbook execution will stop---leaving your other two servers up (and saving you a few hours on a conference bridge explaining the outage).
+Note the addition of `serial: 2`. This tells Ansible to run the entire playbook on two servers at a time. If you update `app_version` to `1.0.1` again, and run the playbook, you should see it run on two of the four servers, and once it hits the test failure, the playbook execution will stop---leaving your other two servers up (and saving you a few hours on a conference bridge explaining the outage).
 
 You could again revert back to `1.0.0`, but in the time you were deploying the failed version, developers finished a new version that got all tests passing again, `1.0.2`. Go ahead and update `app_version` and run the playbook again.
 

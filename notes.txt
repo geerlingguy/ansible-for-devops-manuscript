@@ -1,32 +1,15 @@
 # Notes
 
-## TODO NOW
+## TODO
 
-  - Pick an actual 'release' date, write blog posts.
-  - Link Paperback to KDP book.
-  - Get more reviews on Amazon.com.
-  - Thank the following: @LeeVanSteerthem, @ibluebag, @diermakeralch, @jonathanhle, @dan_bohea, @lekum, @wimvandijck @39digits, @aazon, @andypost, @michel_slm, @erimar77, @geoand, @b_borysenko, @chesterbr, @mrjester888, @gkedge, @opratr, @briants5, @tybstar, @laserllama
-
-## Publication - Marketing / Notifications
-
-  - Publish Book on these Platforms:
-    - Amazon Kindle
-    - Apple iBooks
-    - Google Play (https://play.google.com/books/publish/u/0/)
-    - Goodreads
-    - ???
-  - Server Check.in - Write about entire process (see "Thoughts on writing" and prior posts)
-  - Reddit - /r/ansible, /r/sysadmin, /r/devops, /r/vagrant
-  - Reddit - /r/writing (write a more personal post)
-  - Hacker News - "Show HN" post
-  - Greg DeK (Ansible, Inc.) - some sort of promo?
-  - Matt Jaynes (Briefs on Ansible)
-  - Drupal people... who?
-  - Personal email to those who helped fix the book? w/ a free coupon for someone else?
-  - Blog posts:
-    - Life is a Prayer
-    - Midwestern Mac
-  - Product Hunt?
+  - Ship books:
+    - 5 copies to Ansible, Inc. (Greg D. address)
+    - 1 copy to the newsletter dude.
+    - 1 copy to Michael DeHaan?
+  - Import people from LeanPub mailing list into MailChimp Mailing List.
+  - Fix iBooks - add screenshots of some of the pages to the released book (so they're on the iBooks Store!)
+  - Create favicon.ico for website.
+  - Get book on Product Hunt?
 
 ## Competition / Similar works:
 
@@ -58,6 +41,15 @@
 ## Pre-publication
 
   - Make sure Changelog is removed.
+
+## Publishing Process
+
+### iBooks (Apple)
+
+  - Had to sign up for a _new_ Apple ID (my existing ID is used for iOS and Mac app distribution).
+  - Had to verify my email address and re-enter _everything_ for tax ID, banking, etc.
+  - Angular-based dashboard on iTunes connect was less-than-stellar on Chrome (worked better in Safari).
+  - Had to download iTunes Producer to add book (it was not obvious in the UI—I just saw the message "You don’t have any books." when I visited the 'My Books' section of iTunes Connect).
 
 ## Thoughts on writing
 

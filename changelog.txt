@@ -6,9 +6,8 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - Fixed incorrect reference to NFS in NTP example setup in chapter 2 (thanks to @atweb!).
-  - Replaced mention of `service` command with `systemctl` for CentOS 7 in chapter 2 (thanks to @briants5!).
-  - Fixed a number of formatting issues in code and paragraphs for print rendering.
+  - Fixed an errant closing parens in chapter 8.
+  - Fixed sentence describing use of `serial` in chapter 9 (thanks to @devtux_at!).
 
 ## Version 1.0 (2015-10-10)
 
@@ -44,6 +43,9 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Corrected playbook command under the "separate inventory files" section in chapter 7 (thanks to @lekum!).
   - Corrected an incorrect use of `--syntax-check` in chapter 11 (thanks to @lekum!).
   - Various tiny pre-launch tweaks and fixes.
+  - Fixed incorrect reference to NFS in NTP example setup in chapter 2 (thanks to @atweb!).
+  - Replaced mention of `service` command with `systemctl` for CentOS 7 in chapter 2 (thanks to @briants5!).
+  - Fixed a number of formatting issues in code and paragraphs for print rendering.
 
 ## Version 0.99 (2015-07-19)
 
