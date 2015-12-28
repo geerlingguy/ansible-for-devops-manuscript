@@ -4,4 +4,4 @@ You should be well on your way towards streamlined infrastructure management. Ma
 
 Thanks to you for purchasing and reading this book, and a special thanks to all those who have given direct feedback:
 
-@LeeVanSteerthem, Jonathan Nakatsui, Joel Shprentz, Hugo Posca, Jon Forrest, Rohit Bhute, George Boobyer (@ibluebag), Jason Baker (@Alchemister5), Jonathan Le (@jonathanhle), Barry McClendon, Nestor Feliciano, @dan_bohea, @lekum, Juan Martinez, @wimvandijck, André, @39digits, @aazon, Ned Schumann, @andypost, @michel_slm, @erimar77, @geoand, Larry B, Tim Gerla, @b_borysenko, Stephen H, @chesterbr, @mrjester888, @gkedge, @opratr, @briants5, @atweb, and @devtux_at
+@LeeVanSteerthem, Jonathan Nakatsui, Joel Shprentz, Hugo Posca, Jon Forrest, Rohit Bhute, George Boobyer (@ibluebag), Jason Baker (@Alchemister5), Jonathan Le (@jonathanhle), Barry McClendon, Nestor Feliciano, @dan_bohea, @lekum, Juan Martinez, @wimvandijck, André, @39digits, @aazon, Ned Schumann, @andypost, @michel_slm, @erimar77, @geoand, Larry B, Tim Gerla, @b_borysenko, Stephen H, @chesterbr, @mrjester888, @gkedge, @opratr, @briants5, @atweb, @devtux_at, and @sillygwailo

@@ -8,6 +8,8 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   - Fixed an errant closing parens in chapter 8.
   - Fixed sentence describing use of `serial` in chapter 9 (thanks to @devtux_at!).
+  - Fixed sentence describing SSH password behavior in chapter 10 (thanks to @sillygwailo!).
+  - Fixed private key destination path in example in chapter 6 (thanks to Anthony R!).
 
 ## Version 1.0 (2015-10-10)
 

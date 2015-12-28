@@ -35,7 +35,7 @@ Just like with variable include files, tasks are formatted in a flat list in the
     - name: Add private keys for user.
       copy:
         src: "{{ item.src }}"
-        dest: "/home/.ssh/{{ item.dest }}"
+        dest: "/home/{{ username }}/.ssh/{{ item.dest }}"
         owner: "{{ username }}"
         group: "{{ username }}"
         mode: 0600
