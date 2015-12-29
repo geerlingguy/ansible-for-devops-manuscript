@@ -196,7 +196,8 @@ Variable files can also be imported conditionally. Say, for instance, you have o
     ---
     - hosts: example
       vars_files:
-        - [ "apache_{{ ansible_os_family }}.yml", "apache_default.yml" ]
+        - "apache_default.yml"
+        - "apache_{{ ansible_os_family }}.yml"
       tasks:
         - service: name={{ apache }} state=running
 
