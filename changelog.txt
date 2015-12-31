@@ -6,11 +6,10 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - Fixed an errant closing parens in chapter 8.
-  - Fixed sentence describing use of `serial` in chapter 9 (thanks to @devtux_at!).
-  - Fixed sentence describing SSH password behavior in chapter 10 (thanks to @sillygwailo!).
-  - Fixed private key destination path in example in chapter 6 (thanks to Anthony R!).
-  - Fixed order of vars_files includes in example in chapter 5 (thanks to @arbabnazar!).
+  1. Fixed sentence describing use of `serial` in chapter 9 (thanks to @devtux_at!).
+  2. Fixed sentence describing SSH password behavior in chapter 10 (thanks to @sillygwailo!).
+  3. Fixed private key destination path in example in chapter 6 (thanks to Anthony R!).
+  4. Fixed order of vars_files includes in example in chapter 5 (thanks to @arbabnazar!).
 
 ## Version 1.0 (2015-10-10)
 
