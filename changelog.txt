@@ -10,7 +10,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Fixed sentence describing use of `serial` in chapter 9 (thanks to @devtux_at!).
   - Fixed sentence describing SSH password behavior in chapter 10 (thanks to @sillygwailo!).
   - Fixed private key destination path in example in chapter 6 (thanks to Anthony R!).
-  - Fixed order of vars_files includes in example in chapter 5 (thanks to Arbab N!).
+  - Fixed order of vars_files includes in example in chapter 5 (thanks to @arbabnazar!).
 
 ## Version 1.0 (2015-10-10)
 
