@@ -15,7 +15,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   7. Fixed task name text in idempotence example in chapter 4 (thanks to Joel S!).
   8. Fixed Node.js Forever installation in chapter 4 and chapter 6 due to Ansible `npm` module bug (thanks to Stephen W!).
   9. Add `geerlingguy.php-mysql` to LAMP server example in chapter 6 (thanks to Paul M!).
-  10. TODO
+  10. Fixed typo in "Configure PHP with `lineinfile`" example in chapter 4 (thanks to Adrian!).
 
 ## Version 1.0 (2015-10-10)
 
