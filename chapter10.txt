@@ -147,9 +147,9 @@ In Ansible, it's preferred you log into the remote server with a normal or admin
 {lang="text",linenos=off}
     - name: Restart Apache.
       service: name=httpd state=restarted
-      sudo: yes
+      become: yes
 
-Add `sudo_user: [username]` to a task to specify a specific user account to use with `sudo` (this will only apply if `sudo` is already set on the task or in the playbook).
+Add `become_user: [username]` to a task to specify a specific user account to use with `sudo` (this will only apply if `become` is already set on the task or in the playbook).
 
 You can also use Ansible to control sudo's configuration, defining who should have access to what commands and whether the user should be required to enter a password, among other things.
 

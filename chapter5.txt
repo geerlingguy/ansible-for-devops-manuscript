@@ -79,7 +79,7 @@ Linux will also read global environment variables added to `/etc/environment`, s
     - name: Add a global environment variable.
       lineinfile: "dest=/etc/environment regexp=^ENV_VAR= \
       line=ENV_VAR=value"
-      sudo: yes
+      become: yes
 
 In any case, it's pretty simple to manage environment variables on the server with `lineinfile`. If your application requires many environment variables (as is the case in many Java applications), you might consider using `copy` or `template` with a local file instead of using `lineinfile` with a large list of items.
 
@@ -905,7 +905,7 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
             - template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
             - service: name=httpd state=started enabled=yes
           when: ansible_os_family == 'RedHat'
-          sudo: yes
+          become: yes
     
         # Install and configure Apache on Debian/Ubuntu hosts.
         - block:
@@ -913,9 +913,9 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
             - template: src=httpd.conf.j2 dest=/etc/apache2/apache2.conf
             - service: name=apache2 state=started enabled=yes
           when: ansible_os_family == 'Debian'
-          sudo: yes
+          become: yes
 
-If you want to perform a series of tasks with one set of task parameters (e.g. `with_items`, `when`, or `sudo`) applied, blocks are quite handy.
+If you want to perform a series of tasks with one set of task parameters (e.g. `with_items`, `when`, or `become`) applied, blocks are quite handy.
 
 Blocks are also useful if you want to be able to gracefully handle failures in certain tasks. There might be a task that connects your app to a monitoring service that's not essential for a deployment to succeed, so it would be better to gracefully handle a failure than to bail out of the entire deployment!
 

@@ -100,7 +100,7 @@ Consider, for example, this example master playbook to completely configure all 
     ---
     # Set up basic, standardized components across all servers.
     - hosts: all
-      sudo: true
+      become: yes
       roles:
         - security
         - logging

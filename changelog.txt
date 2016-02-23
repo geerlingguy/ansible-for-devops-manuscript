@@ -11,6 +11,11 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. Fixed private key destination path in example in chapter 6 (thanks to Anthony R!).
   4. Fixed order of vars_files includes in example in chapter 5 (thanks to @arbabnazar!).
   5. Fixed Solr log4j configuration file version check in chapter 4 (thanks to Leroy H!).
+  6. Updated usage of `become` instead of now-deprecated `sudo` throughout book and examples (thanks to David!).
+  7. Fixed task name text in idempotence example in chapter 4 (thanks to Joel S!).
+  8. Fixed Node.js Forever installation in chapter 4 and chapter 6 due to Ansible `npm` module bug (thanks to Stephen W!).
+  9. Add `geerlingguy.php-mysql` to LAMP server example in chapter 6 (thanks to Paul M!).
+  10. TODO
 
 ## Version 1.0 (2015-10-10)
 

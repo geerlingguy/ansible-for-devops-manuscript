@@ -67,7 +67,7 @@ The above playbook will perform *exactly* like the shell script, but you can imp
 {lang="text"}
     ---
     - hosts: all
-      sudo: yes
+      become: yes
     
       tasks:
         - name: Install Apache.
@@ -87,14 +87,14 @@ The above playbook will perform *exactly* like the shell script, but you can imp
               dest: "/etc/httpd/conf/httpd.conf"
             - src: "httpd-vhosts.conf"
               dest: "/etc/httpd/conf/httpd-vhosts.conf"
-        - name: Make sure Apache is started and now and at boot.
+        - name: Make sure Apache is started now and at boot.
           service: name=httpd state=started enabled=yes
 
 Now we're getting somewhere. Let me walk you through this simple playbook:
 
   1. The first line, `---`, is how we mark this document as using YAML syntax (like using `<html>` at the top of an HTML document, or `<?php` at the top of a block of PHP code).
   2. The second line, `- hosts: all` defines the first (and in this case, only) _play_, and tells Ansible to run the play on `all` hosts that it knows about.
-  3. The third line, `sudo: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
+  3. The third line, `become: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
   4. The fifth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
   5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the play that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=present"... but if you drop the name line completely, that won't cause any problem.
 
@@ -257,7 +257,7 @@ Ansible makes things a little more robust. Even though the following is slightly
           yum: name=npm state=present enablerepo=epel
     
         - name: Install Forever (to run our Node.js app).
-          npm: name=forever global=yes state=latest
+          npm: name=forever global=yes state=present
 
 Let's walk through this playbook step-by-step:
 
@@ -555,7 +555,7 @@ Ansible's `lineinfile` module does a simple task: ensures that a particular line
 
 In this example, we need to enable APC's `rfc1867` option so Drupal can use APC's file upload progress tracking (there are better ways of doing this, but for our simple server, this will suffice).
 
-First, we tell `lineinfile` the location of the file, in the `dest` parameter. Then, we give a regular expression (Python-style) to define what the line looks like (in this case, the line starts with the exact phrase "apc.rfc1867"---we had to escape the period since it is a special character in regular expressions). Next, we tell `lineinfile` exactly how the resulting line should look. Finally, we explicitly state that we want this line to be present (with the `state` parameter).
+First, we tell `lineinfile` the location of the file, in the `dest` parameter. Then, we give a regular expression (Python-style) to define what the line looks like (in this case, the line starts with the exact phrase "apc.rfc1867"). Next, we tell `lineinfile` exactly how the resulting line should look. Finally, we explicitly state that we want this line to be present (with the `state` parameter).
 
 Ansible will take the regular expression, and see if there's a matching line. If there is, Ansible will make sure the line matches the `line` parameter. If not, Ansible will add the line as defined in the `line` parameter. Ansible will only report a change if it had to add or change the line to match `line`.
 

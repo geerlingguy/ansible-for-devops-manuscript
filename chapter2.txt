@@ -65,7 +65,7 @@ Let's create the Ansible `playbook.yml` file now. Create an empty text file in t
 {lang="text"}
     ---
     - hosts: all
-      sudo: yes
+      become: yes
       tasks:
       - name: Ensure NTP (for time synchronization) is installed.
         yum: name=ntp state=present
@@ -91,9 +91,9 @@ This first line is a marker showing that the rest of the document will be format
 This line tells Ansible to which hosts this playbook applies. `all` works here, since Vagrant is invisibly using its own Ansible inventory file (instead of the one we created earlier in `/etc/ansible/hosts`), which just defines the Vagrant VM.
 
 {lang="text",starting-line-number=3}
-      sudo: yes
+      become: yes
 
-Since we need privileged access to install NTP and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook.
+Since we need privileged access to install NTP and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook (you're telling Ansible to 'become' the root user with `sudo`, or an equivalent).
 
 {lang="text",starting-line-number=4}
       tasks:
@@ -138,7 +138,7 @@ We could be even more terse (and really demonstrate Ansible's powerful simplicit
 {lang="text"}
     ---
     - hosts: all
-      sudo: yes
+      become: yes
       tasks:
       - yum: name=ntp state=present
       - service: name=ntpd state=started enabled=yes

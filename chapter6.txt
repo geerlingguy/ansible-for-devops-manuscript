@@ -252,7 +252,7 @@ Create a `main.yml` file in this folder, and add the following contents (basical
       yum: name=npm state=present enablerepo=epel
     
     - name: Install forever module (to run our Node.js app).
-      npm: name=forever global=yes state=latest
+      npm: name=forever global=yes state=present
 
 The Node.js directory structure should now look like the following:
 
@@ -303,7 +303,7 @@ Modify the `tasks/main.yml` file to use a list variable and iterate through the 
       yum: name=npm state=present enablerepo=epel
     
     - name: Install npm modules required by our app.
-      npm: name={{ item }} global=yes state=latest
+      npm: name={{ item }} global=yes state=present
       with_items: node_npm_modules
 
 Let's provide a sane default for the new `node_npm_modules` variable in `defaults/main.yml`:
@@ -516,21 +516,22 @@ Ansible allows a simple `.txt` format that is very basic (though this format is 
 
 To install the roles defined in a requirements file, use the command `ansible-galaxy install -r requirements.yml`. For more documentation on Ansible requirements files, see the official documentation: [Advanced Control over Role Requirements Files](http://docs.ansible.com/ansible/galaxy.html#advanced-control-over-role-requirements-files).
 
-### A LAMP server in eight lines of YAML
+### A LAMP server in nine lines of YAML
 
-With the Apache, MySQL, and PHP roles installed, we can quickly create a LAMP server. This example assumes you already have a CentOS-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
+With the Apache, MySQL, and PHP roles installed, we can quickly create a LAMP server. This example assumes you already have an Ubuntu-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
 
 First, create an Ansible playbook named `lamp.yml` with the following contents:
 
 {lang="text"}
     ---
     - hosts: all
-      sudo: true
+      become: yes
     
       roles:
         - geerlingguy.mysql
         - geerlingguy.apache
         - geerlingguy.php
+        - geerlingguy.php-mysql
 
 Now, run the playbook against a host:
 
@@ -539,7 +540,7 @@ Now, run the playbook against a host:
 
 After a few minutes, an entire LAMP server should be set up and running. If you add in a few variables, you can configure virtualhosts, PHP configuration options, MySQL server settings, etc.
 
-We've effectively reduced about thirty lines of YAML (from previous examples dealing with LAMP or LAMP-like servers) down to three. Obviously, the roles have extra code in them, but the power here is in abstraction. Since most companies have many servers using similar software, but with slightly different configurations, having centralized, flexible roles saves a lot of repetition.
+We've effectively reduced about thirty lines of YAML (from previous examples dealing with LAMP or LAMP-like servers) down to four. Obviously, the roles have extra code in them, but the power here is in abstraction. Since most companies have many servers using similar software, but with slightly different configurations, having centralized, flexible roles saves a lot of repetition.
 
 You could think of Galaxy roles as glorified packages; they not only install software, but they configure it *exactly* how you want it, every time, with minimal adjustment. Additionally, many of these roles work across different flavors of Linux and UNIX, so you have better configuration portability!
 
@@ -556,7 +557,7 @@ Then create a playbook named `solr.yml` with the following contents:
 {lang="text"}
     ---
     - hosts: all
-      sudo: yes
+      become: yes
     
       roles:
         - geerlingguy.java
