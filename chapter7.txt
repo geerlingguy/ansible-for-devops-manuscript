@@ -457,7 +457,7 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
 
      {lang="text",line-numbers=off}
      ~~~~~~~~
-     $ ./digital_- ocean.py --pretty
+     $ ./digital_ocean.py --pretty
      ~~~~~~~~
 
   6. Ping all your DigitalOcean droplets:

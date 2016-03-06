@@ -13,9 +13,10 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. Fixed Solr log4j configuration file version check in chapter 4 (thanks to Leroy H!).
   6. Updated usage of `become` instead of now-deprecated `sudo` throughout book and examples (thanks to David!).
   7. Fixed task name text in idempotence example in chapter 4 (thanks to Joel S!).
-  8. Fixed Node.js Forever installation in chapter 4 and chapter 6 due to Ansible `npm` module bug (thanks to Stephen W!).
-  9. Add `geerlingguy.php-mysql` to LAMP server example in chapter 6 (thanks to Paul M!).
+  8. Fixed Node.js Forever installation in chapter 4 and chapter 6 due to Ansible `npm` module bug; `state=latest` is now `state=present` (thanks to Stephen W!).
+  9. Add `geerlingguy.php-mysql` role to LAMP server example in chapter 6 (thanks to Paul M!).
   10. Fixed typo in "Configure PHP with `lineinfile`" example in chapter 4 (thanks to Adrian!).
+  11. Fixed script name `digital_ocean.py` in bullet point 5 under the DigitalOcean dynamic inventory section in chapter 7 (thanks to Adrian!).
 
 ## Version 1.0 (2015-10-10)
 
