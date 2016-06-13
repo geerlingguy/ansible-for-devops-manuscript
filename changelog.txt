@@ -4,7 +4,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current Version
+## Current version
+
+  1. Fixed Apache Solr mirror URL in chapter 4 (thanks to @daniloradenovic!).
+
+## Version 1.1 (2016-03-06)
 
   1. Fixed sentence describing use of `serial` in chapter 9 (thanks to @devtux_at!).
   2. Fixed sentence describing SSH password behavior in chapter 10 (thanks to @sillygwailo!).

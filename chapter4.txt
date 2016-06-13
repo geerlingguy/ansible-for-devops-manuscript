@@ -761,7 +761,7 @@ Ubuntu 12.04 includes a package for Apache Solr, but it installs a very old vers
 {lang="text",starting-line-number=25}
         - name: Download Solr.
           get_url:
-            url: "http://apache.osuosl.org/lucene/solr/\
+            url: "https://archive.apache.org/dist/lucene/solr/\
     {{ solr_version }}/solr-{{ solr_version }}.tgz"
             dest: "{{ download_dir }}/solr-{{ solr_version }}.tgz"
             sha256sum: "{{ solr_sha256sum }}"
