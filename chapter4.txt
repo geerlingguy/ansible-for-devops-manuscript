@@ -234,18 +234,15 @@ I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables other nifty Ansible features we'll discuss later:
 
 {lang="text",starting-line-number=9}
-        - name: Import Remi GPG key.
-          rpm_key: "key={{ item }} state=present"
-          with_items:
-            - "http://rpms.famillecollet.com/RPM-GPG-KEY-remi"
-    
         - name: Install Remi repo.
-          command: "rpm -Uvh --force {{ item.href }} \
-          creates={{ item.creates }}"
-          with_items:
-            - href: "http://rpms.famillecollet.com/enterprise/\
-    remi-release-6.rpm"
-              creates: "/etc/yum.repos.d/remi.repo"
+          yum:
+            name: "http://rpms.remirepo.net/enterprise/remi-release-7.rpm"
+            state: present
+    
+        - name: Import Remi GPG key.
+          rpm_key:
+            key: "http://rpms.remirepo.net/RPM-GPG-KEY-remi"
+            state: present
     
         - name: Install EPEL repo.
           yum: name=epel-release state=present
@@ -261,12 +258,8 @@ Ansible makes things a little more robust. Even though the following is slightly
 
 Let's walk through this playbook step-by-step:
 
-  1. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
-  2. Since Ansible doesn't have a built-in rpm module, we use the rpm command with Ansible's `command` module, which allows us to do two things:
-
-     1. Use the `creates` parameter to tell Ansible when to *not* run the command (in this case, we tell Ansible what file is present after the `rpm` command successfully completes).
-     2. Use a multidimensional array of items (`with_items`) to define URLs and the resulting files checked with `creates`.
-
+  1. We can install extra yum repositories using the `yum` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
+  2. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
   3. `yum` installs the EPEL repository (much simpler than the two-step process we had to follow to get Remi's repository installed!).
   4. Since this server is being used only for test purposes, we disable the system firewall so it won't interfere with testing (using the `service` module).
   5. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
@@ -309,7 +302,7 @@ Since this little app is dependent on Express (a simple http framework for Node)
 
 Now, add the following to your playbook, to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`):
 
-{lang="text",starting-line-number=34}
+{lang="text",starting-line-number=31}
         - name: Ensure Node.js app folder exists.
           file: "path={{ node_apps_location }} state=directory"
     
@@ -333,7 +326,7 @@ We're *almost* finished! The last step is to start the app.
 
 We'll now use `forever` (which we installed earlier) to start the app.
 
-{lang="text",starting-line-number=43}
+{lang="text",starting-line-number=40}
         - name: Check list of running Node.js apps.
           command: forever list
           register: forever_list
