@@ -374,7 +374,7 @@ T> The entire example Node.js app server playbook is in this book's code reposit
 
 ## Real-world playbook: Ubuntu LAMP server with Drupal
 
-At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu 12.04 to run a Drupal website.
+At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu 14.04 to run a Drupal website.
 
 {width=40%}
 ![Drupal LAMP server.](images/4-playbook-drupal.png)
@@ -427,7 +427,7 @@ The first step towards building an application server that depends on the LAMP s
             - python-pycurl
     
         - name: Add ondrej repository for later versions of PHP.
-          apt_repository: repo='ppa:ondrej/php5' update_cache=yes
+          apt_repository: repo='ppa:ondrej/php5-5.6' update_cache=yes
     
         - name: "Install Apache, MySQL, PHP, and other dependencies."
           apt: name={{ item }} state=present
@@ -444,7 +444,7 @@ The first step towards building an application server that depends on the LAMP s
             - php5-gd
             - php5-dev
             - php5-mcrypt
-            - php-apc
+            - php-apcu
             - php-pear
             - python-mysqldb
             - mysql-server
@@ -523,8 +523,8 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
 
 {lang="text"}
     ---
-    # The core version you want to use (e.g. 6.x, 7.x, 8.0.x).
-    drupal_core_version: "8.0.x"
+    # The core version you want to use (e.g. 6.x, 7.x, 8.1.x).
+    drupal_core_version: "8.1.x"
     
     # The path where Drupal will be downloaded and installed.
     drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
@@ -532,7 +532,7 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
     # The resulting domain will be [domain].dev (with .dev appended).
     domain: "drupaltest"
 
-Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.0.x-dev` and `drupaltest` (or whatever values you'd like!).
+Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.1.x-dev` and `drupaltest` (or whatever values you'd like!).
 
 The last two tasks (lines 12-19) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
@@ -636,7 +636,7 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 
 ### Install Drupal with Git and Drush
 
-We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, then we'll run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
+We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, install Drupal's dependencies with Composer, run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
 {lang="text",starting-line-number=128}
         - name: Check out Drupal Core to the Apache docroot.
@@ -644,6 +644,12 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             repo: http://git.drupal.org/project/drupal.git
             version: "{{ drupal_core_version }}"
             dest: "{{ drupal_core_path }}"
+    
+        - name: Install Drupal dependencies with Composer.
+          shell: >
+            /usr/local/bin/composer install
+            chdir={{ drupal_core_path }}
+            creates={{ drupal_core_path }}/sites/default/settings.php
     
         - name: Install Drupal.
           command: >
@@ -668,15 +674,17 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             state: directory
             recurse: yes
 
-First, we cloned Drupal's git repository, using the `version` defined in our `vars.yml` file as `drupal_core_version`. The `git` module's `version` parameter defines the branch (`master`, `8.0.x`, etc.), tag (`1.0.1`, `7.24`, etc.), or individual commit hash (`50a1877`, etc.) to clone.
+First, we cloned Drupal's git repository, using the `version` defined in our `vars.yml` file as `drupal_core_version`. The `git` module's `version` parameter defines the branch (`master`, `8.1.x`, etc.), tag (`1.0.1`, `7.24`, etc.), or individual commit hash (`50a1877`, etc.) to clone.
 
-Next, we used Drush's `si` command (short for `site-install`) to run Drupal's installation (which configures the database, runs some maintenance, and sets some default configuration settings for the site). We passed in a few variables, like the `drupal_core_version` and `domain`; we also added a `drupal_site_name`, so add that variable to your `vars.yml` file:
+Next, we must install Drupal's dependencies using Composer (just like we did with Drush). For both this and the next task, we only want to run them the first time we install Drupal, so we can use the creation of a `settings.php` file along with the `creates` parameter to let Ansible know if the dependencies and database have already been installed.
+
+To install Drupal, we used Drush's `si` command (short for `site-install`) to run Drupal's installation (which configures the database, runs some maintenance, and sets some default configuration settings for the site). We passed in a few variables, like the `drupal_core_version` and `domain`; we also added a `drupal_site_name`, so add that variable to your `vars.yml` file:
 
 {lang="text",starting-line-number=10}
     # Your Drupal site name.
     drupal_site_name: "D8 Test"
 
-Also, Drupal's installation process results in the creation of a 'settings.php' file, so we use the location of that file with the `creates` parameter to let Ansible know if the site's already installed (so we don't accidentally try installing it again!). Once the site is installed, we also restart Apache for good measure (using `notify` again, like we did when updating Apache's configuration).
+Once the site is installed, we also restart Apache for good measure (using `notify` again, like we did when updating Apache's configuration).
 
 The final two tasks set permissions on Drupal's settings.php and files folder to 744 and 777, respectively.
 
