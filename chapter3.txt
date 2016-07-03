@@ -48,6 +48,7 @@ To begin, create a new folder somewhere on your local drive (I like using `~/VMs
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.ssh.insert_key = false
+      config.vm.synced_folder ".", "/vagrant", disabled: true
       config.vm.provider :virtualbox do |vb|
         vb.customize ["modifyvm", :id, "--memory", "256"]
       end
