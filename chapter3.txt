@@ -314,10 +314,10 @@ Check to make sure Django is installed and working correctly.
     $ ansible app -a "python -c 'import django; \
     print django.get_version()'"
     192.168.60.4 | success | rc=0 >>
-    1.9
+    1.10b1
     
     192.168.60.5 | success | rc=0 >>
-    1.9
+    1.10b1
 
 Things look like they're working correctly on our app servers. We can now move on to our database server.
 
