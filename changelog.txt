@@ -10,6 +10,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   2. Updated Drupal example in chapter 4 for Ubuntu 14.04 and PHP 5.6 (thanks to @e1nh4nd3r!).
   3. Updated Node.js app server example in chapter 4 to use `yum` for Remi repo install.
   4. Update a few lines for Ansible 2.1.x support.
+  5. Fixed 'Variable Precedence' section in chapter 5 for Ansible 2.x (thanks to @daniel!).
 
 ## Version 1.1 (2016-03-06)
 

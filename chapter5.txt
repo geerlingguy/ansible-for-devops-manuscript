@@ -560,12 +560,24 @@ More options and examples are available in the [official documentation for Ansib
 
 It should be rare that you would need to dig into the details of which variable is used when you define the same variable in five different places, but since there are odd occasions where this is the case, Ansible's documentation provides the following ranking:
 
-  1. Variables from the command line (`-e` in the command line) always win.
-  2. Connection variables defined in inventory (`ansible_ssh_user`, etc.).
-  3. "Most everything else" (command line switches, variables defined in a play, included variables, role variables, etc.).
-  4. Other (non-connection) inventory variables.
-  5. Local facts and automatically discovered facts (via `gather_facts`).
-  6. Role default variables (inside a role's `defaults/main.yml` file).
+  1. `--extra-vars` passed in via the command line (these always win, no matter what).
+  2. Task-level vars (in a task block).
+  3. Block-level vars (for all tasks in a block).
+  4. Role vars (e.g. `[role]/vars/main.yml`) and vars from `include_vars` module.
+  5. Vars set via `set_facts` modules.
+  6. Vars set via `register` in a task.
+  7. Individual play-level vars:
+    1. `vars_files`
+    2. `vars_prompt`
+    3. `vars`
+  8. Host facts.
+  9. Playbook `host_vars`.
+  10. Playbook `group_vars`.
+  11. Inventory:
+    1. `host_vars`
+    2. `group_vars`
+    3. `vars`
+  12. Role default vars (e.g. `[role]/defaults/main.yml`).
 
 After lots of experience building playbooks, roles, and managing inventories, you'll likely find the right mix of variable definition for your needs, but there are a few general things that will mitigate any pain in setting and overriding variables on a per-play, per-host, or per-run basis:
 
@@ -575,7 +587,7 @@ After lots of experience building playbooks, roles, and managing inventories, yo
   - Dynamic and static inventory sources should contain a minimum of variables, especially as these variables are often less visible to those maintaining a particular playbook.
   - Command line variables (`-e`) should be avoided when possible. One of the main use cases is when doing local testing or running one-off playbooks where you aren't worried about the maintainability or idempotence of the tasks you're running.
 
-See Ansible's [Variable Precedence](http://docs.ansible.com/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable) documentation for more detail and examples.
+See Ansible's [Variable Precedence](http://docs.ansible.com/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable) documentation for more detail and examples, especially if you use older versions of Ansible (since older versions were not as strict about the precedence).
 
 ## If/then/when - Conditionals
 
