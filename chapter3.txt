@@ -38,7 +38,7 @@ Earlier, we used Vagrant to boot up one virtual machine running CentOS 7. In tha
 
 We're going to manage three VMs: two app servers and a database server. Many simple web applications and websites have a similar architecture, and even though this may not reflect the vast realm of infrastructure combinations that exist, it will be enough to highlight Ansible's server management abilities.
 
-To begin, create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), and create a new blank file named `Vagrantfile` (this is how we describe our virtual machines to Vagrant). Open the file in your favorite editor, and add the following, then save the file:
+To begin, create a new folder somewhere on your local drive (I like using `~/VMs/[dir]`), and create a new blank file named `Vagrantfile` (this is how we describe our virtual machines to Vagrant). Open the file in your favorite editor, add the following, and save the file:
 
 {lang=ruby}
     # -*- mode: ruby -*-
@@ -47,37 +47,37 @@ To begin, create a new folder somewhere on your local drive (I like using `~/VMs
     VAGRANTFILE_API_VERSION = "2"
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      # General Vagrant VM configuration.
+      config.vm.box = "geerlingguy/centos7"
       config.ssh.insert_key = false
       config.vm.synced_folder ".", "/vagrant", disabled: true
-      config.vm.provider :virtualbox do |vb|
-        vb.customize ["modifyvm", :id, "--memory", "256"]
+      config.vm.provider :virtualbox do |v|
+        v.memory = 256
+        v.linked_clone = true
       end
     
       # Application server 1.
       config.vm.define "app1" do |app|
         app.vm.hostname = "orc-app1.dev"
-        app.vm.box = "geerlingguy/centos7"
         app.vm.network :private_network, ip: "192.168.60.4"
       end
     
       # Application server 2.
       config.vm.define "app2" do |app|
         app.vm.hostname = "orc-app2.dev"
-        app.vm.box = "geerlingguy/centos7"
         app.vm.network :private_network, ip: "192.168.60.5"
       end
     
       # Database server.
       config.vm.define "db" do |db|
         db.vm.hostname = "orc-db.dev"
-        db.vm.box = "geerlingguy/centos7"
         db.vm.network :private_network, ip: "192.168.60.6"
       end
     end
 
 This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 7.
 
-Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the box while building the example from Chapter 2, this process shouldn't take too long---maybe 5-10 minutes.
+Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the box while building the example from Chapter 2, this process shouldn't take too long---maybe 3-5 minutes.
 
 While that's going on, we'll work on telling Ansible about the servers, so we can start managing them right away.
 
@@ -278,7 +278,7 @@ All three servers should show a success message like:
 
 If you run the exact same command again, everything will be the same, but Ansible will report that nothing has changed, so the `"changed"` value becomes `false`.
 
-When you use Ansible's modules instead of plain shell commands, you can use the powers of abstraction and idempotency offered by Ansible. Even if you're running shell commands, you could wrap them in Ansible's `shell` or `command` modules (like `ansible -m shell -a "date" multi`), but for these kind of commands, there's usually no need to use an Ansible module when running them ad-hoc.
+When you use Ansible's modules instead of plain shell commands, you can use the powers of abstraction and idempotency offered by Ansible. Even if you're running shell commands, you could wrap them in Ansible's `shell` or `command` modules (like `ansible multi -m shell -a "date"`), but for these kind of commands, there's usually no need to use an Ansible module when running them ad-hoc.
 
 The last thing we should do is check to make sure our servers are synced closely to the official time on the NTP server:
 
@@ -304,7 +304,7 @@ Our hypothetical web application uses Django, so we need to make sure Django and
 {lang="text",linenos=off}
     $ ansible app -s -m yum -a "name=MySQL-python state=present"
     $ ansible app -s -m yum -a "name=python-setuptools state=present"
-    $ ansible app -s -m easy_install -a "name=django"
+    $ ansible app -s -m easy_install -a "name=django state=present"
 
 You could also install django using `pip`, which can be installed via `easy_install` (since Ansible's `easy_install` module doesn't allow you to uninstall packages like `pip` does), but for simplicity's sake, we've installed it with `easy_install`.
 
@@ -404,6 +404,17 @@ What if you want to delete the account?
 
 You can do just about anything you could do with `useradd`, `userdel`, and `usermod` using Ansible's `user` module, except you can do it more easily. The [official documentation of the User module](http://docs.ansible.com/user_module.html) explains all the possibilities in great detail.
 
+## Manage packages
+
+We've already used the `yum` module on our example CentOS infrastructure to ensure certain packages are installed. Ansible has a variety of package management modules for any flavor of Linux, but there's also a generic `package` module that can be used for easier cross-platform Ansible usage.
+
+If you want to install a generic package like `git` on any Debian, RHEL, Fedora, Ubuntu, CentOS, FreeBSD, etc. system, you can use the command:
+
+{lang="text",linenos=off}
+    $ ansible app -s -m package -a "name=git state=present"
+
+`package` works much the same as `yum`, `apt`, and other package management modules. Later in the book we'll explore ways of dealing with multi-platform package management where package names differ between OSes.
+
 ## Manage files and directories
 
 Another common use for ad-hoc commands is remote file management. Ansible makes it easy to copy files from your host to remote servers, create directories, manage file and directory permissions and ownership, and delete files or directories.
@@ -419,14 +430,14 @@ This gives the same information you'd get when running the `stat` command, but p
 
 ### Copy a file to the servers
 
-You probably use `scp` and/or `rsync` to copy files and directories to remote servers, and while Ansible has recently gained an `rsync` module, most file copy operations can be completed with Ansible's `copy` module:
+You probably use `scp` and/or `rsync` to copy files and directories to remote servers, and while Ansible has more advanced file copy modules like `rsync`, most file copy operations can be completed with Ansible's `copy` module:
 
 {lang="text",linenos=off}
     $ ansible multi -m copy -a "src=/etc/hosts dest=/tmp/hosts"
 
 The `src` can be a file or a directory. If you include a trailing slash, only the contents of the directory will be copied into the `dest`. If you omit the trailing slash, the contents *and* the directory itself will be copied into the `dest`.
 
-The `copy` module is perfect for single-file copies, and works very well with small directories. When you want to copy hundreds of files, especially in very deeply-nested directory structures, you should consider either copying then expanding an archive of the files with Ansible's `unarchive` module, or using Ansible's `synchronize` module.
+The `copy` module is perfect for single-file copies, and works very well with small directories. When you want to copy hundreds of files, especially in very deeply-nested directory structures, you should consider either copying then expanding an archive of the files with Ansible's `unarchive` module, or using Ansible's `synchronize` or `rsync` modules.
 
 ### Retrieve a file from the servers
 
@@ -604,7 +615,7 @@ First, update the git checkout to the application's new version branch, 1.2.4, o
 
 Ansible's git module lets you specify a branch, tag, or even a specific commit with the `version` parameter (in this case, we chose to checkout tag `1.2.4`, but if you run the command again with a branch name, like `prod`, Ansible will happily do that instead). To force Ansible to update the checked-out copy, we passed in `update=yes`. The `repo` and `dest` options should be self-explanatory.
 
-I> If you get a message saying "Failed to find required executable git", you will need to install Git on the server. To do so, run the ad-hoc command `ansible app -s -m yum -a "name=git state=present"` (substitute your OS's package manager for `yum`).
+I> If you get a message saying "Failed to find required executable git", you will need to install Git on the server. To do so, run the ad-hoc command `ansible package -s -m yum -a "name=git state=present"`.
 I> 
 I> If you get a message saying the Git server has an "unknown hostkey", add the option `accept_hostkey=yes` to the command, or add the hostkey to your server's `known_hosts` file before running this command.
 

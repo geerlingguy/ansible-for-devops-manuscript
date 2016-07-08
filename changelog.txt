@@ -11,8 +11,14 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. Updated Node.js app server example in chapter 4 to use `yum` for Remi repo install.
   4. Update a few lines for Ansible 2.1.x support.
   5. Fixed 'Variable Precedence' section in chapter 5 for Ansible 2.x (thanks to @daniel!).
-  6. Updated misspellings of 'RedHat' to 'Red Hat' or 'RHEL' when referring to the OS.
   **--- Website errata.html is current to this line ---**
+  6. Updated misspellings of 'RedHat' to 'Red Hat' or 'RHEL' when referring to the OS.
+  7. Updated links to resources in Introduction, removed link to defunct Ansible Weekly newsletter.
+  8. Fixed grammar mistakes in parts of the Foreword, Preface, and Introduction.
+  9. Updated URLs to Vagrant resources in chapter 2.
+  10. Added note about cleaning up example VM with `vagrant destroy` in chapter 2.
+  11. Use linked clones in Vagrantfiles for faster build in chapters 3, 7, 8, 9, and 11.
+  12. Added 'Manage packages' section in chapter 3.
 
 ## Version 1.1 (2016-03-06)
 

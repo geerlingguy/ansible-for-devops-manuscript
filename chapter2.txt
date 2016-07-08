@@ -25,13 +25,13 @@ To get started with your first local virtual server, you need to download and in
   3. Open a Terminal or PowerShell window, then navigate to the folder you just created.
   4. Add a CentOS 7.x 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
     `vagrant box add geerlingguy/centos7`
-    (note: HashiCorp's [Atlas](https://atlas.hashicorp.com/boxes/search) has a comprehensive list of different pre-made Linux boxes. Also, check out the 'official' Vagrant Ubuntu boxes on the [Vagrant wiki](https://github.com/mitchellh/vagrant/wiki/Available-Vagrant-Boxes).
+    (note: HashiCorp's [Atlas](https://atlas.hashicorp.com/boxes/search) has a comprehensive list of different pre-made Linux boxes. Also, check out the 'official' Vagrant Ubuntu boxes in Vagrant's [Boxes documentation](https://www.vagrantup.com/docs/boxes.html).
   5. Create a default virtual server configuration using the box you just downloaded:
     `vagrant init geerlingguy/centos7`
   6. Boot your CentOS server:
     `vagrant up`
 
-Vagrant has downloaded a pre-built 64-bit CentOS 7 virtual machine (you can [build your own](http://docs.vagrantup.com/v2/virtualbox/boxes.html) virtual machine 'boxes', if you so desire), loaded it into VirtualBox with the configuration defined in the default Vagrantfile (which is now in the folder you created earlier), and booted the virtual machine.
+Vagrant has downloaded a pre-built 64-bit CentOS 7 virtual machine (you can [build your own](https://www.vagrantup.com/docs/virtualbox/boxes.html) virtual machine 'boxes', if you so desire), loaded it into VirtualBox with the configuration defined in the default Vagrantfile (which is now in the folder you created earlier), and booted the virtual machine.
 
 Managing this virtual server is extremely easy: `vagrant halt` will shut down the VM, `vagrant up` will bring it back up, and `vagrant destroy` will completely delete the machine from VirtualBox. A simple `vagrant up` again will re-create it from the base box you originally downloaded.
 
@@ -41,10 +41,10 @@ Now that you have a running server, you can use it just like you would any other
 
 Vagrant's ability to bring up preconfigured boxes is convenient on its own, but you could do similar things with the same efficiency using VirtualBox's (or VMWare's, or Parallels') GUI. Vagrant has some other tricks up its sleeve:
 
-  - [**Network interface management**](http://docs.vagrantup.com/v2/networking/index.html): You can forward ports to a VM, share the public network connection, or use private networking for inter-VM and host-only communication.
-  - [**Shared folder management**](http://docs.vagrantup.com/v2/synced-folders/index.html): Vagrant sets up shares between your host machine and VMs using NFS or (much slower) native folder sharing in VirtualBox.
-  - [**Multi-machine management**](http://docs.vagrantup.com/v2/multi-machine/index.html): Vagrant is able to configure and control multiple VMs within one Vagrantfile. This is important because, as stated in the documentation, "Historically, running complex environments was done by flattening them onto a single machine. The problem with that is that it is an inaccurate model of the production setup, which behaves far differently."
-  - [**Provisioning**](http://docs.vagrantup.com/v2/provisioning/index.html): When running `vagrant up` the first time, Vagrant automatically *provisions* the newly-minted VM using whatever provisioner you have configured in the Vagrantfile. You can also run `vagrant provision` after the VM has been created to explicitly run the provisioner again.
+  - [**Network interface management**](https://www.vagrantup.com/docs/networking/index.html): You can forward ports to a VM, share the public network connection, or use private networking for inter-VM and host-only communication.
+  - [**Shared folder management**](https://www.vagrantup.com/docs/synced-folders/index.html): Vagrant sets up shares between your host machine and VMs using NFS or (much slower) native folder sharing in VirtualBox.
+  - [**Multi-machine management**](https://www.vagrantup.com/docs/multi-machine/index.html): Vagrant is able to configure and control multiple VMs within one Vagrantfile. This is important because, as stated in the documentation, "Historically, running complex environments was done by flattening them onto a single machine. The problem with that is that it is an inaccurate model of the production setup, which behaves far differently."
+  - [**Provisioning**](https://www.vagrantup.com/docs/provisioning/index.html): When running `vagrant up` the first time, Vagrant automatically *provisions* the newly-minted VM using whatever provisioner you have configured in the Vagrantfile. You can also run `vagrant provision` after the VM has been created to explicitly run the provisioner again.
 
 It's this last feature that is most important for us. Ansible is one of many provisioners integrated with Vagrant (others include basic shell scripts, Chef, Docker, Puppet, and Salt). When you call `vagrant provision` (or `vagrant up`) the first time, Vagrant passes off the VM to Ansible, and tells Ansible to run a defined Ansible playbook. We'll get into the details of Ansible playbooks later, but for now, we're going to edit our Vagrantfile to use Ansible to provision our virtual machine.
 
@@ -56,7 +56,7 @@ Open the Vagrantfile that was created when we used the `vagrant init` command ea
       ansible.playbook = "playbook.yml"
     end
 
-This is a very basic configuration to get you started using Ansible with Vagrant. There are [many other Ansible options](http://docs.vagrantup.com/v2/provisioning/ansible.html) you can use once we get deeper into using Ansible. For now, we just want to set up a very basic playbook---a simple file you create to tell Ansible how to configure your VM.
+This is a very basic configuration to get you started using Ansible with Vagrant. There are [many other Ansible options](https://www.vagrantup.com/docs/provisioning/ansible.html) you can use once we get deeper into using Ansible. For now, we just want to set up a very basic playbook---a simple file you create to tell Ansible how to configure your VM.
 
 ## Your first Ansible playbook
 
@@ -111,7 +111,7 @@ This command is the equivalent of running `yum install ntp`, but is much more in
         yum install ntp
     fi
 
-However, the above script is still not quite as robust as Ansible's `yum` command. What if ntpdate is installed, but not ntp? This script would require extra tweaking and complexity to match the simple Ansible yum command, especially after we explore the yum module more intimately (or the `apt` module, when using Ubuntu and Debian-flavored Linux).
+However, the above script is still not quite as robust as Ansible's `yum` command. What if ntpdate is installed, but not ntp? This script would require extra tweaking and complexity to match the simple Ansible yum command, especially after we explore the yum module more intimately (or the `apt` module for Debian-flavored Linux, or `package` for OS-agnostic package installation).
 
 {lang="text",starting-line-number=7}
       - name: Ensure NTP is running.
@@ -144,6 +144,10 @@ We could be even more terse (and really demonstrate Ansible's powerful simplicit
       - service: name=ntpd state=started enabled=yes
 
 I> Just as with code and configuration files, documentation in Ansible (e.g. using the `name` function and/or adding comments to the YAML for complicated tasks) is not absolutely necessary. However, I'm a firm believer in thorough (but concise) documentation, so I almost always document what my tasks will do by providing a `name` for each one. This also helps when you're running the playbooks, so you can see what's going on in a human-readable format.
+
+## Cleaning Up
+
+Once you're finished experimenting with the CentOS Vagrant VM, you can remove it from your system by running `vagrant destroy`. If you want to rebuild the VM again, run `vagrant up`. If you're like me, you'll soon be building and rebuilding hundreds of VMs and containers per week using Vagrant and Ansible!
 
 ## Summary
 

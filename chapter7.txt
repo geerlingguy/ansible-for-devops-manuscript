@@ -586,8 +586,9 @@ To create a test dynamic inventory script for demonstration purposes, let's set 
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.ssh.insert_key = false
-      config.vm.provider :virtualbox do |vb|
-        vb.customize ["modifyvm", :id, "--memory", "256"]
+      config.vm.provider :virtualbox do |v|
+        v.memory = 256
+        v.linked_clone = true
       end
     
       # Application server 1.

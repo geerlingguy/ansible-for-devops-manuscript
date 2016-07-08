@@ -143,8 +143,8 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
       config.vm.network :private_network, ip: "192.168.76.76"
       config.ssh.insert_key = false
     
-      config.vm.provider :virtualbox do |vb|
-        vb.customize ["modifyvm", :id, "--memory", "512"]
+      config.vm.provider :virtualbox do |v|
+        v.memory = 512
       end
     
       # Ansible provisioning.

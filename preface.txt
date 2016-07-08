@@ -56,4 +56,4 @@ All known issues with Ansible for DevOps will be aggregated on the book's online
 
 ## About the Author
 
-Jeff Geerling is a developer who has worked in programming and devops for companies with anywhere between one to thousands of servers. He also manages many virtual servers for services offered by Midwestern Mac, LLC and has been using Ansible to manage infrastructure since early 2013.
+Jeff Geerling is a developer who has worked in programming and reliability engineering for companies with anywhere between one to thousands of servers. He also manages many virtual servers for services offered by Midwestern Mac, LLC and has been using Ansible to manage infrastructure since early 2013.

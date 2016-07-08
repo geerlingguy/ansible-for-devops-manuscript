@@ -404,6 +404,7 @@ To begin, create four lightweight Vagrant VMs using the following Vagrantfile:
       config.vm.provider :virtualbox do |v|
         v.memory = 256
         v.cpus = 1
+        v.linked_clone = true
       end
     
       # Define four VMs with static private IP addresses.
@@ -684,6 +685,7 @@ First, create a new project folder `deployments-balancer`, and within it, create
       config.vm.provider :virtualbox do |v|
         v.memory = 256
         v.cpus = 1
+        v.linked_clone = true
       end
     
       # Define four VMs with static private IP addresses.
