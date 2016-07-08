@@ -911,7 +911,7 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
     ---
     - hosts: web
       tasks:
-        # Install and configure Apache on RedHat/CentOS hosts.
+        # Install and configure Apache on RHEL/CentOS hosts.
         - block:
             - yum: name=httpd state=present
             - template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf

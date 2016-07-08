@@ -251,7 +251,7 @@ Every year, hundreds of security updates are released for the packages running o
 
 At a minimum, you should schedule regular patch maintenance and package upgrade windows, and make sure you test the upgrades and patches on non-critical servers to make sure your applications work *before* applying the same on your production infrastructure.
 
-With Ansible, since you already have your entire infrastructure described via Ansible inventories, you should be able to use a command like the following to upgrade all installed packages on a RedHat-based system:
+With Ansible, since you already have your entire infrastructure described via Ansible inventories, you should be able to use a command like the following to upgrade all installed packages on a RHEL system:
 
 {lang="text",linenos="off"}
     $ ansible webservers -m yum -a "name=* state=latest"
@@ -261,7 +261,7 @@ On a Debian-based system, the syntax is similar:
 {lang="text",linenos="off"}
     $ ansible webservers -m apt -a "upgrade=dist update_cache=yes"
 
-The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `yum` or `apt` to tell them what to do (edit `/etc/yum.conf` for `yum` on RedHat-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
+The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `yum` or `apt` to tell them what to do (edit `/etc/yum.conf` for `yum` on RHEL-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
 
 ### Automating updates
 
@@ -269,9 +269,9 @@ Fully automated daily or weekly package and system upgrades provide even greater
 
 W> As mentioned in an earlier sidebar, GPG package signature checking is enabled by default for all package-related functionality. It's best to leave GPG checks in place, and import keys from trusted sources when necessary, *especially* when using automatic updates, if you want to prevent potentially insecure packages from being installed on your servers!
 
-### Automating updates for RedHat-based systems
+### Automating updates for RHEL systems
 
-RedHat 6 and later (and modern versions of Fedora, and RedHat derivatives like CentOS) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
+RHEL 6 and later (and modern versions of Fedora, and RHEL derivatives like CentOS) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
 
 {lang="text"}
     - name: Install yum-cron.
@@ -331,7 +331,7 @@ If you were building a secure bank vault, you wouldn't want to have a many doors
 
 Similarly, should close any port not explicitly required to remain open on all your servers---whether in a DMZ in your network or open the the entire Internet. There are dozens of different ways to manage firewalls nowadays, from `iptables` and helpful tools like `ufw` and `firewalld` that help make iptables configuration easier, to AWS security groups and other external firewall services.
 
-Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, RedHat, and CentOS distributions).
+Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, RHEL, and CentOS distributions).
 
 ### Configuring a firewall with `ufw` on Debian or Ubuntu
 
@@ -375,9 +375,9 @@ If you run a playbook with the above rules, the log into the machine (or use the
     80/tcp (v6)                ALLOW IN    Anywhere (v6)
     123/udp (v6)               ALLOW IN    Anywhere (v6)
 
-### Configuring a firewall with `firewalld` on RedHat, Fedora, or CentOS
+### Configuring a firewall with `firewalld` on RHEL, Fedora, or CentOS
 
-The same firewall configuration can be done via `firewalld` for RedHat-based systems with similar ease:
+The same firewall configuration can be done via `firewalld` for RHEL-based systems with similar ease:
 
 {lang="text"}
     - name: Configure open ports with firewalld.
@@ -445,7 +445,7 @@ If you've ever set up a new server on the public internet and enabled SSH on por
 
 If you allow password-based login (for SSH, for your web app, or for anything else), you need to implement some form of monitoring and rate limiting. At a most basic level, you should install a tool like [Fail2Ban](http://www.fail2ban.org/wiki/index.php/Main_Page), which monitors log files and bans IP addresses when it detects too many unsuccessful login attempts in a given period of time.
 
-Here's a set of tasks you could add to your playbook to install Fail2Ban and make sure it's started on either Debian or RedHat-based distributions:
+Here's a set of tasks you could add to your playbook to install Fail2Ban and make sure it's started on either Debian or RHEL-based distributions:
 
 {lang="text"}
     - name: Install fail2ban (RedHat).
@@ -469,7 +469,7 @@ You'd be forgiven if you disabled SELinux or AppArmor in the past; both require 
 
 However, both of these tools are excellent ways to add *defense in depth* to your infrastructure. You should already have decent configurations for firewalls, file permissions, users and groups, OS updates, etc. But if you're running a web-facing application---especially one running on a server with any other applications---it's great to have the extra protection SELinux or AppArmor provides from applications accessing things they shouldn't.
 
-SELinux is usually installed and enabled by default on Fedora, RedHat and CentOS systems, is available and supported on most other Linux platforms, and is widely supported through Ansible modules, so we'll cover SELinux in a bit more depth.
+SELinux is usually installed and enabled by default on Fedora, RHEL and CentOS systems, is available and supported on most other Linux platforms, and is widely supported through Ansible modules, so we'll cover SELinux in a bit more depth.
 
 To enable SELinux in `targeted` mode (which is the most secure mode without being almost impossible to work with), make sure the Python SELinux library is installed, then use Ansible's `selinux` module:
 

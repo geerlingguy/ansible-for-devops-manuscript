@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. Updated Node.js app server example in chapter 4 to use `yum` for Remi repo install.
   4. Update a few lines for Ansible 2.1.x support.
   5. Fixed 'Variable Precedence' section in chapter 5 for Ansible 2.x (thanks to @daniel!).
+  6. Updated misspellings of 'RedHat' to 'Red Hat' or 'RHEL' when referring to the OS.
   **--- Website errata.html is current to this line ---**
 
 ## Version 1.1 (2016-03-06)
