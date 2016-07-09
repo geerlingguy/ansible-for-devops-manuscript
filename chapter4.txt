@@ -219,7 +219,7 @@ In the shell script below, we want to add both the EPEL and Remi repositories, s
     
     # Install Remi repo.
     rpm -Uvh --quiet \
-      http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+      http://rpms.remirepo.net/enterprise/remi-release-7.rpm
     
     # Install EPEL repo.
     yum install epel-release
@@ -263,7 +263,7 @@ Let's walk through this playbook step-by-step:
   3. `yum` installs the EPEL repository (much simpler than the two-step process we had to follow to get Remi's repository installed!).
   4. Since this server is being used only for test purposes, we disable the system firewall so it won't interfere with testing (using the `service` module).
   5. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
-  6. Since NPM is now installed, we use Ansible's `npm` module to install a Node.js utility, `forever` to launch our app and keep it running. Setting `global` to `yes` tells NPM to install the `forever` node module in `/usr/lib/node_modules/` so it will be available to all users and Node.js apps on the system.
+  6. Since NPM is now installed, we use Ansible's `npm` module to install a Node.js utility, `forever`, to launch our app and keep it running. Setting `global` to `yes` tells NPM to install the `forever` node module in `/usr/lib/node_modules/` so it will be available to all users and Node.js apps on the system.
 
 We're beginning to have a nice little Node.js app server set up. Let's set up a little Node.js app that responds to HTTP requests on port 80.
 
@@ -285,9 +285,9 @@ The next step is to install a simple Node.js app on our server. First, we'll cre
     app.listen(80);
     console.log('Express server started successfully.');
 
-Don't worry about the syntax or the fact that this is Node.js. We just need a quick example to deploy. This example could've been written in Python, Perl, Java, PHP, or another language, but since Node is a very simple language (JavaScript) that runs in a very simple and lightweight environment, it's a nice (and easy) language to use when testing things or prodding your server.
+Don't worry about the syntax or the fact that this is Node.js. We just need a quick example to deploy. This example could've been written in Python, Perl, Java, PHP, or another language, but since Node is a simple language (JavaScript) that runs in a lightweight environment, it's an easy language to use when testing things or prodding your server.
 
-Since this little app is dependent on Express (a simple http framework for Node), we also need to tell NPM about this dependency via a `package.json` file in the same folder as `app.js`:
+Since this little app is dependent on Express (an http framework for Node), we also need to tell NPM about this dependency via a `package.json` file in the same folder as `app.js`:
 
 {lang="js"}
     {
@@ -300,7 +300,7 @@ Since this little app is dependent on Express (a simple http framework for Node)
       "engine": "node >= 0.10.6"
     }
 
-Now, add the following to your playbook, to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`):
+We need to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`), so add these tasks to your playbook:
 
 {lang="text",starting-line-number=31}
         - name: Ensure Node.js app folder exists.
@@ -316,7 +316,7 @@ First, we ensure the directory where our app will be installed exists, using the
 
 Second, we copy the entire app folder up to the server, using Ansible's `copy` command, which intelligently distinguishes between a single file or a directory of files, and recurses through the directory, similar to recursive scp or rsync.
 
-T> Ansible's `copy` module works very well for single or small groups of files, and recurses through directories automatically. If you are copying hundreds of files, or deeply-nested directory structures, `copy` will get bogged down. In these situations, consider using the `synchronize` module if you need to copy a full directory, or `unarchive` if you want to copy up an archive and have it expanded in place on the server.
+T> Ansible's `copy` module works very well for single or small groups of files, and recurses through directories automatically. If you are copying hundreds of files, or deeply-nested directory structures, `copy` will get bogged down. In these situations, consider either using the `synchronize` or `rsync` module to copy a full directory, or `unarchive` to copy an archive and have it expanded in place on the server.
 
 Third, we use `npm` again, this time, with no extra arguments besides the path to the app. This tells NPM to parse the package.json file and ensure all the dependencies are present.
 
@@ -383,7 +383,7 @@ To make our playbook more efficient and readable, let's begin the playbook (name
       vars_files:
         - vars.yml
 
-Using one or more included variable files cleans up your main playbook file, and lets you organize all your configurable variables in one place. At the moment, we don't have any variables to add; we'll define the contents of `vars.yml`  later. For now, create the empty file, and continue on to the next section of the playbook, `pre_tasks`:
+Using one or more included variable files cleans up your main playbook file, and lets you organize all your configurable variables in one place. At the moment, we don't have any variables to add; we'll define the contents of `vars.yml` later. For now, create the empty file, and continue on to the next section of the playbook, `pre_tasks`:
 
 {lang="text",starting-line-number=7}
       pre_tasks:
@@ -409,7 +409,7 @@ I> By default, Ansible will stop all playbook execution when a task fails, and w
 
 ### Basic LAMP server setup
 
-The first step towards building an application server that depends on the LAMP stack is to build the actual LAMP part of it. This is the simplest process, but still requires a little extra work for our particular server. We want to install Apache, MySQL and PHP, but we'll also need a couple other dependencies, and we want a particular version of PHP (5.5), which is only available in an extra apt repository.
+The first step towards building an application server that depends on the LAMP stack is to build the actual LAMP part of it. This is the simplest process, but still requires a little extra work for our particular server. We want to install Apache, MySQL and PHP, but we'll also need a couple other dependencies.
 
 {lang="text",starting-line-number=15}
       tasks:
@@ -419,9 +419,6 @@ The first step towards building an application server that depends on the LAMP s
             - python-apt
             - python-pycurl
     
-        - name: Add ondrej repository for later versions of PHP.
-          apt_repository: repo='ppa:ondrej/php5-5.6' update_cache=yes
-    
         - name: "Install Apache, MySQL, PHP, and other dependencies."
           apt: name={{ item }} state=present
           with_items:
@@ -429,16 +426,20 @@ The first step towards building an application server that depends on the LAMP s
             - curl
             - sendmail
             - apache2
-            - php5
-            - php5-common
-            - php5-mysql
-            - php5-cli
-            - php5-curl
-            - php5-gd
-            - php5-dev
-            - php5-mcrypt
+            - php7.0-common
+            - php7.0-cli
+            - php7.0-dev
+            - php7.0-gd
+            - php7.0-curl
+            - php7.0-json
+            - php7.0-opcache
+            - php7.0-xml
+            - php7.0-mbstring
+            - php7.0-pdo
+            - php7.0-mysql
             - php-apcu
-            - php-pear
+            - libpcre3-dev
+            - libapache2-mod-php7.0
             - python-mysqldb
             - mysql-server
     
@@ -451,21 +452,20 @@ The first step towards building an application server that depends on the LAMP s
             - apache2
             - mysql
 
-In this playbook, I've decided to add a simple prefix to each named play, so I can more easily follow the playbook's progress when it's running. I've begun with the common LAMP setup:
+In this playbook, we begin with a common LAMP setup:
 
   1. Install a couple helper libraries which allow Python to manage apt more precisely (`python-apt` and `python-pycurl` are required for the `apt_repository` module to do its work).
-  2. Since the default apt repositories for Ubuntu 12.04 don't include PHP 5.4.x (or any later versions), install ondrej's `PHP5-oldstable` repository, containing PHP 5.4.25 (at the time of this writing) and other associated PHP packages.
-  3. Install all the required packages for our LAMP server (including all the php5 extensions we need to run Drupal).
+  3. Install all the required packages for our LAMP server (including all the PHP extensions Drupal requires).
   4. Disable the firewall entirely, for testing purposes. If on a production server or any server exposed to the Internet, you should instead have a restrictive firewall only allowing access on ports 22, 80, 443, and other necessary ports.
   5. Start up all the required services, and make sure they're enabled to start on system boot.
 
 ### Configure Apache
 
-The next step is configuring Apache so it will work correctly with Drupal. Out of the box, Apache doesn't have mod_rewrite enabled on Ubuntu 12.04. To remedy that situation, you can use the command `sudo a2enmod rewrite`, but Ansible has a handy `apache2_module` module that will simplify the task.
+The next step is configuring Apache so it will work correctly with Drupal. Out of the box, Apache doesn't have mod_rewrite enabled on Ubuntu's current release. To remedy that situation, you can use the command `sudo a2enmod rewrite`, but Ansible has a handy `apache2_module` module that will simplify the task.
 
-Additionally, we need to add a VirtualHost entry to tell Apache where the site's document root is, and any other options for the site.
+Additionally, we need to add a VirtualHost entry to give Apache the site's document root and provide other options for the site.
 
-{lang="text",starting-line-number=54}
+{lang="text",starting-line-number=58}
         - name: Enable Apache rewrite module (required for Drupal).
           apache2_module: name=rewrite state=present
           notify: restart apache
@@ -488,7 +488,7 @@ Additionally, we need to add a VirtualHost entry to tell Apache where the site's
     
         - name: Remove default virtualhost file.
           file:
-            path: "/etc/apache2/sites-enabled/000-default"
+            path: "/etc/apache2/sites-enabled/000-default.conf"
             state: absent
           notify: restart apache
 
@@ -535,20 +535,20 @@ At this point, you could start the server, but Apache will likely throw an error
 
 We briefly mentioned `lineinfile` earlier in the book, when discussing file management and ad-hoc task execution. Modifying PHP's configuration is a perfect way to demonstrate `lineinfile`'s simplicity and usefulness:
 
-{lang="text",starting-line-number=80}
-        - name: Enable upload progress via APC.
+{lang="text",starting-line-number=84}
+        - name: Adjust OpCache memory setting.
           lineinfile:
-            dest: "/etc/php5/apache2/conf.d/20-apcu.ini"
-            regexp: "^apc.rfc1867"
-            line: "apc.rfc1867 = 1"
+            dest: "/etc/php/7.0/apache2/conf.d/10-opcache.ini"
+            regexp: "^opcache.memory_consumption"
+            line: "opcache.memory_consumption = 96"
             state: present
           notify: restart apache
 
 Ansible's `lineinfile` module does a simple task: ensures that a particular line of text exists (or doesn't exist) in a file.
 
-In this example, we need to enable APC's `rfc1867` option so Drupal can use APC's file upload progress tracking (there are better ways of doing this, but for our simple server, this will suffice).
+In this example, we need to adjust PHP's default `opcache.memory_consumption` option so the Drupal codebase can be compiled into PHP's system memory for much faster page load times.
 
-First, we tell `lineinfile` the location of the file, in the `dest` parameter. Then, we give a regular expression (Python-style) to define what the line looks like (in this case, the line starts with the exact phrase "apc.rfc1867"). Next, we tell `lineinfile` exactly how the resulting line should look. Finally, we explicitly state that we want this line to be present (with the `state` parameter).
+First, we tell `lineinfile` the location of the file, in the `dest` parameter. Then, we give a regular expression (Python-style) to define what the line looks like (in this case, the line starts with the exact phrase "opcache.memory_consumption"). Next, we tell `lineinfile` exactly how the resulting line should look. Finally, we explicitly state that we want this line to be present (with the `state` parameter).
 
 Ansible will take the regular expression, and see if there's a matching line. If there is, Ansible will make sure the line matches the `line` parameter. If not, Ansible will add the line as defined in the `line` parameter. Ansible will only report a change if it had to add or change the line to match `line`.
 
@@ -556,16 +556,24 @@ Ansible will take the regular expression, and see if there's a matching line. If
 
 The next step is to remove MySQL's default test database, and create a database (named for the domain we specified earlier) for our Drupal installation to use.
 
-{lang="text",starting-line-number=88}
+{lang="text",starting-line-number=92}
         - name: Remove the MySQL test database.
           mysql_db: db=test state=absent
     
         - name: Create a database for Drupal.
           mysql_db: "db={{ domain }} state=present"
+    
+        - name: Create a MySQL user for Drupal.
+          mysql_user:
+            name: "{{ domain }}"
+            password: "1234"
+            priv: "{{ domain }}.*:ALL"
+            host: localhost
+            state: present
 
-MySQL installs a database named `test` by default, and it is recommended that you remove the database as part of MySQL's included `mysql_secure_installation` tool. The first step in configuring MySQL is removing this database. Next, we create a database named `{{ domain }}`---the database is named the same as the domain we're using for the Drupal site.
+MySQL installs a database named `test` by default, and it is recommended that you remove the database as part of MySQL's included `mysql_secure_installation` tool. The first step in configuring MySQL is removing this database. Next, we create a database named `{{ domain }}`---the database is named the same as the domain we're using for the Drupal site, and a MySQL user for Drupal.
 
-I> Ansible works with many databases out of the box (MongoDB, MySQL, PostgreSQL, Redis and Riak as of this writing). In MySQL's case, Ansible uses the MySQLdb Python package (`python-mysqldb`) to manage a connection to the database server, and assumes the default root account credentials ('root' as the username with no password). Obviously, leaving this default would be a bad idea! On a production server, one of the first steps should be to change the root account password, limit the root account to localhost, and delete any nonessential database users.
+I> Ansible works with many databases out of the box (MongoDB, MySQL/MariaDB, PostgreSQL, Redis and Riak as of this writing). In MySQL's case, Ansible uses the MySQLdb Python package (`python-mysqldb`) to manage a connection to the database server, and assumes the default root account credentials ('root' as the username with no password). Obviously, leaving this default would be a bad idea! On a production server, one of the first steps should be to change the root account password, limit the root account to localhost, and delete any nonessential database users.
 I> 
 I> If you use different credentials, you can add a .my.cnf file to your remote user's home directory containing the database credentials to allow Ansible to connect to the MySQL database without leaving passwords in your Ansible playbooks or variable files. Otherwise, you can prompt the user running the Ansible playbook for a MySQL username and password. This option, using prompts, will be discussed later in the book.
 
@@ -575,7 +583,7 @@ Drupal has a command-line companion in the form of Drush. Drush is developed ind
 
 We could just download Drupal and perform some setup in the browser by hand at this point, but the goal of this playbook is to have a fully-automated and idempotent Drupal installation. So, we need to install Composer, then Drush:
 
-{lang="text",starting-line-number=94}
+{lang="text",starting-line-number=106}
         - name: Download Composer installer.
           get_url:
             url: https://getcomposer.org/installer
@@ -603,7 +611,7 @@ T> It's best to use an Ansible module for every task. If you have to resort to a
 
 Now, we'll install Drush using the latest version from GitHub:
 
-{lang="text",starting-line-number=111}
+{lang="text",starting-line-number=123}
         - name: Check out drush master branch.
           git:
             repo: https://github.com/drush-ops/drush.git
@@ -631,7 +639,7 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 
 We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, install Drupal's dependencies with Composer, run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
-{lang="text",starting-line-number=128}
+{lang="text",starting-line-number=140}
         - name: Check out Drupal Core to the Apache docroot.
           git:
             repo: http://git.drupal.org/project/drupal.git
@@ -649,7 +657,7 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             drush si -y --site-name="{{ drupal_site_name }}"
             --account-name=admin
             --account-pass=admin
-            --db-url=mysql://root@localhost/{{ domain }}
+            --db-url=mysql://{{ domain }}:1234@localhost/{{ domain }}
             chdir={{ drupal_core_path }}
             creates={{ drupal_core_path }}/sites/default/settings.php
           notify: restart apache

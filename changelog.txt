@@ -20,6 +20,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   11. Use linked clones in Vagrantfiles for faster build in chapters 3, 7, 8, 9, and 11.
   12. Added 'Manage packages' section in chapter 3.
   13. Switched usage of `sudo` and `sudo`-related CLI options to `become` lingo for 1.9+.
+  14. Updated Drupal playbook example in chapter 4 to use Ubuntu 16.04 LTS.
 
 ## Version 1.1 (2016-03-06)
 
