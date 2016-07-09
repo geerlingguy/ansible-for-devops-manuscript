@@ -4,7 +4,7 @@
 
 Like many other configuration management solutions, Ansible uses a metaphor to describe its configuration files. They are called 'playbooks', and they list a set of tasks ('plays' in Ansible parlance) that will be run against a particular server or set of servers. In American football, a team follows a set of pre-written playbooks as the basis for a bunch of plays they execute to try to win a game. In Ansible, you write playbooks (a list of instructions describing the steps to bring your server to a certain configuration state) that are then *play*ed on your servers.
 
-Playbooks are written in [YAML](http://docs.ansible.com/YAMLSyntax.html), a simple human-readable syntax popular for defining configuration. Playbooks may be included within other playbooks, and certain metadata and options cause different plays or playbooks to be run in different scenarios on different servers.
+Playbooks are written in [YAML](https://docs.ansible.com/ansible/YAMLSyntax.html), a simple human-readable syntax popular for defining configuration. Playbooks may be included within other playbooks, and certain metadata and options cause different plays or playbooks to be run in different scenarios on different servers.
 
 Ad-hoc commands alone make Ansible a powerful tool; playbooks turn Ansible into a top-notch server provisioning and configuration management tool.
 
@@ -110,7 +110,7 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
 
      - We use the `service` module to describe the desired state of a particular service, in this case `httpd`, Apache's http daemon. We want it to be running, so we set `state=started`, and we want it to run at system startup, so we say `enabled=yes` (the equivalent of running `chkconfig httpd on`).
 
-The great thing about the way we've reformatted this list of commands is that Ansible keeps track of the state of everything on all our servers. If you run the playbook the first time, it will provision the server by ensuring Apache is installed and running, and your custom configuration is in place.
+With this playbook format, Ansible can keep track of the state of everything on all our servers. If you run the playbook the first time, it will provision the server by ensuring Apache is installed and running, and your custom configuration is in place.
 
 Even better, the *second* time you run it (if the server is in the correct state), it won't actually do anything besides tell you nothing has changed. So, with this one short playbook, you're able to provision and ensure the proper configuration for an Apache web server. Additionally, running the playbook with the `--check` option (see the next section below) verifies the configuration matches what's defined in the playbook, without actually running the tasks on the server.
 
@@ -156,18 +156,18 @@ Running this should give output like:
 
 ### Setting user and sudo options with `ansible-playbook`
 
-If no `user` is defined alongside the `hosts` in a playbook, Ansible assumes you'll connect as the user defined in your inventory file for a particular host, and then will fall back to your local user account name. You can explicitly define a remote user to use for remote plays using the `--remote-user` (`-u`) option:
+If no `remote_user` is defined alongside the `hosts` in a playbook, Ansible assumes you'll connect as the user defined in your inventory file for a particular host, and then will fall back to your local user account name. You can explicitly define a remote user to use for remote plays using the `--remote-user` (`-u`) option:
 
 {lang="text",linenos=off}
     $ ansible-playbook playbook.yml --remote-user=johndoe
 
-In some situations, you will need to pass along your sudo password to the remote server to perform commands via `sudo`. In these situations, you'll need use the `--ask-sudo-pass` (`-K`) option. You can also explicitly force all tasks in a playbook to use sudo with `--sudo`. Finally, you can define the sudo user for tasks run via `sudo` (the default is root) with the `--sudo-user` (`-U`) option.
+In some situations, you will need to pass along your sudo password to the remote server to perform commands via `sudo`. In these situations, you'll need use the `--ask-become-pass` (`-K`) option. You can also explicitly force all tasks in a playbook to use sudo with `--become` (`-b`. Finally, you can define the sudo user for tasks run via `sudo` (the default is root) with the `--become-user` (`-U`) option.
 
 For example, the following command will run our example playbook with sudo, performing the tasks as the sudo user `janedoe`, and Ansible will prompt you for the sudo password:
 
 {lang="text",linenos=off}
-    $ ansible-playbook playbook.yml --sudo --sudo-user=janedoe \
-    --ask-sudo-pass
+    $ ansible-playbook playbook.yml --become --become-user=janedoe \
+    --ask-become-pass
 
 If you're not using key-based authentication to connect to your servers (read my warning about the security implications of doing so in Chapter 1), you can use `--ask-pass`.
 
