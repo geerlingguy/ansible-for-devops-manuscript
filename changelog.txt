@@ -4,25 +4,27 @@ This log will track changes between releases of the book. Until version 1.0, eac
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
-## Current version
+## Version 1.12 (2016-07-09)
+
+  1. Updated links to resources in Introduction, removed link to defunct Ansible Weekly newsletter.
+  2. Fixed grammar mistakes in parts of the Foreword, Preface, and Introduction.
+  3. Updated URLs to Vagrant resources in chapter 2.
+  4. Added note about cleaning up example VM with `vagrant destroy` in chapter 2.
+  5. Use linked clones in Vagrantfiles for faster build in chapters 3, 7, 8, 9, and 11.
+  6. Added 'Manage packages' section in chapter 3.
+  7. Switched usage of `sudo` and `sudo`-related CLI options to `become` lingo for 1.9+.
+  8. Updated Drupal playbook example in chapter 4 to use Ubuntu 16.04 LTS and PHP 7.
+  9. Updated Apache Solr playbook example in chapter 4 to use Ubuntu 16.04 LTS and Solr 6.1.0.
+  10. Added example images of running Drupal and Apache Solr home pages in chapter 4.
+
+## Version 1.11 (2016-07-04)
 
   1. Fixed Apache Solr mirror URL in chapter 4 (thanks to @daniloradenovic!).
   2. Updated Drupal example in chapter 4 for Ubuntu 14.04 and PHP 5.6 (thanks to @e1nh4nd3r!).
   3. Updated Node.js app server example in chapter 4 to use `yum` for Remi repo install.
   4. Update a few lines for Ansible 2.1.x support.
   5. Fixed 'Variable Precedence' section in chapter 5 for Ansible 2.x (thanks to @daniel!).
-  **--- Website errata.html is current to this line ---**
   6. Updated misspellings of 'RedHat' to 'Red Hat' or 'RHEL' when referring to the OS.
-  7. Updated links to resources in Introduction, removed link to defunct Ansible Weekly newsletter.
-  8. Fixed grammar mistakes in parts of the Foreword, Preface, and Introduction.
-  9. Updated URLs to Vagrant resources in chapter 2.
-  10. Added note about cleaning up example VM with `vagrant destroy` in chapter 2.
-  11. Use linked clones in Vagrantfiles for faster build in chapters 3, 7, 8, 9, and 11.
-  12. Added 'Manage packages' section in chapter 3.
-  13. Switched usage of `sudo` and `sudo`-related CLI options to `become` lingo for 1.9+.
-  14. Updated Drupal playbook example in chapter 4 to use Ubuntu 16.04 LTS and PHP 7.
-  15. Updated Apache Solr playbook example in chapter 4 to use Ubuntu 16.04 LTS and Solr 6.1.0.
-  16. Added example images of running Drupal and Apache Solr home pages in chapter 4.
 
 ## Version 1.1 (2016-03-06)
 
