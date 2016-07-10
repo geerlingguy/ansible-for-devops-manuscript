@@ -813,14 +813,14 @@ Finally, we need a task that runs at the end of the playbook to make sure Apache
         - name: Ensure solr is started and enabled on boot.
           service: name=solr state=started enabled=yes
 
-Run the playbook with `$ ansible-playbook playbook.yml`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://solr.dev:8983/solr (where 'solr.dev' is your server's hostname or IP address).
+Run the playbook with `$ ansible-playbook playbook.yml`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://solr.dev:8983/solr (where 'solr.dev' is your server's hostname or IP address):
+
+{width=60%}
+![Solr Admin page.](images/4-playbook-solr-admin.png)
 
 ### Apache Solr server summary
 
 The configuration we used when deploying Apache Solr allows for a multi core setup, so you could add more 'search cores' via the admin interface (as long as the directories and core schema configuration is in place in the filesystem), and have multiple indexes for multiple websites and applications.
-
-{width=60%}
-![Solr Admin page.](images/4-playbook-solr-admin.png)
 
 A playbook similar to the one above is used as part of the infrastructure for [Hosted Apache Solr](https://hostedapachesolr.com/), a service I run which hosts Apache Solr search cores for Drupal websites.
 
