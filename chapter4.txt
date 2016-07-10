@@ -698,6 +698,9 @@ To run the playbook on a server (either via a local VM for testing or on another
 
 After the playbook completes, if you access the server at http://drupaltest.dev/ (assuming you've pointed drupaltest.dev to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
 
+{width=60%}
+![Drupal 8 default home page.](images/4-playbook-drupal-home.png)
+
 A similar server configuration, running Apache, MySQL, and PHP, can be used to run many popular web frameworks and CMSes besides Drupal, including Symfony, Wordpress, Joomla, Laravel, etc.
 
 T> The entire example Drupal LAMP server playbook is in this book's code repository at [https://github.com/geerlingguy/ansible-for-devops](https://github.com/geerlingguy/ansible-for-devops), in the `drupal` directory.
@@ -815,6 +818,9 @@ Run the playbook with `$ ansible-playbook playbook.yml`, and after a few minutes
 ### Apache Solr server summary
 
 The configuration we used when deploying Apache Solr allows for a multi core setup, so you could add more 'search cores' via the admin interface (as long as the directories and core schema configuration is in place in the filesystem), and have multiple indexes for multiple websites and applications.
+
+{width=60%}
+![Solr Admin page.](images/4-playbook-solr-admin.png)
 
 A playbook similar to the one above is used as part of the infrastructure for [Hosted Apache Solr](https://hostedapachesolr.com/), a service I run which hosts Apache Solr search cores for Drupal websites.
 
