@@ -1091,7 +1091,7 @@ Next, set up the required variables to tell the `nginx` and `logstash-forwarder`
         fields:
           type: nginx
 
-The `nginx` variables remove the default virtualhost entry and ensure Nginx will run optimally on our Ubuntu server. The `logstash_forwarder` variables tell `geerlingguy.logstash-forwarder` what logs to forward to our central log server:
+The `nginx` variables remove the default virtualhost entry and ensure Nginx will run optimally on our Ubuntu server. The `logstash_forwarder` variables tell the logstash-forwarder role what logs to forward to our central log server:
 
   - `logstash_forwarder_logstash_server` and `_port`: Defines the server IP or domain and port to which logs should be transported.
   - `logstash_forwarder_files`: Defines a list of `paths` and `fields`, which identify a file or list of files to be transported to the log server, along with a `type` for the files. In this case, the authentication log (`/var/log/secure`) is a `syslog`-formatted log file, and `/var/log/nginx/access.log` is of type `nginx` (which will be parsed correctly on the Logstash server since it's in the combined log format popularized by Apache).

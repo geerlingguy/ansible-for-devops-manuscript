@@ -34,6 +34,7 @@ For the rest of this chapter, since we want to do a bunch of experimentation wit
 
 Earlier, we used Vagrant to boot up one virtual machine running CentOS 7. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
 
+{width=60%}
 ![Three servers: two application, one database.](images/1-basic-vagrant-application.png)
 
 We're going to manage three VMs: two app servers and a database server. Many simple web applications and websites have a similar architecture, and even though this may not reflect the vast realm of infrastructure combinations that exist, it will be enough to highlight Ansible's server management abilities.
