@@ -275,30 +275,29 @@ For these situations, Ansible allows you to define inventory *dynamically*. If y
 
 ### Dynamic inventory with DigitalOcean
 
-Digital Ocean is one of the world's top five hosting companies, and has grown rapidly since it's founding in 2011. One of the reasons for the extremely rapid growth is the ease of provisioning new 'droplets' (cloud VPS servers), and the value provided; as of this writing, you could get a fairly speedy VPS with 512MB of RAM and a generous portion of fast SSD storage for $5 USD per month.
+DigitalOcean is one of the world's top five hosting companies, and has grown rapidly since it's founding in 2011. One of the reasons for the extremely rapid growth is the ease of provisioning new 'droplets' (cloud VPS servers), and the value provided; as of this writing, you could get a fairly speedy VPS with 512MB of RAM and a generous portion of fast SSD storage for $5 USD per month.
 
-Digital Ocean's API and simple developer-friendly philosophy has made it easy for Ansible to interact with Digital Ocean droplets; you can create, manage, and delete droplets with Ansible, as well as use droplets with your playbooks using dynamic inventory.
+DigitalOcean's API and simple developer-friendly philosophy has made it easy for Ansible to interact with DigitalOcean droplets; you can create, manage, and delete droplets with Ansible, as well as use droplets with your playbooks using dynamic inventory.
 
 #### DigitalOcean account prerequisites
 
 Before you can follow the rest of the examples in this section, you will need:
 
   1. A DigitalOcean account (sign up at www.digitalocean.com).
-  2. `dopy`, a Python wrapper for Digital Ocean API interaction (you can install it with pip: `sudo pip install dopy`).
-  3. Your DigitalOcean account API key and client ID (Ansible currently supports the v1 API, so you need to go to the 'Apps & API' page in your profile, then click the 'API v1.0 Page' link to get a key and client ID).
+  2. `dopy`, a Python wrapper for DigitalOcean API interaction (you can install it with pip: `sudo pip install dopy`).
+  3. A DigitalOcean API Personal Access Token. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2) to generate a Personal Access Token for use with Ansible (grant Read and Write access when you create the token).
   4. An SSH key pair, which will be used to connect to your DigitalOcean servers. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-ssh-keys-with-digitalocean-droplets) to create a key pair and add the public key to your DigitalOcean account.
 
 Once you have these four things set up and ready to go, you should be able to communicate with your DigitalOcean account through Ansible.
 
 #### Connecting to your DigitalOcean account
 
-There are a few different ways you can specify your DigitalOcean client ID and API key (including command line arguments `--client-id` and `--api-key`, as values inside a `digital_ocean.ini` file, or as environment variables). For our example, we'll use environment variables (since these are easy to configure, and work both with Ansible's `digital_ocean` module and the dynamic inventory script). Open up a terminal session, and enter the following commands:
+There are a few different ways you can specify your DigitalOcean Personal Access Token (including passing it via `api_token` to each DigitalOcean-related task, or exporting it in your local environment as `DO_API_TOKEN` or `DO_API_KEY`). For our example, we'll use environment variables (since these are easy to configure, and work both with Ansible's `digital_ocean` module and the dynamic inventory script). Open up a terminal session, and enter the following command:
 
 {lang="text",linenos=off}
-    $ export DO_CLIENT_ID=YOUR_CLIENT_ID_HERE
-    $ export DO_API_KEY=YOUR_API_KEY_HERE
+    $ export DO_API_TOKEN=YOUR_API_TOKEN_HERE
 
-Before we can use a dynamic inventory script to discover our DigitalOcean droplets, let's use Ansible to quickly provision a new droplet.
+Before we can use a dynamic inventory script to discover our DigitalOcean droplets, let's use Ansible to provision a new droplet.
 
 W> Creating cloud instances ('Droplets', in DigitalOcean parlance) will incur minimal charges for the time you use them (currently less than $0.01/hour for the size in this example). For the purposes of this tutorial (and in general, for any testing), make sure you shut down and destroy your instances when you're finished using them, or you will be charged through the next billing cycle! Even so, using low-priced instances (like a $5/month DigitalOcean droplet with hourly billing) means that, even in the worst case, you won't have to pay much. If you create and destroy an instance in a few hours, you'll be charged a few pennies.
 
@@ -319,12 +318,9 @@ Create a new playbook named `provision.yml`, with the following contents:
             command: droplet
             name: ansible-test
             private_networking: yes
-            # 512mb
-            size_id: 66
-            # CentOS 7.0 x64
-            image_id: 6713409
-            # nyc2
-            region_id: 4
+            size_id: 512mb
+            image_id: centos-7-0-x64
+            region_id: nyc2
             ssh_key_ids: 138954
             # Required for idempotence/only one droplet creation.
             unique_name: yes
@@ -332,43 +328,58 @@ Create a new playbook named `provision.yml`, with the following contents:
 
 The `digital_ocean` module lets you create, manage, and delete droplets with ease. You can read the documentation for all the options, but the above is an overview of the main options. `name` sets the hostname for the droplet, `state` can also be set to `deleted` if you want the droplet to be destroyed, and other options tell DigitalOcean where to set up the droplet, and with what OS and configuration.
 
-T> You can use DigitalOcean's API, along with your client_id and api_key, to get the IDs for `size_id` (the size of the Droplet), `image_id` (the system or distro image to use), `region_id` (the data center in which your droplet will be created), and `ssh_key_ids` (a comma separate list of SSH keys to be included in the root account's `authorized_keys` file).
+T> You can use DigitalOcean's API, along with your Personal Access Token, to get the IDs for `size_id` (the size of the Droplet), `image_id` (the system or distro image to use), `region_id` (the data center in which your droplet will be created), and `ssh_key_ids` (a comma separate list of SSH keys to be included in the root account's `authorized_keys` file).
 T> 
-T> As an example, to get all the available images, use `curl "https://api.digitalocean.com/images/?client_id=CLIENT_ID&api_key=API_KEY&filter=global" | python -m json.tool`, substituting your own `CLIENT_ID` and `API_KEY`, and you'll receive a JSON listing of all available values. Browse the [DigitalOcean API](https://developers.digitalocean.com/) for information on how to query SSH key information, size information, etc.
+T> As an example, to get all the available images, use `curl --silent "https://api.digitalocean.com/v2/images?per_page=999" -H "Authorization: Bearer $DO_API_TOKEN" | python -m json.tool`, and you'll receive a JSON listing of all available values. Browse the [DigitalOcean API](https://developers.digitalocean.com/) for information on how to query SSH key information, size information, etc.
 
 We used `register` as part of the `digital_ocean` task so we could immediately start using and configuring the new host if needed. Running the above playbook returns the following output (using `debug: var=do` in an additional task to dump the contents of our registered variable, `do`):
 
 {lang="text",linenos=off}
     $ ansible-playbook do_test.yml
     
-    PLAY [localhost] ****************************************************
-    
-    TASK: [Create new Droplet.] *****************************************
+    PLAY [localhost] ***************************************************************
+
+    TASK [Create new Droplet.] *****************************************************
     changed: [localhost]
-    
-    TASK: [debug var=do] ************************************************
+
+    TASK [debug] *******************************************************************
     ok: [localhost] => {
         "do": {
             "changed": true,
             "droplet": {
-                "backups": [],
-                "backups_active": false,
-                "created_at": "2014-10-22T02:09:20Z",
-                "event_id": 34915980,
-                "id": 2940194,
-                "image_id": 6918990,
+                "backup_ids": [],
+                "created_at": "2017-07-22T00:58:51Z",
+                "disk": 20,
+                "features": [
+                    "private_networking",
+                    "virtio"
+                ],
+                "id": 20203631,
+                "image": {
+                    ...
+                },
                 "ip_address": "162.243.20.29",
+                "kernel": null,
                 "locked": false,
+                "memory": 512,
                 "name": "ansible-test",
-                "private_ip_address": null,
-                "region_id": 4,
-                "size_id": 66,
-                "snapshots": [],
-                "status": "active"
-            },
-            "invocation": {
-                "module_args": "",
-                "module_name": "digital_ocean"
+                "networks": {
+                    ...
+                },
+                "next_backup_window": null,
+                "private_ip_address": "10.1.1.2",
+                "region": {
+                    ...
+                },
+                "size": {
+                    ...
+                },
+                "size_slug": "512mb",
+                "snapshot_ids": [],
+                "status": "active",
+                "tags": [],
+                "vcpus": 1,
+                "volume_ids": []
             }
         }
     }
@@ -378,7 +389,7 @@ We used `register` as part of the `digital_ocean` task so we could immediately s
 
 Since `do` contains the new droplet's IP address (alongside other relevant information), you can place your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
 
-{lang="text",starting-line-number=24}
+{lang="text",starting-line-number=21}
         - name: Add new host to our inventory.
           add_host:
             name: "{{ do.droplet.ip_address }}"
@@ -411,6 +422,9 @@ At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it 
     
     PLAY [do] ***********************************************************
     
+    TASK [Wait for port 22 to become available.] ***********************************
+    ok: [162.243.20.29 -> localhost]
+    
     TASK: [Install tcpdump.] ********************************************
     changed: [162.243.20.29]
     
@@ -437,12 +451,12 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
      $ pip install dopy
      ~~~~~~~~
 
-  2. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/digital_ocean.py) from Ansible on GitHub:
+  2. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/digital_ocean.py) from Ansible on GitHub:
 
      {lang="text",line-numbers=off}
      ~~~~~~~~
      $ curl -O https://raw.githubusercontent.com/ansible/ansible/devel/\
-     plugins/inventory/digital_ocean.py
+     contrib/inventory/digital_ocean.py
      ~~~~~~~~
 
   3. Make the inventory script executable:
@@ -452,8 +466,8 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
      $ chmod +x digital_ocean.py
      ~~~~~~~~
 
-  4. Make sure you have the credentials configured in `digital_ocean.ini` (as explained earlier in this chapter). Alternatively, you can set `DO_CLIENT_ID` and `DO_API_KEY` in your environment, or pass the command line options `--client-id` and `--api-key`.
-  5. Make sure the script is working by running the script directly (with the commande below). After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
+  4. Make sure you have `DO_API_TOKEN` set in your environment.
+  5. Make sure the script is working by running the script directly (with the command below). After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
 
      {lang="text",line-numbers=off}
      ~~~~~~~~
@@ -469,7 +483,7 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
 
 Now that you have all your hosts being loaded through the dynamic inventory script, you can use `add_hosts` to build groups of the Droplets for use in your playbooks. Alternatively, if you want to fork the `digital_ocean.py` inventory script, you can modify it to suit your needs; exclude certain servers, build groups based on certain criteria, etc.
 
-I> Ansible currently supports DigitalOcean's v1 API, which makes working with DigitalOcean slightly more difficult. The v2 API allows you to use region names (e.g. "nyc2") instead of numeric IDs, allows you to [add metadata to your droplets](https://www.digitalocean.com/community/tutorials/an-introduction-to-droplet-metadata), and much more. Ansible should soon support the v2 API. If you're interested in the current status of this effort, or would like to help in migrating to the v2 API, visit [the v2 API support issue on GitHub](https://github.com/ansible/ansible-modules-core/issues/209).
+I> Ansible < 1.9.5 only supported DigitalOcean's legacy v1 API, which is no longer supported. If you need to use Ansible with DigitalOcean, you should use the latest version of Ansible.
 
 ### Dynamic inventory with AWS
 
