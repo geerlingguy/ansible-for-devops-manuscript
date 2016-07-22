@@ -7,6 +7,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Current Version
   **--------------------- Website updated to this point ----------------------**
   1. Updated DigitalOcean provisioning and inventory example in chapter 7.
+  2. Updated DigitalOcean LAMP infrastructure provisioning example for v2 API in chapter 8.
 
 ## Version 1.12 (2016-07-09)
 

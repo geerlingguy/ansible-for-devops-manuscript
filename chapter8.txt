@@ -427,6 +427,7 @@ Here's the Vagrantfile in all its glory:
       # Base VM OS configuration.
       config.vm.box = "geerlingguy/centos6"
       config.ssh.insert_key = false
+      config.vm.synced_folder '.', '/vagrant', disabled: true
     
       # General VirtualBox VM configuration.
       config.vm.provider :virtualbox do |v|
@@ -583,13 +584,13 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
             command: droplet
             name: "{{ item.name }}"
             private_networking: yes
-            size_id: "{{ item.size | default(66) }}" # 512mb
-            image_id: "{{ item.image | default(6372108) }}" # CentOS 6
-            region_id: "{{ item.region | default(4) }}" # NYC2
+            size_id: "{{ item.size | default('512mb') }}"
+            image_id: "{{ item.image | default('centos-6-5-x32') }}"
+            region_id: "{{ item.region | default('nyc2') }}"
             ssh_key_ids: "{{ item.ssh_key | default('138954') }}"
             unique_name: yes
           register: created_droplets
-          with_items: droplets
+          with_items: "{{ droplets }}"
 
 Many of the options (e.g. `size_id`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size_id: 72` (or another valid value), and it would override the default value set in the task.
 
@@ -612,7 +613,7 @@ We loop through all the defined `droplets` using `with_items: droplets`, and aft
               else 'slave' }}"
             mysql_server_id: "{{ item.0 }}"
           when: item.1.droplet is defined
-          with_indexed_items: created_droplets.results
+          with_indexed_items: "{{ created_droplets.results }}"
 
 You'll notice a few interesting things happening in this task:
 
@@ -642,7 +643,7 @@ We're now *almost* ready to provision and configure our entire infrastructure on
     - include: provisioners/digitalocean.yml
     - include: configure.yml
 
-That's it! Now, assuming you set the environment variables `DO_CLIENT_ID` and `DO_API_KEY`, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on DigitalOcean.
+That's it! Now, assuming you set the environment variable `DO_API_TOKEN`, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on DigitalOcean.
 
 The entire process should take about 15 minutes; once it's complete, you should see something like this:
 
