@@ -40,7 +40,7 @@ Ansible's only real dependency is Python. Once Python is installed, the simplest
 
   1. Install [Homebrew](http://brew.sh/) (get the installation command from the Homebrew website).
   2. Install Python 2.7.x (`brew install python`).
-  3. Install Ansible (`sudo pip install ansible`).
+  3. Install Ansible (`pip install ansible`).
 
 You could also install Ansible via Homebrew with `brew install ansible`. Either way (`pip` or `brew`) is fine, but make sure you update Ansible using the same system with which it was installed!
 

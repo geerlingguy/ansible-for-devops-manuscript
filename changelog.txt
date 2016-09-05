@@ -5,7 +5,8 @@ This log will track changes between releases of the book. Until version 1.0, eac
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
 ## Current Version
-  1. Fixed typo in Node.js app section in chapter 4 (thanks to @guntbert!)
+  1. Fixed typo in Node.js app section in chapter 4 (thanks to @guntbert!).
+  2. In chapter 1, when installing Ansible on Mac via `pip`, don't use `sudo` (thanks to Richard D.!).
   **--------------------- Website updated to this point ----------------------**
 
 
