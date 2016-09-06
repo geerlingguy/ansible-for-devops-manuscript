@@ -54,7 +54,7 @@ To run the Ansible Playbook (in this case, a file named `playbook.yml` with the 
 
 Ansible is powerful in that you quickly transition to using playbooks if you know how to write standard shell commands---the same commands you've been using for years---and then as you get time, rebuild your configuration to take advantage of Ansible's helpful features.
 
-In the above playbook, we use Ansible's `command` module to run standard shell commands. We're also giving each play a 'name', so when we run the playbook, the play has human-readable output on the screen or in the logs. The command module has some other tricks up its sleeve (which we'll see later), but for now, be assured shell scripts are translated directly into Ansible playbooks without much hassle.
+In the above playbook, we use Ansible's `command` module to run standard shell commands. We're also giving each task a 'name', so when we run the playbook, the task has human-readable output on the screen or in the logs. The command module has some other tricks up its sleeve (which we'll see later), but for now, be assured shell scripts are translated directly into Ansible playbooks without much hassle.
 
 T> The greater-than sign (`>`) immediately following the `command:` module directive tells YAML "automatically quote the next set of indented lines as one long string, with each line separated by a space". It helps improve task readability in some cases. There are different ways of describing configuration using valid YAML syntax, and these methods are discussed in-depth in the [YAML Conventions and Best Practices](#yaml-best-practices) section in Appendix B.
 T> 
