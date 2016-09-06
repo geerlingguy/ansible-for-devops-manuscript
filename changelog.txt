@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
   1. Fixed typo in Node.js app section in chapter 4 (thanks to @guntbert!).
-  2. In chapter 1, when installing Ansible on Mac via `pip`, don't use `sudo` (thanks to Richard D.!).
+  2. In chapter 1, when installing Ansible on Mac via `pip`, don't use `sudo` (thanks to @rdonkin!).
   **--------------------- Website updated to this point ----------------------**
 
 
