@@ -883,7 +883,7 @@ Capistrano does a lot more than that basic deployment model, but many people wan
 
 Extending things a little further, many organizations use **blue-green** deployments. The basic concept involves bringing up a parallel production infrastructure, then switching over to it. The cutover may take only a few milliseconds and no active production infrastructure is ever offline during the deployment process.
 
-A few different technologies and concepts, like container-based infrasturcture and microservices (which are faster to deploy), and better cloud autoscaling and load balancing options, have made blue-green deployments much easier than in the past.
+A few different technologies and concepts, like container-based infrastructure and microservices (which are faster to deploy), and better cloud autoscaling and load balancing options, have made blue-green deployments much easier than in the past.
 
 This book won't go through a detailed example of this style of deployment, as the process is similar to other examples provided, the only difference being an additional task of switching a load balancer from the old to the new infrastructure once it's up and running. Ansible's blog has an excellent overview of AWS-based blue-green deployments: [Immutable Systems and Ansible](http://www.ansible.com/blog/immutable-systems), and there are built-in modules to manage almost any type of load balancer you could use, including [F5's BIG-IP](http://docs.ansible.com/list_of_network_modules.html#f5), [HAProxy](http://docs.ansible.com/haproxy_module.html), [Citrix NetScaler](http://docs.ansible.com/netscaler_module.html), and [Amazon ELB](http://docs.ansible.com/ec2_elb_module.html).
 
