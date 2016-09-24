@@ -8,7 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   1. Fixed typo in Node.js app section in chapter 4 (thanks to @guntbert!).
   2. In chapter 1, when installing Ansible on Mac via `pip`, don't use `sudo` (thanks to @rdonkin!).
   3. In chapter 4, an incorrect use of 'play' was replaced with 'task' in 'Power Plays' (thanks to @guntbert!).
-  4. In chapters 3, 8, and 11, updated multiple instances of `-s` and `--sudo` in ad-hoc commands; should use `-b` and `--become` instead (thanks to Charlie H!).
+  4. In chapters 3, 8, and 11, updated multiple instances of `-s` and `--sudo` in ad-hoc commands; should use `-b` and `--become` instead (thanks to @charleshepner!).
   **--------------------- Website updated to this point ----------------------**
 
 ## Version 1.13 (2016-07-21)
