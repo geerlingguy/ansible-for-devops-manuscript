@@ -257,16 +257,16 @@ T> To get an exhaustive list of all the environment details ('facts', in Ansible
 We want to install the NTP daemon on the server to keep the time in sync. Instead of running the command `yum install -y ntp` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m yum -a "name=ntp state=present"
+    $ ansible multi -b -m yum -a "name=ntp state=present"
 
 You should see three simple 'success' messages, reporting no change, since NTP was already installed on the three machines; this confirms everything is in working order.
 
-I> The `-s` option (alias for `--sudo`) tells Ansible to run the command with sudo. This will work fine with our Vagrant VMs, but if you're running commands against a server where your user account requires a sudo password, you should also pass in `-K` (alias for `--ask-sudo-pass`), so you can enter your sudo password when Ansible needs it.
+I> The `-b` option (alias for `--become`) tells Ansible to run the command with become (basically, run commands with 'sudo'. This will work fine with our Vagrant VMs, but if you're running commands against a server where your user account requires a password for privilege escalation, you should also pass in `-K` (alias for `--ask-become-pass`), so you can enter your password when Ansible needs it.
 
 Now we'll make sure the NTP daemon is started and set to run on boot. We could use two separate commands, `service ntpd start` and `chkconfig ntpd on`, but we'll use Ansible's `service` module instead.
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m service -a "name=ntpd state=started \
+    $ ansible multi -b -m service -a "name=ntpd state=started \
     enabled=yes"
 
 All three servers should show a success message like:
@@ -284,9 +284,9 @@ When you use Ansible's modules instead of plain shell commands, you can use the 
 The last thing we should do is check to make sure our servers are synced closely to the official time on the NTP server:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -a "service ntpd stop"
-    $ ansible multi -s -a "ntpdate -q 0.rhel.pool.ntp.org"
-    $ ansible multi -s -a "service ntpd start"
+    $ ansible multi -b -a "service ntpd stop"
+    $ ansible multi -b -a "ntpdate -q 0.rhel.pool.ntp.org"
+    $ ansible multi -b -a "service ntpd start"
 
 For the `ntpdate` command to work, the `ntpd` service has to be stopped, so we stop the service, run the command to check our jitter, then start the service again.
 
@@ -303,9 +303,9 @@ Since we set up two separate groups in our inventory file, `app` and `db`, we ca
 Our hypothetical web application uses Django, so we need to make sure Django and its dependencies are installed. Django is not in the official CentOS yum repository, but we can install it using Python's easy_install (which, conveniently, has an Ansible module).
 
 {lang="text",linenos=off}
-    $ ansible app -s -m yum -a "name=MySQL-python state=present"
-    $ ansible app -s -m yum -a "name=python-setuptools state=present"
-    $ ansible app -s -m easy_install -a "name=django state=present"
+    $ ansible app -b -m yum -a "name=MySQL-python state=present"
+    $ ansible app -b -m yum -a "name=python-setuptools state=present"
+    $ ansible app -b -m easy_install -a "name=django state=present"
 
 You could also install django using `pip`, which can be installed via `easy_install` (since Ansible's `easy_install` module doesn't allow you to uninstall packages like `pip` does), but for simplicity's sake, we've installed it with `easy_install`.
 
@@ -331,11 +331,11 @@ We configured the application servers using the `app` group defined in Ansible's
 Let's install MariaDB, start it, and configure the server's firewall to allow access on MariaDB's default port, 3306.
 
 {lang="text",linenos=off}
-    $ ansible db -s -m yum -a "name=mariadb-server state=present"
-    $ ansible db -s -m service -a "name=mariadb state=started \
+    $ ansible db -b -m yum -a "name=mariadb-server state=present"
+    $ ansible db -b -m service -a "name=mariadb state=started \
     enabled=yes"
-    $ ansible db -s -a "iptables -F"
-    $ ansible db -s -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp \
+    $ ansible db -b -a "iptables -F"
+    $ ansible db -b -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp \
     -m tcp --dport 3306 -j ACCEPT"
 
 If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MariaDB still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MariaDB server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL modules require the `MySQL-python` module to be present on the managed server.
@@ -343,8 +343,8 @@ If you try connecting to the database from the app servers (or your host machine
 T> Why MariaDB and not MySQL? RHEL 7 and CentOS 7 have MariaDB as the default supported MySQL-compatible database server. Some of the tooling around MariaDB still uses the old 'MySQL*' naming syntax, but if you're used to MySQL, things work similarly with MariaDB.
 
 {lang="text",linenos=off}
-    $ ansible db -s -m yum -a "name=MySQL-python state=present"
-    $ ansible db -s -m mysql_user -a "name=django host=% password=12345 \
+    $ ansible db -b -m yum -a "name=MySQL-python state=present"
+    $ ansible db -b -m mysql_user -a "name=django host=% password=12345 \
     priv=*.*:ALL state=present"
 
 At this point, you should be able to create or deploy a Django application on the app servers, then point it at the database server with the username django and password 12345.
@@ -358,21 +358,21 @@ Congratulations! You now have a small web application environment running Django
 Now that your local infrastructure has been running a while, you notice (hypothetically, of course) that the logs indicate one of the two app servers' time has gotten way out of sync with the others, likely because the NTP daemon has crashed or somehow been stopped. Quickly, you enter the following command to check the status of `ntpd`:
 
 {lang="text",linenos=off}
-    $ ansible app -s -a "service ntpd status"
+    $ ansible app -b -a "service ntpd status"
 
 Then, you restart the service on the affected app server:
 
 {lang="text",linenos=off}
-    $ ansible app -s -a "service ntpd restart" --limit "192.168.60.4"
+    $ ansible app -b -a "service ntpd restart" --limit "192.168.60.4"
 
 In this command, we used the `--limit` argument to limit the command to a specific host in the specified group. `--limit` will match either an exact string or a regular expression (prefixed with `~`). The above command could be stated more simply if you want to apply the command to only the `.4` server (assuming you know there are no other servers with the an IP address ending in .4), the following would work exactly the same:
 
 {lang="text",linenos=off}
     # Limit hosts with a simple pattern (asterisk is a wildcard).
-    $ ansible app -s -a "service ntpd restart" --limit "*.4"
+    $ ansible app -b -a "service ntpd restart" --limit "*.4"
 
     # Limit hosts with a regular expression (prefix with a tilde).
-    $ ansible app -s -a "service ntpd restart" --limit ~".*\.4"
+    $ ansible app -b -a "service ntpd restart" --limit ~".*\.4"
 
 In these examples, we've been using IP addresses instead of hostnames, but in many real-world scenarios, you'll probably be using hostnames like nyc-dev-1.example.com; being able to match on regular expressions is often helpful.
 
@@ -387,21 +387,21 @@ Ansible's `user` and `group` modules make things pretty simple and standard acro
 First, add an `admin` group on the app servers for the server administrators:
 
 {lang="text",linenos=off}
-    $ ansible app -s -m group -a "name=admin state=present"
+    $ ansible app -b -m group -a "name=admin state=present"
 
 The `group` module is pretty simple; you can remove a group by setting `state=absent`, set a group id with `gid=[gid]`, and indicate that the group is a system group with `system=yes`.
 
 Now add the user `johndoe` to the app servers with the group I just created and give him a home folder in `/home/johndoe` (the default location for most Linux distributions). Simple:
 
 {lang="text",linenos=off}
-    $ ansible app -s -m user -a "name=johndoe group=admin createhome=yes"
+    $ ansible app -b -m user -a "name=johndoe group=admin createhome=yes"
 
 If you want to automatically create an SSH key for the new user (if one doesn't already exist), you can run the same command with the additional parameter `generate_ssh_key=yes`. You can also set the UID of the user by passing in `uid=[uid]`, set the user's shell with `shell=[shell]`, and the password with `password=[encrypted-password]`.
 
 What if you want to delete the account?
 
 {lang="text",linenos=off}
-    $ ansible app -s -m user -a "name=johndoe state=absent remove=yes"
+    $ ansible app -b -m user -a "name=johndoe state=absent remove=yes"
 
 You can do just about anything you could do with `useradd`, `userdel`, and `usermod` using Ansible's `user` module, except you can do it more easily. The [official documentation of the User module](http://docs.ansible.com/user_module.html) explains all the possibilities in great detail.
 
@@ -412,7 +412,7 @@ We've already used the `yum` module on our example CentOS infrastructure to ensu
 If you want to install a generic package like `git` on any Debian, RHEL, Fedora, Ubuntu, CentOS, FreeBSD, etc. system, you can use the command:
 
 {lang="text",linenos=off}
-    $ ansible app -s -m package -a "name=git state=present"
+    $ ansible app -b -m package -a "name=git state=present"
 
 `package` works much the same as `yum`, `apt`, and other package management modules. Later in the book we'll explore ways of dealing with multi-platform package management where package names differ between OSes.
 
@@ -445,7 +445,7 @@ The `copy` module is perfect for single-file copies, and works very well with sm
 The `fetch` module works almost exactly the same as the `copy` module, except in reverse. The major difference is that files will be copied down to the local `dest` in a directory structure that matches the host from which you copied them. For example, use the following command to grab the hosts file from the servers:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m fetch -a "src=/etc/hosts dest=/tmp"
+    $ ansible multi -b -m fetch -a "src=/etc/hosts dest=/tmp"
 
 Fetch will, by default, put the `/etc/hosts` file from each server into a folder in the destination with the name of the host (in our case, the three IP addresses), then in the location defined by `src`. So, the db server's hosts file will end up in `/tmp/192.168.60.6/etc/hosts`.
 
@@ -491,7 +491,7 @@ To run a command in the background, you set the following options:
 Let's run `yum -y update` on all our servers to get them up to date. If we leave out `-P`, Ansible defaults to polling every 10 seconds:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -B 3600 -a "yum -y update"
+    $ ansible multi -b -B 3600 -a "yum -y update"
     background launch...
     
     
@@ -523,7 +523,7 @@ Wait a little while (or a *long* while, depending on how old the system image is
 While a background task is running, you can also check on the status elsewhere using Ansible's `async_status` module, as long as you have the `ansible_job_id` value to pass in as `jid`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m async_status -a "jid=763350539037"
+    $ ansible multi -b -m async_status -a "jid=763350539037"
 
 ### Fire-and-forget tasks
 
@@ -561,12 +561,12 @@ Sometimes, when debugging application errors, or diagnosing outages or other pro
 As a simple example, let's view the last few lines of the messages log file on each of our servers:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -a "tail /var/log/messages"
+    $ ansible multi -b -a "tail /var/log/messages"
 
 As stated in the caveats, if you want to filter the messages log with something like `grep`, you can't use Ansible's default `command` module, but instead, `shell`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m shell -a "tail /var/log/messages | \
+    $ ansible multi -b -m shell -a "tail /var/log/messages | \
     grep ansible-command | wc -l"
     
     192.168.60.5 | success | rc=0 >>
@@ -587,7 +587,7 @@ Periodic tasks run via cron are managed by a system's crontab. Normally, to chan
 Ansible makes managing cron jobs easy with its `cron` module. If you want to run a shell script on all the servers every day at 4 a.m., add the cron job with:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
+    $ ansible multi -b -m cron -a "name='daily-cron-all-servers' \
     hour=4 job='/path/to/daily-script.sh'"
 
 Ansible will assume `*` for all values you don't specify (valid values are `day`, `hour`, `minute`, `month`, and `weekday`). You could also specify special time values like `reboot`, `yearly`, or `monthly` using `special_time=[value]`. You can also set the user the job will run under via `user=[user]`, and create a backup of the current crontab by passing `backup=yes`.
@@ -595,7 +595,7 @@ Ansible will assume `*` for all values you don't specify (valid values are `day`
 What if we want to remove the cron job? Simple enough, use the same `cron` command, and pass the name of the cron job you want to delete, and `state=absent`:
 
 {lang="text",linenos=off}
-    $ ansible multi -s -m cron -a "name='daily-cron-all-servers' \
+    $ ansible multi -b -m cron -a "name='daily-cron-all-servers' \
     state=absent"
 
 You can also use Ansible to manage custom crontab files; use the same syntax as you used earlier, but specify the location to the cron file with: `cron_file=cron_file_name` (where `cron_file_name` is a cron file located in `/etc/cron.d`).
@@ -611,19 +611,19 @@ In the example below, I'll assume we're running a simple application on one or t
 First, update the git checkout to the application's new version branch, 1.2.4, on all the app servers:
 
 {lang="text",linenos=off}
-    $ ansible app -s -m git -a "repo=git://example.com/path/to/repo.git \
+    $ ansible app -b -m git -a "repo=git://example.com/path/to/repo.git \
     dest=/opt/myapp update=yes version=1.2.4"
 
 Ansible's git module lets you specify a branch, tag, or even a specific commit with the `version` parameter (in this case, we chose to checkout tag `1.2.4`, but if you run the command again with a branch name, like `prod`, Ansible will happily do that instead). To force Ansible to update the checked-out copy, we passed in `update=yes`. The `repo` and `dest` options should be self-explanatory.
 
-I> If you get a message saying "Failed to find required executable git", you will need to install Git on the server. To do so, run the ad-hoc command `ansible package -s -m yum -a "name=git state=present"`.
+I> If you get a message saying "Failed to find required executable git", you will need to install Git on the server. To do so, run the ad-hoc command `ansible package -b -m yum -a "name=git state=present"`.
 I> 
 I> If you get a message saying the Git server has an "unknown hostkey", add the option `accept_hostkey=yes` to the command, or add the hostkey to your server's `known_hosts` file before running this command.
 
 Then, run the application's `update.sh` shell script:
 
 {lang="text",linenos=off}
-    $ ansible app -s -a "/opt/myapp/update.sh"
+    $ ansible app -b -a "/opt/myapp/update.sh"
 
 Ad-hoc commands are fine for the simple deployments (like our example above), but you should use Ansible's more powerful and flexible application deployment features described later in this book if you have complex application or infrastructure needs. See especially the 'Rolling Updates' section later in this book.
 

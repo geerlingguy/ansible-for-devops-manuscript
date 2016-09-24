@@ -1,1 +1,9 @@
-chapter7.txt
+frontmatter.txt
+foreword.txt
+preface.txt
+introduction.txt
+mainmatter.txt
+chapter1.txt
+chapter2.txt
+chapter3.txt
+chapter4.txt

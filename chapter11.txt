@@ -464,9 +464,9 @@ The next aspect to check is whether the role runs correctly or fails on its firs
 {lang="text"}
     # Run the role/playbook with ansible-playbook.
     - "ansible-playbook -i tests/inventory tests/test.yml
-    --connection=local --sudo"
+    --connection=local --become"
 
-This is a basic ansible-playbook command, which runs the playbook `test.yml` against the local host, using `--sudo`, and with the inventory file we added to the role's `tests` directory.
+This is a basic ansible-playbook command, which runs the playbook `test.yml` against the local host, using `--become`, and with the inventory file we added to the role's `tests` directory.
 
 Ansible returns a non-zero exit code if the playbook run fails, so Travis will know whether the command succeeded or failed.
 
@@ -478,7 +478,7 @@ Another important test is the idempotence test---does the role change anything i
     # Run the role/playbook again, checking to make sure it's idempotent.
     - >
       ansible-playbook -i tests/inventory tests/test.yml
-      --connection=local --sudo
+      --connection=local --become
       | grep -q 'changed=0.*failed=0'
       && (echo 'Idempotence test: pass' && exit 0)
       || (echo 'Idempotence test: fail' && exit 1)
