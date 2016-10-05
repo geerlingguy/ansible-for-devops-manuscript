@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   4. In chapters 3, 8, and 11, updated multiple instances of `-s` and `--sudo` in ad-hoc commands; should use `-b` and `--become` instead (thanks to @charleshepner!).
   5. Fixed typo: `s/infrasturcture/infrastructure` in chapter 9 (thanks to /u/levelupirl!).
   **--------------------- Website updated to this point ----------------------**
+  6. Rewrote entire Travis CI testing section in chapter 11 to use Docker for multi-platform tests.
 
 ## Version 1.13 (2016-07-21)
   1. Updated DigitalOcean provisioning and inventory example in chapter 7.
