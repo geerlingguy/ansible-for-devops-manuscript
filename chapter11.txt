@@ -436,7 +436,7 @@ Inside `test.yml`, add:
 {lang="text"}
     ---
     - hosts: all
-
+    
       roles:
         - role_under_test
 
@@ -503,7 +503,7 @@ One other thing that needs to be configured per-OS is the init system. Because w
         init: /lib/systemd/systemd
         run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
 
-> Why use an `init` system in Docker? With Docker, it's preferable to either run apps directly (as 'PID 1') inside the container, or use a tool like Yelp's [dumb-init](https://github.com/Yelp/dumb-init) as a wrapper for your app. For our purposes, we're testing an Ansible role or playbook that could be run inside a container, but is also likely used on full VMs or bare-metal servers, where there will be a real init system controlling multiple internal processes. We want to emulate the real servers as closely as possible, therefore we set up a full init system (`systemd` or `sysv`) according to the OS.
+I> Why use an `init` system in Docker? With Docker, it's preferable to either run apps directly (as 'PID 1') inside the container, or use a tool like Yelp's [dumb-init](https://github.com/Yelp/dumb-init) as a wrapper for your app. For our purposes, we're testing an Ansible role or playbook that could be run inside a container, but is also likely used on full VMs or bare-metal servers, where there will be a real init system controlling multiple internal processes. We want to emulate the real servers as closely as possible, therefore we set up a full init system (`systemd` or `sysv`) according to the OS.
 
 Now that we've defined the OS distributions we want to test, and what init system we want Docker to call, we can manage the Docker container's lifecycle---we need to `pull` the image, `run` the image with our options, `exec` some commands to test our project, then `stop` the container once finished. Here's the basic structure, starting with the `before_install` step:
 
@@ -538,7 +538,7 @@ For example, if you wanted to check up on disk space inside the container (assum
 
 You can also run the command with `--tty`, which will allocate a pseudo-TTY, allowing things like colors to be passed through to Travis for prettier output.
 
-W> Note: In Docker < 1.13, you have to set the `TERM` environment variable when using `docker exec` with the `--tty` option, like: `docker exec --tty "$(cat ${container_id})" env TERM=xterm df -h` (see: [exec does not set TERM env when -t passed](https://github.com/docker/docker/issues/9299)). Also note that some older sysvinit scripts, when run through Ansible's `service` module, can cause strange issues when run inside a Docker container (see: [service hangs the whole playbook](https://github.com/ansible/ansible-modules-core/issues/2459#issuecomment-246880847).
+W> Note: In Docker < 1.13, you have to set the `TERM` environment variable when using `docker exec` with the `--tty` option, like: `docker exec --tty "$(cat ${container_id})" env TERM=xterm df -h` (see: [exec does not set TERM env when -t passed](https://github.com/docker/docker/issues/9299)). Also note that some older sysvinit scripts, when run through Ansible's `service` module, can cause strange issues when run inside a Docker container (see: [service hangs the whole playbook](https://github.com/ansible/ansible-modules-core/issues/2459#issuecomment-246880847)).
 
 Now that we have a Docker container running (one for each of the distributions listed in the `env` configuration), we can start running some tests on our Ansible role or playbook.
 
@@ -602,6 +602,11 @@ The last thing I check is whether the role actually did what it was supposed to 
 
 In this example, a simple test of whether or not `java` is installed is used as a functional test of the role. In other cases, I might run the command `curl http://localhost:3000/` (to check if an app is responding on a particular port), or some other command that verifies an application is installed and running correctly.
 
+Here's what the final test result looks like in Travis CI:
+
+{width=80%}
+![Travis CI test result for the geerlingguy.java role](images/11-travis-ci-ansible-role-java-result.png)
+
 Taking this a step further, you could even run a deployed application or service's own automated tests after Ansible is finished with the deployment, thus testing your infrastructure and application in one go---but we're getting ahead of ourselves here... that's a topic for later!
 
 ### Some notes about Travis CI
@@ -647,7 +652,7 @@ There are also a number of other projects which abstract the testing process a l
   - [goss](https://github.com/aelsabbahy/goss) - A generalized server validation tool.
   - [rolespec](https://github.com/nickjj/rolespec) - A library for testing Ansible roles on Travis or locally.
 
-Each of the options has some benefits and drawbacks; you should check them all out and find out which one works best in your workflow and skillset.
+Each of the options has some benefits and drawbacks; you should check them all out and find out which one works best in your workflow and skill-set.
 
 ## Summary
 
