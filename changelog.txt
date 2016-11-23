@@ -5,6 +5,11 @@ This log will track changes between releases of the book. Until version 1.0, eac
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 
 ## Current Version
+
+  - No known issues.
+
+## Version 1.14 (2016-11-23)
+
   1. Fixed typo in Node.js app section in chapter 4 (thanks to @guntbert!).
   2. In chapter 1, when installing Ansible on Mac via `pip`, don't use `sudo` (thanks to @rdonkin!).
   3. In chapter 4, an incorrect use of 'play' was replaced with 'task' in 'Power Plays' (thanks to @guntbert!).
