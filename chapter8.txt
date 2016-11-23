@@ -587,6 +587,7 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
             size_id: "{{ item.size | default('512mb') }}"
             image_id: "{{ item.image | default('centos-6-5-x32') }}"
             region_id: "{{ item.region | default('nyc2') }}"
+            # Customize this default for your account.
             ssh_key_ids: "{{ item.ssh_key | default('138954') }}"
             unique_name: yes
           register: created_droplets
@@ -600,7 +601,7 @@ T> It's best to use key-based authentication and add at least one SSH key to you
 
 We loop through all the defined `droplets` using `with_items: droplets`, and after each droplet is created, we add the droplet's metadata (name, IP address, etc.) to the `created_droplets` variable. Next, we'll loop through that variable to build our inventory on-the-fly so our configuration applies to the correct servers:
 
-{lang="text",starting-line-number=30}
+{lang="text",starting-line-number=31}
         - name: Add DigitalOcean hosts to inventory groups.
           add_host:
             name: "{{ item.1.droplet.ip_address }}"
@@ -625,7 +626,7 @@ T> There are a few different ways you can approach dynamic provisioning and inve
 
 The final step in our provisioning is to make sure all the droplets are booted and can be reached via SSH. So at the end of the `digitalocean.yml` playbook, add another play to be run on hosts in the `do` group we just defined:
 
-{lang="text",starting-line-number=43}
+{lang="text",starting-line-number=44}
     - hosts: do
       remote_user: root
       gather_facts: no

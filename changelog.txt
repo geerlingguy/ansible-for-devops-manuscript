@@ -12,6 +12,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. Fixed typo: `s/infrasturcture/infrastructure` in chapter 9 (thanks to /u/levelupirl!).
   **--------------------- Website updated to this point ----------------------**
   6. Rewrote entire Travis CI testing section in chapter 11 to use Docker for multi-platform tests.
+  7. Added a note on SSH key IDs in chapter 7 and chapter 8 DigitalOcean examples (thanks to Terry C!).
+  8. Fixed playbook name (was `do_test`, should be `provision`) in chapter 7 (thanks to Terry C!).
 
 ## Version 1.13 (2016-07-21)
   1. Updated DigitalOcean provisioning and inventory example in chapter 7.

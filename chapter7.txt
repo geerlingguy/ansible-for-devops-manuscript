@@ -321,6 +321,7 @@ Create a new playbook named `provision.yml`, with the following contents:
             size_id: 512mb
             image_id: centos-7-0-x64
             region_id: nyc2
+            # Customize this for your account.
             ssh_key_ids: 138954
             # Required for idempotence/only one droplet creation.
             unique_name: yes
@@ -335,7 +336,7 @@ T> As an example, to get all the available images, use `curl --silent "https://a
 We used `register` as part of the `digital_ocean` task so we could immediately start using and configuring the new host if needed. Running the above playbook returns the following output (using `debug: var=do` in an additional task to dump the contents of our registered variable, `do`):
 
 {lang="text",linenos=off}
-    $ ansible-playbook do_test.yml
+    $ ansible-playbook provision.yml
     
     PLAY [localhost] ***************************************************************
 
