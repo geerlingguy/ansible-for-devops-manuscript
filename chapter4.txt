@@ -424,6 +424,7 @@ The first step towards building an application server that depends on the LAMP s
           with_items:
             - git
             - curl
+            - unzip
             - sendmail
             - apache2
             - php7.0-common
@@ -465,7 +466,7 @@ The next step is configuring Apache so it will work correctly with Drupal. Out o
 
 We also need to add a VirtualHost entry to give Apache the site's document root and provide other options for the site.
 
-{lang="text",starting-line-number=58}
+{lang="text",starting-line-number=59}
         - name: Enable Apache rewrite module (required for Drupal).
           apache2_module: name=rewrite state=present
           notify: restart apache
@@ -527,7 +528,7 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
 
 Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.1.x-dev` and `drupaltest` (or whatever values you'd like!).
 
-The last two tasks (lines 71-82) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
+The last two tasks (lines 72-83) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
 At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't exist (there's no directory at `{{ drupal_core_path }}` yet!). This is why using `notify` is important---instead of adding a task after these three steps to restart Apache (which will fail the first time you run the playbook), notify will wait until after we've finished all the other steps in our main group of tasks (giving us time to finish setting up the server), *then* restart Apache.
 
@@ -535,7 +536,7 @@ At this point, you could start the server, but Apache will likely throw an error
 
 We briefly mentioned `lineinfile` earlier in the book, when discussing file management and ad-hoc task execution. Modifying PHP's configuration is a perfect way to demonstrate `lineinfile`'s simplicity and usefulness:
 
-{lang="text",starting-line-number=84}
+{lang="text",starting-line-number=85}
         - name: Adjust OpCache memory setting.
           lineinfile:
             dest: "/etc/php/7.0/apache2/conf.d/10-opcache.ini"
@@ -556,7 +557,7 @@ Ansible will take the regular expression, and see if there's a matching line. If
 
 The next step is to remove MySQL's default test database, and create a database and user (named for the domain we specified earlier) for our Drupal installation to use.
 
-{lang="text",starting-line-number=92}
+{lang="text",starting-line-number=93}
         - name: Remove the MySQL test database.
           mysql_db: db=test state=absent
     
@@ -583,7 +584,7 @@ Drupal has a command-line companion in the form of Drush. Drush is developed ind
 
 We could just download Drupal and perform some setup in the browser by hand at this point, but the goal of this playbook is to have a fully-automated and idempotent Drupal installation. So, we need to install Composer, then Drush, and use both to install Drupal:
 
-{lang="text",starting-line-number=106}
+{lang="text",starting-line-number=107}
         - name: Download Composer installer.
           get_url:
             url: https://getcomposer.org/installer
@@ -611,7 +612,7 @@ T> It's best to use an Ansible module for every task. If you have to resort to a
 
 Now, we'll install Drush using the latest version from GitHub:
 
-{lang="text",starting-line-number=123}
+{lang="text",starting-line-number=124}
         - name: Check out drush master branch.
           git:
             repo: https://github.com/drush-ops/drush.git
@@ -639,7 +640,7 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 
 We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, install Drupal's dependencies with Composer, run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
-{lang="text",starting-line-number=140}
+{lang="text",starting-line-number=141}
         - name: Check out Drupal Core to the Apache docroot.
           git:
             repo: http://git.drupal.org/project/drupal.git

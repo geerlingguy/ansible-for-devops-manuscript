@@ -54,13 +54,6 @@ We used `{{ username }}` and `{{ ssh_private_keys }}` variables in this include 
 
 {lang="text",linenos=off}
     tasks:
-      - { include: user.yml, username: johndoe, ssh_private_keys: [] }
-      - { include: user.yml, username: janedoe, ssh_private_keys: [] }
-
-To make the syntax more readable, you can use structured variables, like so:
-
-{lang="text",linenos=off}
-    tasks:
       - include: user.yml
         vars:
           username: johndoe

@@ -14,6 +14,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   6. Rewrote entire Travis CI testing section in chapter 11 to use Docker for multi-platform tests.
   7. Added a note on SSH key IDs in chapter 7 and chapter 8 DigitalOcean examples (thanks to Terry C!).
   8. Fixed playbook name (was `do_test`, should be `provision`) in chapter 7 (thanks to Terry C!).
+  9. Removed deprecated include variables usage example in chapter 6 in 'Includes' section (thanks to William T!).
+  10. Added `unzip` dependency to Drupal example in chapter 4 (thanks to @wurzeldub!).
 
 ## Version 1.13 (2016-07-21)
   1. Updated DigitalOcean provisioning and inventory example in chapter 7.
