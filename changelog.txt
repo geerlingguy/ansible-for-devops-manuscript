@@ -6,12 +6,12 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  **--------------------- Website updated to this point ----------------------**
   1. Updated the `creates` examples in chapter 4's Drupal example to be Composer-specific (thanks to @santisaez!).
   2. Updated the Drupal example to default to Drupal `8.2.x` (was `8.1.x`).
   3. Updated the Drupal example to use PHP 7.1 instead of 7.0.
   4. Updated the Drupal example to install Ondrej's updated and maintained PPA (thanks to @jonleibowitz!).
   5. Rewrote appendix a in light of the Windows 10 WSL and Bash on Ubuntu on Windows.
+  **--------------------- Website updated to this point ----------------------**
 
 ## Version 1.14 (2016-11-23)
 
@@ -20,7 +20,6 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. In chapter 4, an incorrect use of 'play' was replaced with 'task' in 'Power Plays' (thanks to @guntbert!).
   4. In chapters 3, 8, and 11, updated multiple instances of `-s` and `--sudo` in ad-hoc commands; should use `-b` and `--become` instead (thanks to @charleshepner!).
   5. Fixed typo: `s/infrasturcture/infrastructure` in chapter 9 (thanks to /u/levelupirl!).
-  **--------------------- Website updated to this point ----------------------**
   6. Rewrote entire Travis CI testing section in chapter 11 to use Docker for multi-platform tests.
   7. Added a note on SSH key IDs in chapter 7 and chapter 8 DigitalOcean examples (thanks to @tychay!).
   8. Fixed playbook name (was `do_test`, should be `provision`) in chapter 7 (thanks to @tychay!).
