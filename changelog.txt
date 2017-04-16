@@ -6,7 +6,12 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - No known issues.
+  **--------------------- Website updated to this point ----------------------**
+  1. Updated the `creates` examples in chapter 4's Drupal example to be Composer-specific (thanks to @santisaez!).
+  2. Updated the Drupal example to default to Drupal `8.2.x` (was `8.1.x`).
+  3. Updated the Drupal example to use PHP 7.1 instead of 7.0.
+  4. Updated the Drupal example to install Ondrej's updated and maintained PPA (thanks to @jonleibowitz!).
+  5. Rewrote appendix a in light of the Windows 10 WSL and Bash on Ubuntu on Windows.
 
 ## Version 1.14 (2016-11-23)
 
@@ -17,9 +22,9 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. Fixed typo: `s/infrasturcture/infrastructure` in chapter 9 (thanks to /u/levelupirl!).
   **--------------------- Website updated to this point ----------------------**
   6. Rewrote entire Travis CI testing section in chapter 11 to use Docker for multi-platform tests.
-  7. Added a note on SSH key IDs in chapter 7 and chapter 8 DigitalOcean examples (thanks to Terry C!).
-  8. Fixed playbook name (was `do_test`, should be `provision`) in chapter 7 (thanks to Terry C!).
-  9. Removed deprecated include variables usage example in chapter 6 in 'Includes' section (thanks to William T!).
+  7. Added a note on SSH key IDs in chapter 7 and chapter 8 DigitalOcean examples (thanks to @tychay!).
+  8. Fixed playbook name (was `do_test`, should be `provision`) in chapter 7 (thanks to @tychay!).
+  9. Removed deprecated include variables usage example in chapter 6 in 'Includes' section (thanks to @williamt!).
   10. Added `unzip` dependency to Drupal example in chapter 4 (thanks to @wurzeldub!).
 
 ## Version 1.13 (2016-07-21)
