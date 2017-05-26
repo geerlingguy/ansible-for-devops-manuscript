@@ -12,6 +12,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   4. Updated the Drupal example to install Ondrej's updated and maintained PPA (thanks to @jonleibowitz!).
   5. Rewrote appendix a in light of the Windows 10 WSL and Bash on Ubuntu on Windows.
   **--------------------- Website updated to this point ----------------------**
+  6. Updated documentation to switch from deprecated `always_run: yes` to `check_mode: no`.
+  7. Fixed Node.js rolling deployment example's `forever` usage in chapter 9 (thanks to @mattjmcnaughton!).
 
 ## Version 1.14 (2016-11-23)
 

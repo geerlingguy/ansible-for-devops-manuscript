@@ -360,15 +360,17 @@ This is helpful for two purposes:
   1. To prevent 'configuration drift', where a server configuration may have drifted away from your coded configuration. This could happen due to human intervention or other factors. But it's good to discover configuration drift without forcefully changing it.
   2. To make sure changes you make to a playbook that shouldn't break idempotency _don't_, in fact, break idempotency. For example, if you're changing a configuration file's structure, but with the goal of maintaining the same resulting file, running the playbook with `--check` alerts you when you might accidentally change the live file as a result of the playbook changes. Time to fix your playbook!
 
-When using `--check` mode, certain tasks may need to always run to ensure the playbook completes successfully (e.g. `command` tasks that register variables used in later tasks). The `always_run` option indicates such tasks:
+When using `--check` mode, certain tasks may need to be forced to run to ensure the playbook completes successfully: (e.g. a `command` task that registers variables used in later tasks). You can set `check_mode: no` to do this:
 
 {lang="text",linenos=off}
     - name: A task that runs all the time, even in check mode.
       command: mytask --option1 --option2
       register: my_var
-      always_run: true
+      check_mode: no
 
 For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
+
+T> You can add conditionals with `check_mode` just like you can with `when` clauses, though most of the time you will probably just use `yes` or `no`.
 
 In addition to Ansible's `--syntax-check` and `--check` modes, you might be interested in also running [Ansible Lint](https://github.com/willthames/ansible-lint) on your playbooks. Ansible Lint allows you to check for deprecated syntax or inefficient task structures, and is highly configurable so you can set up the linting to follow the playbook standards you and your team choose.
 
