@@ -473,6 +473,7 @@ Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting wit
       become: yes
     
       vars:
+        nodejs_install_npm_user: root
         npm_config_prefix: "/usr"
         nodejs_npm_global_packages:
           - forever
@@ -483,8 +484,9 @@ Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting wit
       roles:
         - geerlingguy.firewall
         - geerlingguy.nodejs
+        - geerlingguy.git
 
-This playbook runs on all the servers defined in our inventory file, and runs two roles on the servers: `geerlingguy.firewall` (which installs and configures a firewall, in this case opening ports 22 for SSH and 8080 for our app) and `geerlingguy.nodejs` (which installs Node.js, NPM, and the `forever` package (installed globally), which we'll use to run our app as a daemon).
+This playbook runs on all the servers defined in our inventory file, and runs three roles on the servers: `geerlingguy.firewall` (which installs and configures a firewall, in this case opening ports 22 for SSH and 8080 for our app), `geerlingguy.nodejs` (which installs Node.js, NPM, and the `forever` package (installed globally), which we'll use to run our app as a daemon), and `geerlingguy.git` (which installs `git`, used for app deployment).
 
 Since we're using two roles from Ansible Galaxy, it's best practice to also include those roles in a requirements file so CI tools and others using this playbook can install all the required roles.
 
@@ -494,6 +496,7 @@ Create a `requirements.yml` file in the root folder and add the following:
     ---
     - src: geerlingguy.firewall
     - src: geerlingguy.nodejs
+    - src: geerlingguy.git
 
 Whenever someone wants to run the playbook, the command `ansible-galaxy install -r requirements.yml` will install all the required roles.
 
