@@ -473,7 +473,9 @@ Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting wit
       become: yes
     
       vars:
-        nodejs_forever: true
+        npm_config_prefix: "/usr"
+        nodejs_npm_global_packages:
+          - forever
         firewall_allowed_tcp_ports:
           - "22"
           - "8080"
@@ -482,7 +484,7 @@ Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting wit
         - geerlingguy.firewall
         - geerlingguy.nodejs
 
-This playbook runs on all the servers defined in our inventory file, and runs two roles on the servers: `geerlingguy.firewall` (which installs and configures a firewall, in this case opening ports 22 for SSH and 8080 for our app) and `geerlingguy.nodejs` (which installs Node.js, NPM, and `forever`, which we'll use to run our app as a daemon).
+This playbook runs on all the servers defined in our inventory file, and runs two roles on the servers: `geerlingguy.firewall` (which installs and configures a firewall, in this case opening ports 22 for SSH and 8080 for our app) and `geerlingguy.nodejs` (which installs Node.js, NPM, and the `forever` package (installed globally), which we'll use to run our app as a daemon).
 
 Since we're using two roles from Ansible Galaxy, it's best practice to also include those roles in a requirements file so CI tools and others using this playbook can install all the required roles.
 
