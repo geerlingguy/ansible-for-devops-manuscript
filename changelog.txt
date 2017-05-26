@@ -14,6 +14,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   **--------------------- Website updated to this point ----------------------**
   6. Updated documentation to switch from deprecated `always_run: yes` to `check_mode: no`.
   7. Fixed Node.js rolling deployment example's `forever` usage in chapter 9 (thanks to @mattjmcnaughton!).
+  8. Fixed bare variable warning for `environment` setting in chapter 9 Rails deployment playbook.
 
 ## Version 1.14 (2016-11-23)
 
