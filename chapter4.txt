@@ -521,8 +521,8 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
 
 {lang="text"}
     ---
-    # The core version you want to use (e.g. 8.2.x, 8.3.x).
-    drupal_core_version: "8.2.x"
+    # The core version you want to use (e.g. 8.3.x, 8.4.x).
+    drupal_core_version: "8.3.x"
     
     # The path where Drupal will be downloaded and installed.
     drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
@@ -617,9 +617,10 @@ T> It's best to use an Ansible module for every task. If you have to resort to a
 Now, we'll install Drush using the latest version from GitHub:
 
 {lang="text",starting-line-number=124}
-        - name: Check out drush master branch.
+        - name: Check out drush 8.x branch.
           git:
             repo: https://github.com/drush-ops/drush.git
+            version: 8.x
             dest: /opt/drush
     
         - name: Install Drush dependencies with Composer.
@@ -634,7 +635,7 @@ Now, we'll install Drush using the latest version from GitHub:
             dest: /usr/local/bin/drush
             state: link
 
-Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the master branch, pass in the `repo` (repository URL) and `dest` (destination path) parameters, and the `git` module will check out `master` by default.
+Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the `8.x` branch, pass in the `repo` (repository URL), `version` (the branch, tag, or commit ref), and `dest` (destination path) parameters (the `git` module will check out `master` if you don't provide a `version`).
 
 After Drush is downloaded to `/opt/drush`, we use Composer to install all the required dependencies. In this case, we want Ansible to run `composer install` in the directory `/opt/drush` (this is so Composer finds Drush's `composer.json` file automatically), so we pass along the parameter `chdir=/opt/drush`. Once Composer is finished, the file `/opt/drush/vendor/autoload.php` will be created, so we use the `creates` parameter to tell Ansible to skip this step if the file already exists (for idempotency).
 
@@ -644,7 +645,7 @@ Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/
 
 We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, install Drupal's dependencies with Composer, run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
 
-{lang="text",starting-line-number=141}
+{lang="text",starting-line-number=142}
         - name: Check out Drupal Core to the Apache docroot.
           git:
             repo: http://git.drupal.org/project/drupal.git
@@ -663,7 +664,7 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             --account-name=admin
             --account-pass=admin
             --db-url=mysql://{{ domain }}:1234@localhost/{{ domain }}
-            chdir={{ drupal_core_path }}
+            --root={{ drupal_core_path }}
             creates={{ drupal_core_path }}/sites/default/settings.php
           notify: restart apache
     

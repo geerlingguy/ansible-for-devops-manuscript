@@ -15,6 +15,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   6. Updated documentation to switch from deprecated `always_run: yes` to `check_mode: no`.
   7. Fixed Node.js rolling deployment example's `forever` usage in chapter 9 (thanks to @mattjmcnaughton!).
   8. Fixed bare variable warning for `environment` setting in chapter 9 Rails deployment playbook.
+  9. Fixed Drupal playbook example in chapter 4; drush git checkout is now `version: 8.x` (thanks to @cwardgar, @rschmidtz, and @scarroy!).
 
 ## Version 1.14 (2016-11-23)
 
