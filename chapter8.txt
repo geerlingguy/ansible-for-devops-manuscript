@@ -1574,7 +1574,7 @@ When developing Dockerfiles to containerize your own applications, you will like
 
 ### Using Ansible to build and manage containers
 
-Ansible has a built-in [Docker module](http://docs.ansible.com/docker_module.html) that integrates nicely with Docker for container management. We're going to use it to automate the building and running of the container (managed by the Dockerfile) we just created.
+Ansible has built-in Docker modules that integrate nicely with Docker for container management. We're going to use them to automate the building and running of the container (managed by the Dockerfile) we just created.
 
 Move the Dockerfile you had into a subdirectory, and create a new Ansible playbook (call it `main.yml`) in the project root directory. The directory layout should look like:
 
@@ -1592,7 +1592,7 @@ Inside the new playbook, add the following:
       connection: local
 
       tasks:
-        - name: Build Docker image from Dockerfiles.
+        - name: Ensure Docker image is built from the test Dockerfile.
           docker_image:
             name: test
             path: test
@@ -1600,22 +1600,20 @@ Inside the new playbook, add the following:
 
 The playbook uses the `docker_image` module to build an image. Provide a name for the image, the path to the Dockerfile (in this case, inside the `test` directory), and tell Ansible via the `state` parameter whether the image should be `present`, `absent`, or built (via `build`).
 
-I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker-py` package.
-
-W> The `docker_image` module is listed as being deprecated as of early 2015. The module's functionality will soon be moved into the main `docker` module, but until that time, this playbook should work as-is.
+I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker-py` package. On other distributions, you may need to install `docker-py` via Pip.
 
 Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker images (`$ docker images`). If all was successful, you should see a fresh `test` image in the list.
 
 Run `docker ps -a` again, though, and you'll see that the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
 
 {lang="text",starting-line-number=12}
-    - name: Run the test container.
-      docker:
+    - name: Ensure the test container is running.
+      docker_container:
         image: test:latest
         name: test
-        state: running
+        state: started
 
-If you run the playbook again, Ansible will run the Docker container. Check the list of containers with `docker ps -a`, and you'll note that the `test` container is again present.
+If you run the playbook again, Ansible will start the Docker container. Check the list of containers with `docker ps -a`, and you'll note that the `test` container is again present.
 
 You can remove the container and the image via ansible by changing the `state` parameter to `absent` for both tasks.
 
