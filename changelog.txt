@@ -17,6 +17,9 @@ Hopefully these notes will help readers figure out what's changed since the last
   8. Fixed bare variable warning for `environment` setting in chapter 9 Rails deployment playbook.
   9. Fixed Drupal playbook example in chapter 4; drush git checkout is now `version: 8.x` (thanks to @cwardgar, @rschmidtz, and @scarroy!).
   10. Fixed Docker example in chapter 8; `docker` module is deprecated, use the `docker_container` module instead.
+  11. Fixed Drupal playbook includes example in chapter 6 (to match tasks from chapter 4 Drupal playbook) (thanks to @cwardgar!).
+  12. Fixed reference to `docker-py` Pip library (now it's just `docker`) in chapter 8.
+  13. Switched Jenkins example in chapter 11 to use Ubuntu 16.04 since CentOS 7 doesn't include Java 8 by default.
 
 ## Version 1.14 (2016-11-23)
 

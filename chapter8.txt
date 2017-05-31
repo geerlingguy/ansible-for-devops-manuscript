@@ -1600,7 +1600,7 @@ Inside the new playbook, add the following:
 
 The playbook uses the `docker_image` module to build an image. Provide a name for the image, the path to the Dockerfile (in this case, inside the `test` directory), and tell Ansible via the `state` parameter whether the image should be `present`, `absent`, or built (via `build`).
 
-I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker-py` package. On other distributions, you may need to install `docker-py` via Pip.
+I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker` package. On other distributions, you may need to install the `docker` Python library via Pip (`pip install docker`).
 
 Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker images (`$ docker images`). If all was successful, you should see a fresh `test` image in the list.
 
@@ -1681,10 +1681,10 @@ Angstwad's `docker_ubuntu` role requires no additional settings or configuration
       become: yes
     
     - name: Install Docker Python library.
-      pip: name=docker-py state=present
+      pip: name=docker state=present
       become: yes
 
-Ansible needs the `docker-py` library in order to control Docker via Python, so we install `pip`, then use it to install `docker-py`.
+Ansible needs the `docker` Python library in order to control Docker via Python, so we install `pip`, then use it to install `docker`.
 
 Next is the meat of the playbook: `docker.yml` (also in the `provisioning` directory). The first task is to build Docker images for our data, application, and database containers:
 

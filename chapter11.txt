@@ -138,7 +138,7 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
     VAGRANTFILE_API_VERSION = "2"
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.vm.box = "geerlingguy/centos7"
+      config.vm.box = "geerlingguy/ubuntu1604"
       config.vm.hostname = "jenkins.dev"
       config.vm.network :private_network, ip: "192.168.76.76"
       config.ssh.insert_key = false
@@ -154,7 +154,7 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
       end
     end
 
-This Vagrantfile will create a new VM running CentOS 7, with the IP address `192.168.76.76` and the hostname `jenkins.dev`. Go ahead and add an entry for `192.168.76.76  jenkins.dev` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
+This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.dev`. Go ahead and add an entry for `192.168.76.76  jenkins.dev` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
 
 {lang="text"}
     ---
