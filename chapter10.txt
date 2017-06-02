@@ -437,7 +437,7 @@ But logs are completely worthless if they aren't being populated with effective 
 
 Only you will know what logs are the most important to monitor on your servers, but some of the most common ones are database slow query logs, webserver access and error logs, authorization logs, and cron logs. Use tools like the ELK stack (demonstrated in a cookbook in Chapter 8), Munin, Nagios, or even a hosted service to make sure logs are populated and monitored.
 
-Additionally, you should always make sure log files are rotated and archived (according to your infrastructure's needs) using a tool like `logrotate`, and you should have monitoring enabled on log file sizes so you have an early warning when a particular log file or directory grows a bit too large. There are a number of `logrotate` roles on Ansible Galaxy (e.g. [Nick Hammond's `logrotate` role](https://galaxy.ansible.com/list#/roles/1117)) that make rotation configuration easy.
+Additionally, you should always make sure log files are rotated and archived (according to your infrastructure's needs) using a tool like `logrotate`, and you should have monitoring enabled on log file sizes so you have an early warning when a particular log file or directory grows a bit too large. There are a number of `logrotate` roles on Ansible Galaxy (e.g. [Nick Hammond's `logrotate` role](https://galaxy.ansible.com/nickhammond/logrotate/)) that make rotation configuration easy.
 
 ## Monitor logins and block suspect IP addresses
 
@@ -506,7 +506,7 @@ This chapter contains a broad overview of some Linux security best practices, an
   - [20 Linux Server Hardening Security Tips](http://www.cyberciti.biz/tips/linux-security.html)
   - [Unix and Linux System Administration Handbook](http://www.admin.com/)
 
-Much of the security configuration in this chapter is encapsulated in a role on Ansible Galaxy, for use on your own servers: [security role by geerlingguy](https://galaxy.ansible.com/list#/roles/1030).
+Much of the security configuration in this chapter is encapsulated in a role on Ansible Galaxy, for use on your own servers: [security role by geerlingguy](https://galaxy.ansible.com/geerlingguy/security/).
 
 {lang="text",linenos=off}
      _____________________________________

@@ -882,7 +882,7 @@ Many developers who deal with Ruby applications are familiar with [Capistrano](h
 Capistrano does a lot more than that basic deployment model, but many people want to replicate a simple application deployment workflow (which also makes rollbacks easy, since you just revert the symlink to the previous release directory!). This is easy to do with Ansible, and rather than walk you through the entire process in this book, I'll point you to a few great resources and an Ansible Galaxy role that coordinates Capistrano-style deployments with ease:
 
   - [Rebuilding Capistrano-like deployment with Ansible](http://blog.versioneye.com/2014/09/24/rebuilding-capistrano-like-deployment-with-ansible/)
-  - [project_deploy role on Ansible Galaxy](https://galaxy.ansible.com/list#/roles/732)
+  - [project_deploy role on Ansible Galaxy](https://github.com/f500/ansible-project_deploy)
   - [Thoughts on deploying with Ansible](http://www.future500.nl/articles/2014/07/thoughts-on-deploying-with-ansible/) (background for the above role)
   - [Ansible project-deploy](http://www.slideshare.net/ramondelafuente/ansible-projectdeploy) (presentation about the above role)
 

@@ -404,7 +404,7 @@ For simple package installation and configuration roles, you can get by with pla
 
 As a rule of thumb, I keep my playbook and role task files under 100 lines of YAML if at all possible. It's easier to keep the entire set of tasks in my head while making changes or fixing bugs. If I start nearing that limit, I usually split the tasks into logical groupings, and include files from the `main.yml` file.
 
-Let's take a look at the way my `geerlingguy.apache` role is set up (it's [available on Ansible Galaxy](https://galaxy.ansible.com/list#/roles/428) and can be downloaded to your roles directory with the command `ansible-galaxy install geerlingguy.apache`; we'll discuss Ansible Galaxy itself later).
+Let's take a look at the way my `geerlingguy.apache` role is set up (it's [available on Ansible Galaxy](https://galaxy.ansible.com/geerlingguy/apache/) and can be downloaded to your roles directory with the command `ansible-galaxy install geerlingguy.apache`; we'll discuss Ansible Galaxy itself later).
 
 Initially, the role's main `tasks/main.yml` file looked something like the following (generally speaking):
 
@@ -562,7 +562,7 @@ Now we have a fully-functional Solr server, and we could add some variables to c
 
 I could've also left out the `java` and `tomcat6` roles, since they'll be automatically picked up during installation of the `geerlingguy.solr` role (they're listed in the `solr` role's dependencies).
 
-A role's page on the Ansible Galaxy website highlights available variables for setting things like what version of Solr to install, where to install it, etc. For an example, view the [geerlingguy.solr Galaxy page](https://galaxy.ansible.com/list#/roles/445).
+A role's page on the Ansible Galaxy website highlights available variables for setting things like what version of Solr to install, where to install it, etc. For an example, view the [geerlingguy.solr Galaxy page](https://galaxy.ansible.com/geerlingguy/solr/).
 
 You can build a wide variety of servers with minimal effort with existing contributed roles on Galaxy. Instead of having to maintain lengthy playbooks and roles unique to each server, Galaxy lets you build a list of the required roles, and a few variables that set up the servers with the proper versions and paths. Configuration management with Ansible Galaxy becomes *true* configuration management---you get to spend more time managing your server's configuration, and less time on packaging and building individual services!
 
