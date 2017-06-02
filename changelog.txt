@@ -6,12 +6,16 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
+  - No known errata at this time.
+  - **- Website updated to this point ----------------------------------------**
+
+## Version 1.15 (2017-06-01)
+
   1. Updated the `creates` examples in chapter 4's Drupal example to be Composer-specific (thanks to @santisaez!).
   2. Updated the Drupal example to default to Drupal `8.2.x` (was `8.1.x`).
   3. Updated the Drupal example to use PHP 7.1 instead of 7.0.
   4. Updated the Drupal example to install Ondrej's updated and maintained PPA (thanks to @jonleibowitz!).
   5. Rewrote appendix a in light of the Windows 10 WSL and Bash on Ubuntu on Windows.
-  **--------------------- Website updated to this point ----------------------**
   6. Updated documentation to switch from deprecated `always_run: yes` to `check_mode: no`.
   7. Fixed Node.js rolling deployment example's `forever` usage in chapter 9 (thanks to @mattjmcnaughton!).
   8. Fixed bare variable warning for `environment` setting in chapter 9 Rails deployment playbook.
