@@ -334,8 +334,8 @@ We'll now use `forever` (which we installed earlier) to start the app.
     
         - name: Start example Node.js app.
           command: "forever start {{ node_apps_location }}/app/app.js"
-          when: "forever_list.stdout.find('{{ node_apps_location }}/\
-    app/app.js') == -1"
+          when: "forever_list.stdout.find(node_apps_location + \
+    '/app/app.js') == -1"
 
 In the first play, we're doing two new things:
 

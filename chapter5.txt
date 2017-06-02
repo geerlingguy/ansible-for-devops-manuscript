@@ -249,8 +249,8 @@ In the previous chapter, we used `register` to get the output of the `forever li
     
     - name: "Node: Start example Node.js app."
       command: forever start {{ node_apps_location }}/app/app.js
-      when: "forever_list.stdout.find('{{ node_apps_location}}/\
-    app/app.js') == -1"
+      when: "forever_list.stdout.find(node_apps_location + \
+    '/app/app.js') == -1"
 
 In that example, we used a string function built into Python (`find`) to search for the path to our app, and if it was not present, the Node.js app was started.
 
