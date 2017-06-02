@@ -22,6 +22,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   13. Switched Jenkins example in chapter 11 to use Ubuntu 16.04 since CentOS 7 doesn't include Java 8 by default.
   14. Removed deprecated `{{ var }}` syntax from Node.js `when` clauses in examples in chapters 4 and 5.
   15. Fixed links to various Ansible Galaxy roles that were 404'ing.
+  16. Updated Solr example in chapter 4 to use Solr 6.5.1.
 
 ## Version 1.14 (2016-11-23)
 

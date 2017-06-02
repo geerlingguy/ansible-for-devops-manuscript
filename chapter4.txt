@@ -734,8 +734,8 @@ Let's quickly create the `vars.yml` file, while we're thinking about it. Create 
 {lang="text"}
     download_dir: /tmp
     solr_dir: /opt/solr
-    solr_version: 6.1.0
-    solr_checksum: sha1:41045799ed9b5f826b0dcab4b28b3b1986afa523
+    solr_version: 6.5.1
+    solr_checksum: sha1:2cc43b837743949a46bd7efbab14b43f6d92b4b8
 
 These variables define two paths we'll use while downloading and installing Apache Solr, and the version and file download checksum for downloading Apache Solr's source.
 
