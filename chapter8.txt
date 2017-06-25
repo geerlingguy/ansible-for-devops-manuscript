@@ -1526,7 +1526,7 @@ Let's start with a really simple Dockerfile:
 {lang="text"}
     # Build an example Docker container image.
     FROM busybox
-    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+    LABEL maintainer="Jeff Geerling"
     
     # Run a command when the container starts.
     CMD ["/bin/true"]
@@ -1771,7 +1771,7 @@ For the data storage container, we don't need much; we just need to create a dir
 {lang="text"}
     # Build a simple MySQL data volume Docker container.
     FROM busybox
-    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+    LABEL maintainer="Jeff Geerling"
     
     # Create data volume for MySQL.
     RUN mkdir -p /var/lib/mysql
@@ -1847,7 +1847,7 @@ Now that we have the app defined, we need to build the container to run the app.
 {lang="text"}
     # A simple Flask app container.
     FROM ansible/ubuntu14.04-ansible
-    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+    LABEL maintainer="Jeff Geerling"
     
     # Install Flask app dependencies.
     RUN apt-get install -y libmysqlclient-dev python-dev
@@ -1965,7 +1965,7 @@ Next comes the Dockerfile, where we'll make sure the `playbook.yml` playbook and
 {lang="text"}
     # A simple MySQL container.
     FROM ansible/ubuntu14.04-ansible
-    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+    LABEL maintainer="Jeff Geerling"
     
     # Install required Ansible roles.
     RUN ansible-galaxy install geerlingguy.mysql

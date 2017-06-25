@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - No known errata at this time.
+  1. Updated example `Dockerfile`s; removed usage of deprecated `MAINTAINER` property.
   - **- Website updated to this point ----------------------------------------**
 
 ## Version 1.15 (2017-06-01)
