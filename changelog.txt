@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. Updated Includes and Role vars examples in chapter 6 to use `with_items: "{{ variable }}"` syntax.
   4. Fixed with_items and with_indexed_items syntax in chapter 8 AWS LAMP infrastructure example (thanks to @Ben K!).
   5. Switch the `memcached_listen_ip` to `0.0.0.0` in chapter 8 LAMP infrastructure example so Memcached starts more reliably.
+  6. Use 64-bit CentOS image in chapter 8 DigitalOcean LAMP infrastructure example (thanks to @mattjmcnaughton!).
   - **- Website updated to this point ----------------------------------------**
 
 ## Version 1.15 (2017-06-01)
