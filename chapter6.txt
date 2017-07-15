@@ -39,7 +39,7 @@ Just like with variable include files, tasks are formatted in a flat list in the
         owner: "{{ username }}"
         group: "{{ username }}"
         mode: 0600
-      with_items: ssh_private_keys
+      with_items: "{{ ssh_private_keys }}"
     
     - name: Restart example service.
       service: name=example state=restarted
@@ -298,7 +298,7 @@ Modify the `tasks/main.yml` file to use a list variable and iterate through the 
     
     - name: Install npm modules required by our app.
       npm: name={{ item }} global=yes state=present
-      with_items: node_npm_modules
+      with_items: "{{ node_npm_modules }}"
 
 Let's provide a sane default for the new `node_npm_modules` variable in `defaults/main.yml`:
 
