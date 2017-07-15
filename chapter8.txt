@@ -309,9 +309,9 @@ In our `vars.yml` file (again, alongside `main.yml`), add the following:
       - "iptables -A INPUT -p tcp --dport 11211 -s \
       {{ groups['lamp-www'][1] }} -j ACCEPT"
     
-    memcached_listen_ip: "{{ groups['lamp-memcached'][0] }}"
+    memcached_listen_ip: "0.0.0.0"
 
-We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to the server's IP address so it will accept connections through IP.
+We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to all interfaces so it will accept connections through the server's network interface.
 
 W> The **principle of least privilege** "requires that in a particular abstraction layer of a computing environment, every module ... must be able to access only the information and resources that are necessary for its legitimate purpose" (Source: [Wikipedia](http://en.wikipedia.org/wiki/Principle_of_least_privilege)). Always restrict services and ports to only those servers or users that need access!
 
@@ -772,7 +772,7 @@ Now that we have all the data we need to set up security groups and instances, o
             state: present
             rules: "{{ item.rules }}"
             rules_egress: "{{ item.rules_egress }}"
-          with_items: security_groups
+          with_items: "{{ security_groups }}"
 
 The `ec2_group` requires a name, region, and rules for each security group. Security groups will be created if they don't exist, modified to match the supplied values if they do exist, or verified if they both exist and match the given values.
 
@@ -781,7 +781,7 @@ With the security groups configured, we can provision the defined EC2 instances 
 {lang="text",starting-line-number=75}
         - name: Provision EC2 instances.
           ec2:
-            key_name: "{{ item.ssh_key | default('jeff_mba_home') }}"
+            key_name: "{{ item.ssh_key | default('lamp_aws') }}"
             instance_tags:
               inventory_group: "{{ item.group | default('') }}"
               inventory_host: "{{ item.name | default('') }}"
@@ -796,11 +796,11 @@ With the security groups configured, we can provision the defined EC2 instances 
               inventory_group: "{{ item.group | default('') }}"
               inventory_host: "{{ item.name | default('') }}"
           register: created_instances
-          with_items: instances
+          with_items: "{{ instances }}"
 
 This example is slightly more complex than the DigitalOcean example, and a few parts warrant a deeper look:
 
-  - EC2 allows SSH keys to be defined by name---in my case, I have a key `jeff_mba_home` in my AWS account. You should set the `key_name` default to a key that you have in your account.
+  - EC2 allows SSH keys to be defined by name---in my case, I have a key `lamp_aws` in my AWS account. You should set the `key_name` default to a key that you have in your account.
   - Instance tags are tags that AWS will attach to your instance, for categorization purposes. By giving a list of keys and values, I can then use that list later in the `count_tag` parameter.
   - `t2.micro` was used as the default instance type, since it falls within EC2's free tier usage. If you just set up an account and keep all AWS resource usage within free tier limits, you won't be billed anything.
   - `exact_count` and `count_tag` work together to ensure AWS provisions only one of each of the instances we defined. The `count_tag` tells the `ec2` module to match the given group + host and then `exact_count` tells the module to only provision `1` instance. If you wanted to *remove* all your instances, you could set `exact_count` to 0 and run the playbook again.
@@ -819,7 +819,7 @@ Each provisioned instance will have its metadata added to the registered `create
               else 'slave' }}
             mysql_server_id: "{{ item.0 }}"
           when: item.1.instances is defined
-          with_indexed_items: created_instances.results
+          with_indexed_items: "{{ created_instances.results }}"
 
 This `add_host` example is slightly simpler than the one for DigitalOcean, because AWS attaches metadata to EC2 instances which we can re-use when building groups or hostnames (e.g. `item.1.item.group`). We don't have to use list indexes to fetch group names from the original `instances` variable.
 
