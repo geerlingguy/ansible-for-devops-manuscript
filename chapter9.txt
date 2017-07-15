@@ -818,7 +818,7 @@ Create another playbook alongside `provision.yml` called `deploy.yml`, with the 
             socket: /var/lib/haproxy/stats
             backend: habackend
           delegate_to: "{{ item }}"
-          with_items: groups.balancer
+          with_items: "{{ groups.balancer }}"
     
       tasks:
         - debug: msg="Deployment would be done here."
@@ -838,7 +838,7 @@ Create another playbook alongside `provision.yml` called `deploy.yml`, with the 
             socket: /var/lib/haproxy/stats
             backend: habackend
           delegate_to: "{{ item }}"
-          with_items: groups.balancer
+          with_items: "{{ groups.balancer }}"
 
 This playbook doesn't do much in terms of actual deployment, but it does illustrate how to do a zero-downtime rolling update over two or more application servers:
 

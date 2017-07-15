@@ -7,6 +7,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Current Version
 
   1. Updated example `Dockerfile`s; removed usage of deprecated `MAINTAINER` property.
+  2. Updated HAProxy example in chapter 9 to use `with_items: "{{ variable }}"` syntax.
   - **- Website updated to this point ----------------------------------------**
 
 ## Version 1.15 (2017-06-01)
