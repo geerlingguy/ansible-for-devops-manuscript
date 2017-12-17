@@ -1,0 +1,38 @@
+# Chapter 12 - Automating HTTPS and TLS Certificates
+
+TODO: Introduction.
+
+## Generating Self-Signed Certificates with Ansible
+
+TODO: Ansible 2.4 and later includes new modules to ease the process of generating self-signed certs.
+
+## Automating Let's Encrypt with Ansible for free Certs
+
+TODO: Use Ansible to install and configure certbot, which can automate the process of generating and renewing TLS certificates.
+
+## Configuring Nginx to proxy HTTP traffic
+
+TODO: Use Nginx to proxy HTTP traffic and serve it over HTTPS.
+
+## Securing a Jenkins CI Server using Nginx and Let's Encrypt
+
+TODO: Use Nginx to proxy HTTPS traffic to a Jenkins instance.
+
+### Local testing with a Self-Signed Certificate
+
+TODO: Testing your CI tools with CI.
+
+## Summary
+
+TODO: Summary.
+
+{lang="text",linenos=off}
+     ____________________________________________
+    / Fool me once, shame on you. Fool me twice, \
+    \ prepare to die. (Klingon Proverb)          /
+     --------------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

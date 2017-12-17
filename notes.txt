@@ -2,10 +2,8 @@
 
 ## TODO
 
-  - Vagrant 1.8.0 ansible_local - replace all stuff about JJG-Ansible-Windows
   - Ansible 2.0:
     - Ansible `package` module for cross-platform use: https://raymii.org/s/tutorials/Ansible_-_Only_if_on_specific_distribution_or_distribution_version.html
-  - Use `become` instead of `sudo`: https://github.com/geerlingguy/ansible-for-devops/issues/22
   - [Galaxy 2.0](http://www.ansible.com/blog/galaxy-2.0-beta): Investigate what, if anything, should be updated.
   - Travis CI testing: Docker-based tests - see if I can reformat that chapter some.
     - https://bertvv.github.io/notes-to-self/2015/12/13/testing-ansible-roles-with-travis-ci-part-2-multi-platform-tests/
