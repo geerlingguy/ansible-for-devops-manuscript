@@ -150,7 +150,7 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
       # Ansible provisioning.
       config.vm.provision "ansible" do |ansible|
         ansible.playbook = "provision.yml"
-        ansible.sudo = true
+        ansible.become = true
       end
     end
 

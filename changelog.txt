@@ -16,6 +16,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   7. Updated URLs for Cobbler and Func in introduction (thanks to @codeyy!).
   8. Added chapter 12: "Automating HTTPS and TLS Certificates".
   9. Switch from using '.dev' to '.test' for local domains.
+  10. Switch from using `ansible.sudo` to `ansible.become` in Vagrantfiles.
 
 ## Version 1.15 (2017-06-01)
 

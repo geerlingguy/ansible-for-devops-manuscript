@@ -50,7 +50,7 @@ Begin by creating a new Vagrant VM for local testing using the following Vagrant
     
       config.vm.provision "ansible" do |ansible|
         ansible.playbook = "playbooks/main.yml"
-        ansible.sudo = true
+        ansible.become = true
       end
     
     end

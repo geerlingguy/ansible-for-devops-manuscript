@@ -979,7 +979,7 @@ If you want to get this ELK server up and running quickly, you can create a loca
         logs.vm.provision :ansible do |ansible|
           ansible.playbook = "provisioning/elk/playbook.yml"
           ansible.inventory_path = "provisioning/elk/inventory"
-          ansible.sudo = true
+          ansible.become = true
         end
       end
     
@@ -1025,7 +1025,7 @@ Let's begin by creating a new Nginx web server. (It's useful to monitor webserve
         webs.vm.provision :ansible do |ansible|
           ansible.playbook = "provisioning/web/playbook.yml"
           ansible.inventory_path = "provisioning/web/inventory"
-          ansible.sudo = true
+          ansible.become = true
         end
       end
 
