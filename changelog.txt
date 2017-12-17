@@ -14,6 +14,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   6. Use 64-bit CentOS image in chapter 8 DigitalOcean LAMP infrastructure example (thanks to @mattjmcnaughton!).
   - **- Website updated to this point ----------------------------------------**
   7. Updated URLs for Cobbler and Func in introduction (thanks to @codeyy!).
+  8. Added chapter 12: "Automating HTTPS and TLS Certificates"
 
 ## Version 1.15 (2017-06-01)
 

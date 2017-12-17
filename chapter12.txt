@@ -1,10 +1,20 @@
 # Chapter 12 - Automating HTTPS and TLS Certificates
 
-TODO: Introduction.
+Today's application environment almost always requires the use of HTTP (and HTTPS) for certain traffic---end users interacting with a website, microservices communicating with each other internally or via the public internet, or external APIs interacting with your apps.
+
+HTTPS was originally used only for sensitive transactions, like banking transactions or secure web forms. It also used to require a non-negligible amount of extra server processing power to encrypt data. But today, when Google boosts search results for HTTPS-only sites, and when processors barely show a difference with encrypted or unencrypted traffic, it's almost universally understood that all HTTP services should be served via `https://`.
+
+Traditionally, one blocker to using HTTPS _everywhere_ was that certificates were sometimes difficult to acquire, manage, and renew. And they were also expensive!
+
+Nowadays, between Let's Encrypt's free certificates, wildcard certs that are more affordable, and almost universal Server Name Indication (SNI) support, there is almost never an excuse _not_ to use HTTPS...
+
+Except for the fact that certificates have traditionally been tricky to use with automation. This chapter will show how Ansible solves this last problem by managing certificates and configuring all HTTP traffic to be secure!
 
 ## Generating Self-Signed Certificates with Ansible
 
 TODO: Ansible 2.4 and later includes new modules to ease the process of generating self-signed certs.
+
+See: https://www.jeffgeerling.com/blog/2017/generating-self-signed-openssl-certs-ansible-24s-crypto-modules
 
 ## Automating Let's Encrypt with Ansible for free Certs
 
