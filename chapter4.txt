@@ -477,8 +477,8 @@ We also need to add a VirtualHost entry to give Apache the site's document root 
     
         - name: Add Apache virtualhost for Drupal 8 development.
           template:
-            src: "templates/drupal.dev.conf.j2"
-            dest: "/etc/apache2/sites-available/{{ domain }}.dev.conf"
+            src: "templates/drupal.test.conf.j2"
+            dest: "/etc/apache2/sites-available/{{ domain }}.test.conf"
             owner: root
             group: root
             mode: 0644
@@ -486,8 +486,8 @@ We also need to add a VirtualHost entry to give Apache the site's document root 
     
         - name: Symlink Drupal virtualhost to sites-enabled.
           file:
-            src: "/etc/apache2/sites-available/{{ domain }}.dev.conf"
-            dest: "/etc/apache2/sites-enabled/{{ domain }}.dev.conf"
+            src: "/etc/apache2/sites-available/{{ domain }}.test.conf"
+            dest: "/etc/apache2/sites-enabled/{{ domain }}.test.conf"
             state: link
           notify: restart apache
     
@@ -501,13 +501,13 @@ The first command enables all the required Apache modules by symlinking them fro
 
 The second command copies a Jinja2 template we define inside a `templates` folder to Apache's `sites-available` folder, with the correct owner and permissions. Additionally, we `notify` the `restart apache` handler, because copying in a new VirtualHost means Apache needs to be restarted to pick up the change.
 
-Let's look at our Jinja2 template (denoted by the extra `.j2` on the end of the filename), `drupal.dev.conf.j2`:
+Let's look at our Jinja2 template (denoted by the extra `.j2` on the end of the filename), `drupal.test.conf.j2`:
 
 {lang="jinja"}
     <VirtualHost *:80>
         ServerAdmin webmaster@localhost
-        ServerName {{ domain }}.dev
-        ServerAlias www.{{ domain }}.dev
+        ServerName {{ domain }}.test
+        ServerAlias www.{{ domain }}.test
         DocumentRoot {{ drupal_core_path }}
         <Directory "{{ drupal_core_path }}">
             Options FollowSymLinks Indexes
@@ -527,10 +527,10 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
     # The path where Drupal will be downloaded and installed.
     drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
     
-    # The resulting domain will be [domain].dev (with .dev appended).
-    domain: "drupaltest"
+    # The resulting domain will be [domain].test (with .test appended).
+    domain: "drupal"
 
-Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.2.x-dev` and `drupaltest` (or whatever values you'd like!).
+Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.2.x-dev` and `drupal` (or whatever values you'd like!).
 
 The last two tasks (lines 72-83) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
@@ -702,7 +702,7 @@ To run the playbook on a server (either via a local VM for testing or on another
 {lang="text",linenos=off}
     $ ansible-playbook playbook.yml
 
-After the playbook completes, if you access the server at http://drupaltest.dev/ (assuming you've pointed drupaltest.dev to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
+After the playbook completes, if you access the server at http://drupal.test/ (assuming you've pointed drupal.test to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
 
 {width=60%}
 ![Drupal 8 default home page.](images/4-playbook-drupal-home.png)
@@ -819,7 +819,7 @@ Finally, we need a task that runs at the end of the playbook to make sure Apache
         - name: Ensure solr is started and enabled on boot.
           service: name=solr state=started enabled=yes
 
-Run the playbook with `$ ansible-playbook playbook.yml`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://solr.dev:8983/solr (where 'solr.dev' is your server's hostname or IP address):
+Run the playbook with `$ ansible-playbook playbook.yml`, and after a few minutes (depending on your server's Internet connection speed), you should be able to access the Solr admin interface at http://solr.test:8983/solr (where 'solr.test' is your server's hostname or IP address):
 
 {width=60%}
 ![Solr Admin page.](images/4-playbook-solr-admin.png)

@@ -139,7 +139,7 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       config.vm.box = "geerlingguy/ubuntu1604"
-      config.vm.hostname = "jenkins.dev"
+      config.vm.hostname = "jenkins.test"
       config.vm.network :private_network, ip: "192.168.76.76"
       config.ssh.insert_key = false
     
@@ -154,7 +154,7 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
       end
     end
 
-This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.dev`. Go ahead and add an entry for `192.168.76.76  jenkins.dev` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
+This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
 
 {lang="text"}
     ---
@@ -193,7 +193,7 @@ To build the VM and run the playbook, do the following (inside the `jenkins` fol
   1. Run `ansible-galaxy install -r requirements.yml` to install the required roles.
   2. Run `vagrant up` to build the VM and install and configure Jenkins.
 
-After a few minutes, the provisioning should complete, and you should be able to access Jenkins at `http://jenkins.dev:8080/` (if you configured the hostname in your hosts file).
+After a few minutes, the provisioning should complete, and you should be able to access Jenkins at `http://jenkins.test:8080/` (if you configured the hostname in your hosts file).
 
 ### Create an Ansible playbook on the Jenkins server
 
@@ -218,7 +218,7 @@ If you want, test the playbook while you're logged in: `ansible-playbook main.ym
 
 ### Create a Jenkins job to run an Ansible Playbook
 
-With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.dev:8080/`, and once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
+With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.test:8080/`, and once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
 
   - Under 'Build Environment', check the 'Color ANSI Console Output' option. This allows Ansible's helpful colored output to pass through the Jenkins console, so it is easier to read during and after the run.
   - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:

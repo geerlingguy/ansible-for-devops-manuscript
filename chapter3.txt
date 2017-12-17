@@ -59,19 +59,19 @@ To begin, create a new folder somewhere on your local drive (I like using `~/VMs
     
       # Application server 1.
       config.vm.define "app1" do |app|
-        app.vm.hostname = "orc-app1.dev"
+        app.vm.hostname = "orc-app1.test"
         app.vm.network :private_network, ip: "192.168.60.4"
       end
     
       # Application server 2.
       config.vm.define "app2" do |app|
-        app.vm.hostname = "orc-app2.dev"
+        app.vm.hostname = "orc-app2.test"
         app.vm.network :private_network, ip: "192.168.60.5"
       end
     
       # Database server.
       config.vm.define "db" do |db|
-        db.vm.hostname = "orc-db.dev"
+        db.vm.hostname = "orc-db.test"
         db.vm.network :private_network, ip: "192.168.60.6"
       end
     end
@@ -144,13 +144,13 @@ You may have noticed that the command was not run on each server in the order yo
 {lang="text",linenos=off}
     # First run results:                # Second run results:
     192.168.60.5 | success | rc=0 >>    192.168.60.6 | success | rc=0 >>
-    orc-app2.dev                        orc-db.dev
+    orc-app2.test                       orc-db.test
     
     192.168.60.6 | success | rc=0 >>    192.168.60.5 | success | rc=0 >>
-    orc-db.dev                          orc-app2.dev
+    orc-db.test                         orc-app2.test
     
     192.168.60.4 | success | rc=0 >>    192.168.60.4 | success | rc=0 >>
-    orc-app1.dev                        orc-app1.dev
+    orc-app1.test                       orc-app1.test
 
 By default, Ansible will run your commands in parallel, using multiple process forks, so the command will complete more quickly. If you're managing a few servers, this may not be much quicker than running the command serially, on one server after the other, but even managing 5-10 servers, you'll notice a dramatic speedup if you use Ansible's parallelism (which is enabled by default).
 
@@ -159,13 +159,13 @@ Run the same command again, but this time, add the argument `-f 1` to tell Ansib
 {lang="text",linenos=off}
     $ ansible multi -a "hostname" -f 1
     192.168.60.4 | success | rc=0 >>
-    orc-app1.dev
+    orc-app1.test
     
     192.168.60.5 | success | rc=0 >>
-    orc-app2.dev
+    orc-app2.test
     
     192.168.60.6 | success | rc=0 >>
-    orc-db.dev
+    orc-db.test
 
 Run the same command over and over again, and it will always return results in the same order. It's fairly rare that you will ever need to do this, but it's much more frequent that you'll want to *increase* the value (like `-f 10`, or `-f 25`... depending on how much your system and network connection can handle) to speed up the process of running commands on tens or hundreds of servers.
 
