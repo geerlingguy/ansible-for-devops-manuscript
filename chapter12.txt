@@ -12,9 +12,245 @@ Except for the fact that certificates have traditionally been tricky to use with
 
 ## Generating Self-Signed Certificates with Ansible
 
-TODO: Ansible 2.4 and later includes new modules to ease the process of generating self-signed certs.
+Whenever I'm building and testing a new server configuration that requires TLS connections (typically HTTPS traffic over port 443), I need to use one or more valid certificates which can be accepted by a browser user, or by something like `curl`, so I can verify my TLS configuration is correct.
 
-See: https://www.jeffgeerling.com/blog/2017/generating-self-signed-openssl-certs-ansible-24s-crypto-modules
+Ansible 2.4 makes generating self-signed certificates easy, at least as of Ansible 2.4. There are four `openssl_*` crypto-related modules useful in generating certificates:
+
+  - `openssl_certificate` - Generate and/or check OpenSSL certificates
+  - `openssl_csr` - Generate OpenSSL Certificate Signing Request (CSR)
+  - `openssl_privatekey` - Generate OpenSSL private keys
+  - `openssl_publickey` - Generate an OpenSSL public key from its private key
+
+In order to use these modules, you need OpenSSL installed, and also one extra Python dependency used by Ansible to interact with OpenSSL, the `pyOpenSSL` library.
+
+To quickly illustrate how to generate a self-signed certificate, here's the list of tasks involved:
+
+{lang="text",linenos=off}
+    - name: Ensure directory exists for local self-signed TLS certs.
+      file:
+        path: /etc/ssl/certs/example
+        state: directory
+    
+    - name: Generate an OpenSSL private key.
+      openssl_privatekey:
+        path: /etc/ssl/certs/example/privkey.pem
+    
+    - name: Generate an OpenSSL CSR.
+      openssl_csr:
+        path: /etc/ssl/certs/example/example.csr
+        privatekey_path: /etc/ssl/certs/example/privkey.pem
+        common_name: "example.com"
+    
+    - name: Generate a Self Signed OpenSSL certificate.
+      openssl_certificate:
+        path: /etc/ssl/certs/example/fullchain.pem
+        privatekey_path: /etc/ssl/certs/example/privkey.pem
+        csr_path: /etc/ssl/private/example/example.csr
+        provider: selfsigned
+
+These tasks ensure there's a directory inside which the certificate will live, then creates a private key and Certificate Signing Request (CSR), and finally uses both of those to generate the cert.
+
+You can then use this certificate to serve HTTPS requests using a webserver; for example, in an Nginx `server` configuration:
+
+{lang="text",linenos=off}
+    server {
+        listen 443 ssl default_server;
+        server_name example.com;
+    
+        ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+        ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+        ...
+    }
+
+Let's put together a full playbook, then, using the `openssl_*` modules along with Nginx, to build a server complete with a self-signed certificate and a secure Nginx TLS configuration, which is completely idempotent.
+
+### Idempotent Nginx HTTPS playbook with a self-signed cert
+
+For the sake of convenience, this example will target a Debian 9 server (though it would be mostly unchanged for any other distribution), and there's a fully tested example included in this book's GitHub repository: [HTTPS Self-Signed Certificate Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-self-signed).
+
+Create a new folder for the Self-Signed Certificate webserver playbook, and add a `main.yml` playbook:
+
+{lang="text"}
+    ---
+    - hosts: all
+    
+      vars_files:
+        - vars/main.yml
+    
+      pre_tasks:
+        - name: Ensure apt cache is updated.
+          apt: update_cache=yes cache_valid_time=600
+
+To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later).
+
+Next, to save some time, we can rely on some Ansible Galaxy roles to install and configure some required software on the server:
+
+{lang="text",starting-line-number=11}
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.pip
+        - geerlingguy.nginx
+
+We use the `firewall` role to configure `iptables` to only allow traffic to the server on certain ports, `pip` to install Python's Pip package manager and the required `pyOpenSSL` library, and `nginx` to install and configure Nginx.
+
+To get these roles installed, add a `requirements.yml` file to your playbook directory, with the contents:
+
+{lang="text"}
+    ---
+    - src: geerlingguy.firewall
+    - src: geerlingguy.pip
+    - src: geerlingguy.nginx
+
+Then run `ansible-galaxy install -r requirements.yml` to install the roles.
+
+T> In most cases, you should create an `ansible.cfg` in the playbook directory, with at least the following contents:
+T> 
+T> {lang="text",linenos=off}
+T> ~~~~~~~~~~~~~~~
+T> [defaults]
+T> roles_path = ./roles
+T> ~~~~~~~~~~~~~~~
+T> 
+T> This way, role dependencies are installed inside the playbook directory itself instead of in your system-wide roles directory (as long as you run the `ansible-galaxy` command inside the playbook directory).
+
+Now let's define a few variables to make the `firewall`, `pip`, and `nginx` roles configure things how we want:
+
+{lang="text"}
+    # Firewall settings.
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+      - "443"
+    
+    # Python settings.
+    pip_package: python3-pip
+    pip_install_packages: ['pyopenssl']
+    
+    # Nginx settings.
+    nginx_vhosts: []
+    nginx_remove_default_vhost: True
+    nginx_ppa_use: True
+    nginx_ppa_version: stable
+    nginx_docroot: /var/www/html
+
+For the firewall, you need port 22 open for remote SSH access, port 80 for HTTP requests (which we'll redirect to HTTPS), and 443 for HTTPS.
+
+For Pip, we need to make sure the right version of pip is installed (so `python3-pip` for Debian 9, which has Python 3 installed by default), and we tell it to install the latest version of the `pyopenssl` package.
+
+For Nginx, we want the default virtual host (server) which comes with the distro package install to be removed, we want to set the role's vhosts to an empty array (since we'll manage Nginx `server` configuration ourselves), and finally we'll use the docroot `/var/www/html`.
+
+Now that we have all the base packages installed and configured, the next step is to generate the self-signed certificate. To keep our playbook clean, the required tasks can go into an imported task file, imported in the `main.yml` like so:
+
+{lang="text",starting-line-number=16}
+      tasks:
+        - import_tasks: tasks/self-signed-cert.yml
+
+Create a `tasks` folder, and create a `self-signed-cert.yml` task file inside. We'll place the tasks that create the key, generate the CSR, and generate the cert into this file:
+
+{lang="text"}
+    ---
+    - name: Ensure directory exists for local self-signed TLS certs.
+      file:
+        path: "{{ certificate_dir }}/{{ server_hostname }}"
+        state: directory
+    
+    - name: Generate an OpenSSL private key.
+      openssl_privatekey:
+        path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+    
+    - name: Generate an OpenSSL CSR.
+      openssl_csr:
+        path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
+        privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+        common_name: "{{ server_hostname }}"
+    
+    - name: Generate a Self Signed OpenSSL certificate.
+      openssl_certificate:
+        path: "{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem"
+        privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+        csr_path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
+        provider: selfsigned
+
+We added a two variables which we'll now define in the `vars/main.yml` file (using variables makes it easier to change the site and/or refactor to allow multiple values in the future). Add these variables to the vars file:
+
+{lang="text",starting-line-number=19}
+    # Self-signed certificate settings.
+    certificate_dir: /etc/ssl/private
+    server_hostname: https.test
+
+Now that the playbook can generate a certificate (or on future runs, idempotently verify the certificate's existence), we need to configure Nginx to use the cert to deliver traffic using TLS for a particular URL.
+
+The `geerlingguy.nginx` role took care of the majority of Nginx configuration, but we disabled that role's management of virtual hosts, in favor of managing a single virtual host (or `server` directive) ourselves. The following tasks copy an example landing page into a defined docroot, then our custom HTTPS `server` configuration to use the generated cert for the docroot:
+
+{lang="text",starting-line-number=19}
+        - name: Ensure docroot exists.
+          file:
+            path: "{{ nginx_docroot }}"
+            state: directory
+    
+        - name: Copy example index.html file in place.
+          copy:
+            src: files/index.html
+            dest: "{{ nginx_docroot }}/index.html"
+            mode: 0755
+    
+        - name: Copy Nginx server configuration in place.
+          template:
+            src: templates/https.test.conf.j2
+            dest: /etc/nginx/sites-enabled/https.test.conf
+            mode: 0644
+          notify: restart nginx
+
+Fairly straightforward, but we need to fill in a couple blanks. First, here's a quick and easy `index.html` just to allow you to test things out:
+
+{lang="text"}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>HTTPS Self-Signed Certificate Test</title>
+      <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+    </head>
+    <body>
+      <h1>HTTPS Self-Signed Certificate Test</h1>
+        <p>If you can see this message, it worked!</p>
+    </body>
+    </html>
+
+Put that HTML into your playbook directory at `files/index.html`, then create another file, `templates/https.test.conf.j2`, with the following contents:
+
+{lang="text"}
+    # HTTPS Test server configuration.
+    
+    # Redirect HTTP traffic to HTTPS.
+    server {
+        listen 80 default_server;
+        server_name _;
+        index index.html;
+        return 301 https://$host$request_uri;
+    }
+    
+    # Serve HTTPS traffic using the self-signed certificate created by Ansible.
+    server {
+        listen 443 ssl default_server;
+        server_name {{ server_hostname }};
+        root {{ nginx_docroot }};
+    
+        ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+        ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+    }
+
+The most important parts of this server configuration instruct Nginx to use the SSL certificate we generated (at the path `{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;`) for requests over port 443 for the domain `{{ server_hostname }}` (in this case, requests to `https://https.test/`).
+
+I> Production-ready TLS configuration will usually have more options defined than the above `server` directive. It's best practice to always configure TLS as secure as possible (later examples meant for production use will do so), but this example does the bare minimum to get SSL working with Nginx defaults.
+
+Notice the `notify: restart nginx` in the `Copy Nginx server configuration in place.` task; this will force Nginx to restart after any configuration changes are made (or during the first provision, when the template is copied).
+
+Once you run this playbook, if there were no errors, you should be able to securely access `https://https.test/` (assuming you have a record for that domain in your hosts file pointing to your server's IP address!). You might receive a security warning since it's self-signed, but all modern browsers and HTTPS-enabled tools should now be able to load the site over an encrypted connection!
+
+{width=80%}
+![HTTPS Test site loads with a security warning](images/12-https-test-chrome.png)
+
+W> If you rebuild the server for `https.test` more than once (thus creating a new self-signed certificate), be sure to delete the certificate you previously added to your list of trusted certificates (e.g. via Keychain Access on Mac OS X for Chrome and Safari, or in FireFox under Preferences > Advanced > Certificates).
 
 ## Automating Let's Encrypt with Ansible for free Certs
 
