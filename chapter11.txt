@@ -425,7 +425,7 @@ The rest of this section will demonstrate how to test an example Ansible role ag
 
 ### Setting up the test
 
-Create a a new 'tests' directory in your role or project directory, and create a test playbook inside:
+Create a new 'tests' directory in your role or project directory, and create a test playbook inside:
 
 {lang="text",linenos=off}
     # Directory structure:
