@@ -33,7 +33,7 @@ This advice assumes your comments actually indicate what's happening in your pla
 
 ### Include related variables and tasks
 
-If you find yourself writing a playbook over 50-100 lines and configuring three or four different applications or services, it may help to separate each group of tasks into a separate file, and use `include` to place them in a playbook.
+If you find yourself writing a playbook over 50-100 lines and configuring three or four different applications or services, it may help to separate each group of tasks into a separate file, and use `import_tasks` or `include_tasks` to place them in a playbook (see Chapter 6 for details about when to use which syntax).
 
 Additionally, variables are usually better left in their own file and included using `vars_files` rather than defined inline with a playbook.
 
@@ -44,12 +44,12 @@ Additionally, variables are usually better left in their own file and included u
         - vars/main.yml
 
       handlers:
-        - include: handlers/handlers.yml
+        - import_tasks: handlers/handlers.yml
     
       tasks:
-        - include: tasks/init.yml
-        - include: tasks/database.yml
-        - include: tasks/app.yml
+        - import_tasks: tasks/init.yml
+        - import_tasks: tasks/database.yml
+        - import_tasks: tasks/app.yml
 
 Using a more hierarchical model like this allows you to see what your playbook is doing at a higher level, and also lets you manage each portion of a configuration or deployment separately. I generally split tasks into separate files once I reach 15-20 tasks in a given file.
 

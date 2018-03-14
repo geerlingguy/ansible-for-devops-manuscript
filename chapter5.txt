@@ -869,7 +869,7 @@ You can tag roles, included files, individual tasks, and even entire plays. The 
             - notifications
             - say
     
-        - include: foo.yml
+        - import_tasks: foo.yml
           tags: foo
 
 Assuming we save the above playbook as `tags.yml`, you could run the command below to only run the `tomcat` role and the `Notify on completion` task:

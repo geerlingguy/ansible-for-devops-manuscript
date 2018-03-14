@@ -1,10 +1,10 @@
-# Chapter 6 - Playbook Organization - Roles and Includes
+# Chapter 6 - Playbook Organization - Roles, Includes, and Imports
 
 So far, we've used fairly straightforward examples in this book. Most examples are created for a particular server, and are in one long playbook.
 
 Ansible is flexible when it comes to organizing tasks in more efficient ways so you can make playbooks more maintainable, reusable, and powerful. We'll look at two ways to split up tasks more efficiently using includes and roles, and we'll explore Ansible Galaxy, a repository of some community-maintained roles that help configure common packages and applications.
 
-## Includes
+## Imports
 
 We've already seen one of the most basic ways of including other files in Chapter 4, when `vars_files` was used to place variables into a separate `vars.yml` file instead of inline with the playbook:
 
@@ -14,13 +14,13 @@ We've already seen one of the most basic ways of including other files in Chapte
       vars_files:
         - vars.yml
 
-Tasks can easily be included in a similar way. In the `tasks:` section of your playbook, you can add `include` directives like so:
+Tasks can easily be included in a similar way. In the `tasks:` section of your playbook, you can add `import_tasks` directives like so:
 
 {lang="text",linenos=off}
     tasks:
-      - include: included-playbook.yml
+      - import_tasks: imported-tasks.yml
 
-Just like with variable include files, tasks are formatted in a flat list in the included file. As an example, the `included-playbook.yml` could look like this:
+Just like with variable include files, tasks are formatted in a flat list in the included file. As an example, the `imported-tasks.yml` could look like this:
 
 {lang="text",linenos=off}
     ---
@@ -48,39 +48,66 @@ In this case, you'd probably want to name the file `user.yml`, since it's used t
 
 {lang="text",linenos=off}
     tasks:
-      - include: user.yml
+      - import_tasks: user.yml
 
 We used `{{ username }}` and `{{ ssh_private_keys }}` variables in this include file instead of hard-coded values so we could make this include file reusable. You could define the variables in your playbook's inline variables or an included variables file, but Ansible also lets you pass variables directly into includes using normal YAML syntax. For example:
 
 {lang="text",linenos=off}
     tasks:
-      - include: user.yml
+      - import_tasks: user.yml
         vars:
           username: johndoe
           ssh_private_keys:
             - { src: /path/to/johndoe/key1, dest: id_rsa }
             - { src: /path/to/johndoe/key2, dest: id_rsa_2 }
-      - include: user.yml
+      - import_tasks: user.yml
         vars:
           username: janedoe
           ssh_private_keys:
             - { src: /path/to/janedoe/key1, dest: id_rsa }
             - { src: /path/to/janedoe/key2, dest: id_rsa_2 }
 
-Include files can even include other files, so you could have something like the following:
+Imported files can even import other files, so you could have something like the following:
 
 {lang="text",linenos=off}
     tasks:
-      - include: user-config.yml
+      - import_tasks: user-config.yml
 
 *inside `user-config.yml`*
 
 {lang="text",linenos=off}
-    - include: ssh-setup.yml
+    - import_tasks: ssh-setup.yml
+
+### Includes
+
+If you use `import_tasks`, Ansible statically imports the task file as if it were part of the main playbook, once, before the Ansible play is executed.
+
+If you need to have included tasks that are _dynamic_---that is, they need to do different things depending on how the rest of the playbook runs---then you can use `include_tasks` rather than `import_tasks`.
+
+As an example, in one of my Ansible projects, I have a task file `log_paths.yml` with the following:
+
+{lang="text",linenos=off}
+    ---
+    - name: Check for existing log files in dynamic log_file_paths variable.
+      find:
+        paths: "{{ item }}"
+        patterns: '*.log'
+      register: found_log_file_paths
+      with_items: "{{ log_file_paths }}"
+
+
+In this case, the `log_file_paths` variable is set by a task earlier in my playbook—so this include file wouldn't be able to know the value of that variable until the playbook has already partly completed.
+
+So when I include this task file, I have to do so dynamically, for example:
+
+{lang="text",linenos=off}
+    - include_tasks: log_paths.yml
+
+> Early on, Ansible only had static `include` available for task inclusion, but as playbooks became more complex, people need to be able to include tasks that were processed when run (instead of added to the list of tasks before the play started running). So Ansible 2.1 introduced the `static` flag for `include:`. This worked, but overloaded the use of one keyword, so in Ansible 2.4, the use of `include:` was deprecated and you should use `import_tasks` if your tasks can basically be inlined before the playbook runs, or `include_tasks` if the tasks might need to be more dynamic (e.g. registering and reacting to a new registered variable).
 
 ### Dynamic includes
 
-Until Ansible 2.0.0, includes were processed when your playbook run started, so you couldn't do things like load a particular include when some condition was met. Ansible 2.0.0 and later evaluates includes during playbook execution, so you can do something like the following:
+Until Ansible 2.0, `include`s were always processed when your playbook run started (just like `import_tasks` behaves now), so you couldn't do things like load a particular include when some condition was met. Ansible 2.0 and later evaluates includes during playbook execution, so you can do something like the following:
 
 {lang="text",linenos=off}
     # Include extra tasks file, only if it's present at runtime.
@@ -89,24 +116,24 @@ Until Ansible 2.0.0, includes were processed when your playbook run started, so 
       register: extra_tasks_file
       connection: local
     
-    - include: tasks/extra-tasks.yml
+    - include_tasks: tasks/extra-tasks.yml
       when: extra_tasks_file.stat.exists
 
-If the file `tasks/extra-tasks.yml` is not present, Ansible skips the `include`. You can even use a `with_items` loop (or any other `with_*` loop) with includes. Includes evaluated during playback execution can make your playbooks much more flexible!
+If the file `tasks/extra-tasks.yml` is not present, Ansible skips the `include_tasks`. You can even use a `with_items` loop (or any other `with_*` loop) with includes. Includes evaluated during playback execution can make your playbooks much more flexible!
 
-### Handler includes
+### Handler imports and includes
 
-Handlers can be included just like tasks, within a playbook's `handlers` section. For example:
+Handlers can be imported or included just like tasks, within a playbook's `handlers` section. For example:
 
 {lang="text",linenos=off}
     handlers:
-      - include: included-handlers.yml
+      - import_tasks: handlers.yml
 
 This can be helpful in limiting the noise in your main playbook, since handlers are usually used for things like restarting services or loading a configuration, and can distract from the playbook's primary purpose.
 
-### Playbook includes
+### Playbook imports
 
-Playbooks can even be included in other playbooks, using the same `include` syntax in the top level of your playbook. For example, if you have two playbooks---one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
+Playbooks can even be included in other playbooks, using the same `import` syntax in the top level of your playbook (though for playbooks, you only have `import_playbook` available, as they cannot be dynamic like task includes). For example, if you have two playbooks---one to set up your webservers (`web.yml`), and one to set up your database servers (`db.yml`), you could use the following playbook to run both at the same time:
 
 {lang="text",linenos=off}
     - hosts: all
@@ -115,8 +142,8 @@ Playbooks can even be included in other playbooks, using the same `include` synt
       tasks:
         [...]
       
-    - include: web.yml
-    - include: db.yml
+    - import_playbook: web.yml
+    - import_playbook: db.yml
 
 This way, you can create playbooks to configure all the servers in your infrastructure, then create a master playbook that includes each of the individual playbooks. When you want to initialize your infrastructure, make changes across your entire fleet of servers, or check to make sure their configuration matches your playbook definitions, you can run one `ansible-playbook` command!
 
@@ -136,16 +163,16 @@ What if I told you we could remake the 137-line Drupal LAMP server playbook from
           apt: update_cache=yes cache_valid_time=3600
     
       handlers:
-        - include: handlers/handlers.yml
+        - import_tasks: handlers/handlers.yml
     
       tasks:
-        - include: tasks/common.yml
-        - include: tasks/apache.yml
-        - include: tasks/php.yml
-        - include: tasks/mysql.yml
-        - include: tasks/composer.yml
-        - include: tasks/drush.yml
-        - include: tasks/drupal.yml
+        - import_tasks: tasks/common.yml
+        - import_tasks: tasks/apache.yml
+        - import_tasks: tasks/php.yml
+        - import_tasks: tasks/mysql.yml
+        - import_tasks: tasks/composer.yml
+        - import_tasks: tasks/drush.yml
+        - import_tasks: tasks/drupal.yml
 
 All you need to do is create two new folders in the same folder where you saved the Drupal `playbook.yml` file, `handlers` and `tasks`, then create files inside for each section of the playbook.
 
@@ -178,18 +205,18 @@ And inside `tasks/drush.yml`:
         dest: /usr/local/bin/drush
         state: link
 
-Separating all the tasks into separate includes files means you'll have more files to manage for your playbook, but it helps keep the main playbook more compact. It's easier to see all the installation and configuration steps the playbook contains, and it separates tasks into individual, maintainable groupings. Instead of having to browse one playbook with twenty-three separate tasks, you now maintain eight included files with two to five tasks, each.
+Separating all the tasks into separate task files means you'll have more files to manage for your playbook, but it helps keep the main playbook more compact. It's easier to see all the installation and configuration steps the playbook contains, and it separates tasks into individual, maintainable groupings. Instead of having to browse one playbook with twenty-three separate tasks, you now maintain eight included files with two to five tasks, each.
 
 It's much easier to maintain small groupings of related tasks than one long playbook. However, there's no reason to try to *start* writing a playbook with lots of individual includes. Most of the time, it's best to start with a monolithic playbook while you're working on the setup and configuration details, then move sets of tasks out to included files after you start seeing logical groupings.
 
-You can also use tags (demonstrated in the previous chapter) to limit the playbook run to a certain include file. Using the above example, if you wanted to add a 'drush' tag to the included drush file (so you could run `ansible-playbook playbook.yml --tags=drush` and only run the drush tasks), you can change line 20 to the following:
+You can also use tags (demonstrated in the previous chapter) to limit the playbook run to a certain task file. Using the above example, if you wanted to add a 'drush' tag to the included drush file (so you could run `ansible-playbook playbook.yml --tags=drush` and only run the drush tasks), you can change line 20 to the following:
 
 {lang="text",starting-line-number=20}
-    - include: tasks/drush.yml tags=drush
+    - import_tasks: tasks/drush.yml tags=drush
 
 T> You can find the entire example Drupal LAMP server playbook using include files in this book's code repository at [https://github.com/geerlingguy/ansible-for-devops](https://github.com/geerlingguy/ansible-for-devops), in the `includes` directory.
 
-W> You can't use variables for task include file names (like you could with `include_vars` directives, e.g. `include_vars: "{{ ansible_os_family }}.yml"` as a task, or with `vars_files`). There's usually a better way than conditional task includes to accomplish conditional task inclusion using a different playbook structure, or roles, which we will discuss next.
+W> You can't use variables for task include file names when using `import_tasks` (like you could with `include_vars` directives, e.g. `include_vars: "{{ ansible_os_family }}.yml"` as a task, or with `vars_files`), but you can when using `include_tasks` (dynamically). In either case, it might be easier to accomplish conditional task inclusion using a different playbook structure, or roles, which we will discuss next.
 
 ## Roles
 
@@ -441,10 +468,10 @@ If I had gone this route, and continued with the rest of the playbook tasks in o
     - name: Include OS-specific variables.
       include_vars: "{{ ansible_os_family }}.yml"
     
-    - include: setup-RedHat.yml
+    - include_tasks: setup-RedHat.yml
       when: ansible_os_family == 'RedHat'
     
-    - include: setup-Debian.yml
+    - include_tasks: setup-Debian.yml
       when: ansible_os_family == 'Debian'
     
     - name: Other OS-agnostic tasks...
@@ -496,13 +523,13 @@ Ansible allows a simple `.txt` format that is very basic (though this format is 
     
     # From Ansible Galaxy, specifying the version.
     - src: geerlingguy.php
-      version: 1.4.1
+      version: 3.5.1
     
     # From GitHub, to a given path, with a custom name and version.
     - src: https://github.com/geerlingguy/ansible-role-passenger
       path: /etc/ansible/roles/
       name: passenger
-      version: 1.0.2
+      version: 1.1.1
     
     # From a web server, with a custom name.
     - src: https://www.example.com/ansible/roles/my-role-name.tar.gz
@@ -538,13 +565,12 @@ We've effectively reduced about thirty lines of YAML (from previous examples dea
 
 You could think of Galaxy roles as glorified packages; they not only install software, but they configure it *exactly* how you want it, every time, with minimal adjustment. Additionally, many of these roles work across different flavors of Linux and UNIX, so you have better configuration portability!
 
-### A Solr server in eight lines of YAML
+### A Solr server in seven lines of YAML
 
-Let's grab a few more roles and build an Apache Solr search server, which requires Java and Apache Tomcat to be installed and configured.
+Let's grab a couple more roles and build an Apache Solr search server, which requires Java to be installed and configured.
 
 {lang="text",linenos="off"}
-    $ ansible-galaxy install geerlingguy.java geerlingguy.tomcat6 \
-    geerlingguy.solr
+    $ ansible-galaxy install geerlingguy.java geerlingguy.solr
 
 Then create a playbook named `solr.yml` with the following contents:
 
@@ -555,12 +581,9 @@ Then create a playbook named `solr.yml` with the following contents:
     
       roles:
         - geerlingguy.java
-        - geerlingguy.tomcat6
         - geerlingguy.solr
 
-Now we have a fully-functional Solr server, and we could add some variables to configure it exactly how we want, by using a non-default port, or changing the memory allocation for Tomcat6.
-
-I could've also left out the `java` and `tomcat6` roles, since they'll be automatically picked up during installation of the `geerlingguy.solr` role (they're listed in the `solr` role's dependencies).
+Now we have a fully-functional Solr server, and we could add some variables to configure it exactly how we want, by using a non-default port, or changing the memory allocation for Solr.
 
 A role's page on the Ansible Galaxy website highlights available variables for setting things like what version of Solr to install, where to install it, etc. For an example, view the [geerlingguy.solr Galaxy page](https://galaxy.ansible.com/geerlingguy/solr/).
 
@@ -580,11 +603,11 @@ You can configure the default path where Ansible roles will be downloaded by edi
 
 If you've been working on some useful Ansible roles, and you'd like to share them with others, all you need to do is make sure they follow Ansible Galaxy's basic template (especially within the `meta/main.yml` and `README.md` files). To get started, use `ansible-galaxy init` to generate a basic Galaxy template, and make your own role match the Galaxy template's structure.
 
-Then push your role up to a new project on GitHub (I usually name my Galaxy roles like `ansible-role-[rolename]`, so I can easily see them when browsing my repos on GitHub), and add a new role while logged into galaxy.ansible.com.
+Then push your role up to a new project on GitHub (I usually name my Galaxy roles like `ansible-role-[rolename]`, so I can easily see them when browsing my repos on GitHub), and add a new role while logged into galaxy.ansible.com, under the 'My Content' tab.
 
 ## Summary
 
-Using includes and Ansible roles organizes Playbooks and makes them maintainable. This chapter introduced different ways of using `include`, the power and flexible structure of roles, and how you can utilize Ansible Galaxy, the community repository of configurable Ansible roles that do just about anything.
+Using includes and Ansible roles organizes Playbooks and makes them maintainable. This chapter introduced different ways of including tasks, playbooks, and handlers, the power and flexible structure of roles, and how you can utilize Ansible Galaxy, the community repository of configurable Ansible roles that do just about anything.
 
 {lang="text",linenos=off}
      _________________________________________

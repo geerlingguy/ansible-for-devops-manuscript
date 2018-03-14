@@ -380,10 +380,10 @@ A simple playbook including each of the group-specific playbooks is all we need 
 
 {lang="text"}
     ---
-    - include: playbooks/varnish/main.yml
-    - include: playbooks/www/main.yml
-    - include: playbooks/db/main.yml
-    - include: playbooks/memcached/main.yml
+    - import_playbook: playbooks/varnish/main.yml
+    - import_playbook: playbooks/www/main.yml
+    - import_playbook: playbooks/db/main.yml
+    - import_playbook: playbooks/memcached/main.yml
 
 At this point, if you had some already-booted servers and statically defined inventory groups like `lamp-www`, `lamp-db`, etc., you could run `ansible-playbook configure.yml` and have a full HA infrastructure at the ready!
 
@@ -584,9 +584,9 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
             command: droplet
             name: "{{ item.name }}"
             private_networking: yes
-            size_id: "{{ item.size | default('512mb') }}"
-            image_id: "{{ item.image | default('centos-6-5-x64') }}"
-            region_id: "{{ item.region | default('nyc2') }}"
+            size_id: "{{ item.size | default('s-1vcpu-1gb') }}"
+            image_id: "{{ item.image | default('centos-6-x64') }}"
+            region_id: "{{ item.region | default('nyc3') }}"
             # Customize this default for your account.
             ssh_key_ids: "{{ item.ssh_key | default('138954') }}"
             unique_name: yes
@@ -641,8 +641,8 @@ We're now *almost* ready to provision and configure our entire infrastructure on
 
 {lang="text"}
     ---
-    - include: provisioners/digitalocean.yml
-    - include: configure.yml
+    - import_playbook: provisioners/digitalocean.yml
+    - import_playbook: configure.yml
 
 That's it! Now, assuming you set the environment variable `DO_API_TOKEN`, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on DigitalOcean.
 
@@ -842,12 +842,12 @@ The final steps in provisioning the EC2 instances are to ensure we can connect t
 
 Since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs explicitly with `sudo` by adding `become: yes`.
 
-Now, modify the `provision.yml` file in the root of the project folder and change the provisioners include to look like the following:
+Now, modify the `provision.yml` file in the root of the project folder and change the provisioners import to look like the following:
 
 {lang="text"}
     ---
-    - include: provisioners/aws.yml
-    - include: configure.yml
+    - import_playbook: provisioners/aws.yml
+    - import_playbook: configure.yml
 
 Assuming the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set in your current terminal session, you can run `$ ansible-playbook provision.yml` to provision and configure the infrastructure on AWS.
 
