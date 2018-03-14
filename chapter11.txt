@@ -122,7 +122,7 @@ Ansible Tower continues to improve rapidly, and is one of the best ways to run A
 
 Ansible Tower is purpose-built for use with Ansible playbooks, but there are many other ways to run playbooks on your servers with a solid workflow. If price is a major concern, and you don't need all the bells and whistles Tower provides, you can use other popular tools like [Jenkins](http://jenkins-ci.org/), [Rundeck](http://rundeck.org/), or [Go CI](http://www.go.cd/).
 
-All these tools provide flexiblity and security for running Ansible Playbooks, and each one requires a different amount of setup and configuration before it will work well for common usage scenarios. One of the most popular and long-standing CI tools is Jenkins, so we'll explore how to configure a similar Playbook run in Jenkins next.
+All these tools provide flexibility and security for running Ansible Playbooks, and each one requires a different amount of setup and configuration before it will work well for common usage scenarios. One of the most popular and long-standing CI tools is Jenkins, so we'll explore how to configure a similar Playbook run in Jenkins next.
 
 ## Jenkins CI
 
@@ -616,7 +616,7 @@ Taking this a step further, you could even run a deployed application or service
 There are a few things you need to know about Travis CI, especially if you're testing Ansible, which will rely heavily on the VM environment inside which it is running:
 
   - **Docker Environment**: The default Docker installation runs on a particular Docker engine version, which may or may not be the latest stable release. Read through Travis' documentation for more: [Using Docker in Builds](https://docs.travis-ci.com/user/docker/).
-  - **Networking/Disk/Memory**: Travis CI continously shifts the VM specs you're using, so don't assume you'll have X amount of RAM, disk space, or network capacity. Add commands like `cat /proc/cpuinfo`, `cat /proc/meminfo`, `free -m`, etc. in the `.travis.yml` `before_install` section if you need to figure out the resources available in your VM.
+  - **Networking/Disk/Memory**: Travis CI continuously shifts the VM specs you're using, so don't assume you'll have X amount of RAM, disk space, or network capacity. Add commands like `cat /proc/cpuinfo`, `cat /proc/meminfo`, `free -m`, etc. in the `.travis.yml` `before_install` section if you need to figure out the resources available in your VM.
 
 See much more information about the VM environment on the [Travis CI Build Environment page](http://docs.travis-ci.com/user/ci-environment/).
 
