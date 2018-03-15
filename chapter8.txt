@@ -1637,10 +1637,11 @@ We'll create a VM using Vagrant to run our Docker containers so the same Docker 
     VAGRANTFILE_API_VERSION = "2"
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.vm.box = "geerlingguy/ubuntu1404"
+      config.vm.box = "geerlingguy/ubuntu1604"
       config.vm.network :private_network, ip: "192.168.33.39"
       config.ssh.insert_key = false
     
+      config.vm.hostname = "docker.test"
       config.vm.provider :virtualbox do |v|
         v.customize ["modifyvm", :id, "--name", "docker.test"]
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
@@ -1656,7 +1657,7 @@ We'll create a VM using Vagrant to run our Docker containers so the same Docker 
     
     end
 
-We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `angstwad.docker_ubuntu`), then run some additional setup tasks, and finally build and start the required Docker containers:
+We'll use Ubuntu 16.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `angstwad.docker_ubuntu`), then run some additional setup tasks, and finally build and start the required Docker containers:
 
 {lang="text"}
     ---
@@ -1667,8 +1668,8 @@ We'll use Ubuntu 14.04 for this example, and we've specified an Ansible playbook
         - role: angstwad.docker_ubuntu
     
       tasks:
-        - include: setup.yml
-        - include: docker.yml
+        - import_tasks: setup.yml
+        - import_tasks: docker.yml
 
 We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo` by setting `become: yes`.
 
@@ -1705,32 +1706,36 @@ Don't worry that we haven't yet created the actual Dockerfiles required to creat
 
 Like our earlier usage of `docker_image`, we supply a `name`, `path`, and `state` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `www`, and `db`, and we're pointing Docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
 
-After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker` tasks:
+After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker_container` tasks:
 
 {lang="text",starting-line-number=13}
     # Data containers don't need to be running to be utilized.
     - name: Run a Data container.
-      docker:
+      docker_container:
         image: data:data
         name: data
         state: present
     
     - name: Run a Flask container.
-      docker:
+      docker_container:
         image: www:flask
         name: www
-        state: running
+        state: started
         command: python /opt/www/index.py
         ports: "80:80"
     
     - name: Run a MySQL container.
-      docker:
+      docker_container:
         image: db:mysql
         name: db
-        state: running
+        state: started
         volumes_from: data
-        command: /opt/start-mysql.sh
         ports: "3306:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: flask
+          MYSQL_USER: flask
+          MYSQL_PASSWORD: flask
 
 Each of these containers' configuration is a little more involved than the previous. In the case of the first container, it's just `present`; Ansible will ensure a `data` container is present.
 
@@ -1771,7 +1776,7 @@ For the data storage container, we don't need much; we just need to create a dir
 {lang="text"}
     # Build a simple MySQL data volume Docker container.
     FROM busybox
-    LABEL maintainer="Jeff Geerling"
+    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
     
     # Create data volume for MySQL.
     RUN mkdir -p /var/lib/mysql
@@ -1798,8 +1803,7 @@ Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.
     
     # Configure MySQL connection.
     db = SQLAlchemy()
-    db_uri = 'mysql://admin:admin@{{ host_ip_address }}/\
-    information_schema'
+    db_uri = 'mysql://flask:flask@{{ host_ip_address }}/flask'
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     db.init_app(app)
     
@@ -1846,11 +1850,11 @@ Now that we have the app defined, we need to build the container to run the app.
 
 {lang="text"}
     # A simple Flask app container.
-    FROM ansible/ubuntu14.04-ansible
-    LABEL maintainer="Jeff Geerling"
+    FROM geerlingguy/docker-ubuntu1604-ansible
+    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
     
     # Install Flask app dependencies.
-    RUN apt-get install -y libmysqlclient-dev python-dev
+    RUN apt-get install -y libmysqlclient-dev python-dev python-pip
     RUN pip install flask flask-sqlalchemy mysql-python
     
     # Install playbook and run it.
@@ -1866,7 +1870,9 @@ Instead of installing apt and pip packages using Ansible, we'll install them usi
 
 At the end of the Dockerfile, we run a playbook (which should be located in the same directory as the Dockerfile) and expose port 80 so the app can be accessed via HTTP by the outside world. Next we'll create the app deployment playbook.
 
-W> Purists might cringe at the sight of an Ansible playbook inside a Dockerfile, and for good reason! Commands like the `ansible-playbook` command cover up configuration that might normally be done (and cached) within Docker. Additionally, using the `ansible/ubuntu14.04-ansible` base image (which includes Ansible) requires an initial download that's 50+ MB larger than a comparable debian or ubuntu image without Ansible. However, for brevity and ease of maintenance, we're using Ansible to manage all the app configuration inside the container (otherwise we'd need to run a bunch of verbose and incomprehensible shell commands to replace Ansible's `template` functionality).
+W> Purists might cringe at the sight of an Ansible playbook inside a Dockerfile, and for good reason! Commands like the `ansible-playbook` command cover up configuration that might normally be done (and cached) within Docker. Additionally, using the `ansible/ubuntu16.04-ansible` base image (which includes Ansible) requires an initial download that's 50+ MB larger than a comparable debian or ubuntu image without Ansible. However, for brevity and ease of maintenance, we're using Ansible to manage all the app configuration inside the container (otherwise we'd need to run a bunch of verbose and incomprehensible shell commands to replace Ansible's `template` functionality).
+W> 
+W> [Ansible Container](https://github.com/ansible/ansible-container) is an Ansible-based container build and automation tool that helps in this situation, by splitting container builds into layers by Ansible roles.
 
 In order for the Flask app to function properly, we need to get the `host_ip_address`, then replace the variable in the `index.py.j2` template. Create the Flask deployment playbook at `docker/provisioning/www/playbook.yml`:
 
@@ -1913,86 +1919,24 @@ The `docker/provisioning/www` directory should now contain the following:
 
 #### MySQL container
 
-We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL is configured to work inside a Docker container, with a persistent data volume from the previously-configured `data` container.
+We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL works inside a Docker container, with a persistent data volume from the previously-configured `data` container.
 
-First, we'll create a really simple Ansible playbook to install and configure MySQL using the `geerlingguy.mysql` role:
-
-{lang="text"}
-    ---
-    - hosts: localhost
-      become: yes
-    
-      vars:
-        mysql_users:
-          - name: admin
-            host: "%"
-            password: admin
-            priv: "*.*:ALL"
-    
-      roles:
-        - geerlingguy.mysql
-
-This playbook sets up one MySQL user using the `mysql_users` variable and runs the `geerlingguy.mysql` role. Save it as `docker/provisioning/db/playbook.yml`.
-
-Next, we need to account for the fact that there are two conditions under which MySQL will be started:
-
-  1. When Docker builds the container initially (using `docker build` through Ansible's `docker_image` module).
-  2. When we launch the container and pass in the `data` volume (using `docker run` through Ansible's `docker` module).
-
-In the latter case, the data volume's `/var/lib/mysql` directory will supplant the container's own directory, but it will be empty! Therefore, instead of just launching the MySQL daemon like we launched the Flask app in the `www` container, we need to build a small shell script that will run on container start to detect whether MySQL has already been setup inside `/var/lib/mysql`, and if it hasn't, to reconfigure MySQL so the data is there.
-
-Here's a simple script to do just that, using the playbook we just created to do most of the heavy lifting. Save this as `docker/provisioning/db/start-mysql.sh`:
-
-{lang=bash}
-    #!/bin/bash
-    
-    # If connecting to a new data volume, we need to reconfigure MySQL.
-    if [[ ! -d /var/lib/mysql/mysql ]]; then
-        rm -f ~/.my.cnf
-        mysql_install_db
-        ansible-playbook /etc/ansible/playbook.yml --connection=local
-        mysqladmin shutdown
-    fi
-    
-    exec /usr/bin/mysqld_safe
-
-This bash script checks if there's already a `mysql` directory inside MySQL's default data directory, and if not (as is the case when we run the container with the `data` volume), it will remove any existing `.my.cnf` connection file, run `mysql_install_db` to initialize MySQL, then run the playbook, and shut down MySQL.
-
-Once that's all done (or if the persistent `data` volume has already been set up previously), MySQL is started with the `mysqld_safe` startup script which, [according to the MySQL documentation](http://dev.mysql.com/doc/refman/5.6/en/mysqld-safe.html), is "the recommended way to start a mysqld server on Unix".
-
-Next comes the Dockerfile, where we'll make sure the `playbook.yml` playbook and `start-mysql.sh` script are put in the right places, and expose the MySQL port so other containers can connect to MySQL.
+For MySQL, there is already a very well-maintained and flexible community MySQL Docker image that we can rely on. To use it, we'll wrap it in our own Dockerfile (in case we want to make further customizations in the future).
 
 {lang="text"}
     # A simple MySQL container.
-    FROM ansible/ubuntu14.04-ansible
-    LABEL maintainer="Jeff Geerling"
-    
-    # Install required Ansible roles.
-    RUN ansible-galaxy install geerlingguy.mysql
-    
-    # Copy startup script.
-    COPY start-mysql.sh /opt/start-mysql.sh
-    RUN chmod +x /opt/start-mysql.sh
-    
-    # Install playbook and run it.
-    COPY playbook.yml /etc/ansible/playbook.yml
-    RUN ansible-playbook /etc/ansible/playbook.yml --connection=local
+    FROM mysql:5.7
+    MAINTAINER Jeff Geerling <geerlingguy@mac.com>
     
     EXPOSE 3306
 
-Just as with the Flask app container, we're using a base image with Ubuntu 14.04 and Ansible. This time, since we're doing a bit more configuration via the playbook, we also need to install the `geerlingguy.mysql` role via Ansible Galaxy.
-
-The `start-mysql.sh` script needs to be located in the `docker.yml` file we set up much earlier, where we're calling it with `command: /opt/start-mysql.sh`, so we copy it in place, then give `+x` permissions so Docker can execute the file.
-
-Finally, the Ansible playbook that configures MySQL is copied into place, then run, and port 3306 is exposed.
+This Dockerfile tells Docker to pull from the mysql image on Docker Hub, and then expose port 3306.
 
 The `docker/provisioning/db` directory should now contain the following:
 
 {lang="text",linenos=off}
     db/
       Dockerfile
-      playbook.yml
-      start-mysql.sh
 
 ### Ship it!
 
@@ -2001,11 +1945,11 @@ Now that everything's in place, you should be able to cd into the main `docker` 
 {width=80%}
 ![Docker orchestration success!](images/8-docker-success.png)
 
-If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's reconfiguration, since it has to rebuild the database on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker LAMP example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) on GitHub.
+If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) on GitHub.
 
 ### Summary
 
-The entire [Docker LAMP example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
+The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 
 The Docker examples shown here barely scratch the surface of what makes Docker a fascinating and useful application deployment tool. Docker is still in its infancy, so there are dozens of ways to manage the building of Dockerfiles, the deployment of images, and the running and linking of containers. Ansible is a solid contender for managing Docker containers (_and_ the infrastruction on which they run), and can even be used within a Dockerfile to simplify complex container configurations.
 

@@ -22,6 +22,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   13. Updated now-deprecated use of `import:` to `import_tasks:` or `include_tasks:`.
   14. Fixed three typos spotted by Amazon Kindle's AI bot that loves good spelling.
   15. Updated DigitalOcean provisioning example in chapter 8 to work with new size and image slugs.
+  16. Updated Docker Flask example in chapter 8 to use Ubuntu 16.04 and library MySQL image.
 
 ## Version 1.15 (2017-06-01)
 
