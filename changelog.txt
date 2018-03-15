@@ -19,10 +19,11 @@ Hopefully these notes will help readers figure out what's changed since the last
   10. Switch from using `ansible.sudo` to `ansible.become` in Vagrantfiles.
   11. Fix typo in chapter 11 (double 'a's) (thanks to bngsudheer!).
   12. Switch incorrect usage of 'most any' to 'almost any' in chapter 11 (thanks to Christian B!).
-  13. Updated now-deprecated use of `import:` to `import_tasks:` or `include_tasks:`.
+  13. Updated now-deprecated use of `include:` to `import_tasks:` or `include_tasks:`.
   14. Fixed three typos spotted by Amazon Kindle's AI bot that loves good spelling.
   15. Updated DigitalOcean provisioning example in chapter 8 to work with new size and image slugs.
   16. Updated Docker Flask example in chapter 8 to use Ubuntu 16.04 and library MySQL image.
+  17. Updated use of `include:` to `import_playbook:` in examples in chapter 9.
 
 ## Version 1.15 (2017-06-01)
 

@@ -127,7 +127,7 @@ The playbook specified in our Vagrantfile, `playbooks/main.yml`, doesn't yet exi
 
 {lang="text"}
     ---
-    - include: provision.yml
+    - import_playbook: provision.yml
 
 ### Deploying a Rails app to the server
 
@@ -137,8 +137,8 @@ Add a line to the `main.yml` file to include a new `deploy.yml` playbook:
 
 {lang="text"}
     ---
-    - include: provision.yml
-    - include: deploy.yml
+    - import_playbook: provision.yml
+    - import_playbook: deploy.yml
 
 Now we're ready to create the `deploy.yml` playbook, which will do the following:
 
@@ -376,6 +376,8 @@ After a minute or so, the deployment should complete. Once complete, you'll see 
 
 Application update deployments involve incrementing the `app_version` to the latest git tag, then running the `deploy.yml` playbook again. The `main.yml` playbook can be run to ensure the entire server stack is in the correct state, but it's faster to just deploy the app updates.
 
+I> Code for this entire example is available on GitHub in the [Ansible for DevOps deployments example](https://github.com/geerlingguy/ansible-for-devops/tree/master/deployments).
+
 ## Zero-downtime multi-server deployments
 
 If you need to run an application on multiple servers for horizontal scalability or redundancy, deployments can be cumbersome, resulting in downtime and complicated deployment processes---but not when you use Ansible!
@@ -462,8 +464,8 @@ Inside the `main.yml` playbook, we'll call out two separate playbooks---one for 
 
 {lang="text"}
     ---
-    - include: provision.yml
-    - include: deploy.yml
+    - import_playbook: provision.yml
+    - import_playbook: deploy.yml
 
 Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting with `provision.yml`:
 
@@ -663,6 +665,8 @@ Ansible exposes two different settings for controlling rolling deployment failur
   2. `max_fail_percentage`: An integer between `1-100`. Used to tell Ansible what percentage of hosts can fail a task before the play will be aborted.
 
 If you have some headroom in your infrastructure, set these values higher. If you have only as much infrastructure running as your application needs, and having more than one or two servers offline would put your infrastructure into a bad state, you should be more conservative with these settings---and maybe provision a little more capacity!
+
+I> Code for this entire example is available on GitHub in the [Ansible for DevOps deployments-rolling example](https://github.com/geerlingguy/ansible-for-devops/tree/master/deployments-rolling).
 
 ### Deploying to app servers behind a load balancer
 
@@ -874,6 +878,8 @@ If you run the deployment playbook again, wait for it to fail, then run the `cur
 Fix the deployment by removing the `/bin/false` command. Run the playbook one more time to restore the infrastructure to a fully functional state.
 
 This demonstration may seem basic, but the `pre_tasks` and `post_tasks` in the playbook are identical to what many large-scale production infrastructure deployments use!
+
+I> Code for this entire example is available on GitHub in the [Ansible for DevOps deployments-balancer example](https://github.com/geerlingguy/ansible-for-devops/tree/master/deployments-balancer).
 
 ## Capistrano-style and blue-green deployments
 

@@ -275,7 +275,7 @@ For these situations, Ansible allows you to define inventory *dynamically*. If y
 
 ### Dynamic inventory with DigitalOcean
 
-DigitalOcean is one of the world's top five hosting companies, and has grown rapidly since it's founding in 2011. One of the reasons for the extremely rapid growth is the ease of provisioning new 'droplets' (cloud VPS servers), and the value provided; as of this writing, you could get a fairly speedy VPS with 512MB of RAM and a generous portion of fast SSD storage for $5 USD per month.
+DigitalOcean is one of the world's top five hosting companies, and has grown rapidly since it's founding in 2011. One of the reasons for the extremely rapid growth is the ease of provisioning new 'droplets' (cloud VPS servers), and the value provided; as of this writing, you could get a fairly speedy VPS with 1GB of RAM and a generous portion of fast SSD storage for $5 USD per month.
 
 DigitalOcean's API and simple developer-friendly philosophy has made it easy for Ansible to interact with DigitalOcean droplets; you can create, manage, and delete droplets with Ansible, as well as use droplets with your playbooks using dynamic inventory.
 
@@ -309,7 +309,7 @@ Create a new playbook named `provision.yml`, with the following contents:
     ---
     - hosts: localhost
       connection: local
-      gather_facts: false
+      gather_facts: False
     
       tasks:
         - name: Create new Droplet.
@@ -318,9 +318,9 @@ Create a new playbook named `provision.yml`, with the following contents:
             command: droplet
             name: ansible-test
             private_networking: yes
-            size_id: 512mb
-            image_id: centos-7-0-x64
-            region_id: nyc2
+            size_id: s-1vcpu-1gb
+            image_id: centos-7-x64
+            region_id: nyc3
             # Customize this for your account.
             ssh_key_ids: 138954
             # Required for idempotence/only one droplet creation.
@@ -339,10 +339,10 @@ We used `register` as part of the `digital_ocean` task so we could immediately s
     $ ansible-playbook provision.yml
     
     PLAY [localhost] ***************************************************************
-
+    
     TASK [Create new Droplet.] *****************************************************
     changed: [localhost]
-
+    
     TASK [debug] *******************************************************************
     ok: [localhost] => {
         "do": {
@@ -396,10 +396,11 @@ Since `do` contains the new droplet's IP address (alongside other relevant infor
             name: "{{ do.droplet.ip_address }}"
             groups: do
           when: do.droplet is defined
+          changed_when: False
     
     - hosts: do
       remote_user: root
-      gather_facts: false
+      gather_facts: False
     
       tasks:
         - name: Wait for port 22 to become available.
@@ -435,7 +436,7 @@ At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it 
 
 If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
 
-T> Note that you might need to disable strict host key checking to get provisioning and instant configuration to work correctly, otherwise you may run into an error stating that Ansible can't connect to the new droplet during the second play. To do this, add the line `host_key_checking=False` under the `[defaults]` section in your `ansible.cfg` file (located in `/etc/ansible` by default).
+T> If you get an error like "Failed to connect to the host via ssh: Host key verification failed.", then you can temporarily disable host key checking. Run the command `export ANSIBLE_HOST_KEY_CHECKING=False` and then run the `provision.yml` playbook again.
 T> 
 T> You should normally leave `host_key_checking` enabled, but when rapidly building and destroying VMs for testing purposes, it is simplest to disable it temporarily.
 
