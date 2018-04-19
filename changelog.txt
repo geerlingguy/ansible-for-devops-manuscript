@@ -6,7 +6,8 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - No changes.
+  ----------- Website updated to here ------------------------------------------
+  1. Updated Mac Ansible install instructions in chapter 1 (thanks to @vtraida!).
 
 ## Version 1.16 (2018-03-15)
 

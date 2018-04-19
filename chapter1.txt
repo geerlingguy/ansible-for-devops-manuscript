@@ -38,15 +38,14 @@ Ansible's only real dependency is Python. Once Python is installed, the simplest
 
 **If you're on a Mac**, installing Ansible is a piece of cake:
 
-  1. Install [Homebrew](http://brew.sh/) (get the installation command from the Homebrew website).
-  2. Install Python 2.7.x (`brew install python`).
-  3. Install Ansible (`pip install ansible`).
+  1. Check if `pip` is installed (`which pip`). If not, install it: `sudo easy_install pip`
+  2. Install Ansible: `sudo pip install ansible`
 
-You could also install Ansible via Homebrew with `brew install ansible`. Either way (`pip` or `brew`) is fine, but make sure you update Ansible using the same system with which it was installed!
+You could also install Ansible via [Homebrew](http://brew.sh/) with `brew install ansible`. Either way (`pip` or `brew`) is fine, but make sure you update Ansible using the same system with which it was installed!
 
 **If you're running Windows** (i.e. you work for a large company that forces you to use Windows), it will take a little extra work to everything set up. There are two ways you can go about using Ansible if you use Windows:
 
-  1. The easiest solution would be to use a Linux virtual machine (with something like VirtualBox) to do your work. For detailed instructions, see [Appendix A - Using Ansible on Windows workstations](#appendix-a).
+  1. The easiest solution would be to use a Linux virtual machine (with something like VirtualBox) to do your work, or to work within the Windows Subsystem for Linux. For detailed instructions, see [Appendix A - Using Ansible on Windows workstations](#appendix-a).
   2. Ansible runs (somewhat) within an appropriately-configured [Cygwin](http://cygwin.com/) environment. For setup instructions, please see my blog post [Running Ansible within Windows](https://servercheck.in/blog/running-ansible-within-windows)), and note that *running Ansible directly within Windows is unsupported and prone to breaking*.
 
 **If you're running Linux**, chances are you already have Ansible's dependencies installed, but we'll cover the most common installation methods.
