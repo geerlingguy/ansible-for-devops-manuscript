@@ -305,7 +305,7 @@ Our hypothetical web application uses Django, so we need to make sure Django and
 {lang="text",linenos=off}
     $ ansible app -b -m yum -a "name=MySQL-python state=present"
     $ ansible app -b -m yum -a "name=python-setuptools state=present"
-    $ ansible app -b -m easy_install -a "name=django state=present"
+    $ ansible app -b -m easy_install -a "name=django<2 state=present"
 
 You could also install django using `pip`, which can be installed via `easy_install` (since Ansible's `easy_install` module doesn't allow you to uninstall packages like `pip` does), but for simplicity's sake, we've installed it with `easy_install`.
 
@@ -314,11 +314,11 @@ Check to make sure Django is installed and working correctly.
 {lang="text",linenos=off}
     $ ansible app -a "python -c 'import django; \
     print django.get_version()'"
-    192.168.60.4 | success | rc=0 >>
-    1.10b1
-    
-    192.168.60.5 | success | rc=0 >>
-    1.10b1
+    192.168.60.5 | SUCCESS | rc=0 >>
+    1.11.12
+
+    192.168.60.4 | SUCCESS | rc=0 >>
+    1.11.12
 
 Things look like they're working correctly on our app servers. We can now move on to our database server.
 

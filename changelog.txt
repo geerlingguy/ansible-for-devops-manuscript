@@ -8,6 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   ----------- Website updated to here ------------------------------------------
   1. Updated Mac Ansible install instructions in chapter 1 (thanks to @vtraida!).
+  2. Install Django version 1.x in chapter 3 example so it works with CentOS 7 out of the box (thanks to @everett-toews!).
 
 ## Version 1.16 (2018-03-15)
 
