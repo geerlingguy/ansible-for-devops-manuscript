@@ -108,7 +108,7 @@ This command is the equivalent of running `yum install ntp`, but is much more in
 
 {lang="text",linenos=off}
     if ! rpm -qa | grep -qw ntp; then
-        yum install ntp
+        yum install -y ntp
     fi
 
 However, the above script is still not quite as robust as Ansible's `yum` command. What if ntpdate is installed, but not ntp? This script would require extra tweaking and complexity to match the simple Ansible yum command, especially after we explore the yum module more intimately (or the `apt` module for Debian-flavored Linux, or `package` for OS-agnostic package installation).
@@ -121,7 +121,7 @@ This final task both checks and ensures that the ntpd service is started and run
 
 {lang="text",linenos=off}
     # Start ntpd if it's not already running.
-    if ps aux | grep -v grep | grep "[n]tpd" > /dev/null
+    if ps aux | grep -q "[n]tpd"
     then
         echo "ntpd is running." > /dev/null
     else
