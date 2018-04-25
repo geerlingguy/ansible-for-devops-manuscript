@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   2. Install Django version 1.x in chapter 3 example so it works with CentOS 7 out of the box (thanks to @everett-toews!).
   3. Tidied up ntpd service detection in example script in chapter 2 (thanks to Germain G!).
   4. Added more detailed current book publication stats in the preface (thanks to vinceskahan!).
+  5. Removed mention of nonexistent `host_vars/all` inventory file in chapter 5 (thanks to Vlad G!).
 
 ## Version 1.16 (2018-03-15)
 

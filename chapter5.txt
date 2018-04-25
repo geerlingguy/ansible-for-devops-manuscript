@@ -364,7 +364,7 @@ You can place YAML files inside these directories named after the group name or 
 
 Even if you're using the default inventory file (or an inventory file outside of your playbook's root directory), Ansible will also use host and group variables files located within your playbook's own `group_vars` and `host_vars` directories. This is convenient when you want to package together your entire playbook and infrastructure configuration (including all host/group-specific configuration) into a source-control repository.
 
-You can also define a `group_vars/all` file that would apply to *all* groups, as well as a `host_vars/all` file that would apply to *all* hosts. Usually, though, it's best to provide defaults in your playbooks and roles (which will be discussed later).
+You can also define a `group_vars/all` file that would apply to *all* groups. Usually, though, it's best to provide defaults in your playbooks and roles (which will be discussed later).
 
 #### Magic variables with host and group variables and information
 
