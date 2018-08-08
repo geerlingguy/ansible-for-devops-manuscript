@@ -25,7 +25,7 @@ To get started with your first local virtual server, you need to download and in
   3. Open a Terminal or PowerShell window, then navigate to the folder you just created.
   4. Add a CentOS 7.x 64-bit 'box' using the [`vagrant box add`](http://docs.vagrantup.com/v2/boxes.html) command:
     `vagrant box add geerlingguy/centos7`
-    (note: HashiCorp's [Atlas](https://atlas.hashicorp.com/boxes/search) has a comprehensive list of different pre-made Linux boxes. Also, check out the 'official' Vagrant Ubuntu boxes in Vagrant's [Boxes documentation](https://www.vagrantup.com/docs/boxes.html).
+    (note: HashiCorp's [Vagrant Cloud](https://app.vagrantup.com/boxes/search) has a comprehensive list of different pre-made Linux boxes. Also, check out the 'official' Vagrant Ubuntu boxes in Vagrant's [Boxes documentation](https://www.vagrantup.com/docs/boxes.html).
   5. Create a default virtual server configuration using the box you just downloaded:
     `vagrant init geerlingguy/centos7`
   6. Boot your CentOS server:
