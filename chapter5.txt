@@ -71,7 +71,7 @@ We use `source ~/.bash_profile` in line 4 because Ansible needs to make sure it'
 
 (This is also the first time the `debug` module has made an appearance. It will be explored more in-depth along with other debugging techniques later.).
 
-I> Why `~/.bash_profile`? There are many different places you can store environment variables, including `.bashrc`, `.profile`, and `.bash_profile` in a user's home folder. In our case, since we want the environment variable to be available to Ansible, which runs a pseudo-TTY shell session, in which case `.bash_profile` is used to configure the environment. You can read more about shell session configuration and these dotfiles in _[Configuring your login sessions with dotfiles](http://mywiki.wooledge.org/DotFiles)_.
+I> Why `~/.bash_profile`? There are many different places you can store environment variables, including `.bashrc`, `.profile`, and `.bash_login` in a user's home folder. In our case, since we want the environment variable to be available to Ansible, which runs a pseudo-TTY shell session, in which case `.bash_profile` is used to configure the environment. You can read more about shell session configuration and these dotfiles in _[Configuring your login sessions with dotfiles](http://mywiki.wooledge.org/DotFiles)_.
 
 Linux will also read global environment variables added to `/etc/environment`, so you can add your variable there:
 
