@@ -200,10 +200,11 @@ To start things off, we need to create a YAML file (`playbook.yml` in this examp
 {lang="text"}
     ---
     - hosts: all
+      become: yes
     
       tasks:
 
-First, define a set of hosts (`all`) on which this playbook will be run (see the section above about limiting the playbook to particular groups and hosts), then tell Ansible that what follows will be a list of tasks to run on the hosts.
+First, define a set of hosts (`all`) on which this playbook will be run (see the section above about limiting the playbook to particular groups and hosts), then tell Ansible to run the playbook with root privileges (since we need to install and configure system packages), then tell Ansible that what follows will be a list of tasks to run on the hosts.
 
 ### Add extra repositories
 
@@ -233,7 +234,7 @@ I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and
 
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables other nifty Ansible features we'll discuss later:
 
-{lang="text",starting-line-number=9}
+{lang="text",starting-line-number=10}
         - name: Install Remi repo.
           yum:
             name: "http://rpms.remirepo.net/enterprise/remi-release-7.rpm"
@@ -302,7 +303,7 @@ Since this little app is dependent on Express (an http framework for Node), we a
 
 We need to copy the entire app to the server, and then have NPM download the required dependencies (in this case, `express`), so add these tasks to your playbook:
 
-{lang="text",starting-line-number=31}
+{lang="text",starting-line-number=32}
         - name: Ensure Node.js app folder exists.
           file: "path={{ node_apps_location }} state=directory"
     
@@ -326,7 +327,7 @@ We're *almost* finished! The last step is to start the app.
 
 We'll now use `forever` (which we installed earlier) to start the app.
 
-{lang="text",starting-line-number=40}
+{lang="text",starting-line-number=41}
         - name: Check list of running Node.js apps.
           command: forever list
           register: forever_list
