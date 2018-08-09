@@ -44,19 +44,6 @@
   - Search for ' a the' and fix those instances.
   - Search for "PLAY RECAP" and make sure code blocks are 74 lines (70 max without indent).
 
-## Pre-publication
-
-  - Make sure Changelog is removed.
-
-## Publishing Process
-
-### iBooks (Apple)
-
-  - Had to sign up for a _new_ Apple ID (my existing ID is used for iOS and Mac app distribution).
-  - Had to verify my email address and re-enter _everything_ for tax ID, banking, etc.
-  - Angular-based dashboard on iTunes connect was less-than-stellar on Chrome (worked better in Safari).
-  - Had to download iTunes Producer to add book (it was not obvious in the UI—I just saw the message "You don’t have any books." when I visited the 'My Books' section of iTunes Connect).
-
 ## Thoughts on writing
 
   - [$25K in book sales, and I'm about to publish](https://servercheck.in/blog/25k-book-sales-and-im-almost-ready-publish)
@@ -69,8 +56,6 @@
 ## Cowsay
 
   - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
-  - "Fool me once, shame on you. Fool me twice, prepare to die. (Klingon Proverb)"
-  - "Do or do not. There is no try. (Yoda)" (Used in 0.38 email 4/11/14)
   - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
 
 ## For 2nd Edition

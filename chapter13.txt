@@ -436,6 +436,10 @@ If you see "MySQL Connection: PASS", congratulations, everything worked! If it s
 
 The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 
+## Ansible Container
+
+TODO: Add this section.
+
 ## Kubernetes and Ansible
 
 Most real-world applications require a lot more than a couple Docker containers running on a host. You may need five, ten, or dozens of containers running. And when you need to scale, you need them distributed across multiple hosts. And then when you have multiple containers on multiple hosts, you need to aggregate logs, monitor resource usage, etc.

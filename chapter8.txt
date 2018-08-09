@@ -1512,11 +1512,10 @@ Ansible is the best way to automate infrastructure provisioning and configuratio
 You can find the full playbook I'm currently using to configure my Macs on GitHub: [Mac Development Ansible Playbook](https://github.com/geerlingguy/mac-dev-playbook).
 
 {lang="text",linenos=off}
-     _________________________________________
-    / Any sufficiently advanced technology is \
-    | indistinguishable from magic.           |
-    \ (Arthur C. Clarke)                      /
-     -----------------------------------------
+     ________________________________
+    / Do or do not. There is no try. \
+    \ (Yoda)                         /
+     --------------------------------
             \   ^__^
              \  (oo)\_______
                 (__)\       )\/\
