@@ -18,7 +18,7 @@ In chapter 4, the Ubuntu LAMP server example used a simple handler to restart Ap
         apache2_module: name=rewrite state=present
         notify: restart apache
 
-In some circumstances you may want to notify multiple handlers, or even have handlers notify additionally handlers. Both are easy to do with Ansible. To notify multiple handlers from one task, use a list for the `notify` option:
+In some circumstances you may want to notify multiple handlers, or even have handlers notify additional handlers. Both are easy to do with Ansible. To notify multiple handlers from one task, use a list for the `notify` option:
 
 {lang="text",linenos=off}
     - name: Rebuild application configuration.
