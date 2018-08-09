@@ -15,6 +15,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   6. Updated link to Hashicorp's Vagrant box directory in chapter 2 (thanks to bryankennedy!).
   7. Added note about overcoming host key prompts when connecting to a server for the first time in chapter 3 (thanks to i-zu!).
   8. Mention `.bash_login` instead of repeating `.bash_profile` ad nauseam in chapter 5 (thanks to jdavid5815!).
+  9. Fixed a typo in chapter 6 (thanks to jdavid5815!).
 
 ## Version 1.16 (2018-03-15)
 
