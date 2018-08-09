@@ -139,6 +139,8 @@ Ansible will run this command against all three of the servers, and return the r
 
 T> If Ansible reports `No hosts matched` or returns some other inventory-related error, try setting the `ANSIBLE_HOSTS` environment variable explicitly: `export ANSIBLE_HOSTS=/etc/ansible/hosts`. Generally Ansible will read the file in `/etc/ansible/hosts` automatically, but depending on how you installed Ansible, you may need to explicitly set `ANSIBLE_HOSTS` for the `ansible` command to work correctly.
 
+T> If you get an error like `The authenticity of host '192.168.60.5' can't be established.`, this is because SSH has a security feature which requires you to confirm the server's 'host key' the first time you connect. You can type `yes` on the command line (in this case multiple times) to dismiss the warning and accept the hostkey, or you can also set the environment variable `ANSIBLE_HOST_KEY_CHECKING=False`. The behavior for host key acceptance can also be configured in your SSH configuration file.
+
 You may have noticed that the command was not run on each server in the order you'd expect. Go ahead and run the command a few more times, and see the order:
 
 {lang="text",linenos=off}
