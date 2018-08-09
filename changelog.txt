@@ -18,6 +18,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   9. Fixed a typo in chapter 6 (thanks to jdavid5815!).
   10. Add `become: yes` to playbook example for Node.js App deployment in chapter 4 (thanks to krystan!).
   11. Fixed a typo in chapter 5 (thanks to nkabir!).
+  12. Use https for Drupal.org git repository in chapter 4 and chapter 6 includes examples (thanks to dglinder!).
 
 ## Version 1.16 (2018-03-15)
 
