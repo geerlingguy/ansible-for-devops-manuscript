@@ -21,6 +21,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   12. Use https for Drupal.org git repository in chapter 4 and chapter 6 includes examples (thanks to dglinder!).
   13. Add chapter 13, dedicated to Docker and Ansible. Move Docker content from chapter 8 into this new chapter.
   14. Updated cowsay quote in chapter 8 (moved it's cowsay to chapter 13).
+  15. Add Hubot Slack bot example in chapter 13.
 
 ## Version 1.16 (2018-03-15)
 

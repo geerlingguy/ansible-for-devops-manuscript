@@ -436,9 +436,29 @@ If you see "MySQL Connection: PASS", congratulations, everything worked! If it s
 
 The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 
-## Ansible Container
+## Building containers with Ansible from the outside
 
-TODO: Add this section.
+In the previous example, an Ansible playbook was run _inside_ a Docker container to build the Flask application image. While this approach works and is maintainable, it also makes for a lot of cruft. One major advantage of container-based app deployment is a nice tidy container image per service.
+
+To use Ansible inside a container requires a lot of dependencies—Python, Ansible's dependencies, and Ansible itself.
+
+One solution to this problem is to use [Ansible Container](https://docs.ansible.com/ansible-container/). One of the key features of Ansible Container is a container image build system which takes a set of Ansible roles and applies them to a Docker image, one by one, using a 'helper' container to run Ansible. So instead of Ansible running inside the container being built, you use Ansible to build the container. Each role is applied as a single container image layer, and there's no extra cruft.
+
+As of late 2018, Ansible Container's status as a fully supported and maintained project is a little fuzzy, so this book won't provide any complete Ansible Container examples; however, if you're interested in trying it out, follow the official [Ansible Container Demo](https://ansible.github.io/ansible-container-demo/).
+
+### Build a Hubot Slack bot container with `ansible_connection: docker`
+
+Most examples in this book use the default `ansible_connection` plugin, `ssh`, which connects to servers using SSH. A few examples also use the `local` plugin, which runs commands locally without SSH.
+
+There are actually a few dozen connection plugins that ship with Ansible, including `kubectl` for interacting with Kubernetes pods, `saltstack` for piggybacking salt minions, `winrm` for connecting over Microsoft's WinRM, and `docker`, which runs tasks in Docker containers.
+
+This last connection plugin is helpful if you want to build Docker container images using Ansible without the overhead of installing Ansible inside the container.
+
+To learn how the `docker` connection plugin works, we'll build a Hubot Slack bot.
+
+TODO: How to build the bot.
+
+The entire [Docker Hubot Slack bot example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-hubot) is available on GitHub, if you'd like to clone it and try it locally.
 
 ## Kubernetes and Ansible
 
@@ -447,6 +467,10 @@ Most real-world applications require a lot more than a couple Docker containers 
 Because of this, many different container scheduling platforms have been developed which aid in deploying containers and their supporting services: Kubernetes, Mesos, Docker Swarm, Rancher, OpenShift, etc. Because of its increasing popularity and support across almost all cloud providers, this book will focus on usage of Kubernetes as a container scheduler.
 
 ### A bit of Kubernetes history
+
+TODO: Add this section.
+
+### Evaluating the need for Kubernetes
 
 TODO: Add this section.
 
