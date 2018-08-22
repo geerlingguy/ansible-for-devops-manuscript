@@ -456,7 +456,208 @@ This last connection plugin is helpful if you want to build Docker container ima
 
 To learn how the `docker` connection plugin works, we'll build a Hubot Slack bot.
 
-TODO: How to build the bot.
+#### Hubot and Slack
+
+To give a little background, [Hubot](https://hubot.github.com) is an open-source chat bot from GitHub, written in CoffeeScript, which can be connected to many different chat systems. [Slack](https://slack.com) is an popular chat platform used by many businesses to communicate. Many teams benefit from a bot like Hubot, as they can store data in Hubot for quick retrieval, or even connect Hubot to other services (like CI tools) and kick off deployments, check infrastructure health, and do other helpful things.
+
+#### Building a Docker container with Ansible
+
+The first step in setting up our bot project is to create a new directory (e.g. `docker-hubot`) and an Ansible playbook, we'll call it `main.yml`.
+
+You'll have to have Docker installed and running on the computer where you'll run this playbook, and the first few setup steps will use `connection: local` to get the container build started:
+
+{lang="text"}
+    ---
+    - hosts: localhost
+      connection: local
+      gather_facts: no
+    
+      vars:
+        base_image: node:8
+        container_name: hubot_slack
+        image_namespace: a4d
+        image_name: hubot-slack
+
+There are also a few variables defined which we'll use later in the playbook to define things like the Docker base image to be used, the name for the container we're building, and the namespace and name for the final Docker image that is generated. We don't need to `gather_facts` since we aren't going to do much on the local connection.
+
+{lang="text",starting-line-number=12}
+      pre_tasks:
+        - name: Make the latest version of the base image available locally.
+          docker_image:
+            name: '{{ base_image }}'
+            force: yes
+    
+        - name: Create the Docker container.
+          docker_container:
+            image: '{{ base_image }}'
+            name: '{{ container_name }}'
+            command: sleep infinity
+    
+        - name: Add the newly created container to the inventory.
+          add_host:
+            hostname: '{{ container_name }}'
+            ansible_connection: docker
+
+In a `pre_tasks` area, we'll set up the Docker container so we can get Hubot on it:
+
+  1. The `docker_image` task: Pull the `base_image` (Ansible's equivalent of `docker pull`), and make sure the latest version is always present when the playbook runs.
+  2. The `docker_container` task: Create a Docker container (Ansible's equivalent of `docker run`) from the `base_image`.
+  3. The `add_host` task: Add the just-created container to the Ansible inventory.
+
+Now that we have a container running and in the inventory, we can build inside of it, using the `docker` connection plugin. Following the best practices we established earlier in the book, we'll put all the reusable logic inside an Ansible role, which we'll create in a moment. For now, we can call the role about to be created in the playbook's `roles` section:
+
+{lang="text",starting-line-number=29}
+      roles:
+        - name: hubot-slack
+          delegate_to: '{{ container_name }}'
+
+Note the `delegate_to`. Any task, playbook, or role we want Ansible to run inside the Docker container needs to be delegated to the container.
+
+Before building the `hubot-slack` role, let's finish off the container image build process and the rest of the main playbook:
+
+{lang="text",starting-line-number=33}
+      post_tasks:
+        - name: Clean up the container.
+          shell: >
+            apt-get remove --purge -y python &&
+            rm -rf /var/lib/apt/lists/*
+          delegate_to: '{{ container_name }}'
+          args:
+            warn: no
+    
+        - name: Commit the container.
+          command: >
+            docker commit
+            -c 'USER hubot'
+            -c 'WORKDIR "/home/hubot"'
+            -c 'CMD ["bin/hubot", "--adapter", "slack"]'
+            -c 'VOLUME ["/home/hubot/scripts"]'
+            {{ container_name }} {{ image_namespace }}/{{ image_name }}:latest
+    
+        - name: Remove the container.
+          docker_container:
+            name: '{{ container_name }}'
+            state: absent
+
+The post-tasks clean up unneccesary cruft inside the container (trimming down the size of the committed image), commit the Docker container to an image (tagged `a4d/hubot-slack:latest`), and remove the running container.
+
+When building from a `Dockerfile`, you can set things like the `USER` (the user used to run the `CMD` or `ENTRYPOINT` in the container) and `CMD` (the defaults for an executing container) directly. In our case, since we're not building from a `Dockerfile`, we set these options using `docker commit`'s `-c` or `--change` option.
+
+Now that we have the main scaffolding in place for building a Docker container, committing an image from that container, and tearing down the container, it's time to add the 'meat' to our playbook---the role that installs Hubot and its Slack adapter.
+
+#### Building the `hubot-slack` role
+
+As with any role, the easiest way to scaffold the necessary files is using the `ansible-galaxy` command. Create a `hubot-slack` role in a `roles` subdirectory with:
+
+    ansible-galaxy init hubot-slack
+
+You can delete some role directories that won't be needed, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).
+
+Since Hubot isn't too hard to install, we can do everything we need inside `tasks/main.yml`. The first thing we need to do is ensure all the required dependencies for generating our bot are present:
+
+{lang="text"}
+    ---
+    - name: Install dependencies.
+      package:
+        name: sudo
+        state: present
+    
+    - name: Install required Node.js packages.
+      npm:
+        name: "{{ item }}"
+        state: present
+        global: yes
+      with_items:
+        - yo
+        - generator-hubot
+
+Because we want to be able to run certain commands as a `hubot` user later, we'll need `sudo` present so Ansible can `become` the `hubot` user. Then we'll install some require dependencies---`yo` and `generator-hubot`, which are used to build the bot. Node.js is already present inside the container, since we chose to build the container based off the `node:8` base image.
+
+{lang="text",starting-line-number=16}
+    - name: Ensure hubot user exists.
+      user:
+        name: hubot
+        create_home: yes
+        home: "{{ hubot_home }}"
+
+It's best to run Hubot inside an isolated directory, using a dedicated user account, so we set up a `hubot` user account with its own home directory. To make the Hubot role easier to adapt, a variable is used for the `hubot` user's home directory. We'll define that later in `defaults/main.yml`.
+
+{lang="text",starting-line-number=22}
+    - name: Generate hubot.
+      command: >
+        yo hubot
+        --owner="{{ hubot_owner }}"
+        --name="{{ hubot_name }}"
+        --description="{{ hubot_description }}"
+        --adapter=slack
+        --defaults
+        chdir={{ hubot_home }}
+      become: yes
+      become_user: hubot
+
+The `yo hubot` command scaffolds all the code necessary to run Hubot, and all the options passed in tell the generator to run non-interactively. We will define the default role `hubot_` vars in this command later in `defaults/main.yml`.
+
+{lang="text",starting-line-number=34}
+    - name: Remove certain scripts from external-scripts.json.
+      lineinfile:
+        path: "{{ hubot_home }}/external-scripts.json"
+        regexp: "{{ item }}"
+        state: absent
+      with_items:
+        - 'redis-brain'
+        - 'heroku'
+      become: yes
+      become_user: hubot
+    
+    - name: Remove the hubot-scripts.json file.
+      file:
+        path: "{{ hubot_home }}/hubot-scripts.json"
+        state: absent
+
+There are a couple cleanup tasks which make sure Hubot runs properly in this isolated container. In the `lineinfile` task, the persistent Redis connection plugin and Heroku support are removed, since they are not needed. Also, the unused `hubot-scripts.json` file is removed to prevent errors during Hubot startup.
+
+The final step in creating the `hubot-slack` role is to add default values for the variables we're using in the role, so put the following inside `defaults/main.yml`:
+
+{lang="text"}
+    ---
+    hubot_home: /home/hubot
+    hubot_owner: Ansible for DevOps
+    hubot_name: a4dbot
+    hubot_description: Ansible for DevOps test bot.
+
+#### Building and running the Hubot Slack bot container
+
+You should now have a directory containing the `main.yml` Ansible playbook and a `hubot-slack` role inside the `roles` directory. To build the container image, make sure Docker is running, and run:
+
+{lang="text",linenos=off}
+    ansible-playbook main.yml
+
+Once the playbook completes, run `docker images` to verify the `a4d/hubot-slack` image was created:
+
+{lang="text",linenos=off}
+    $ docker images
+    REPOSITORY          TAG                 IMAGE ID            SIZE
+    a4d/hubot-slack     latest              142db74437da        804MB
+    node                8                   55791187f71c        673MB
+
+Before you can run an instance of the new container image and have your bot in your Slack channels, you have to get an API token from Slack. Follow the instructions in Slack's guide, [Slack Developer Kit for Hubot](https://slackapi.github.io/hubot-slack/), and get an API token.
+
+Then run the following command to run an instance of Hubot attached to your Slack channel (replace `TOKEN` with your bot's Slack API token):
+
+{lang="text",linenos=off}
+    docker run -d --name hubot -e HUBOT_SLACK_TOKEN=TOKEN a4d/hubot-slack
+
+The container should start, and you should see a new active member in your Slack team! In Slack, you can invite the bot to channels, converse directly, etc. (send a message with `help` to the bot to get all available commands).
+
+If something went wrong, use `docker logs hubot` to find out what happened.
+
+Once you're finished playing around with Hubot, you can kill and remove the container with `docker rm -f hubot`.
+
+### Summary
+
+You can use Ansible to build containers many different ways, depending on how you want to architect your container build pipeline. Using Ansible with the `docker` connection plugin allows you to treat a Docker container much like any other server in your fleet.
+
+Some parts of an Ansible-based container build pipeline require a little more verbosity, but in the end, you can do things like use the exact same Ansible roles for VMs and bare metal servers as you do a Docker container, making your overall infrastructure maintenance easier. Instead of maintaining legacy servers using Ansible playbooks, and Docker containers using Dockerfiles, you can do everything with Ansible!
 
 The entire [Docker Hubot Slack bot example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-hubot) is available on GitHub, if you'd like to clone it and try it locally.
 
@@ -464,7 +665,7 @@ The entire [Docker Hubot Slack bot example](https://github.com/geerlingguy/ansib
 
 Most real-world applications require a lot more than a couple Docker containers running on a host. You may need five, ten, or dozens of containers running. And when you need to scale, you need them distributed across multiple hosts. And then when you have multiple containers on multiple hosts, you need to aggregate logs, monitor resource usage, etc.
 
-Because of this, many different container scheduling platforms have been developed which aid in deploying containers and their supporting services: Kubernetes, Mesos, Docker Swarm, Rancher, OpenShift, etc. Because of its increasing popularity and support across almost all cloud providers, this book will focus on usage of Kubernetes as a container scheduler.
+Because of this, many different container scheduling platforms have been developed which aid in deploying containers and their supporting services: Kubernetes, Mesos, Docker Swarm, Rancher, OpenShift, etc. Because of its increasing popularity and support across all major cloud providers, this book will focus on usage of Kubernetes as a container scheduler.
 
 ### A bit of Kubernetes history
 
@@ -474,7 +675,11 @@ TODO: Add this section.
 
 TODO: Add this section.
 
-### Building our first Kubernetes cluster
+### Building a Kubernetes cluster with Ansible
+
+TODO: Add this section.
+
+### Managing Kubernetes with Ansible
 
 TODO: Add this section.
 
