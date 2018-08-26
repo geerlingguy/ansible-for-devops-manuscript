@@ -669,15 +669,47 @@ Because of this, many different container scheduling platforms have been develop
 
 ### A bit of Kubernetes history
 
-TODO: Add this section.
+{width=40%}
+![Kubernetes logo](images/13-kubernetes-logo.png)
+
+In 2013, some Google engineers began working to create an open source representation of the internal tool Google used to run millions of containers in the Google datacenters, named Borg. The first version of Kubernetes was known as Seven of Nine (another Star Trek reference), but was finally renamed Kubernetes (a mangled translation of the Greek word for 'helmsman') to avoid potential legal issues.
+
+To keep a little of the original geek culture Trek reference, it was decided the logo would have seven sides, as a nod to the working name 'Seven of Nine'.
+
+In a few short years, Kubernetes went from being one of many up-and-coming container scheduler engines to becoming almost a _de facto_ standard for large scale container deployment. In 2015, at the same time as Kubernetes' 1.0 release, the Cloud Native Computing Foundation (CNCF) was founded, to promote containers and cloud-based infrastructure.
+
+Kubernetes is one of many projects endorsed by the CNCF for 'cloud-native' applications, and has been endorsed by VMware, Google, Twitter, IBM, Microsoft, Amazon, and many other major tech companies.
+
+By 2018, Kubernetes was available as a service offering from all the major cloud providers, and most other competing software has either begun to rebuild on top of Kubernetes, or become more of a niche player in the container scheduling space.
+
+Kubernetes is often abbreviated 'K8s' (K + eight-letters + s), and the two terms are interchangeable.
 
 ### Evaluating the need for Kubernetes
 
-TODO: Add this section.
+If Kubernetes seems to be taking the world of cloud computing by storm, should you start moving all your applications into Kubernetes clusters? Not necessarily.
+
+Kubernetes is a complex application, and even if you're using a managed Kubernetes offering, you need to learn new terminology and many new paradigms to get applications---especially non-'cloud native' applications---running smoothly.
+
+If you already have automation around existing infrastructure projects, and it's running smoothly, I would not start moving things into Kubernetes unless the following criteria are met:
+
+  1. Your application doesn't require much stateful data (e.g. most databases, many filesystem-heavy applications) that must be locally-available.
+  2. Your application has many parts which can be broken out and run on an ad-hoc basis, like cron jobs or other periodic tasks.
+
+Kubernetes, like Ansible, is best introduced incrementally into an existing organization. You might start by putting temporary workloads (like report-generating jobs) into a Kubernetes cluster. Then you can work on moving larger and persistent applications into a cluster.
+
+If you're working on a green field project, with enough resources to devote some time up front to learning the ins and outs of Kubernetes, it makes sense to at least give Kubernetes a try for running everything.
 
 ### Building a Kubernetes cluster with Ansible
 
-TODO: Add this section.
+There are a few different ways you can build a Kubernetes cluster:
+
+  - Using [`kubeadm`](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/), a tool included with Kubernetes to set up a minimal but fully functional Kubernetes cluster in any environment.
+  - Using tools like [`kops`](https://github.com/kubernetes/kops) or [`kubespray`](https://github.com/kubernetes-incubator/kubespray) to build a production-ready Kubernetes cluster in almost any environment.
+  - Using tools like Terraform or CloudFormation---or even Ansible modules---to create a managed Kubernetes cluster using a cloud provider like AWS, Google Cloud, or Azure.
+
+There are many excellent guides online for the latter options, so we'll stick to using `kubeadm` in this book's examples. And, lucky for us, there's an Ansible role (`geerlingguy.kubernetes`) which already wraps `kubeadm` in an easy-to-use manner so we can integrate it with our playbooks.
+
+TODO: Add this example.
 
 ### Managing Kubernetes with Ansible
 
