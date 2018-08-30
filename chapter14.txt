@@ -1,0 +1,252 @@
+# Chapter 14 - Kubernetes and Ansible
+
+Most real-world applications require a lot more than a couple Docker containers running on a host. You may need five, ten, or dozens of containers running. And when you need to scale, you need them distributed across multiple hosts. And then when you have multiple containers on multiple hosts, you need to aggregate logs, monitor resource usage, etc.
+
+Because of this, many different container scheduling platforms have been developed which aid in deploying containers and their supporting services: Kubernetes, Mesos, Docker Swarm, Rancher, OpenShift, etc. Because of its increasing popularity and support across all major cloud providers, this book will focus on usage of Kubernetes as a container scheduler.
+
+### A bit of Kubernetes history
+
+{width=40%}
+![Kubernetes logo](images/13-kubernetes-logo.png)
+
+In 2013, some Google engineers began working to create an open source representation of the internal tool Google used to run millions of containers in the Google datacenters, named Borg. The first version of Kubernetes was known as Seven of Nine (another Star Trek reference), but was finally renamed Kubernetes (a mangled translation of the Greek word for 'helmsman') to avoid potential legal issues.
+
+To keep a little of the original geek culture Trek reference, it was decided the logo would have seven sides, as a nod to the working name 'Seven of Nine'.
+
+In a few short years, Kubernetes went from being one of many up-and-coming container scheduler engines to becoming almost a _de facto_ standard for large scale container deployment. In 2015, at the same time as Kubernetes' 1.0 release, the Cloud Native Computing Foundation (CNCF) was founded, to promote containers and cloud-based infrastructure.
+
+Kubernetes is one of many projects endorsed by the CNCF for 'cloud-native' applications, and has been endorsed by VMware, Google, Twitter, IBM, Microsoft, Amazon, and many other major tech companies.
+
+By 2018, Kubernetes was available as a service offering from all the major cloud providers, and most other competing software has either begun to rebuild on top of Kubernetes, or become more of a niche player in the container scheduling space.
+
+Kubernetes is often abbreviated 'K8s' (K + eight-letters + s), and the two terms are interchangeable.
+
+### Evaluating the need for Kubernetes
+
+If Kubernetes seems to be taking the world of cloud computing by storm, should you start moving all your applications into Kubernetes clusters? Not necessarily.
+
+Kubernetes is a complex application, and even if you're using a managed Kubernetes offering, you need to learn new terminology and many new paradigms to get applications---especially non-'cloud native' applications---running smoothly.
+
+If you already have automation around existing infrastructure projects, and it's running smoothly, I would not start moving things into Kubernetes unless the following criteria are met:
+
+  1. Your application doesn't require much locally-available stateful data (e.g. most databases, many filesystem-heavy applications).
+  2. Your application has many parts which can be broken out and run on an ad-hoc basis, like cron jobs or other periodic tasks.
+
+Kubernetes, like Ansible, is best introduced incrementally into an existing organization. You might start by putting temporary workloads (like report-generating jobs) into a Kubernetes cluster. Then you can work on moving larger and persistent applications into a cluster.
+
+If you're working on a green field project, with enough resources to devote some time up front to learning the ins and outs of Kubernetes, it makes sense to at least give Kubernetes a try for running everything.
+
+### Building a Kubernetes cluster with Ansible
+
+There are a few different ways you can build a Kubernetes cluster:
+
+  - Using [`kubeadm`](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/), a tool included with Kubernetes to set up a minimal but fully functional Kubernetes cluster in any environment.
+  - Using tools like [`kops`](https://github.com/kubernetes/kops) or [`kubespray`](https://github.com/kubernetes-incubator/kubespray) to build a production-ready Kubernetes cluster in almost any environment.
+  - Using tools like Terraform or CloudFormation---or even Ansible modules---to create a managed Kubernetes cluster using a cloud provider like AWS, Google Cloud, or Azure.
+
+There are many excellent guides online for the latter options, so we'll stick to using `kubeadm` in this book's examples. And, lucky for us, there's an Ansible role (`geerlingguy.kubernetes`) which already wraps `kubeadm` in an easy-to-use manner so we can integrate it with our playbooks.
+
+As with other multi-server examples in this book, we can describe a three server setup to Vagrant so we can build a full 'bare metal' Kubernetes cluster. Create a project directory and add the following in a `Vagrantfile`:
+
+{lang="ruby"}
+    # -*- mode: ruby -*-
+    # vi: set ft=ruby :
+    
+    VAGRANTFILE_API_VERSION = "2"
+    
+    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+      config.vm.box = "geerlingguy/debian9"
+      config.ssh.insert_key = false
+      config.vm.provider "virtualbox"
+    
+      config.vm.provider :virtualbox do |v|
+        v.memory = 1024
+        v.cpus = 1
+        v.linked_clone = true
+      end
+    
+      # Define three VMs with static private IP addresses.
+      boxes = [
+        { :name => "master", :ip => "192.168.84.2" },
+        { :name => "node1", :ip => "192.168.84.3" },
+        { :name => "node2", :ip => "192.168.84.4" },
+      ]
+    
+      # Provision each of the VMs.
+      boxes.each do |opts|
+        config.vm.define opts[:name] do |config|
+          config.vm.hostname = opts[:name] + ".k8s.test"
+          config.vm.network :private_network, ip: opts[:ip]
+    
+          # Provision all the VMs using Ansible after last VM is up.
+          if opts[:name] == "node2"
+            config.vm.provision "ansible" do |ansible|
+              ansible.playbook = "main.yml"
+              ansible.inventory_path = "inventory"
+              ansible.limit = "all"
+            end
+          end
+        end
+      end
+    
+    end
+
+The Vagrantfile creates three VMs:
+
+  - `master`, which will be configured as the Kubernetes master server, running the scheduling engine.
+  - `node1`, a Kubernetes node to be joined to the master.
+  - `node2`, another Kubernetes node to be joined to the master.
+
+You could technically add as many more `nodeX` VMs as you want, but since most people don't have a terabyte of RAM, it's better to be conservative in a local setup!
+
+Once the `Vagrantfile` is ready, you should add an `inventory` file to tell Ansible about the VMs; note our `ansible` configuration in the Vagrantfile points to a playbook in the same directory, `main.yml` and an inventory file, `inventory`. In the inventory file, put the following contents:
+
+{lang="text"}
+    [k8s]
+    192.168.84.2 kubernetes_role=master
+    192.168.84.3 kubernetes_role=node
+    192.168.84.4 kubernetes_role=node
+    
+    [k8s:vars]
+    ansible_ssh_user=vagrant
+    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+
+We'll refer to the servers using the `k8s` inventory group in our playbook. Let's set up the playbook now:
+
+{lang="text"}
+    ---
+    - hosts: k8s
+      become: yes
+    
+      vars_files:
+        - vars/main.yml
+
+We'll operate on all the `k8s` servers defined in the `inventory`, and we'll need to operate as the root user to set up Kubernetes and its dependencies, so we add `become: yes`. Also, to keep things organized, all the playbook variables will be placed in the included vars file `vars/main.yml` (you can create that file now).
+
+Next, because Vagrant's virtual network interfaces can confuse Kubernetes and Flannel (the Kubernetes networking plugin we're going to use for inter-node communication), we need to copy a custom Flannel manifest file into the VM. Instead of printing the whole file in this book (it's a _lot_ of YAML!), you can grab a copy of the file from the URL: https://github.com/geerlingguy/ansible-for-devops/blob/master/kubernetes/files/manifests/kube-system/kube-flannel-vagrant.yml
+
+Save the file in your project folder in the path: `files/manifests/kube-system/kube-flannel-vagrant.yml`.
+
+Now add a task to copy the manifest file into place using `pre_tasks` (we need to do this before any Ansible roles are run):
+
+{lang="text",starting-line-number=8}
+      pre_tasks:
+        - name: Copy Flannel manifest tailored for Vagrant.
+          copy:
+            src: files/manifests/kube-system/kube-flannel-vagrant.yml
+            dest: "~/kube-flannel-vagrant.yml"
+
+Next we need to prepare the server to be able to run `kubelet` (all Kubernetes nodes run this service, which schedules Kubernetes Pods on individual nodes). `kubelet` has a couple special requirements:
+
+  - Swap should be disabled on the server (there are a few valid reasons why you might keep swap enabled, but it's not recommended and requires more work to get `kubelet` running well.)
+  - Docker (or an equivalent container runtime) should be installed on the server.
+
+Lucky for us, there are Ansible Galaxy roles which configure swap and install Docker, so let's add them in the playbook's `roles` section:
+
+{lang="text",starting-line-number=14}
+      roles:
+        - role: geerlingguy.swap
+          tags: ['swap', 'kubernetes']
+    
+        - role: geerlingguy.docker
+          tags: ['docker']
+
+We also need to add some configuration to ensure we have swap disabled and Docker installed correctly. Add the following variables in `vars/main.yml`:
+
+{lang="text"}
+    swap_file_state: absent
+    swap_file_path: /dev/mapper/packer--debian--9--amd64--vg-swap_1
+    
+    docker_package: docker-ce=18.06.1~ce~3-0~debian
+    docker_install_compose: False
+
+The `swap_file_path` is specific to the 64-bit Debian 9 Vagrant box used in the `Vagrantfile`, so if you want to use a different OS or install on a cloud server, the default system swap file may be at a different location.
+
+It's a best practice to specify a Docker version that's been well-tested with a particular version of Kubernetes, and in this case, the latest version of Kubernetes at the time of this writing---1.11---works best with Docker 18.06, so we lock in that package version using the `docker_package` variable.
+
+Back in the `main.yml` playbook, we'll put the last role necessary to get Kubernetes up and running on the cluster:
+
+{lang="text",starting-line-number=21}
+        - role: geerlingguy.kubernetes
+          tags: ['kubernetes']
+
+At this point, our playbook uses three Ansible Galaxy roles. To make installation and maintenance easier, add a `requirements.yml` file with the roles listed inside:
+
+{lang="text"}
+    ---
+    - src: geerlingguy.swap
+    - src: geerlingguy.docker
+    - src: geerlingguy.kubernetes
+
+Then run `ansible-galaxy install -r requirements.yml -p ./roles` to install the roles in the project directory.
+
+As a final step, before building the cluster with `vagrant up`, we need to set a few configuration options to ensure Kubernetes starts correctly and the inter-node network functions properly. Add the following variables to tell the Kubernetes role a little more about the cluster:
+
+{lang="text",starting-line-number=8}
+    kubernetes_allow_pods_on_master: False
+    kubernetes_pod_network_cidr: '10.244.0.0/16'
+    
+    kubernetes_apiserver_advertise_address: "192.168.84.2"
+    kubernetes_flannel_manifest_file: "~/kube-flannel-vagrant.yml"
+    kubernetes_kubelet_extra_args: '--node-ip={{ inventory_hostname }}'
+
+Let's go through the variables one-by-one:
+
+  - `kubernetes_allow_pods_on_master`: It's best to dedicate the Kubernetes master server to managing Kubernetes alone. You can run pods other than the Kubernetes system pods on the master if you want, but it's rarely a good idea.
+  - `kubernetes_pod_network_cidr`: Because the default network suggested in the Kubernetes documentation conflicts with many home and private network IP ranges, this custom CIDR is a bit of a safer option.
+  - `kubernetes_apiserver_advertise_address`: To ensure Kubernetes knows the correct interface to use for inter-node API communication, we explicitly set the IP of the master node (this could also be the DNS name for the master, if desired).
+  - `kubernetes_flannel_manifest_file`: Because Vagrant's virtual network interfaces confuse the default Flannel configuration, we specify the custom Flannel manifest we copied earlier in the playbook's `pre_tasks`.
+  - `kubernetes_kubelet_extra_args`: Because Vagrant's virtual network interfaces can also confuse Kubernetes, it's best to explicitly define the `node-ip` to be advertised by `kubelet`.
+
+Whew! We finally have the full project ready to go. It's time to build the cluster! Assuming all the files are in order, you can run `vagrant up`, and after a few minutes, you should have a three-node Kubernetes cluster running locally.
+
+To verify the cluster is operating normally, log into the `master` server and check the node status with `kubectl`:
+
+{lang="text"}
+    # Log into the master VM.
+    $ vagrant ssh master
+    
+    # Switch to the root user.
+    vagrant@master:~$ sudo su
+    
+    # Check node status.
+    root@master# kubectl get nodes
+    NAME      STATUS    ROLES     AGE       VERSION
+    master    Ready     master    13m       v1.11.2
+    node1     Ready     <none>    12m       v1.11.2
+    node2     Ready     <none>    12m       v1.11.2
+
+If any of the nodes aren't reporting `Ready`, then something may be misconfigured. You can check the system logs to see if `kubelet` is having trouble, or read through the Kubernetes documentation to [Troubleshoot Clusters](https://kubernetes.io/docs/tasks/debug-application-cluster/debug-cluster/).
+
+You can also check to ensure all the system pods (which run services like DNS, etcd, Flannel, and the Kubernetes API) are running correctly with the command:
+
+{lang="text"}
+    root@master# kubectl get pods -n kube-system
+
+This should print a list of all the core Kubernetes service pods (some of which are displayed multiple times---one for each node in the cluster), and the status should be `Running` after all the pods start correctly.
+
+I> The Kubernetes cluster example above can be found in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops/tree/master/kubernetes).
+
+### Managing Kubernetes with Ansible
+
+Once you have a Kubernetes cluster---whether bare metal or managed by a cloud provider---you need to deploy applications inside. Ansible has a few modules which make it easy to automate.
+
+TODO:
+  - `k8s` module
+  - `helm` module
+
+## Summary
+
+TODO: Summary here.
+
+{lang="text",linenos=off}
+     ______________________________________
+    / Never try to teach a pig to sing. It \
+    | wastes your time and annoys the pig. |
+    \ (Proverb)                            /
+     --------------------------------------
+            \   ^__^
+             \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||

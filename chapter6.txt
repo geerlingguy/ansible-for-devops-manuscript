@@ -96,7 +96,7 @@ As an example, in one of my Ansible projects, I have a task file `log_paths.yml`
       with_items: "{{ log_file_paths }}"
 
 
-In this case, the `log_file_paths` variable is set by a task earlier in my playbook—so this include file wouldn't be able to know the value of that variable until the playbook has already partly completed.
+In this case, the `log_file_paths` variable is set by a task earlier in my playbook---so this include file wouldn't be able to know the value of that variable until the playbook has already partly completed.
 
 So when I include this task file, I have to do so dynamically, for example:
 

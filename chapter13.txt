@@ -8,7 +8,7 @@ I> Prior to running example Docker commands or building and managing containers 
 
 Starting with an extremely simple example, let's build a Docker image from a Dockerfile. In this case, we want to show how Dockerfiles work and how we can use Ansible to build the image in the same way as if we were to use the command line with `docker build`.
 
-Let's start with a really simple Dockerfile:
+Let's start with a Dockerfile:
 
 {lang="text"}
     # Build an example Docker container image.
@@ -47,9 +47,9 @@ This creates a Docker container with the name `test`, and starts the container. 
 
 You can control the container using either the container ID (in this case, `bae0972c26d4`) or the name (`test`); start with `docker start [container]`, stop with `docker stop [container]`, delete/remove with `docker rm [container]`.
 
-If you delete the container (`docker rm test`) and the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image with `docker build`, then running the resulting image with `docker run`. For example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show that the container exited with the status code `1` instead of `0`.
+If you delete the container (`docker rm test`) and the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image with `docker build`, then running the resulting image with `docker run`. For example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show the container exited with the status code `1` instead of `0`.
 
-For our purposes, this is a simple enough introduction to how Docker works. To summarize:
+For our purposes, this is a good introduction to how Docker works. To summarize:
 
   - Dockerfiles contain the instructions Docker uses to build containers.
   - `docker build` builds Dockerfiles and generates container images.
@@ -91,7 +91,7 @@ I> Ansible's Docker integration may require you to install an extra Docker pytho
 
 Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker images (`$ docker images`). If all was successful, you should see a fresh `test` image in the list.
 
-Run `docker ps -a` again, though, and you'll see that the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
+Run `docker ps -a` again, though, and you'll see the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
 
 {lang="text",starting-line-number=12}
     - name: Ensure the test container is running.
@@ -100,7 +100,7 @@ Run `docker ps -a` again, though, and you'll see that the new `test` image was n
         name: test
         state: started
 
-If you run the playbook again, Ansible will start the Docker container. Check the list of containers with `docker ps -a`, and you'll note that the `test` container is again present.
+If you run the playbook again, Ansible will start the Docker container. Check the list of containers with `docker ps -a`, and you'll note the `test` container is again present.
 
 You can remove the container and the image via ansible by changing the `state` parameter to `absent` for both tasks.
 
@@ -239,7 +239,7 @@ The Flask container will have a static web application running on it, and has no
 
 Thus, for the `db` container, we have two special options: the `volumes_from` option, which mounts volumes from the specified container (in this case, the `data` container), and the `command`, which calls a shell script to start MySQL. We'll get to why we're running a shell script and not launching a MySQL daemon directly in a bit.
 
-Now that we have the playbook structured to build our simple Docker-based infrastructure, we'll build out each of the three Dockerfiles and related configuration to support the `data`, `www`, and `db` containers.
+Now that we have the playbook structured to build our Docker-based infrastructure, we'll build out each of the three Dockerfiles and related configuration to support the `data`, `www`, and `db` containers.
 
 At this point, we should have a directory structure like:
 
@@ -275,7 +275,7 @@ T> This container builds on top of the official `busybox` base image. Busybox is
 
 ### Flask container
 
-[Flask](http://flask.pocoo.org/) is a lightweight Python web framework "based on Werkzeug, Jinja 2 and good intentions". It's a great web framework for small, fast, and robust websites and apps, or even a simple API. For our purposes, we need to build a Flask app that connects to a MySQL database and displays the status of the connection on a simple web page (very much like our PHP example, in the earlier Highly-Available Infrastructure example).
+[Flask](http://flask.pocoo.org/) is a lightweight Python web framework "based on Werkzeug, Jinja 2 and good intentions". It's a great web framework for small, fast, and robust websites and apps, or even an API. For our purposes, we need to build a Flask app that connects to a MySQL database and displays the status of the connection on a basic web page (very much like our PHP example, in the earlier Highly-Available Infrastructure example).
 
 Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.j2`):
 
@@ -314,7 +314,7 @@ Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.
     if __name__ == "__main__":
         app.run(host="0.0.0.0", port=80)
 
-This simple app defines one route (`/`), listens on every interface on port 80, and shows a MySQL connection status page rendered by the template `index.html`. There's nothing particularly complicated in this application, but there is one Jinja2 variable (`{{ host_ip_address }}`) which an Ansible playbook will replace during deployment, and the app has a few dependencies (like `flask-sqlalchemy`) which will need to be installed via the Dockerfile.
+This app defines one route (`/`), listens on every interface on port 80, and shows a MySQL connection status page rendered by the template `index.html`. There's nothing particularly complicated in this application, but there is one Jinja2 variable (`{{ host_ip_address }}`) which an Ansible playbook will replace during deployment, and the app has a few dependencies (like `flask-sqlalchemy`) which will need to be installed via the Dockerfile.
 
 Since we are using a Jinja2 template to render the page, let's create that template in `docker/provisioning/www/templates/index.html` (Flask automatically picks up any templates inside a `templates` directory):
 
@@ -331,9 +331,9 @@ Since we are using a Jinja2 template to render the page, let's create that templ
     </body>
     </html>
 
-In this case, the `.html` template contains a Jinja2 variable (`{{ result }}`), and Flask will fill in that variable with the status of the MySQL connection.
+In this case, the `.html` template contains a Jinja2 variable (`{{ result }}`), and Flask will fill in the variable with the status of the MySQL connection.
 
-Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy a simple Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
+Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy an Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
 
 {lang="text"}
     # A simple Flask app container.
@@ -353,7 +353,7 @@ Now that we have the app defined, we need to build the container to run the app.
     
     EXPOSE 80
 
-Instead of installing apt and pip packages using Ansible, we'll install them using `RUN` commands in the Dockerfile. This allows those commands to be cached by Docker. Generally, more complicated package installation and configuration is easier and more maintainable inside Ansible, but in the case of simple package installation, having Docker cache the steps so future `docker build` commands take seconds instead of minutes is worth the verbosity of the Dockerfile.
+Instead of installing apt and pip packages using Ansible, we'll install them using `RUN` commands in the Dockerfile. This allows those commands to be cached by Docker. Generally, more complicated package installation and configuration is easier and more maintainable inside Ansible, but in the case of package installation, having Docker cache the steps so future `docker build` commands take seconds instead of minutes is worth the verbosity of the Dockerfile.
 
 At the end of the Dockerfile, we run a playbook (which should be located in the same directory as the Dockerfile) and expose port 80 so the app can be accessed via HTTP by the outside world. Next we'll create the app deployment playbook.
 
@@ -390,7 +390,7 @@ In order for the Flask app to function properly, we need to get the `host_ip_add
             dest: /opt/www
             mode: 0755
 
-The shell command that registers the `host_ip` is a simple way to retrieve the IP while still letting Docker do it's own virtual network management.
+The shell command that registers the `host_ip` is an easy way to retrieve the IP while still letting Docker do it's own virtual network management.
 
 The last two tasks copy the flask app and templates directory into place.
 
@@ -408,7 +408,7 @@ The `docker/provisioning/www` directory should now contain the following:
 
 We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL works inside a Docker container, with a persistent data volume from the previously-configured `data` container.
 
-For MySQL, there is already a very well-maintained and flexible community MySQL Docker image that we can rely on. To use it, we'll wrap it in our own Dockerfile (in case we want to make further customizations in the future).
+For MySQL, there is already a very well-maintained and flexible community MySQL Docker image we can rely on. To use it, we'll wrap it in our own Dockerfile (in case we want to make further customizations in the future).
 
 {lang="text"}
     # A simple MySQL container.
@@ -427,7 +427,7 @@ The `docker/provisioning/db` directory should now contain the following:
 
 ### Ship it!
 
-Now that everything's in place, you should be able to cd into the main `docker` directory, and run `vagrant up`. After 10 minutes or so, Vagrant should show that Ansible provisioning was successful, and if you visit `http://192.168.33.39/` in your browser, you should see something like the following:
+Now that everything's in place, you should be able to cd into the main `docker` directory, and run `vagrant up`. After 10 minutes or so, Vagrant should show Ansible provisioning was successful, and if you visit `http://192.168.33.39/` in your browser, you should see something like the following:
 
 {width=80%}
 ![Docker orchestration success!](images/8-docker-success.png)
@@ -440,7 +440,7 @@ The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant
 
 In the previous example, an Ansible playbook was run _inside_ a Docker container to build the Flask application image. While this approach works and is maintainable, it also makes for a lot of cruft. One major advantage of container-based app deployment is a nice tidy container image per service.
 
-To use Ansible inside a container requires a lot of dependencies—Python, Ansible's dependencies, and Ansible itself.
+To use Ansible inside a container requires a lot of dependencies---Python, Ansible's dependencies, and Ansible itself.
 
 One solution to this problem is to use [Ansible Container](https://docs.ansible.com/ansible-container/). One of the key features of Ansible Container is a container image build system which takes a set of Ansible roles and applies them to a Docker image, one by one, using a 'helper' container to run Ansible. So instead of Ansible running inside the container being built, you use Ansible to build the container. Each role is applied as a single container image layer, and there's no extra cruft.
 
@@ -478,7 +478,7 @@ You'll have to have Docker installed and running on the computer where you'll ru
         image_namespace: a4d
         image_name: hubot-slack
 
-There are also a few variables defined which we'll use later in the playbook to define things like the Docker base image to be used, the name for the container we're building, and the namespace and name for the final Docker image that is generated. We don't need to `gather_facts` since we aren't going to do much on the local connection.
+There are also a few variables defined which we'll use later in the playbook to define things like the Docker base image to be used, the name for the container we're building, and the namespace and name for the final generated Docker image. We don't need to `gather_facts` since we aren't going to do much on the local connection.
 
 {lang="text",starting-line-number=12}
       pre_tasks:
@@ -551,7 +551,7 @@ As with any role, the easiest way to scaffold the necessary files is using the `
 
     ansible-galaxy init hubot-slack
 
-You can delete some role directories that won't be needed, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).
+You can delete some unneeded role directories, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).
 
 Since Hubot isn't too hard to install, we can do everything we need inside `tasks/main.yml`. The first thing we need to do is ensure all the required dependencies for generating our bot are present:
 
@@ -661,65 +661,9 @@ Some parts of an Ansible-based container build pipeline require a little more ve
 
 The entire [Docker Hubot Slack bot example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-hubot) is available on GitHub, if you'd like to clone it and try it locally.
 
-## Kubernetes and Ansible
-
-Most real-world applications require a lot more than a couple Docker containers running on a host. You may need five, ten, or dozens of containers running. And when you need to scale, you need them distributed across multiple hosts. And then when you have multiple containers on multiple hosts, you need to aggregate logs, monitor resource usage, etc.
-
-Because of this, many different container scheduling platforms have been developed which aid in deploying containers and their supporting services: Kubernetes, Mesos, Docker Swarm, Rancher, OpenShift, etc. Because of its increasing popularity and support across all major cloud providers, this book will focus on usage of Kubernetes as a container scheduler.
-
-### A bit of Kubernetes history
-
-{width=40%}
-![Kubernetes logo](images/13-kubernetes-logo.png)
-
-In 2013, some Google engineers began working to create an open source representation of the internal tool Google used to run millions of containers in the Google datacenters, named Borg. The first version of Kubernetes was known as Seven of Nine (another Star Trek reference), but was finally renamed Kubernetes (a mangled translation of the Greek word for 'helmsman') to avoid potential legal issues.
-
-To keep a little of the original geek culture Trek reference, it was decided the logo would have seven sides, as a nod to the working name 'Seven of Nine'.
-
-In a few short years, Kubernetes went from being one of many up-and-coming container scheduler engines to becoming almost a _de facto_ standard for large scale container deployment. In 2015, at the same time as Kubernetes' 1.0 release, the Cloud Native Computing Foundation (CNCF) was founded, to promote containers and cloud-based infrastructure.
-
-Kubernetes is one of many projects endorsed by the CNCF for 'cloud-native' applications, and has been endorsed by VMware, Google, Twitter, IBM, Microsoft, Amazon, and many other major tech companies.
-
-By 2018, Kubernetes was available as a service offering from all the major cloud providers, and most other competing software has either begun to rebuild on top of Kubernetes, or become more of a niche player in the container scheduling space.
-
-Kubernetes is often abbreviated 'K8s' (K + eight-letters + s), and the two terms are interchangeable.
-
-### Evaluating the need for Kubernetes
-
-If Kubernetes seems to be taking the world of cloud computing by storm, should you start moving all your applications into Kubernetes clusters? Not necessarily.
-
-Kubernetes is a complex application, and even if you're using a managed Kubernetes offering, you need to learn new terminology and many new paradigms to get applications---especially non-'cloud native' applications---running smoothly.
-
-If you already have automation around existing infrastructure projects, and it's running smoothly, I would not start moving things into Kubernetes unless the following criteria are met:
-
-  1. Your application doesn't require much stateful data (e.g. most databases, many filesystem-heavy applications) that must be locally-available.
-  2. Your application has many parts which can be broken out and run on an ad-hoc basis, like cron jobs or other periodic tasks.
-
-Kubernetes, like Ansible, is best introduced incrementally into an existing organization. You might start by putting temporary workloads (like report-generating jobs) into a Kubernetes cluster. Then you can work on moving larger and persistent applications into a cluster.
-
-If you're working on a green field project, with enough resources to devote some time up front to learning the ins and outs of Kubernetes, it makes sense to at least give Kubernetes a try for running everything.
-
-### Building a Kubernetes cluster with Ansible
-
-There are a few different ways you can build a Kubernetes cluster:
-
-  - Using [`kubeadm`](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/), a tool included with Kubernetes to set up a minimal but fully functional Kubernetes cluster in any environment.
-  - Using tools like [`kops`](https://github.com/kubernetes/kops) or [`kubespray`](https://github.com/kubernetes-incubator/kubespray) to build a production-ready Kubernetes cluster in almost any environment.
-  - Using tools like Terraform or CloudFormation---or even Ansible modules---to create a managed Kubernetes cluster using a cloud provider like AWS, Google Cloud, or Azure.
-
-There are many excellent guides online for the latter options, so we'll stick to using `kubeadm` in this book's examples. And, lucky for us, there's an Ansible role (`geerlingguy.kubernetes`) which already wraps `kubeadm` in an easy-to-use manner so we can integrate it with our playbooks.
-
-TODO: Add this example.
-
-### Managing Kubernetes with Ansible
-
-TODO: Add this section.
-
 ## Summary
 
-The examples shown here barely scratch the surface of what makes Docker (and container-based application deployment in general) a fascinating and useful application deployment tool. Docker, Kubernetes, and other container-based tools are still in their infancy, so there are dozens of ways manage the building, running, and linking of containers. Ansible is a solid contender for managing your entire container-based application lifecycle (_and_ the infrastruction on which it runs).
-
-##
+The examples shown here barely scratch the surface of what makes Docker (and container-based application deployment in general) a fascinating and useful application deployment tool. Docker and other container-based tools are still in their infancy, so there are dozens of ways manage the building, running, and linking of containers. Ansible is a solid contender for managing your entire container-based application lifecycle (_and_ the infrastruction on which it runs).
 
 {lang="text",linenos=off}
      _________________________________________

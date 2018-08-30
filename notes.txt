@@ -1,31 +1,10 @@
 # Notes
 
-## TODO
-
-  - Ansible AWX:
-    - Difference between tower and AWX
-    - Getting started with AWX vs Tower?
-  - Ansible Performance:
-    - https://www.jeffgeerling.com/blog/2017/slow-ansible-playbook-check-ansiblecfg
-    - `synchronize` vs `copy`
-    - Merge all packages into one task (can use with_items)
-    - Simple vars? (do complex var objects cause slowdown?)
-
 ## General TODO
 
   - Import people from LeanPub mailing list into MailChimp Mailing List.
-  - Fix iBooks - add screenshots of some of the pages to the released book (so they're on the iBooks Store!)
+  - Fix iBooks - add screenshots of some of the pages to the released book.
   - Create favicon.ico for website.
-
-## Competition / Similar works:
-
-  - [Taste Test - Puppet - Chef - Salt - Ansible](http://devopsu.com/books/taste-test-puppet-chef-salt-stack-ansible.html)
-  - [Ansible Configuration Management](http://www.packtpub.com/ansible-configuration-management/book)
-    - Kindle: http://amzn.to/1FQarHQ
-  - [Ansible Up & Running](http://shop.oreilly.com/product/0636920035626.do)
-    - Kindle: http://amzn.to/1GxGK4Z
-  - [Learning Ansible](https://www.packtpub.com/networking-and-servers/learning-ansible)
-    - Kindle: http://amzn.to/1GxGHWW
 
 ## Editing notes:
 
@@ -56,21 +35,27 @@
 ## Cowsay
 
   - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
-  - "Never try to teach a pig to sing. It wastes your time and annoys the pig. (Proverb)."
 
-## For 2nd Edition
+## Improvements/new chapter ideas
 
-  - Testing:
-    - [Ansible Role Test VMs](https://github.com/geerlingguy/ansible-role-test-vms)
-    - Example of TestKitchen?
-  - Ansible and Jinja2
+  - Ansible AWX:
+    - Difference between tower and AWX
+    - Getting started with AWX vs Tower?
+  - Testing with [Molecule](https://github.com/geerlingguy/ansible-for-devops/issues/101)
+  - Ansible and Jinja2 (advanced)
   - New features
     - 2.0: Playbook Execution Strategies (`linear`, `free`, etc.).
   - High Performance / Scalable Ansible:
+    - https://www.jeffgeerling.com/blog/2017/slow-ansible-playbook-check-ansiblecfg
+    - `synchronize` vs `copy`
+    - Merge all packages into one task (can use with_items)
+    - Simple vars? (do complex var objects cause slowdown?)
     - Asynchronous actions
     - Polling
     - Distributed Ansible
     - Redis-based fact cache
+  - Networking (routers? other stuff?)
+  - Windows and Ansible (maybe?)
   - Security and Secret management
     - SSH private key management and security (see emails to/from Erik-jan Reimers)
     - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)

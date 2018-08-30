@@ -16,6 +16,7 @@ chapter10.txt
 chapter11.txt
 chapter12.txt
 chapter13.txt
+chapter14.txt
 afterword.txt
 backmatter.txt
 appendix-a.txt
