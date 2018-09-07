@@ -6,8 +6,8 @@ Because of this, many different container scheduling platforms have been develop
 
 ### A bit of Kubernetes history
 
-{width=40%}
-![Kubernetes logo](images/13-kubernetes-logo.png)
+{width=30%}
+![Kubernetes logo](images/14-kubernetes-logo.png)
 
 In 2013, some Google engineers began working to create an open source representation of the internal tool Google used to run millions of containers in the Google datacenters, named Borg. The first version of Kubernetes was known as Seven of Nine (another Star Trek reference), but was finally renamed Kubernetes (a mangled translation of the Greek word for 'helmsman') to avoid potential legal issues.
 
@@ -102,16 +102,24 @@ You could technically add as many more `nodeX` VMs as you want, but since most p
 Once the `Vagrantfile` is ready, you should add an `inventory` file to tell Ansible about the VMs; note our `ansible` configuration in the Vagrantfile points to a playbook in the same directory, `main.yml` and an inventory file, `inventory`. In the inventory file, put the following contents:
 
 {lang="text"}
-    [k8s]
-    192.168.84.2 kubernetes_role=master
-    192.168.84.3 kubernetes_role=node
-    192.168.84.4 kubernetes_role=node
+    [k8s-master]
+    master ansible_host=192.168.84.2 kubernetes_role=master
+    
+    [k8s-nodes]
+    node1 ansible_host=192.168.84.3 kubernetes_role=node
+    node2 ansible_host=192.168.84.4 kubernetes_role=node
+    
+    [k8s:children]
+    k8s-master
+    k8s-nodes
     
     [k8s:vars]
     ansible_ssh_user=vagrant
     ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
 
-We'll refer to the servers using the `k8s` inventory group in our playbook. Let's set up the playbook now:
+The inventory is broken up into three groups: `k8s-master` (the Kubernetes master), `k8s-nodes` (all the nodes that will join the master), and `k8s` (a group with all the servers, helpful for initializing the cluster or operating on all the servers at once).
+
+We'll refer to the servers using the `k8s` inventory group in our Kubernetes setup playbook. Let's set up the playbook now:
 
 {lang="text"}
     ---
@@ -231,13 +239,302 @@ I> The Kubernetes cluster example above can be found in the [Ansible for DevOps 
 
 Once you have a Kubernetes cluster---whether bare metal or managed by a cloud provider---you need to deploy applications inside. Ansible has a few modules which make it easy to automate.
 
-TODO:
-  - `k8s` module
-  - `helm` module
+#### Ansible's `k8s` module
+
+The `k8s` module (also aliased as `k8s_raw` and `kubernetes`) requires the OpenShift Python client to communicate with the Kubernetes API. So before using the `k8s` role, you need to install the client. Since it's installed with `pip`, we need to install Pip as well.
+
+Create a new `k8s-module.yml` playbook in an `examples` directory in the same project we used to set up the Kubernetes cluster, and put the following inside:
+
+{lang="text"}
+    ---
+    - hosts: k8s-master
+      become: yes
+    
+      pre_tasks:
+        - name: Ensure Pip is installed.
+          package:
+            name: python-pip
+            state: present
+    
+        - name: Ensure OpenShift client is installed.
+          pip:
+            name: openshift
+            state: present
+
+We'll soon add a task to create a Kubernetes deployment that runs three Nginx replicas based on the official Nginx Docker image. Before adding the task, we need to create a Kubernetes manifest, or definition file. Create a file in the path `examples/files/nginx.yml`, and put in the following contents:
+
+{lang="text"}
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: a4d-nginx
+      namespace: default
+      labels:
+        app: nginx
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: nginx
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: nginx:1.7.9
+            ports:
+            - containerPort: 80
+
+We won't get into the details of how Kubernetes manifests work, or why it's structured the way it is. If you want more details about this example, please read through the Kubernetes documentation, specifically [Creating a Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#creating-a-deployment).
+
+Going back to the `k8s-module.yml` playbook, add a `tasks` section which uses the `k8s` module to apply the `nginx.yml` manifest to the Kubernetes cluster:
+
+{lang="text",starting-line-number=16}
+    tasks:
+      - name: Apply definition file from Ansible controller file system.
+        k8s:
+          state: present
+          definition: "{{ lookup('file', 'files/nginx.yml') | from_yaml }}"
+
+We now have a complete playbook! Run it with the command:
+
+{lang="text",linenos="off"}
+    ansible-playbook -i ../inventory k8s-module.yml
+
+If you log back into the master VM (`vagrant ssh master`), change to the root user (`sudo su`), and list all the deployments (`kubectl get deployments`), you should see the new deployment that was just applied:
+
+{lang="text",linenos="off"}
+    root@master:/home/vagrant# kubectl get deployments
+    NAME        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+    a4d-nginx   3         3         3            3           3m
+
+People can't access the deployment from the outside, though. For that, we need to expose Nginx to the world. And to do that, we could add more to the `nginx.yml` manifest file, _or_ we can also apply it directly with the `k8s` module. Add another task:
+
+{lang="text",starting-line-number=22}
+    - name: Expose the Nginx service with an inline Service definition.
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            labels:
+              app: nginx
+            name: a4d-nginx
+            namespace: default
+          spec:
+            type: NodePort
+            ports:
+            - port: 80
+              protocol: TCP
+              targetPort: 80
+            selector:
+              app: nginx
+
+This definition is defined inline with the Ansible playbook. I generally prefer to keep the Kubernetes manifest definitions in separate files, just to keep my playbooks more concise, but either way works great!
+
+If you run the playbook again, then log back into the master to use `kubectl` like earlier, you should be able to see the new `Service` using `kubectl get services`:
+
+{lang="text",linenos="off"}
+    root@master:/home/vagrant# kubectl get services
+    NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+    a4d-nginx    NodePort    10.101.211.71   <none>        80:30681/TCP   3m
+    kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP        5d
+
+The Service exposes a `NodePort` on each of the Kubernetes nodes---in this case, port `30681`, so you can send a request to any node IP or DNS name and the request will be routed by Kubernetes to an Nginx service Pod, no matter what node it's running on.
+
+So in the example above, I visited `http://192.168.84.3:30681/`, and got the default Nginx wecome message:
+
+{width=80%}
+![Welcome to nginx message in browser](images/14-kubernetes-nginx-welcome.png)
+
+For a final example, it might be convenient for the playbook to output a debug message with the NodePort the Service is using. In addition to applying or deleting Kubernetes manifests, the `k8s` module can get cluster and resource information that can be used elsewhere in your playbooks.
+
+Add two final tasks to retrieve the NodePort for the `a4d-nginx` service, then display it using `debug`:
+
+{lang="text",starting-line-number=42}
+    - name: Get the details of the a4d-nginx Service.
+      k8s:
+        api_version: v1
+        kind: Service
+        name: a4d-nginx
+        namespace: default
+      register: a4d_nginx_service
+    
+    - name: Print the NodePort of the a4d-nginx Service.
+      debug:
+        var: a4d_nginx_service.result.spec.ports[0].nodePort
+
+When you run the playbook, you should now see the NodePort in the debug output:
+
+{lang="text",linenos="off"}
+    TASK [Print the NodePort of the a4d-nginx Service.] *******************************************************************************************
+    ok: [master] => {
+        "a4d_nginx_service.result.spec.ports[0].nodePort": "30681"
+    }
+
+For bonus points, you can build a separate cleanup playbook to delete the Service and Deployment objects using `state: absent`:
+
+{lang="text",linenos="off"}
+    ---
+    - hosts: k8s-master
+      become: yes
+    
+      tasks:
+        - name: Remove resources in Nginx Deployment definition.
+          k8s:
+            state: absent
+            definition: "{{ lookup('file', 'files/nginx.yml') | from_yaml }}"
+    
+        - name: Remove the Nginx Service.
+          k8s:
+            state: absent
+            api_version: v1
+            kind: Service
+            namespace: default
+            name: a4d-nginx
+
+You could build an entire ecosystem of applications using nothing but Ansible's `k8s` module and custom manifests. But there are many times when you might not have the time to tweak a bunch of Deployments, Services, etc. to get a complex application running, especially if it's an application with many components that you're not familiar with.
+
+Luckily, the Kubernetes community has put together a number of 'charts' describing common Kubernetes applications, and you can install them using [Helm](https://www.helm.sh).
+
+#### Managing Kubernetes Applications with Helm
+
+Helm consists of two components: `helm`, a binary which you install on a control machine to control applications in a Kubernetes cluster, and Tiller, the component which runs inside the Kubernetes cluster and coordinates chart operations triggered by Helm.
+
+To automate Helm and Tiller setup, we'll create a playbook that installs the `helm` binary, configures Kubernetes to allow Tiller to manage resources, and then runs `helm init` to initialize Tiller in the cluster.
+
+Create a `helm.yml` playbook in the `examples` directory, and put in the following:
+
+{lang="text"}
+    ---
+    - hosts: k8s-master
+      become: yes
+    
+      tasks:
+        - name: Create Tiller namespace.
+          k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: ServiceAccount
+              metadata:
+                name: tiller
+                namespace: kube-system
+    
+        - name: Apply Tiller RBAC definition.
+          k8s:
+            state: present
+            definition: "{{ lookup('file', 'files/tiller-rbac.yml') | from_yaml }}"
+    
+        - name: Retrieve helm binary archive.
+          unarchive:
+            src: https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz
+            dest: /tmp
+            creates: /usr/local/bin/helm
+            remote_src: yes
+    
+        - name: Move helm binary into place.
+          command: >
+            cp /tmp/linux-amd64/helm /usr/local/bin/helm
+            creates=/usr/local/bin/helm
+    
+        - name: Set up Helm and Tiller.
+          command: helm init --service-account tiller
+          register: helm_init_result
+          changed_when: "'already installed' not in helm_init_result.stdout"
+
+Tiller needs to be allowed to manage certain resources in the cluster, so the first two tasks in this playbook define a `tiller` namespace which Tiller will operate within, and then apply an RBAC defintion which defines a `ClusterRoleBinding` that allows Tiller to operate as a `cluster-admin`. Create the `tiller-rbac.yml` file inside the `examples/files` directory, with the contents:
+
+{lang="text"}
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1beta1
+    kind: ClusterRoleBinding
+    metadata:
+      name: tiller
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+      - kind: ServiceAccount
+        name: tiller
+        namespace: kube-system
+
+The next tasks in the Helm playbook download `helm`, place it in `/usr/local/bin`, and then initializes `helm` in the local user account, and `tiller` in the Kubernetes cluster (utilizing the `tiller` service account we configured in the `tiller-rbac.yml` manifest).
+
+At this point, if you run the playbook, then check running services, you should see Tiller running, ready to deploy new Helm charts:
+
+{lang="text",linenos="off"}
+    root@master:/home/vagrant# kubectl get services -n kube-system
+    NAME            TYPE        CLUSTER-IP      PORT(S)         AGE
+    kube-dns        ClusterIP   10.96.0.10      53/UDP,53/TCP   6d
+    tiller-deploy   ClusterIP   10.99.161.154   44134/TCP       5m
+
+Let's take it a little further, though, and automate the deployment of a chart maintained in Helm's `stable` chart collection. Add more tasks to the playbook:
+
+{lang="text",starting-line-number=38}
+    - name: Get Tiller's ClusterIP.
+      k8s:
+        api_version: v1
+        kind: Service
+        name: tiller-deploy
+        namespace: kube-system
+      register: tiller_service
+    
+    - name: Set the Helm host and port.
+      set_fact:
+        helm_host: "{{ tiller_service.result.spec.clusterIP }}"
+        helm_port: "{{ tiller_service.result.spec.ports[0].port }}"
+    
+    - name: Wait for Tiller to become responsive.
+      wait_for:
+        host: '{{ helm_host }}'
+        port: '{{ helm_port }}'
+        state: started
+    
+    - name: List installed Helm charts.
+      command: helm list
+      environment:
+        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
+      register: helm_list_results
+      changed_when: False
+    
+    - name: Install phpMyAdmin with Helm.
+      command: >
+        helm install --name phpmyadmin stable/phpmyadmin
+        --set service.type=NodePort
+      environment:
+        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
+      when: "'phpmyadmin' not in helm_list_results.stdout"
+
+After `helm init` is run, the `tiller-deploy` service takes a little time to start up. The first three tasks get the tiller IP address and port, then wait for tiller to be responsive (using `wait_for`) before the rest of the playbook runs.
+
+Then we check all deployed charts using the command `helm list`, and if the chart we are deploying (`phpmyadmin`) is not in the list results, we install it with the command `helm install stable/phpmyadmin`. Note that we explicitly define the `HELM_HOST` environment variable. Without this, the `helm` command may have a hard time finding the right host for Tiller.
+
+Also, because the default for most Helm charts is to use a service type of `LoadBalancer`, and it's a little difficult to set up Load Balancer services in a bare metal Kubernetes cluster, we are overriding the `service.type` for the `stable/phpmyadmin` chart and forcing it to use `NodePort`.
+
+W> Many charts (e.g. `stable/wordpress`, `stable/drupal`, `stable/jenkins`) will install but won't fully run on this Kubernetes cluster, because they require Persistent Volumes (PVs), which require some kind of shared filesystem (e.g. NFS, Ceph, Gluster, or something similar) among all the nodes. If you want to use charts which require PVs, check out the NFS configuration used in the [Raspberry Pi Dramble](https://github.com/geerlingguy/raspberry-pi-dramble) project, which allows applications to use Kubernetes PVs and PVCs.
+
+After running the playbook, log into the master, change to the root user (`sudo su`), and run `kubectl get services`. You should see a `phpmyadmin` service, along with a `NodePort` like `80:31872/TCP`.
+
+You can append this port to the IP address of any of the cluster members, and after the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
+
+{width=80%}
+![phpMyAdmin running in the browser on a NodePort](images/14-kubernetes-helm-phpmyadmin.png)
+
+#### Interacting with Pods using the `kubectl` connection plugin
+
+TODO: Describe.
 
 ## Summary
 
-TODO: Summary here.
+There are many ways you can build a Kubernetes cluster, whether on a managed cloud platform or bare metal. There are also many ways to deploy and manage applications within a Kubernetes cluster.
+
+Ansible's robust variable management, Jinja templating, and YAML support makes it a strong contender for managing Kubernetes resources. At the time of this writing, Ansible has a stable `k8s` module, an experimental `helm` module, and a `kubectl` connection plugin, and the interaction between Ansible and Kubernetes still has room for further refinement.
 
 {lang="text",linenos=off}
      ______________________________________
