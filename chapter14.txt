@@ -519,9 +519,22 @@ Also, because the default for most Helm charts is to use a service type of `Load
 
 W> Many charts (e.g. `stable/wordpress`, `stable/drupal`, `stable/jenkins`) will install but won't fully run on this Kubernetes cluster, because they require Persistent Volumes (PVs), which require some kind of shared filesystem (e.g. NFS, Ceph, Gluster, or something similar) among all the nodes. If you want to use charts which require PVs, check out the NFS configuration used in the [Raspberry Pi Dramble](https://github.com/geerlingguy/raspberry-pi-dramble) project, which allows applications to use Kubernetes PVs and PVCs.
 
-After running the playbook, log into the master, change to the root user (`sudo su`), and run `kubectl get services`. You should see a `phpmyadmin` service, along with a `NodePort` like `80:31872/TCP`.
+At this point, you could log into the master, change to the root user (`sudo su`), and run `kubectl get services` to see the `phpmyadmin` service's `NodePort`, but it's better to automate that step at the end of the `helm.yml` playbook:
 
-You can append this port to the IP address of any of the cluster members, and after the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
+{lang="text",starting-line-number=72}
+    - name: Get the details of the phpmyadmin Service.
+      k8s:
+        api_version: v1
+        kind: Service
+        name: phpmyadmin
+        namespace: default
+      register: phpmyadmin_service
+    
+    - name: Print the NodePort of the phpmyadmin Service.
+      debug:
+        var: phpmyadmin_service.result.spec.ports[0].nodePort
+
+Run the playbook, grab the debug value, and append the port to the IP address of any of the cluster members. Once the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
 
 {width=80%}
 ![phpMyAdmin running in the browser on a NodePort](images/14-kubernetes-helm-phpmyadmin.png)
