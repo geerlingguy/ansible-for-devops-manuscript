@@ -80,12 +80,15 @@ Create a new folder for the Self-Signed Certificate webserver playbook, and add 
       pre_tasks:
         - name: Ensure apt cache is updated.
           apt: update_cache=yes cache_valid_time=600
+    
+        - name: Install dependency for pyopenssl.
+          apt: name=libssl-dev state=present
 
 To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later).
 
 Next, to save some time, we can rely on some Ansible Galaxy roles to install and configure some required software on the server:
 
-{lang="text",starting-line-number=11}
+{lang="text",starting-line-number=14}
       roles:
         - geerlingguy.firewall
         - geerlingguy.pip
@@ -141,7 +144,7 @@ For Nginx, we want the default virtual host (server) which comes with the distro
 
 Now that we have all the base packages installed and configured, the next step is to generate the self-signed certificate. To keep our playbook clean, the required tasks can go into an imported task file, imported in the `main.yml` like so:
 
-{lang="text",starting-line-number=16}
+{lang="text",starting-line-number=19}
       tasks:
         - import_tasks: tasks/self-signed-cert.yml
 
@@ -182,7 +185,7 @@ Now that the playbook can generate a certificate (or on future runs, idempotentl
 
 The `geerlingguy.nginx` role took care of the majority of Nginx configuration, but we disabled that role's management of virtual hosts, in favor of managing a single virtual host (or `server` directive) ourselves. The following tasks copy an example landing page into a defined docroot, then our custom HTTPS `server` configuration to use the generated cert for the docroot:
 
-{lang="text",starting-line-number=19}
+{lang="text",starting-line-number=22}
         - name: Ensure docroot exists.
           file:
             path: "{{ nginx_docroot }}"

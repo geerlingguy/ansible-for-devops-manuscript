@@ -24,6 +24,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   15. Add Hubot Slack bot example in chapter 13.
   16. Add chapter 14, dedicated to Kubernetes and Ansible.
   17. Fixed typo in MySQL example in chapter 8 (thanks to ck05!).
+  18. Install dependency `libssl-dev` to ensure self-signed cert example works in chapter 12.
 
 ## Version 1.16 (2018-03-15)
 

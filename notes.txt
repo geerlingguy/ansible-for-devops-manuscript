@@ -38,6 +38,9 @@
 
 ## Improvements/new chapter ideas
 
+  - New things from blog:
+    - `reboot:` module (see Sam Doran's blog post)
+    - Profiling roles and tasks with callback plugins (see Sam Doran's blog post)
   - Ansible AWX:
     - Difference between tower and AWX
     - Getting started with AWX vs Tower?
