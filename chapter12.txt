@@ -84,7 +84,7 @@ Create a new folder for the Self-Signed Certificate webserver playbook, and add 
         - name: Install dependency for pyopenssl.
           apt: name=libssl-dev state=present
 
-To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later).
+To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later). Finally, `libssl-dev` is a dependency we'll need to have on the system to make sure `pyopenssl` can be installed by `pip` later, so we'll do that too.
 
 Next, to save some time, we can rely on some Ansible Galaxy roles to install and configure some required software on the server:
 
