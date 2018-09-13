@@ -210,7 +210,7 @@ Whew! We finally have the full project ready to go. It's time to build the clust
 
 To verify the cluster is operating normally, log into the `master` server and check the node status with `kubectl`:
 
-{lang="text"}
+{lang="text",linenos="off"}
     # Log into the master VM.
     $ vagrant ssh master
     
@@ -293,11 +293,11 @@ We won't get into the details of how Kubernetes manifests work, or why it's stru
 Going back to the `k8s-module.yml` playbook, add a `tasks` section which uses the `k8s` module to apply the `nginx.yml` manifest to the Kubernetes cluster:
 
 {lang="text",starting-line-number=16}
-    tasks:
-      - name: Apply definition file from Ansible controller file system.
-        k8s:
-          state: present
-          definition: "{{ lookup('file', 'files/nginx.yml') | from_yaml }}"
+      tasks:
+        - name: Apply definition file from Ansible controller file system.
+          k8s:
+            state: present
+            definition: "{{ lookup('file', 'files/nginx.yml') | from_yaml }}"
 
 We now have a complete playbook! Run it with the command:
 
@@ -314,25 +314,25 @@ If you log back into the master VM (`vagrant ssh master`), change to the root us
 People can't access the deployment from the outside, though. For that, we need to expose Nginx to the world. And to do that, we could add more to the `nginx.yml` manifest file, _or_ we can also apply it directly with the `k8s` module. Add another task:
 
 {lang="text",starting-line-number=22}
-    - name: Expose the Nginx service with an inline Service definition.
-      k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Service
-          metadata:
-            labels:
-              app: nginx
-            name: a4d-nginx
-            namespace: default
-          spec:
-            type: NodePort
-            ports:
-            - port: 80
-              protocol: TCP
-              targetPort: 80
-            selector:
-              app: nginx
+        - name: Expose the Nginx service with an inline Service definition.
+          k8s:
+            state: present
+            definition:
+              apiVersion: v1
+              kind: Service
+              metadata:
+                labels:
+                  app: nginx
+                name: a4d-nginx
+                namespace: default
+              spec:
+                type: NodePort
+                ports:
+                - port: 80
+                  protocol: TCP
+                  targetPort: 80
+                selector:
+                  app: nginx
 
 This definition is defined inline with the Ansible playbook. I generally prefer to keep the Kubernetes manifest definitions in separate files, just to keep my playbooks more concise, but either way works great!
 
@@ -356,17 +356,17 @@ For a final example, it might be convenient for the playbook to output a debug m
 Add two final tasks to retrieve the NodePort for the `a4d-nginx` service, then display it using `debug`:
 
 {lang="text",starting-line-number=42}
-    - name: Get the details of the a4d-nginx Service.
-      k8s:
-        api_version: v1
-        kind: Service
-        name: a4d-nginx
-        namespace: default
-      register: a4d_nginx_service
+        - name: Get the details of the a4d-nginx Service.
+          k8s:
+            api_version: v1
+            kind: Service
+            name: a4d-nginx
+            namespace: default
+          register: a4d_nginx_service
     
-    - name: Print the NodePort of the a4d-nginx Service.
-      debug:
-        var: a4d_nginx_service.result.spec.ports[0].nodePort
+        - name: Print the NodePort of the a4d-nginx Service.
+          debug:
+            var: a4d_nginx_service.result.spec.ports[0].nodePort
 
 When you run the playbook, you should now see the NodePort in the debug output:
 
@@ -378,7 +378,7 @@ When you run the playbook, you should now see the NodePort in the debug output:
 
 For bonus points, you can build a separate cleanup playbook to delete the Service and Deployment objects using `state: absent`:
 
-{lang="text",linenos="off"}
+{lang="text"}
     ---
     - hosts: k8s-master
       become: yes
@@ -477,39 +477,39 @@ At this point, if you run the playbook, then check running services, you should 
 Let's take it a little further, though, and automate the deployment of a chart maintained in Helm's `stable` chart collection. Add more tasks to the playbook:
 
 {lang="text",starting-line-number=38}
-    - name: Get Tiller's ClusterIP.
-      k8s:
-        api_version: v1
-        kind: Service
-        name: tiller-deploy
-        namespace: kube-system
-      register: tiller_service
-    
-    - name: Set the Helm host and port.
-      set_fact:
-        helm_host: "{{ tiller_service.result.spec.clusterIP }}"
-        helm_port: "{{ tiller_service.result.spec.ports[0].port }}"
-    
-    - name: Wait for Tiller to become responsive.
-      wait_for:
-        host: '{{ helm_host }}'
-        port: '{{ helm_port }}'
-        state: started
-    
-    - name: List installed Helm charts.
-      command: helm list
-      environment:
-        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
-      register: helm_list_results
-      changed_when: False
-    
-    - name: Install phpMyAdmin with Helm.
-      command: >
-        helm install --name phpmyadmin stable/phpmyadmin
-        --set service.type=NodePort
-      environment:
-        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
-      when: "'phpmyadmin' not in helm_list_results.stdout"
+        - name: Get Tiller's ClusterIP.
+          k8s:
+            api_version: v1
+            kind: Service
+            name: tiller-deploy
+            namespace: kube-system
+          register: tiller_service
+        
+        - name: Set the Helm host and port.
+          set_fact:
+            helm_host: "{{ tiller_service.result.spec.clusterIP }}"
+            helm_port: "{{ tiller_service.result.spec.ports[0].port }}"
+        
+        - name: Wait for Tiller to become responsive.
+          wait_for:
+            host: '{{ helm_host }}'
+            port: '{{ helm_port }}'
+            state: started
+        
+        - name: List installed Helm charts.
+          command: helm list
+          environment:
+            HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
+          register: helm_list_results
+          changed_when: False
+        
+        - name: Install phpMyAdmin with Helm.
+          command: >
+            helm install --name phpmyadmin stable/phpmyadmin
+            --set service.type=NodePort
+          environment:
+            HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
+          when: "'phpmyadmin' not in helm_list_results.stdout"
 
 After `helm init` is run, the `tiller-deploy` service takes a little time to start up. The first three tasks get the tiller IP address and port, then wait for tiller to be responsive (using `wait_for`) before the rest of the playbook runs.
 
@@ -522,17 +522,17 @@ W> Many charts (e.g. `stable/wordpress`, `stable/drupal`, `stable/jenkins`) will
 At this point, you could log into the master, change to the root user (`sudo su`), and run `kubectl get services` to see the `phpmyadmin` service's `NodePort`, but it's better to automate that step at the end of the `helm.yml` playbook:
 
 {lang="text",starting-line-number=72}
-    - name: Get the details of the phpmyadmin Service.
-      k8s:
-        api_version: v1
-        kind: Service
-        name: phpmyadmin
-        namespace: default
-      register: phpmyadmin_service
-    
-    - name: Print the NodePort of the phpmyadmin Service.
-      debug:
-        var: phpmyadmin_service.result.spec.ports[0].nodePort
+        - name: Get the details of the phpmyadmin Service.
+          k8s:
+            api_version: v1
+            kind: Service
+            name: phpmyadmin
+            namespace: default
+          register: phpmyadmin_service
+        
+        - name: Print the NodePort of the phpmyadmin Service.
+          debug:
+            var: phpmyadmin_service.result.spec.ports[0].nodePort
 
 Run the playbook, grab the debug value, and append the port to the IP address of any of the cluster members. Once the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
 

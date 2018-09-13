@@ -94,11 +94,11 @@ Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker i
 Run `docker ps -a` again, though, and you'll see the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
 
 {lang="text",starting-line-number=12}
-    - name: Ensure the test container is running.
-      docker_container:
-        image: test:latest
-        name: test
-        state: started
+        - name: Ensure the test container is running.
+          docker_container:
+            image: test:latest
+            name: test
+            state: started
 
 If you run the playbook again, Ansible will start the Docker container. Check the list of containers with `docker ps -a`, and you'll note the `test` container is again present.
 
