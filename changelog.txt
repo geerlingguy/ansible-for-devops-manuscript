@@ -7,6 +7,9 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Current Version
 
   ----------- Website updated to here ------------------------------------------
+
+## Version 1.17 (2018-09-12)
+
   1. Updated Mac Ansible install instructions in chapter 1 (thanks to @vtraida!).
   2. Install Django version 1.x in chapter 3 example so it works with CentOS 7 out of the box (thanks to @everett-toews!).
   3. Tidied up ntpd service detection in example script in chapter 2 (thanks to Germain G!).
@@ -27,6 +30,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   18. Install dependency `libssl-dev` to ensure self-signed cert example works in chapter 12.
   19. Fix spelling errors in chapter 13.
   20. Standardize on spelling 'web server' instead of 'webserver'.
+  21. Adjusted Remi's repo and GPG key URLs to use https (thanks to scottdavis99!).
 
 ## Version 1.16 (2018-03-15)
 

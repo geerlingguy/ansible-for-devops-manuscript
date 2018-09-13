@@ -56,9 +56,9 @@ All known issues with Ansible for DevOps will be aggregated on the book's online
 
 ### Current Published Book Version Information
 
-  - **Current book version**: 1.16
-  - **Current Ansible version as of last publication**: 2.5.x
-  - **Current Date as of last publication**: April 24, 2018
+  - **Current book version**: 1.17
+  - **Current Ansible version as of last publication**: 2.6.x
+  - **Current Date as of last publication**: September 12, 2018
 
 ## About the Author
 
