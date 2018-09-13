@@ -895,7 +895,7 @@ Among various modern logging and reporting toolsets, the 'ELK' stack (Elasticsea
 {width=80%}
 ![An example Kibana logging dashboard.](images/8-elk-kibana-example.png)
 
-In our example, we'll configure a single ELK server to handle aggregation, searching, and graphical display of logged data from a variety of other servers, and give some common configuration examples to send common system logs, webserver logs, etc.
+In our example, we'll configure a single ELK server to handle aggregation, searching, and graphical display of logged data from a variety of other servers, and give some common configuration examples to send common system logs, web server logs, etc.
 
 ### ELK Playbook
 
@@ -1014,7 +1014,7 @@ Configuring additional servers to direct their logs to our new Logstash server i
   2. Set up an Ansible playbook to install and configure Logstash Forwarder alongside the application running on the server.
   3. Boot the server and watch as the logs are forwarded to the main ELK server.
 
-Let's begin by creating a new Nginx web server. (It's useful to monitor webserver access logs for a variety of reasons, especially to watch for traffic spikes and increases in non-200 responses for certain resources.) Add the following server definition inside the Vagrantfile, just after the `end` of the ELK server definition:
+Let's begin by creating a new Nginx web server. It's useful to monitor web server access logs for a variety of reasons, especially to watch for traffic spikes and increases in non-200 responses for certain resources. Add the following server definition inside the Vagrantfile, just after the `end` of the ELK server definition:
 
 {lang=ruby,starting-line-number=28}
       # Web server.

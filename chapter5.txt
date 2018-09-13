@@ -774,7 +774,7 @@ If you're delegating a task to localhost, Ansible has a convenient shorthand you
 You might also use `local_action` in the middle of a playbook to wait for a freshly-booted server or application to start listening on a particular port:
 
 {lang="text"}
-    - name: Wait for webserver to start.
+    - name: Wait for web server to start.
       local_action:
         module: wait_for
         host: "{{ inventory_hostname }}"

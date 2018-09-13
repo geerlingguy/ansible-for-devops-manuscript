@@ -1,6 +1,6 @@
 # Chapter 12 - Automating HTTPS and TLS Certificates
 
-Today's application environment almost always requires the use of HTTP (and HTTPS) for certain traffic---end users interacting with a website, microservices communicating with each other internally or via the public internet, or external APIs interacting with your apps.
+Today's application environment almost always requires the use of HTTP (and HTTPS) for certain traffic---end users interacting with a website, microservices communicating with each other internally or via the public Internet, or external APIs interacting with your apps.
 
 HTTPS was originally used only for sensitive transactions, like banking transactions or secure web forms. It also used to require a non-negligible amount of extra server processing power to encrypt data. But today, when Google boosts search results for HTTPS-only sites, and when processors barely show a difference with encrypted or unencrypted traffic, it's almost universally understood that all HTTP services should be served via `https://`.
 
@@ -50,7 +50,7 @@ To quickly illustrate how to generate a self-signed certificate, here's the list
 
 These tasks ensure there's a directory inside which the certificate will live, then creates a private key and Certificate Signing Request (CSR), and finally uses both of those to generate the cert.
 
-You can then use this certificate to serve HTTPS requests using a webserver; for example, in an Nginx `server` configuration:
+You can then use this certificate to serve HTTPS requests using a web server; for example, in an Nginx `server` configuration:
 
 {lang="text",linenos=off}
     server {
@@ -68,7 +68,7 @@ Let's put together a full playbook, then, using the `openssl_*` modules along wi
 
 For the sake of convenience, this example will target a Debian 9 server (though it would be mostly unchanged for any other distribution), and there's a fully tested example included in this book's GitHub repository: [HTTPS Self-Signed Certificate Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-self-signed).
 
-Create a new folder for the Self-Signed Certificate webserver playbook, and add a `main.yml` playbook:
+Create a new folder for the Self-Signed Certificate web server playbook, and add a `main.yml` playbook:
 
 {lang="text"}
     ---
@@ -262,14 +262,6 @@ TODO: Use Ansible to install and configure certbot, which can automate the proce
 ## Configuring Nginx to proxy HTTP traffic
 
 TODO: Use Nginx to proxy HTTP traffic and serve it over HTTPS.
-
-## Securing a Jenkins CI Server using Nginx and Let's Encrypt
-
-TODO: Use Nginx to proxy HTTPS traffic to a Jenkins instance.
-
-### Local testing with a Self-Signed Certificate
-
-TODO: Testing your CI tools with CI.
 
 ## Summary
 
