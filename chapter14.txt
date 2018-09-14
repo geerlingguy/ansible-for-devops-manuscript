@@ -228,7 +228,7 @@ If any of the nodes aren't reporting `Ready`, then something may be mis-configur
 
 You can also check to ensure all the system pods (which run services like DNS, etcd, Flannel, and the Kubernetes API) are running correctly with the command:
 
-{lang="text"}
+{lang="text",linenos=off}
     root@master# kubectl get pods -n kube-system
 
 This should print a list of all the core Kubernetes service pods (some of which are displayed multiple times---one for each node in the cluster), and the status should be `Running` after all the pods start correctly.

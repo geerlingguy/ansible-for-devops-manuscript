@@ -95,7 +95,7 @@ I> ~~~~~~~~~~~~~~~
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 2.3.0.0
+    ansible 2.6.4
 
 ## Creating a basic inventory file {#basic-inventory}
 

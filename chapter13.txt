@@ -228,7 +228,7 @@ Each of these containers' configuration is a little more involved than the previ
 
 For the Flask container, we need to make sure our app is not only running, but *continues* to run. So, unlike our earlier usage of `/bin/true` to run a container briefly and exit, in this case we will provide an explicit command to run:
 
-{lang="text",starting-line-number=26}
+{lang="text",starting-line-number=25}
         command: python /opt/www/index.py
 
 Calling the script directly will launch the app in the foreground and log everything to stdout, making it easy to inspect what's going on with `docker logs [container]` if needed.
@@ -549,6 +549,7 @@ Now that we have the main scaffolding in place for building a Docker container, 
 
 As with any role, the easiest way to scaffold the necessary files is using the `ansible-galaxy` command. Create a `hubot-slack` role in a `roles` subdirectory with:
 
+{lang="text",linenos=off}
     ansible-galaxy init hubot-slack
 
 You can delete some unneeded role directories, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).

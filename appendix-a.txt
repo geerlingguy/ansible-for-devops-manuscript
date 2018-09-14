@@ -51,7 +51,7 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 2.3.0.0
+    ansible 2.6.4
 
 T>Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
 
@@ -165,7 +165,7 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 2.3.0.0
+    ansible 2.6.4
 
 T>Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
 

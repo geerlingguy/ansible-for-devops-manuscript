@@ -14,7 +14,7 @@ Except for the fact that certificates have traditionally been tricky to use with
 
 Whenever I'm building and testing a new server configuration that requires TLS connections (typically HTTPS traffic over port 443), I need to use one or more valid certificates which can be accepted by a browser user, or by something like `curl`, so I can verify my TLS configuration is correct.
 
-Ansible 2.4 makes generating self-signed certificates easy, at least as of Ansible 2.4. There are four `openssl_*` crypto-related modules useful in generating certificates:
+Ansible makes generating self-signed certificates easy, at least as of Ansible 2.4. There are four `openssl_*` crypto-related modules useful in generating certificates:
 
   - `openssl_certificate` - Generate and/or check OpenSSL certificates
   - `openssl_csr` - Generate OpenSSL Certificate Signing Request (CSR)
