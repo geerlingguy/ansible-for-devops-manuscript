@@ -46,6 +46,9 @@ There are a few different ways you can build a Kubernetes cluster:
 
 There are many excellent guides online for the latter options, so we'll stick to using `kubeadm` in this book's examples. And, lucky for us, there's an Ansible role (`geerlingguy.kubernetes`) which already wraps `kubeadm` in an easy-to-use manner so we can integrate it with our playbooks.
 
+{width=80%}
+![Kuberenetes architecture for a simple cluster](images/14-kubernetes-simple-cluster-architecture.png)
+
 As with other multi-server examples in this book, we can describe a three server setup to Vagrant so we can build a full 'bare metal' Kubernetes cluster. Create a project directory and add the following in a `Vagrantfile`:
 
 {lang="ruby"}
