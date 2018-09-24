@@ -257,7 +257,20 @@ W> If you rebuild the server for `https.test` more than once (thus creating a ne
 
 ## Automating Let's Encrypt with Ansible for free Certs
 
-TODO: Use Ansible to install and configure certbot, which can automate the process of generating and renewing TLS certificates.
+Self-signed certs are helpful in making sure certain environments can be accessed via HTTPS, but they have a number of downsides, the major one being that every visitor has to confirm a security exception the first time they visit, and similarly command line tools like curl and HTTP libraries usually fail when they encounter a self-signed cert, unless you specifically ignore cert trust settings (which is a security risk).
+
+So most of the time, it's better to use a valid certificate from one of the trusted Certificate Authorities (CAs).
+
+In the past, this meant spending a small (or sometimes large!) amount of money, following a mostly non-automatable process to interact with a CA, then manually installing a certificate on your servers. You can still do this (and for some use cases, this is actually the easiest method), but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_ certificates to anyone and everyone, with the goal of creating "a more secure and privacy-respecting Web."
+
+TODO.
+
+This example will target an Ubuntu 18.04 server (though it would be mostly unchanged for any other distribution), and there's a fully tested example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
+
+TODO: Example.
+
+{width=80%}
+![HTTPS Test site loads with a valid Let's Encrypt certificate](images/12-letsencrypt-valid-certificate.png)
 
 ## Configuring Nginx to proxy HTTP traffic
 
