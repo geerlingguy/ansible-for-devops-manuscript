@@ -261,11 +261,9 @@ Self-signed certs are helpful in making sure certain environments can be accesse
 
 So most of the time, it's better to use a valid certificate from one of the trusted Certificate Authorities (CAs).
 
-In the past, this meant spending a small (or sometimes large!) amount of money, following a mostly non-automatable process to interact with a CA, then manually installing a certificate on your servers. You can still do this (and for some use cases, this is actually the easiest method), but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_ certificates to anyone and everyone, with the goal of creating "a more secure and privacy-respecting Web."
+Traditionally, this meant you had to give some money to a CA and work through a mostly-manual process to acquire a certificate. You can still do this---and there are a few use cases where this is still the best option, but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_, easy-to-automate certificates to everyone, with the goal of creating "a more secure and privacy-respecting Web."
 
-TODO.
-
-This example will target an Ubuntu 18.04 server (though it would be mostly unchanged for any other distribution), and there's a fully tested example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
+So in this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu 18.04 server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
 
 TODO: Example.
 
@@ -278,7 +276,7 @@ TODO: Use Nginx to proxy HTTP traffic and serve it over HTTPS.
 
 ## Summary
 
-TODO: Summary.
+HTTPS is now an essential feature of any public-facing website and application, and it's fairly standard to use it on internal services too. Ansible automates the process of encrypting all your HTTP traffic with TLS certificates, no matter the certificate type or use case.
 
 {lang="text",linenos=off}
      ____________________________________________
