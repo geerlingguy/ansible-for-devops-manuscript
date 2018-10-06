@@ -36,7 +36,7 @@ Some lines of YAML and other code examples require more than 70 characters per l
 
 When using the code, don't copy the `\` character, and make sure you don't use a newline between the first line with the trailing `\` and the next line.
 
-Links to pertinent resources and websites are added inline, like the following link to [Ansible](http://www.ansible.com/), and can be viewed directly by clicking on them in eBook formats, or by following the URL in the footnotes.
+Links to pertinent resources and websites are added inline, like the following link to [Ansible](https://www.ansible.com/), and can be viewed directly by clicking on them in eBook formats, or by following the URL in the footnotes.
 
 Sometimes, asides are added to highlight further information about a specific topic:
 
@@ -57,7 +57,7 @@ All known issues with Ansible for DevOps will be aggregated on the book's online
 ### Current Published Book Version Information
 
   - **Current book version**: 1.17
-  - **Current Ansible version as of last publication**: 2.6.x
+  - **Current Ansible version as of last publication**: 2.7
   - **Current Date as of last publication**: September 12, 2018
 
 ## About the Author

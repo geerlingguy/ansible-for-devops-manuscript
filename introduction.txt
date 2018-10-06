@@ -16,7 +16,7 @@ As a software developer by trade, and a sysadmin by necessity, I have seen the p
 
 W> *DevOps* is a loaded word; some people argue using the word to identify both the *movement* of development and operations working more closely to automate infrastructure-related processes, and the *personnel* who skew slightly more towards the system administration side of the equation, dilutes the word's meaning. I think the word has come to be a rallying cry for the employees who are dragging their startups, small businesses, and enterprises into a new era of infrastructure growth and stability. I'm not too concerned that the term has become more of a catch-all for modern infrastructure management. My advice: spend less time arguing over the definition of the word, and more time making it mean something *to you*.
 
-## Ansible and Ansible, Inc.
+## Ansible and Red Hat
 
 Ansible was released in 2012 by Michael DeHaan ([@laserllama](https://twitter.com/laserllama) on Twitter), a developer who has been working with configuration management and infrastructure orchestration in one form or another for many years. Through his work with Puppet Labs and Red Hat (where he worked on [Cobbler](http://cobbler.github.io/), a configuration management tool, Func, a tool for communicating commands to remote servers), and [some other projects](https://www.ansible.com/blog/2013/12/08/the-origins-of-ansible)), he experienced the trials and tribulations of many different organizations and individual sysadmins on their quest to simplify and automate their infrastructure management operations.
 
@@ -30,9 +30,9 @@ Ansible aims to be:
   4. **Efficient** - No extra software on your servers means more resources for your applications. Also, since Ansible modules work via JSON, Ansible is extensible with modules written in a programming language you already know.
   5. **Secure** - Ansible uses SSH, and requires no extra open ports or potentially-vulnerable daemons on your servers.
 
-Ansible also has a lighter side that gives the project a little personality. As an example, Ansible's major releases are named after Led Zeppelin songs (e.g. 2.0 was named after 1973's "Over the Hills and Far Away", 1.x releases were named after Van Halen songs). Additionally, Ansible will use `cowsay`, if installed, to wrap output in an ASCII cow's speech bubble (this behavior can be disabled in Ansible's configuration).
+Ansible also has a lighter side that gives the project a little personality. As an example, Ansible's major releases are named after Led Zeppelin songs (e.g. 2.0 was named after 1973's "Over the Hills and Far Away", 1.x releases were named after Van Halen songs). Additionally, Ansible uses `cowsay`, if installed, to wrap output in an ASCII cow's speech bubble (this behavior can be disabled in Ansible's configuration).
 
-[Ansible, Inc.](http://www.ansible.com/) was founded by Saïd Ziouani ([@SaidZiouani](https://twitter.com/SaidZiouani) on Twitter) and Michael DeHaan, and oversees core Ansible development and provides services (such as [Automation Jump Start](http://www.ansible.com/services)) and extra tooling (such as [Ansible Tower](https://www.ansible.com/tower)) to organizations using Ansible. Hundreds of individual developers have contributed patches to Ansible, and Ansible is the most starred infrastructure management tool on GitHub (with over 10,000 stars as of this writing).
+[Ansible, Inc.](https://www.ansible.com/) was founded by Saïd Ziouani ([@SaidZiouani](https://twitter.com/SaidZiouani) on Twitter) and Michael DeHaan, and then acquired by Red Hat in 2016. The Ansible team oversees core Ansible development and provides services (such as [Ansible Consulting](https://www.ansible.com/products/consulting)) and extra tooling (such as [Ansible Tower](https://www.ansible.com/tower)) to organizations using Ansible. Hundreds of individual developers have contributed patches to Ansible, and Ansible is the most starred infrastructure management tool on GitHub (with over 33,000 stars as of this writing).
 
 In October 2015, Red Hat acquired Ansible, Inc., and has proven itself to be a good steward and promoter of Ansible. I see no indication of this changing in the future.
 
@@ -45,11 +45,11 @@ There are many Ansible examples (playbooks, roles, infrastructure, configuration
 We'll explore all aspects of using Ansible to provision and manage your infrastructure in this book, but there's no substitute for the wealth of documentation and community interaction that make Ansible great. Check out the links below to find out more about Ansible and discover the community:
 
   - [Ansible Documentation](https://docs.ansible.com/ansible/) - Covers all Ansible options in depth. There are few open source projects with documentation as clear and thorough.
-  - [Ansible Glossary](https://docs.ansible.com/ansible/glossary.html) - If there's ever a term in this book you don't seem to fully understand, check the glossary.
+  - [Ansible Glossary](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html) - If there's ever a term in this book you don't seem to fully understand, check the glossary.
   - [Ansible Mailing List](https://groups.google.com/forum/#!forum/ansible-project) - Discuss Ansible and submit questions with Ansible's community via this Google group.
   - [Ansible on GitHub](https://github.com/ansible/ansible) - The official Ansible code repository, where the magic happens.
   - [Ansible Example Playbooks on GitHub](https://github.com/ansible/ansible-examples) - Many examples for common server configurations.
-  - [Getting Started with Ansible](https://www.ansible.com/get-started) - A simple guide to Ansible's community and resources.
+  - [Getting Started with Ansible](https://www.ansible.com/resources/get-started) - A simple guide to Ansible's community and resources.
   - [Ansible Blog](https://www.ansible.com/blog)
 
 I'd like to especially highlight Ansible's documentation (the first resource listed above); one of Ansible's greatest strengths is its well-written and extremely relevant documentation, containing a large number of relevant examples and continuously-updated guides. Very few projects---open source or not---have documentation as thorough, yet easy-to-read. This book is meant as a supplement to, not a replacement for, Ansible's documentation!

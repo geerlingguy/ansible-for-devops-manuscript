@@ -6,6 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
+  1. Updated some outdated links in introduction.
   ----------- Website updated to here ------------------------------------------
 
 ## Version 1.17 (2018-09-12)
