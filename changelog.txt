@@ -8,7 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   1. Updated some outdated links in introduction.
   2. Updated Express app version requirement in chapter 4 since 3.x is no longer supported.
-  3. Fixed Ubuntu LTS version reference in chapter 4 LAMP example (thanks to Deoren M!).
+  3. Fixed Ubuntu LTS version reference in chapter 4 LAMP example (thanks to @deoren!).
   ----------- Website updated to here ------------------------------------------
 
 ## Version 1.17 (2018-09-12)
