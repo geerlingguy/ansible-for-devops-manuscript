@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. Fixed Ubuntu LTS version reference in chapter 4 LAMP example (thanks to @deoren!).
   4. Adjust apt module usage in chapter 4 LAMP example to fix deprecation warning (thanks to dglinder!).
   ----------- Website updated to here ------------------------------------------
+  5. Fixed 'capcacity' typo in chapter 9 (thanks to Ruan A!).
 
 ## Version 1.17 (2018-09-12)
 
