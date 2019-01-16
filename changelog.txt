@@ -12,6 +12,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   4. Adjust apt module usage in chapter 4 LAMP example to fix deprecation warning (thanks to dglinder!).
   ----------- Website updated to here ------------------------------------------
   5. Fixed 'capcacity' typo in chapter 9 (thanks to Ruan A!).
+  6. Completely refactored and updated Ruby on Rails deployment example in chapter 9 to use the latest OS and Ruby versions.
 
 ## Version 1.17 (2018-09-12)
 
