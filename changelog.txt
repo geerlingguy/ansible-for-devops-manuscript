@@ -16,6 +16,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   7. Fixed some ham-fisted typos regarding Ansible, Inc. in the Introduction (thanks to @eCubeH!).
   8. Fix yet another instance of _it's_ which should be _its_ in chapter 5 (thanks to @erikj!).
   9. Fix shell examples in chapter 4 to use https instead of http (thanks to @erikj!).
+  10. Use CentOS 7 in LAMP infrastructure example in chapter 8 (upgrade from CentOS 6).
 
 ## Version 1.17 (2018-09-12)
 

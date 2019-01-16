@@ -39,7 +39,7 @@ Organizing things this way allows us to focus on each server configuration indiv
 
 ### Individual Server Playbooks
 
-Let's start building our individual server playbooks (in the `playbooks` directory). To make our playbooks more efficient, we'll use some contributed Ansible roles on Ansible Galaxy rather than install and configure everything step-by-step. We're going to target CentOS 6.x servers in these playbooks, but only minimal changes would be required to use the playbooks with Ubuntu, Debian, or later versions of CentOS.
+Let's start building our individual server playbooks (in the `playbooks` directory). To make our playbooks more efficient, we'll use some contributed Ansible roles on Ansible Galaxy rather than install and configure everything step-by-step. We're going to target CentOS 7.x servers in these playbooks, but only minimal changes would be required to use the playbooks with Ubuntu, Debian, or later versions of CentOS.
 
 **Varnish**
 
@@ -413,7 +413,7 @@ As with many other examples in this book, we can use Vagrant and VirtualBox to b
 
 Our basic Vagrantfile layout will be something like the following:
 
-  1. Define a base box (in this case, CentOS 6.x) and VM hardware defaults.
+  1. Define a base box (in this case, CentOS 7.x) and VM hardware defaults.
   2. Define all the VMs to be built, with VM-specific IP addresses and hostname configurations.
   3. Define the Ansible provisioner along with the last VM, so Ansible can run once at the end of Vagrant's build cycle.
 
@@ -425,7 +425,7 @@ Here's the Vagrantfile in all its glory:
     
     Vagrant.configure("2") do |config|
       # Base VM OS configuration.
-      config.vm.box = "geerlingguy/centos6"
+      config.vm.box = "geerlingguy/centos7"
       config.ssh.insert_key = false
       config.vm.synced_folder '.', '/vagrant', disabled: true
     
@@ -585,7 +585,7 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
             name: "{{ item.name }}"
             private_networking: yes
             size_id: "{{ item.size | default('s-1vcpu-1gb') }}"
-            image_id: "{{ item.image | default('centos-6-x64') }}"
+            image_id: "{{ item.image | default('centos-7-x64') }}"
             region_id: "{{ item.region | default('nyc3') }}"
             # Customize this default for your account.
             ssh_key_ids: "{{ item.ssh_key | default('138954') }}"
@@ -787,7 +787,7 @@ With the security groups configured, we can provision the defined EC2 instances 
               inventory_host: "{{ item.name | default('') }}"
             group: "{{ item.security_group | default('') }}"
             instance_type: "{{ item.type | default('t2.micro')}}" # Free
-            image: "{{ item.image | default('ami-11125e21') }}" # RHEL6
+            image: "{{ item.image | default('ami-3ecc8f46') }}" # CentOS 7
             region: "{{ item.region | default('us-west-2') }}" # Oregon
             wait: yes
             wait_timeout: 500
