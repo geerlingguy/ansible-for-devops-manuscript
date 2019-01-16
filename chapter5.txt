@@ -539,7 +539,7 @@ There are a number of ways you can provide the password, depending on how you ru
 
 After supplying the password, Ansible decrypts the vault (in memory) and runs the playbook with the decrypted data.
 
-You can edit the encrypted file with `ansible-vault edit`. You can also `rekey` a file (change it's password), `create` a new file, `view` an existing file, or `decrypt` a file. All these commands work with one or multiple files (e.g. `ansible-vault create x.yml y.yml z.yml`).
+You can edit the encrypted file with `ansible-vault edit`. You can also `rekey` a file (change its password), `create` a new file, `view` an existing file, or `decrypt` a file. All these commands work with one or multiple files (e.g. `ansible-vault create x.yml y.yml z.yml`).
 
 For convenience, or for automated playbook runs (e.g. on a continuous integration server), you can supply vault passwords via a password file. Just like secure keys in your `~/.ssh` folder, you should treat these files carefully: never check them into source control, and set strict permissions (e.g. `600`) so only _you_ can read or write this file. Create the file `~/.ansible/vault_pass.txt` with your password in it, set permissions to `600`, and tell Ansible the location of the file when you run the playbook:
 
