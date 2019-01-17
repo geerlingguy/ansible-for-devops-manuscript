@@ -415,11 +415,13 @@ For many of my roles and playbooks, I support the following OSes, therefore I ma
 
   - [CentOS 6](https://hub.docker.com/r/geerlingguy/docker-centos6-ansible/)
   - [CentOS 7](https://hub.docker.com/r/geerlingguy/docker-centos7-ansible/)
-  - [Fedora 24](https://hub.docker.com/r/geerlingguy/docker-fedora24-ansible/)
+  - [Fedora 27](https://hub.docker.com/r/geerlingguy/docker-fedora27-ansible/)
+  - [Fedora 29](https://hub.docker.com/r/geerlingguy/docker-fedora29-ansible/)
   - [Debian 8](https://hub.docker.com/r/geerlingguy/docker-debian8-ansible/)
-  - [Ubuntu 12.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1204-ansible/)
+  - [Debian 9](https://hub.docker.com/r/geerlingguy/docker-debian9-ansible/)
   - [Ubuntu 14.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1404-ansible/)
   - [Ubuntu 16.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1604-ansible/)
+  - [Ubuntu 18.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1804-ansible/)
 
 The rest of this section will demonstrate how to test an example Ansible role against all these OSes with one simple Travis configuration file.
 
