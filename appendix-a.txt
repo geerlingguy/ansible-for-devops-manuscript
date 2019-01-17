@@ -51,9 +51,9 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 2.6.4
+    ansible 2.7.5
 
-T>Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
+T> Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
 
 You can now use Ansible within the Ubuntu Bash environment. You can access files on the Windows filesystem inside the `/mnt` folder (`/mnt/c` corresponds to `C:\`), but be careful when moving things between Windows and the WSL, as strange things can happen because of line ending, permissions, and filesystem differences!
 
@@ -82,15 +82,15 @@ Open PowerShell (open the Start Menu or go to the Windows home and type in 'Powe
     PS > md -Name VMs
     PS > cd VMs
     # Make a 'Ubuntu64' directory and cd to it.
-    PS > md -Name ubuntu-trusty-64
-    PS > cd ubuntu-trusty-64
+    PS > md -Name ubuntu-bionic-64
+    PS > cd ubuntu-bionic-64
 
 Now, use `vagrant` to create the scaffolding for our new virtual machine:
 
 {lang="text",linenos=off}
-    PS > vagrant init ubuntu/trusty64
+    PS > vagrant init ubuntu/bionic64
 
-Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Trusty (14.04) 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
+Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Bionic (18.04) 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
 
 {lang="text",linenos=off}
     PS > vagrant up
@@ -136,13 +136,13 @@ PuTTY will ask for login credentials; we'll use the default login for a Vagrant 
 You should now be connected to the virtual machine, and see the message of the day:
 
 {lang="text",linenos=off}
-    Welcome to Ubuntu 14.04.3 LTS (GNU/Linux 3.13.0-43-generic x86_64)
-    
-    vagrant@trusty64:~$
+    Welcome to Ubuntu 18.04.1 LTS (GNU/Linux 4.15.0-43-generic x86_64)
+    ...
+    vagrant@ubuntu-bionic:~$
 
 If you see this prompt, you're logged in, and you can start administering the VM. The next (and final) step is to install Ansible.
 
-T>This example uses PuTTY to log into the VM, but other applications like [Cygwin](http://cygwin.com/install.html) or [Git for Windows](http://git-scm.com/download/win) work just as well, and may be easier to use. Since these alternatives have built-in SSH support, you don't need to do any extra connection configuration, or even launch the apps manually; just `cd` to the same location as the Vagrantfile, and enter `vagrant ssh`!
+T> This example uses PuTTY to log into the VM, but other applications like [Cygwin](http://cygwin.com/install.html) or [Git for Windows](http://git-scm.com/download/win) work just as well, and may be easier to use. Since these alternatives have built-in SSH support, you don't need to do any extra connection configuration, or even launch the apps manually; just `cd` to the same location as the Vagrantfile, and enter `vagrant ssh`!
 
 ### Install Ansible
 
@@ -165,9 +165,9 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 
 {lang="text",linenos=off}
     $ ansible --version
-    ansible 2.6.4
+    ansible 2.7.5
 
-T>Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
+T> Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
 
 You should now have Ansible installed within a virtual machine running on your Windows workstation. You can control the virtual machine with Vagrant (`cd` to the location of the Vagrantfile), using `up` to boot or wake the VM, `halt` to shut down the VM, or `suspend` to sleep the VM. Log into the VM manually using PuTTY or via `vagrant ssh` with Cygwin or Git's Windows shell.
 
