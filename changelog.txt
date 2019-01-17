@@ -17,6 +17,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   8. Fix yet another instance of _it's_ which should be _its_ in chapter 5 (thanks to @erikj!).
   9. Fix shell examples in chapter 4 to use https instead of http (thanks to @erikj!).
   10. Use CentOS 7 in LAMP infrastructure example in chapter 8 (upgrade from CentOS 6).
+  11. Update the Kubernetes example in chapter 14 to use Kubernetes 1.13 instead of 1.11 (thanks for identifying the issue @srufle!).
 
 ## Version 1.17 (2018-09-12)
 

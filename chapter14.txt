@@ -168,12 +168,12 @@ We also need to add some configuration to ensure we have swap disabled and Docke
     swap_file_state: absent
     swap_file_path: /dev/mapper/packer--debian--9--amd64--vg-swap_1
     
-    docker_package: docker-ce=18.06.1~ce~3-0~debian
+    docker_package: docker-ce=5:18.09.0~3-0~debian-stretch
     docker_install_compose: False
 
 The `swap_file_path` is specific to the 64-bit Debian 9 Vagrant box used in the `Vagrantfile`, so if you want to use a different OS or install on a cloud server, the default system swap file may be at a different location.
 
-It's a best practice to specify a Docker version that's been well-tested with a particular version of Kubernetes, and in this case, the latest version of Kubernetes at the time of this writing---1.11---works best with Docker 18.06, so we lock in that package version using the `docker_package` variable.
+It's a best practice to specify a Docker version that's been well-tested with a particular version of Kubernetes, and in this case, the latest version of Kubernetes at the time of this writing---1.13---works well with Docker 18.09, so we lock in that package version using the `docker_package` variable.
 
 Back in the `main.yml` playbook, we'll put the last role necessary to get Kubernetes up and running on the cluster:
 
@@ -194,8 +194,18 @@ Then run `ansible-galaxy install -r requirements.yml -p ./roles` to install the 
 As a final step, before building the cluster with `vagrant up`, we need to set a few configuration options to ensure Kubernetes starts correctly and the inter-node network functions properly. Add the following variables to tell the Kubernetes role a little more about the cluster:
 
 {lang="text",starting-line-number=8}
+    kubernetes_version: '1.13'
     kubernetes_allow_pods_on_master: False
     kubernetes_pod_network_cidr: '10.244.0.0/16'
+    kubernetes_packages:
+      - name: kubelet=1.13.1-00
+        state: present
+      - name: kubectl=1.13.1-00
+        state: present
+      - name: kubeadm=1.13.1-00
+        state: present
+      - name: kubernetes-cni
+        state: present
     
     kubernetes_apiserver_advertise_address: "192.168.84.2"
     kubernetes_flannel_manifest_file: "~/kube-flannel-vagrant.yml"
@@ -203,8 +213,10 @@ As a final step, before building the cluster with `vagrant up`, we need to set a
 
 Let's go through the variables one-by-one:
 
+  - `kubernetes_version`: Kubernetes is a fast-moving target, and it's best practice to specify the version you're targeting---but to update as soon as possible to the latest version!
   - `kubernetes_allow_pods_on_master`: It's best to dedicate the Kubernetes master server to managing Kubernetes alone. You can run pods other than the Kubernetes system pods on the master if you want, but it's rarely a good idea.
   - `kubernetes_pod_network_cidr`: Because the default network suggested in the Kubernetes documentation conflicts with many home and private network IP ranges, this custom CIDR is a bit of a safer option.
+  - `kubernetes_packages`: Along with specifying the `kubernetes_version`, if you want to make sure there are no surprises when installing Kubernetes, it's important to also lock in the versions of the packages that make up the Kubernetes cluster.
   - `kubernetes_apiserver_advertise_address`: To ensure Kubernetes knows the correct interface to use for inter-node API communication, we explicitly set the IP of the master node (this could also be the DNS name for the master, if desired).
   - `kubernetes_flannel_manifest_file`: Because Vagrant's virtual network interfaces confuse the default Flannel configuration, we specify the custom Flannel manifest we copied earlier in the playbook's `pre_tasks`.
   - `kubernetes_kubelet_extra_args`: Because Vagrant's virtual network interfaces can also confuse Kubernetes, it's best to explicitly define the `node-ip` to be advertised by `kubelet`.
@@ -374,7 +386,7 @@ Add two final tasks to retrieve the NodePort for the `a4d-nginx` service, then d
 When you run the playbook, you should now see the NodePort in the debug output:
 
 {lang="text",linenos="off"}
-    TASK [Print the NodePort of the a4d-nginx Service.] *******************************************************************************************
+    TASK [Print the NodePort of the a4d-nginx Service.] *******************************************************************
     ok: [master] => {
         "a4d_nginx_service.result.spec.ports[0].nodePort": "30681"
     }
