@@ -689,7 +689,7 @@ First, create a new project folder `deployments-balancer`, and within it, create
     
     Vagrant.configure("2") do |config|
       # Base VM OS configuration.
-      config.vm.box = "geerlingguy/ubuntu1404"
+      config.vm.box = "geerlingguy/ubuntu1804"
       config.vm.synced_folder '.', '/vagrant', disabled: true
       config.ssh.insert_key = false
     
@@ -725,7 +725,7 @@ First, create a new project folder `deployments-balancer`, and within it, create
     
     end
 
-This Vagrantfile will create three servers running Ubuntu 14.04: `bal1` (the balancer), and `app1` and `app2` (the application servers). We referenced an Ansible playbook at `playbooks/provision.yml` (to install the required software on the servers), as well as a custom inventory file at `inventory`. First, create the inventory file (`inventory`, in the same directory as the Vagrantfile), with the appropriate groupings and connection variables:
+This Vagrantfile will create three servers running Ubuntu: `bal1` (the balancer), and `app1` and `app2` (the application servers). We referenced an Ansible playbook at `playbooks/provision.yml` (to install the required software on the servers), as well as a custom inventory file at `inventory`. First, create the inventory file (`inventory`, in the same directory as the Vagrantfile), with the appropriate groupings and connection variables:
 
 {lang="text"}
     [balancer]

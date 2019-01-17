@@ -610,19 +610,19 @@ To create a test dynamic inventory script for demonstration purposes, let's set 
       # Application server 1.
       config.vm.define "inventory1" do |inventory|
         inventory.vm.hostname = "inventory1.test"
-        inventory.vm.box = "geerlingguy/ubuntu1404"
+        inventory.vm.box = "geerlingguy/ubuntu1804"
         inventory.vm.network :private_network, ip: "192.168.28.71"
       end
     
       # Application server 2.
       config.vm.define "inventory2" do |inventory|
         inventory.vm.hostname = "inventory2.test"
-        inventory.vm.box = "geerlingguy/ubuntu1404"
+        inventory.vm.box = "geerlingguy/ubuntu1804"
         inventory.vm.network :private_network, ip: "192.168.28.72"
       end
     end
 
-Run `vagrant up` to boot two VMs running Ubuntu 14.04, with the IP addresses `192.168.28.71`, and `192.168.28.72`. A simple inventory file could be used to control the VMs with Ansible:
+Run `vagrant up` to boot two VMs running Ubuntu, with the IP addresses `192.168.28.71`, and `192.168.28.72`. A simple inventory file could be used to control the VMs with Ansible:
 
 {lang="text"}
     [group]

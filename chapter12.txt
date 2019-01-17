@@ -263,7 +263,7 @@ So most of the time, it's better to use a valid certificate from one of the trus
 
 Traditionally, this meant you had to give some money to a CA and work through a mostly-manual process to acquire a certificate. You can still do this---and there are a few use cases where this is still the best option, but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_, easy-to-automate certificates to everyone, with the goal of creating "a more secure and privacy-respecting Web."
 
-So in this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu 18.04 server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
+So in this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
 
 TODO: Example.
 

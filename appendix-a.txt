@@ -90,7 +90,7 @@ Now, use `vagrant` to create the scaffolding for our new virtual machine:
 {lang="text",linenos=off}
     PS > vagrant init ubuntu/bionic64
 
-Vagrant creates a 'Vagrantfile' describing a basic Ubuntu Bionic (18.04) 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
+Vagrant creates a 'Vagrantfile' describing a basic Ubuntu 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
 
 {lang="text",linenos=off}
     PS > vagrant up
