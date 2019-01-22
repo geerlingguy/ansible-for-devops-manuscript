@@ -21,6 +21,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   12. Update Windows Vagrant and VirtualBox-based Ansible example in appendix a.
   13. Update deployments behind a load balancer example to use Ubuntu 18.04 in chapter 9.
   14. Update rolling deployments example to use Ubuntu 18.04 in chapter 9.
+  15. Update Gluster example in chapter 8 to use Ubuntu 18.04 (thanks for identifying the issue @dino-github!).
 
 ## Version 1.17 (2018-09-12)
 

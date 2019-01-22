@@ -1176,7 +1176,7 @@ To build the two-server infrastructure locally, create a folder `gluster` contai
     
     Vagrant.configure("2") do |config|
       # Base VM OS configuration.
-      config.vm.box = "geerlingguy/ubuntu1404"
+      config.vm.box = "geerlingguy/ubuntu1804"
       config.vm.synced_folder '.', '/vagrant', disabled: true
       config.ssh.insert_key = false
     
@@ -1295,6 +1295,8 @@ After the playbook is created, we need to define all the variables used in the p
       # 24009+ for Gluster <= 3.3; 49152+ for Gluster 3.4+.
       - 24009
       - 24010
+      - 49152
+      - 49153
       # Gluster inline NFS server.
       - 38465
       - 38466
@@ -1321,7 +1323,7 @@ Now that we have everything set up, the folder structure should look like this:
 Change directory into the `gluster` directory, and run `vagrant up`. After a few minutes, provisioning should have completed successfully. To ensure Gluster is working properly, you can run the following two commands, which should give information about Gluster's peer connections and the configured `gluster` volume:
 
 {lang="text",linenos=off}
-    $ ansible gluster -i inventory -a "gluster peer status" -b
+    $ ansible gluster -i inventory -a "gluster peer status" -s
     192.168.29.2 | success | rc=0 >>
     Number of Peers: 1
     
@@ -1339,7 +1341,7 @@ Change directory into the `gluster` directory, and run `vagrant up`. After a few
     State: Peer in Cluster (Connected)
 
 {lang="text",linenos=off}
-    $ ansible gluster -i inventory -a "gluster volume info" -b
+    $ ansible gluster -i inventory -a "gluster volume info" -s
     192.168.29.3 | success | rc=0 >>
     
     Volume Name: gluster
