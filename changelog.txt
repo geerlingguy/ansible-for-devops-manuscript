@@ -23,6 +23,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   14. Update rolling deployments example to use Ubuntu 18.04 in chapter 9.
   15. Update Gluster example in chapter 8 to use Ubuntu 18.04 (thanks for identifying the issue @dino-github!).
   16. Add apt cache update task in chapter 9 rolling deployment example.
+  17. Update task name for Tiller ServiceAccount in chapter 14 (thanks to Richard D!).
 
 ## Version 1.17 (2018-09-12)
 

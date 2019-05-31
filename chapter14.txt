@@ -430,7 +430,7 @@ Create a `helm.yml` playbook in the `examples` directory, and put in the followi
       become: yes
     
       tasks:
-        - name: Create Tiller namespace.
+        - name: Create Tiller ServiceAccount.
           k8s:
             state: present
             definition:
