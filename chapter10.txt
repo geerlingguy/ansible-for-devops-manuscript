@@ -127,6 +127,7 @@ For our secure server, we want to disable password-based SSH authentication (mak
           notify: restart ssh
 
       handlers:
+        # Note: Use 'sshd' for Red Hat and its derivatives.
         - name: restart ssh
           service: name=ssh state=restarted
 

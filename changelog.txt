@@ -24,6 +24,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   15. Update Gluster example in chapter 8 to use Ubuntu 18.04 (thanks for identifying the issue @dino-github!).
   16. Add apt cache update task in chapter 9 rolling deployment example.
   17. Update task name for Tiller ServiceAccount in chapter 14 (thanks to Richard D!).
+  18. Added note about ssh service name difference in example in chapter 10 (thanks to @stegr04!).
 
 ## Version 1.17 (2018-09-12)
 
