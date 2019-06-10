@@ -112,7 +112,7 @@ Until Ansible 2.0, `include`s were always processed when your playbook run start
 {lang="text",linenos=off}
     # Include extra tasks file, only if it's present at runtime.
     - name: Check if extra_tasks.yml is present.
-      stat: path=extras/extra-tasks.yml
+      stat: path=tasks/extra-tasks.yml
       register: extra_tasks_file
       connection: local
     

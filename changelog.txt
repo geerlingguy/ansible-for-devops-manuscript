@@ -25,6 +25,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   16. Add apt cache update task in chapter 9 rolling deployment example.
   17. Update task name for Tiller ServiceAccount in chapter 14 (thanks to Richard D!).
   18. Added note about ssh service name difference in example in chapter 10 (thanks to @stegr04!).
+  19. Fixed Dynamic includes example file path in chapter 6 (thanks to @sandipb!).
 
 ## Version 1.17 (2018-09-12)
 
