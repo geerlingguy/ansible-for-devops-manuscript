@@ -265,14 +265,236 @@ Traditionally, this meant you had to give some money to a CA and work through a 
 
 So in this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
 
-TODO: Example.
+### Use Galaxy roles to get things done faster
+
+Instead of writing all the automation ourselves, we can rely on some roles from Ansible Galaxy to do the heavy lifting. Create a `requirements.yml` file in a new project directory, containing:
+
+{lang="text"}
+    ---
+    - src: geerlingguy.firewall
+    - src: geerlingguy.certbot
+    - src: geerlingguy.nginx
+
+We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a simple web server to serve content over HTTPS.
+
+The `geerlingguy.certbot` role is the heart of the operation here, and I'd like to specifically point out how it does its magic:
+
+  1. TODO
+
+Once we have the requirements file set up, create an `ansible.cfg` file in the project directory to tell Ansible where to store and use the downloaded roles:
+
+{lang="text"}
+    [defaults]
+    roles_path = ./roles
+
+Now, install the required roles with: `ansible-galaxy install -r requirements.yml`.
+
+### Create the playbook
+
+Add a `main.yml` playbook to the project directory. This playbook will target servers running Ubuntu's minimal distribution (which may not include Python), so we need to do a couple special things to make sure Ansible can operate on the server in `pre_tasks`. Then we'll run the three roles we downloaded from Ansible Galaxy, and configure Nginx to serve a simple web page using a Let's Encrypt certificate.
+
+First things first, start the play on all the `letsencrypt` hosts, and since we might have to install Python to gather facts about the server for Ansible to use, disable the initial `gather_facts`:
+
+{lang="text"}
+    ---
+    - hosts: letsencrypt
+      gather_facts: false
+      become: true
+    
+      vars_files:
+        - vars/main.yml
+
+We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, because we will need to add a bit of configuration to generate certificates and configure the firewall and Nginx, we'll put all the variables in a `vars/main.yml` file.
+
+Next up, in a series of `pre_tasks`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
+
+{lang="text",starting-line-number=9}
+      pre_tasks:
+        - name: Install Python if not already present.
+          raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+          changed_when: false
+    
+        - name: Gather facts after Python is definitely present.
+          setup:
+    
+        - name: Ensure apt cache is updated.
+          apt: update_cache=true cache_valid_time=600
+
+Now, it's time for the meat of this playbook, the `roles`. We can simply call them one by one:
+
+{lang="text",starting-line-number=9}
+      roles:
+        - geerlingguy.firewall
+        - geerlingguy.nginx
+        - geerlingguy.certbot
+
+Since the roles will be doing the heavy lifting (yay for a nice, short playbook!), we will need to tell them what to do via variables in `vars/main.yml`:
+
+{lang="text"}
+    ---
+    # Firewall settings.
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+      - "443"
+    
+    # Nginx settings.
+    nginx_vhosts: []
+    nginx_remove_default_vhost: true
+    nginx_ppa_use: true
+    nginx_ppa_version: stable
+    nginx_docroot: /var/www/html
+    
+    # Let's Encrypt certificate settings.
+    certbot_create_if_missing: true
+    certbot_admin_email: "{{ letsencrypt_email }}"
+    certbot_certs:
+      - domains:
+          - "{{ inventory_hostname }}"
+
+By section:
+
+  - For a typical webserver, we need port `22` for SSH access, port `80` for unencrypted HTTP access (Let's Encrypt needs this to operate using it's default verification mechanism), and port `443` for encrypted HTTPS access.
+  - For Nginx, we will configure our own custom virtual host in a bit, so we make sure the default vhost is removed, and we'll also install the latest version of Nginx from the Nginx Ubuntu PPA. We added an extra variable `nginx_docroot` to tell our own automation code where to put a test web page and serve it via Nginx.
+  - The Certbot role only requires a few variables to ensure a certificate is added:
+    - `certbot_create_if_missing`: The role will check if the certificate exists, and if it doesn't (e.g. on the first playbook run) it will create it. If it does exist, it will be idempotent and make no changes.
+    - `certbot_admin_email`: Let's Encrypt lets you [associate an email address](https://letsencrypt.org/docs/expiration-emails/) with every certificate it generates, and uses this email address to notify the owner of any problems with the certificate, like impending expiration due to a server issue.
+    - `certbot_certs`: You can add one or more certificates using this list; and each cert can cover one or more domains through the magic of 'Multi-domain' or 'Subject Alternative Name' certificates.
+
+Two of the Jinja2 variables used in the vars file are not defined in vars---rather, they will come from the inventory. We'll set that up soon.
+
+Now that we have the playbook configuring an HTTP/S-ready firewall, a Let's Encrypt certificate generated by Certbot, and a barebones Nginx web server, we need to configure Nginx to serve some content, and to serve it over HTTPS using the Let's Encrypt certificate.
+
+So for the last part of the playbook, we need to:
+
+  1. Ensure the `nginx_docroot` directory exists.
+  2. Create and copy over a sample `index.html` file to serve from that document root.
+  3. Create and copy over a Nginx server configuration which directs all traffic to HTTPS and serves the traffic using the generated Let's Encrypt certificate.
+
+To make sure the `nginx_docroot` exists, add a task to the `tasks` section of the playbook:
+
+{lang="text",starting-line-number=25}
+      tasks:
+        - name: Ensure docroot exists.
+          file:
+            path: "{{ nginx_docroot }}"
+            state: directory
+
+I> Since `/var/www` should already exist on an Ubuntu server, this is all we need. If the parent directory heirarchy didn't exist (e.g. we had `nginx_docroot` set to `/var/www/example/html`), this task may also need `recurse: true` to ensure the parent directories exist.
+
+Now we need an HTML file inside the docroot so Nginx can serve it, otherwise Nginx will return a 404 Not Found. Create a simple HTML file named `files/index.html` in your project directory, with the following contents:
+
+{lang="text"}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>HTTPS Let's Encrypt Test</title>
+      <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+    </head>
+    <body>
+      <h1>HTTPS Let's Encrypt Test</h1>
+        <p>If you can see this message, it worked!</p>
+    </body>
+    </html>
+
+Then add a `copy` task in `main.yml` to copy the file into place after the docroot task:
+
+{lang="text",starting-line-number=31}
+        - name: Copy example index.html file in place.
+          copy:
+            src: files/index.html
+            dest: "{{ nginx_docroot }}/index.html"
+            mode: 0755
+
+Finally, we need to configure Nginx with two `server` blocks; one to redirect HTTP requests to HTTPS, and the other to serve HTTPS traffic using the Let's Encrypt certificates. Create a Nginx configuration template in `templates/https-letsencrypt.conf.j2` with the following:
+
+{lang="text"}
+    # HTTPS server configuration.
+    
+    # Redirect HTTP traffic to HTTPS.
+    server {
+        listen 80 default_server;
+        server_name _;
+        index index.html;
+        return 301 https://$host$request_uri;
+    }
+    
+    # Serve HTTPS traffic using the self-signed certificate created by Ansible.
+    server {
+        listen 443 ssl default_server;
+        server_name {{ inventory_hostname }};
+        root {{ nginx_docroot }};
+    
+        ssl_certificate /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ inventory_hostname }}/privkey.pem;
+    }
+
+The first `server` block configures a default port 80 server which redirects _all_ traffic on port 80, for any incoming request, to the same URL, but with `https://`. This is a handy way to force all traffic to SSL by default if you're using Nginx.
+
+The second `server` block configures a default port 443 server which handles all HTTPS traffic.
+
+It uses the `inventory_hostname` to tell Nginx what domain should be used to serve traffic, and it sets the document root to the `nginx_docroot`.
+
+Finally, it tells Nginx to use the certificate and key inside the default Let's Encrypt generated certificate path, which is always `/etc/letsencrypt/live/[domain]/[fullchain|privkey].pem`.
+
+Add a task templating this Jinja2 template to a configure file in `main.yml`, and also make sure to tell Nginx to restart when the template is first created or is modified:
+
+{lang="text",starting-line-number=31}
+        - name: Copy Nginx server configuration in place.
+          template:
+            src: templates/https-letsencrypt.conf.j2
+            dest: /etc/nginx/sites-enabled/https-letsencrypt.conf
+            mode: 0644
+          notify: restart nginx
+
+At this point, we have a complete playbook. It should set up a firewall, create a certificate, and configure Nginx to serve a simple website using the certificate. But we don't have a server to run the playbook against!
+
+### Create a server and configure DNS
+
+Let's Encrypt generates certificates for domains only when it verify domain ownership. The Internet would be very insecure if Let's Encrypt allowed any random person to generate valid certificates for a domain like `apple.com` or `google.com`!
+
+Therefore, the easiest way to generate a Let's Encrypt certificate is to ensure your server is accessible over the public Internet. For internal servers, Let's Encrypt might not be the best option (though in some cases it can be made to work).
+
+In Chapter 8, an example was provided for how to provision servers automatically via Ansible---and for your own project, you may want to automate the process of initial server provisioning using Ansible, Terraform, or some other automation tool. But for this example, we just need a server running that is reachable via the public Internet. You will also need to point a domain at it (e.g. subdomain.example.com).
+
+Once you've done that, and can confirm you can SSH into the server at the actual domain name (e.g. `ssh myuser@subdomain.example.com`), then you're ready to point the playbook at the server and configure everything via Ansible.
+
+### Point the playbook inventory at the server
+
+Assuming your server is reachable at `subdomain.example.com`, and your SSH username is `myuser`, create an `inventory` file in the project directory with the following contents:
+
+{lang="text"}
+    [letsencrypt]
+    subdomain.example.com ansible_ssh_user=myuser letsencrypt_email=webmaster@example.com
+
+Now that the playbook knows how to connect to your public server, it's time to try it out. First, make sure all the required Galaxy roles are installed:
+
+    ansible-galaxy install -r requirements.yml
+
+Then run the playbook:
+
+    ansible-playbook -i inventory main.yml
+
+After a couple minutes, assuming Let's Encrypt could reach your server at `subdomain.example.com` on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
+
+### Access your server over HTTPS!
+
+Visit `https://subdomain.example.com/` and you should see something like:
 
 {width=80%}
 ![HTTPS Test site loads with a valid Let's Encrypt certificate](images/12-letsencrypt-valid-certificate.png)
 
-## Configuring Nginx to proxy HTTP traffic
+Automating free certificates with Let's Encrypt can be fun, but make sure you're aware of Let's Encrypt's [rate limits](https://letsencrypt.org/docs/rate-limits/) before you go ahead and automate certs for 3,000 of your subdomains at once!
 
-TODO: Use Nginx to proxy HTTP traffic and serve it over HTTPS.
+## Configuring Nginx to proxy HTTP traffic and serve it over HTTPS
+
+One common problem you'll run into in most organizations is old web applications or services which are no longer maintained but must continue running, and the need for HTTPS encryption for these old apps.
+
+You could use a third party service like Cloudflare to proxy or front all traffic through HTTPS, but then you have a connection over the public Internet from Cloudflare's network to your backend server that's not encrypted. Even if you're using a CDN, it's best to encrypt the traffic all the way to as close to your application server as possible.
+
+And that's where Nginx comes in! There are other tools which can do the same thing, but Nginx is remarkably simple to configure as an HTTPS proxy server for HTTP backends.
+
+TODO.
 
 ## Summary
 
