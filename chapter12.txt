@@ -498,9 +498,12 @@ And that's where Nginx comes in! There are other tools which can do the same thi
 
 ### Modify the Nginx configuration to proxy traffic
 
-We're going to use the exact same playbook and configuration from the self-signed certificate example earlier in this chapter. There are only two small changes needed to set up and test Nginx proxying HTTPS traffic to an HTTP backend application.
+We're going to use the exact same playbook and configuration from the self-signed certificate example earlier in this chapter, with two small modifications. The adjusted playbook is available in this book's GitHub repository: [HTTPS Nginx Proxy Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-nginx-proxy). There are only two small changes needed to set up and test Nginx proxying HTTPS traffic to an HTTP backend application:
 
-First, we must configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
+  1. Instead of serving traffic directly from Nginx, let Nginx proxy requests to a backend server running on port 8080.
+  2. Run a backend HTTP server on port 8080 using Python.
+
+First, configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
 
 {lang="text",starting-line-number=11}
     # Proxy HTTPS traffic using the self-signed certificate created by Ansible.
@@ -536,7 +539,7 @@ You can run that command interactively, or if you're automating it in the Ansibl
           async: 45
           poll: 0
 
-Note the use of `&`, `async` and `poll` to fire and forget the command, so it can run in the background forever. It is _not_ a good idea to run applications like this in production, but we're just using the Python webserver to test Nginx's backend proxying.
+Note the use of `&`, `async` and `poll` to fire and forget the command, so it can run in the background forever. It is _not_ a good idea to run applications like this in production, but for demonstration purposes it's adequate to verify Nginx is proxying HTTPS requests correctly.
 
 W> The `--directory` option in this command requires Python 3.7 or later. Make sure your operating system has this version of Python available (e.g. via system packages, like with Debian 10 or later, or via a virtualenv).
 
@@ -550,7 +553,7 @@ If you log into the server and kill the Python process serving HTTP traffic on p
 {width=80%}
 ![Nginx proxies HTTPS requests to backend HTTP applciations](images/12-https-nginx-proxy-502-bad-gateway.png)
 
-Once you learn to automate HTTPS certificates with Ansible, and proxy backend services with Nginx, it's possible to adopt an HTTPS-everywhere approach in your organization, no matter what kind of web applications you run.
+Once you learn to automate HTTPS certificates with Ansible and proxy backend services with Nginx (or another suitable HTTPS-aware proxy), it's possible to adopt HTTPS everywhere, no matter what kind of web applications you run.
 
 ## Summary
 
