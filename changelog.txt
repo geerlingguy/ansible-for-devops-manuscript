@@ -28,6 +28,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   19. Fixed Dynamic includes example file path in chapter 6 (thanks to @sandipb!).
   20. Added note about RHEL servers requiring additional `geerlingguy.epel` repo added for 9-line LAMP example in chapter 6 (thanks to @sandipb!).
   21. Completed section on obtaining Let's Encrypt certificates in chapter 12.
+  22. Completed section on Nginx HTTPS proxying for HTTP applications in chapter 12.
 
 ## Version 1.17 (2018-09-12)
 

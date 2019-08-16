@@ -469,10 +469,12 @@ Assuming your server is reachable at `subdomain.example.com`, and your SSH usern
 
 Now that the playbook knows how to connect to your public server, it's time to try it out. First, make sure all the required Galaxy roles are installed:
 
+{lang="text",linenos="off"}
     ansible-galaxy install -r requirements.yml
 
 Then run the playbook:
 
+{lang="text",linenos="off"}
     ansible-playbook -i inventory main.yml
 
 After a couple minutes, assuming Let's Encrypt could reach your server at `subdomain.example.com` on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
@@ -494,7 +496,61 @@ You could use a third party service like Cloudflare to proxy or front all traffi
 
 And that's where Nginx comes in! There are other tools which can do the same thing, but Nginx is remarkably simple to configure as an HTTPS proxy server for HTTP backends.
 
-TODO.
+### Modify the Nginx configuration to proxy traffic
+
+We're going to use the exact same playbook and configuration from the self-signed certificate example earlier in this chapter. There are only two small changes needed to set up and test Nginx proxying HTTPS traffic to an HTTP backend application.
+
+First, we must configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
+
+{lang="text",starting-line-number=11}
+    # Proxy HTTPS traffic using the self-signed certificate created by Ansible.
+    server {
+        listen 443 ssl default_server;
+        server_name {{ server_hostname }};
+    
+        location / {
+            include /etc/nginx/proxy_params;
+            proxy_pass          http://localhost:8080;
+            proxy_read_timeout  90s;
+            proxy_redirect      http://localhost:8080 {{ server_hostname }};
+        }
+    
+        ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+        ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+    }
+
+All that's been done is the removal of the `root` directive, which was replaced with the `location` directive. This particular `location` directive tells Nginx to proxy _all_ requests to any path (`/` includes everything) to the address `http://localhost:8080`, with a 90 second backend timeout.
+
+This assumes there's a backend HTTP service running on port 8080, though! So, the second step is to run something on port 8080. Luckily, since we already have Python and a web root, we can use Python to run an HTTP server with a very simple CLI command:
+
+{lang="text",linenos="off"}
+    python3 -m http.server 8080 --directory /var/www/html
+
+You can run that command interactively, or if you're automating it in the Ansible playbook from earlier, you can add a task after the "Copy example index.html file in place." task:
+
+{lang="text",starting-line-number=33}
+        - name: Start simple python webserver on port 8080.
+          shell: >
+            python3 -m http.server 8080 --directory {{ nginx_docroot }} &
+          changed_when: false
+          async: 45
+          poll: 0
+
+Note the use of `&`, `async` and `poll` to fire and forget the command, so it can run in the background forever. It is _not_ a good idea to run applications like this in production, but we're just using the Python webserver to test Nginx's backend proxying.
+
+W> The `--directory` option in this command requires Python 3.7 or later. Make sure your operating system has this version of Python available (e.g. via system packages, like with Debian 10 or later, or via a virtualenv).
+
+Now that a server is running on port 8080, you should see Nginx proxying requests successfully:
+
+{width=80%}
+![Nginx proxies HTTPS requests to backend HTTP applciations](images/12-https-nginx-proxy-test.png)
+
+If you log into the server and kill the Python process serving HTTP traffic on port 8080, then Nginx will still attempt to proxy traffic, but will return a 502 Bad Gateway because the backend service is unavailable:
+
+{width=80%}
+![Nginx proxies HTTPS requests to backend HTTP applciations](images/12-https-nginx-proxy-502-bad-gateway.png)
+
+Once you learn to automate HTTPS certificates with Ansible, and proxy backend services with Nginx, it's possible to adopt an HTTPS-everywhere approach in your organization, no matter what kind of web applications you run.
 
 ## Summary
 
