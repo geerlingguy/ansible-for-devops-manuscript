@@ -2,19 +2,19 @@
 
 Today's application environment almost always requires the use of HTTP (and HTTPS) for certain traffic---end users interacting with a website, microservices communicating with each other internally or via the public Internet, or external APIs interacting with your apps.
 
-HTTPS was originally used only for sensitive transactions, like banking transactions or secure web forms. It also used to require a non-negligible amount of extra server processing power to encrypt data. But today, when Google boosts search results for HTTPS-only sites, and when processors barely show a difference with encrypted or unencrypted traffic, it's almost universally understood that all HTTP services should be served via `https://`.
+HTTPS was originally used only for sensitive transactions, like banking transactions or secure web forms. It also used to require extra server CPU to encrypt data. But today, when Google boosts search results for HTTPS-only sites, and when processors barely show a difference with encrypted or unencrypted traffic, it's almost universally understood that all HTTP services should be served via `https://`.
 
-Traditionally, one blocker to using HTTPS _everywhere_ was that certificates were sometimes difficult to acquire, manage, and renew. And they were also expensive!
+Traditionally, one blocker to using HTTPS _everywhere_ was certificates were difficult to acquire, manage, and renew. And they were also expensive!
 
-Nowadays, between Let's Encrypt's free certificates, wildcard certs that are more affordable, and almost universal Server Name Indication (SNI) support, there is almost never an excuse _not_ to use HTTPS...
+Now, between Let's Encrypt's free certificates, more affordable wildcard certs, and universal Server Name Indication (SNI) support, there is almost never an excuse _not_ to use HTTPS...
 
-Except for the fact that certificates have traditionally been tricky to use with automation. This chapter will show how Ansible solves this last problem by managing certificates and configuring all HTTP traffic to be secure!
+Except, that is, for the fact certificate management has been tricky to automate. This chapter will show how Ansible solves this last problem by managing certificates and securing all your HTTP traffic!
 
 ## Generating Self-Signed Certificates with Ansible
 
 Whenever I'm building and testing a new server configuration that requires TLS connections (typically HTTPS traffic over port 443), I need to use one or more valid certificates which can be accepted by a browser user, or by something like `curl`, so I can verify my TLS configuration is correct.
 
-Ansible makes generating self-signed certificates easy, at least as of Ansible 2.4. There are four `openssl_*` crypto-related modules useful in generating certificates:
+Ansible makes generating self-signed certificates easy. There are four `openssl_*` crypto-related modules useful in generating certificates:
 
   - `openssl_certificate` - Generate and/or check OpenSSL certificates
   - `openssl_csr` - Generate OpenSSL Certificate Signing Request (CSR)
@@ -23,7 +23,7 @@ Ansible makes generating self-signed certificates easy, at least as of Ansible 2
 
 In order to use these modules, you need OpenSSL installed, and also one extra Python dependency used by Ansible to interact with OpenSSL, the `pyOpenSSL` library.
 
-To quickly illustrate how to generate a self-signed certificate, here's the list of tasks involved:
+Here's a quick example of the tasks required to generate a self-signed cert:
 
 {lang="text",linenos=off}
     - name: Ensure directory exists for local self-signed TLS certs.
@@ -48,7 +48,7 @@ To quickly illustrate how to generate a self-signed certificate, here's the list
         csr_path: /etc/ssl/private/example/example.csr
         provider: selfsigned
 
-These tasks ensure there's a directory inside which the certificate will live, then creates a private key and Certificate Signing Request (CSR), and finally uses both of those to generate the cert.
+These tasks ensure there's a directory inside which the certificate will live, create a private key and Certificate Signing Request (CSR) in that directory, and use them to generate the final cert.
 
 You can then use this certificate to serve HTTPS requests using a web server; for example, in an Nginx `server` configuration:
 
@@ -62,7 +62,7 @@ You can then use this certificate to serve HTTPS requests using a web server; fo
         ...
     }
 
-Let's put together a full playbook, then, using the `openssl_*` modules along with Nginx, to build a server complete with a self-signed certificate and a secure Nginx TLS configuration, which is completely idempotent.
+Let's put together a full playbook using the `openssl_*` modules and Nginx, to build a server complete with a self-signed certificate and a secure Nginx TLS configuration.
 
 ### Idempotent Nginx HTTPS playbook with a self-signed cert
 
@@ -259,11 +259,11 @@ W> If you rebuild the server for `https.test` more than once (thus creating a ne
 
 Self-signed certs are helpful in making sure certain environments can be accessed via HTTPS, but they have a number of downsides, the major one being that every visitor has to confirm a security exception the first time they visit, and similarly command line tools like curl and HTTP libraries usually fail when they encounter a self-signed cert, unless you specifically ignore cert trust settings (which is a security risk).
 
-So most of the time, it's better to use a valid certificate from one of the trusted Certificate Authorities (CAs).
+It's usually best to use a valid certificate from one of the trusted Certificate Authorities (CAs).
 
-Traditionally, this meant you had to give some money to a CA and work through a mostly-manual process to acquire a certificate. You can still do this---and there are a few use cases where this is still the best option, but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_, easy-to-automate certificates to everyone, with the goal of creating "a more secure and privacy-respecting Web."
+Traditionally, you had to give some money to a Certificate Authority (CA) and work through a mostly-manual process to acquire a certificate. You can still do this, and there are use cases where this is still the best option, but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_, easy-to-automate certificates to everyone, with the goal of creating "a more secure and privacy-respecting Web."
 
-So in this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
+In this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
 
 ### Use Galaxy roles to get things done faster
 
@@ -275,11 +275,13 @@ Instead of writing all the automation ourselves, we can rely on some roles from 
     - src: geerlingguy.certbot
     - src: geerlingguy.nginx
 
-We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a simple web server to serve content over HTTPS.
+We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a web server to serve content over HTTPS.
 
-The `geerlingguy.certbot` role is the heart of the operation here, and I'd like to specifically point out how it does its magic:
+The `geerlingguy.certbot` role is the heart of the operation; here's how it works:
 
-  1. TODO
+  1. First, it either installs Certbot from the system packages or from source, depending on the value of `certbot_install_from_source`. Source installs are usually more usable since Certbot sometimes adds helpful features that will never be backported into system packages.
+  2. Then it creates a certificate if configured via `certbot_create_if_missing` and if the certificate(s) specified in `certbot_certs` do not yet exist. It creates the certificates using the `certbot_create_command` and can also stop and start certain services while the certificates are being created.
+  3. Finally, if `certbot_auto_renew` is `true`, it sets up a cron job for certificate renewal, using the `certbot renew` command along with the options passed in via `certbot_auto_renew_options`. Auto renewal is one of the main benefits of Let's Encrypt, because as long as your renewal process is working, you'll never wake up to an outage due to an expired certificate again!
 
 Once we have the requirements file set up, create an `ansible.cfg` file in the project directory to tell Ansible where to store and use the downloaded roles:
 
@@ -287,7 +289,7 @@ Once we have the requirements file set up, create an `ansible.cfg` file in the p
     [defaults]
     roles_path = ./roles
 
-Now, install the required roles with: `ansible-galaxy install -r requirements.yml`.
+Install the required roles with: `ansible-galaxy install -r requirements.yml`.
 
 ### Create the playbook
 
@@ -304,9 +306,9 @@ First things first, start the play on all the `letsencrypt` hosts, and since we 
       vars_files:
         - vars/main.yml
 
-We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, because we will need to add a bit of configuration to generate certificates and configure the firewall and Nginx, we'll put all the variables in a `vars/main.yml` file.
+We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, to add the configuration for certificate generation, firewall configuration, and Nginx, we'll put all the variables in a `vars/main.yml` file.
 
-Next up, in a series of `pre_tasks`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
+In a series of `pre_tasks` in `main.yml`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
 
 {lang="text",starting-line-number=9}
       pre_tasks:
@@ -320,7 +322,7 @@ Next up, in a series of `pre_tasks`, install Python (if needed), gather facts (s
         - name: Ensure apt cache is updated.
           apt: update_cache=true cache_valid_time=600
 
-Now, it's time for the meat of this playbook, the `roles`. We can simply call them one by one:
+Now, it's time for the meat of this playbook, the `roles`. Call each one:
 
 {lang="text",starting-line-number=9}
       roles:
@@ -328,7 +330,7 @@ Now, it's time for the meat of this playbook, the `roles`. We can simply call th
         - geerlingguy.nginx
         - geerlingguy.certbot
 
-Since the roles will be doing the heavy lifting (yay for a nice, short playbook!), we will need to tell them what to do via variables in `vars/main.yml`:
+Since the roles will be doing the heavy lifting (yay for easy-to-read playbooks!), we tell them what to do via variables in `vars/main.yml`:
 
 {lang="text"}
     ---
@@ -359,7 +361,7 @@ By section:
   - The Certbot role only requires a few variables to ensure a certificate is added:
     - `certbot_create_if_missing`: The role will check if the certificate exists, and if it doesn't (e.g. on the first playbook run) it will create it. If it does exist, it will be idempotent and make no changes.
     - `certbot_admin_email`: Let's Encrypt lets you [associate an email address](https://letsencrypt.org/docs/expiration-emails/) with every certificate it generates, and uses this email address to notify the owner of any problems with the certificate, like impending expiration due to a server issue.
-    - `certbot_certs`: You can add one or more certificates using this list; and each cert can cover one or more domains through the magic of 'Multi-domain' or 'Subject Alternative Name' certificates.
+    - `certbot_certs`: You can add one or more certificates using this list; and each certificate can cover one or more domains using Subject Alternative Name (SAN) certificates.
 
 Two of the Jinja2 variables used in the vars file are not defined in vars---rather, they will come from the inventory. We'll set that up soon.
 
@@ -419,7 +421,7 @@ Finally, we need to configure Nginx with two `server` blocks; one to redirect HT
         return 301 https://$host$request_uri;
     }
     
-    # Serve HTTPS traffic using the self-signed certificate created by Ansible.
+    # Serve HTTPS traffic using the Let's Encrypt certificate.
     server {
         listen 443 ssl default_server;
         server_name {{ inventory_hostname }};
@@ -435,9 +437,9 @@ The second `server` block configures a default port 443 server which handles all
 
 It uses the `inventory_hostname` to tell Nginx what domain should be used to serve traffic, and it sets the document root to the `nginx_docroot`.
 
-Finally, it tells Nginx to use the certificate and key inside the default Let's Encrypt generated certificate path, which is always `/etc/letsencrypt/live/[domain]/[fullchain|privkey].pem`.
+Finally, it tells Nginx to use the certificate and key inside the default Let's Encrypt generated certificate path, which is always `/etc/letsencrypt/live/[domain]/*.pem`.
 
-Add a task templating this Jinja2 template to a configure file in `main.yml`, and also make sure to tell Nginx to restart when the template is first created or is modified:
+Add a task templating this Jinja2 template to a Nginx config file in `main.yml`, making sure to restart Nginx when the template is created or modified:
 
 {lang="text",starting-line-number=31}
         - name: Copy Nginx server configuration in place.
@@ -447,15 +449,15 @@ Add a task templating this Jinja2 template to a configure file in `main.yml`, an
             mode: 0644
           notify: restart nginx
 
-At this point, we have a complete playbook. It should set up a firewall, create a certificate, and configure Nginx to serve a simple website using the certificate. But we don't have a server to run the playbook against!
+At this point, we have a complete playbook. It should set up a firewall, create a certificate, and configure Nginx to serve a web page using the certificate. But we don't have a server to run the playbook against!
 
 ### Create a server and configure DNS
 
-Let's Encrypt generates certificates for domains only when it verify domain ownership. The Internet would be very insecure if Let's Encrypt allowed any random person to generate valid certificates for a domain like `apple.com` or `google.com`!
+Let's Encrypt generates certificates for domains only after verifying domain ownership. The Internet would be very insecure if Let's Encrypt allowed any random person to generate valid certificates for a domain like `apple.com` or `google.com`!
 
-Therefore, the easiest way to generate a Let's Encrypt certificate is to ensure your server is accessible over the public Internet. For internal servers, Let's Encrypt might not be the best option (though in some cases it can be made to work).
+The easiest way to verify domain ownership to Let's Encrypt is to ensure your server is accessible over the public Internet. For internal servers, Let's Encrypt might not be the best option (though in some cases it can be made to work).
 
-In Chapter 8, an example was provided for how to provision servers automatically via Ansible---and for your own project, you may want to automate the process of initial server provisioning using Ansible, Terraform, or some other automation tool. But for this example, we just need a server running that is reachable via the public Internet. You will also need to point a domain at it (e.g. subdomain.example.com).
+In Chapter 8, an example was provided for how to provision servers automatically via Ansible. For your own project, you may want to automate the process of initial server provisioning using Ansible, Terraform, or some other automation tool. But for this example, you just need to make sure a server is running which is reachable via the public Internet. You also need to point a domain at it (e.g. subdomain.example.com).
 
 Once you've done that, and can confirm you can SSH into the server at the actual domain name (e.g. `ssh myuser@subdomain.example.com`), then you're ready to point the playbook at the server and configure everything via Ansible.
 
@@ -465,7 +467,11 @@ Assuming your server is reachable at `subdomain.example.com`, and your SSH usern
 
 {lang="text"}
     [letsencrypt]
-    subdomain.example.com ansible_ssh_user=myuser letsencrypt_email=webmaster@example.com
+    subdomain.example.com
+    
+    [letsencrypt:vars]
+    ansible_ssh_user=myuser
+    letsencrypt_email=webmaster@example.com
 
 Now that the playbook knows how to connect to your public server, it's time to try it out. First, make sure all the required Galaxy roles are installed:
 
@@ -486,15 +492,15 @@ Visit `https://subdomain.example.com/` and you should see something like:
 {width=80%}
 ![HTTPS Test site loads with a valid Let's Encrypt certificate](images/12-letsencrypt-valid-certificate.png)
 
-Automating free certificates with Let's Encrypt can be fun, but make sure you're aware of Let's Encrypt's [rate limits](https://letsencrypt.org/docs/rate-limits/) before you go ahead and automate certs for 3,000 of your subdomains at once!
+Automating free certificates with Let's Encrypt can be fun, but make sure you're aware of [Let's Encrypt rate limits](https://letsencrypt.org/docs/rate-limits/) before you go ahead and automate certs for 3,000 of your subdomains at once!
 
 ## Configuring Nginx to proxy HTTP traffic and serve it over HTTPS
 
-One common problem you'll run into in most organizations is old web applications or services which are no longer maintained but must continue running, and the need for HTTPS encryption for these old apps.
+One common problem you may encounter is an old web application or service which is no longer updated but must continue running, and the need for HTTPS encryption (whether for SEO or security compliance).
 
-You could use a third party service like Cloudflare to proxy or front all traffic through HTTPS, but then you have a connection over the public Internet from Cloudflare's network to your backend server that's not encrypted. Even if you're using a CDN, it's best to encrypt the traffic all the way to as close to your application server as possible.
+You could use a third party service like Cloudflare to proxy all traffic through HTTPS, but you'd still have a connection over the public Internet from Cloudflare's network to your backend server that's unencrypted. Even if you're using a CDN, it's best to encrypt the traffic all the way to as close to your application server as possible.
 
-And that's where Nginx comes in! There are other tools which can do the same thing, but Nginx is remarkably simple to configure as an HTTPS proxy server for HTTP backends.
+And that's where Nginx comes in! There are other tools which can do the same thing, but Nginx is easy to configure as an HTTPS proxy server for HTTP backends.
 
 ### Modify the Nginx configuration to proxy traffic
 
@@ -506,7 +512,7 @@ We're going to use the exact same playbook and configuration from the self-signe
 First, configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
 
 {lang="text",starting-line-number=11}
-    # Proxy HTTPS traffic using the self-signed certificate created by Ansible.
+    # Proxy HTTPS traffic using a self-signed certificate.
     server {
         listen 443 ssl default_server;
         server_name {{ server_hostname }};
@@ -546,14 +552,14 @@ W> The `--directory` option in this command requires Python 3.7 or later. Make s
 Now that a server is running on port 8080, you should see Nginx proxying requests successfully:
 
 {width=80%}
-![Nginx proxies HTTPS requests to backend HTTP applciations](images/12-https-nginx-proxy-test.png)
+![Nginx proxies HTTPS requests to backend HTTP applications](images/12-https-nginx-proxy-test.png)
 
 If you log into the server and kill the Python process serving HTTP traffic on port 8080, then Nginx will still attempt to proxy traffic, but will return a 502 Bad Gateway because the backend service is unavailable:
 
 {width=80%}
-![Nginx proxies HTTPS requests to backend HTTP applciations](images/12-https-nginx-proxy-502-bad-gateway.png)
+![Nginx returns 502 Bad Gateway if the backend is unavailable](images/12-https-nginx-proxy-502-bad-gateway.png)
 
-Once you learn to automate HTTPS certificates with Ansible and proxy backend services with Nginx (or another suitable HTTPS-aware proxy), it's possible to adopt HTTPS everywhere, no matter what kind of web applications you run.
+Once you learn to automate HTTPS certificates with Ansible and proxy backend services with Nginx (or another suitable HTTPS-aware proxy), it becomes possible to adopt HTTPS everywhere, no matter what kind of web applications you run.
 
 ## Summary
 
