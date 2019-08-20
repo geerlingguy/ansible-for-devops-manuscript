@@ -43,7 +43,7 @@ Ansible's only real dependency is Python. Once Python is installed, the simplest
 
 You could also install Ansible via [Homebrew](http://brew.sh/) with `brew install ansible`. Either way (`pip` or `brew`) is fine, but make sure you update Ansible using the same system with which it was installed!
 
-**If you're running Windows** (i.e. you work for a large company that forces you to use Windows), it will take a little extra work to everything set up. There are two ways you can go about using Ansible if you use Windows:
+**If you're running Windows** (i.e. you work for a large company that forces you to use Windows), it will take a little extra work to set everything up. There are two ways you can go about using Ansible if you use Windows:
 
   1. The easiest solution would be to use a Linux virtual machine (with something like VirtualBox) to do your work, or to work within the Windows Subsystem for Linux. For detailed instructions, see [Appendix A - Using Ansible on Windows workstations](#appendix-a).
   2. Ansible runs (somewhat) within an appropriately-configured [Cygwin](http://cygwin.com/) environment. For setup instructions, please see my blog post [Running Ansible within Windows](https://servercheck.in/blog/running-ansible-within-windows)), and note that *running Ansible directly within Windows is unsupported and prone to breaking*.

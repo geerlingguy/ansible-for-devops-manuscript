@@ -34,6 +34,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   25. Fixed a missing end parentheses in chapter 4 (thanks to @VoidSignal!).
   26. Fixed multiple typos in chapters 7, 10, and 13 (thanks to @erikj!).
   27. Removed section on Accelrated mode in chapter 3 since it is no longer in existence (thanks to @evilhamsterman!).
+  28. Clarified explanation of `vagrant up` and `vagrant provision` in chapter 2 (thanks to @charlieok!).
+  29. Fixed other typos in chapters 1 and 2 (thanks to @charlieok!).
 
 ## Version 1.17 (2018-09-12)
 
