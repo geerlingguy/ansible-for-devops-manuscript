@@ -30,6 +30,10 @@ Hopefully these notes will help readers figure out what's changed since the last
   21. Completed section on obtaining Let's Encrypt certificates in chapter 12.
   22. Completed section on Nginx HTTPS proxying for HTTP applications in chapter 12.
   23. Updated Kubernetes version in chapter 14 example to 1.13.8 (thanks to @torenware!).
+  24. Fixed a typo in chapter 2 (thanks to @atatevyan!).
+  25. Fixed a missing end parentheses in chapter 4 (thanks to @VoidSignal!).
+  26. Fixed multiple typos in chapters 7, 10, and 13 (thanks to @erikj!).
+  27. Removed section on Accelrated mode in chapter 3 since it is no longer in existence (thanks to @evilhamsterman!).
 
 ## Version 1.17 (2018-09-12)
 

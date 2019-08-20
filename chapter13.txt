@@ -390,7 +390,7 @@ In order for the Flask app to function properly, we need to get the `host_ip_add
             dest: /opt/www
             mode: 0755
 
-The shell command that registers the `host_ip` is an easy way to retrieve the IP while still letting Docker do it's own virtual network management.
+The shell command that registers the `host_ip` is an easy way to retrieve the IP while still letting Docker do its own virtual network management.
 
 The last two tasks copy the flask app and templates directory into place.
 

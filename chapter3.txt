@@ -635,50 +635,29 @@ One of Ansible's greatest features is its ability to function without running an
 
 Since a stable, fast, and secure SSH connection is the heart of Ansible's communication abilities, Ansible's implementation of SSH has continually improved throughout the past few years---and is still improving today.
 
-One thing that is universal to all of Ansible's SSH connection methods is that Ansible uses the connection to transfer one or a few files defining a play or command to the remote server, then runs the play/command, then deletes the transferred file(s), and reports back the results. This sequence of events may change and become more simple/direct with later versions of Ansible (see the notes on Ansible 1.5 below), but a fast, stable, and secure SSH connection is of paramount importance to Ansible.
+One thing that is universal to all of Ansible's SSH connection methods is that Ansible uses the connection to transfer one or a few files defining a play or command to the remote server, then runs the play/command, then deletes the transferred file(s), and reports back the results. A fast, stable, and secure SSH connection is of paramount importance to Ansible.
 
 ### Paramiko
 
-In the beginning, Ansible used paramiko---an open source SSH2 implementation for Python---exclusively. However, as a single library for a single language (Python), development of paramiko doesn't keep pace with development of OpenSSH (the standard implementation of SSH used almost everywhere), and its performance and security is slightly worse than OpenSSH---at least to this writer's eyes.
+In the beginning, Ansible used paramiko---an open source SSH2 implementation for Python---exclusively. However, as a single library for a single language (Python), development of paramiko doesn't keep pace with development of OpenSSH (the standard implementation of SSH used almost everywhere), and its performance and security is slightly worse than OpenSSH.
 
-Ansible continues to support the use of paramiko, and even chooses it as the default for systems (like RHEL 5/6) which don't support ControlPersist---an option present only in OpenSSH 5.6 or newer. (ControlPersist allows SSH connections to persist so frequent commands run over SSH don't have to go through the initial handshake over and over again until the `ControlPersist` timeout set in the server's SSH config is reached.)
+Ansible continues to support the use of paramiko, and even chooses it as the default for systems (like RHEL 6) which don't support ControlPersist---an option present only in OpenSSH 5.6 or newer. (ControlPersist allows SSH connections to persist so frequent commands run over SSH don't have to go through the initial handshake over and over again until the `ControlPersist` timeout set in the server's SSH config is reached.)
 
 ### OpenSSH (default)
 
-Beginning in Ansible 1.3, Ansible defaulted to using native OpenSSH connections to connect to servers supporting ControlPersist. Ansible had this ability since version 0.5, but didn't default to it until 1.3.
+In Ansible 1.3, Ansible defaulted to using native OpenSSH connections to connect to servers supporting ControlPersist. Ansible had this ability since version 0.5, but didn't default to it until 1.3.
 
-Most local SSH configuration parameters (like hosts, key files, etc.) are respected, but if you need to connect via a port other than port 22 (the default SSH port), you need to specify the port in an inventory file (`ansible_ssh_port` option) or when running `ansible` commands.
+Most local SSH configuration parameters (like hosts, key files, etc.) are respected, but if you need to connect via a port other than port 22 (the default SSH port), you should specify the port in an inventory file (`ansible_ssh_port` option) or when running `ansible` commands.
 
 OpenSSH is faster, and a little more reliable, than paramiko, but there are ways to make Ansible faster still.
 
-### Accelerated Mode
+### Faster OpenSSH with Pipelining
 
-While not too helpful for ad-hoc commands, Ansible's Accelerated mode achieves greater performance for playbooks. Instead of connecting repeatedly via SSH, Ansible connects via SSH initially, then uses the AES key used in the initial connection to communicate further commands and transfers via a separate port (5099 by default, but this is configurable).
+Modern versions of Ansible allow you to improve on the performance of Ansible's default OpenSSH implementation.
 
-The only extra package required to use accelerated mode is `python-keyczar`, and almost everything in normal OpenSSH/Paramiko mode works in Accelerated mode, with two exceptions when using `sudo`:
+Instead of copying files, running them on the remote server, then removing them, the 'pipelining' method of OpenSSH transfer will send and execute commands for most Ansible modules directly over the SSH connection.
 
-  - Your sudoers file needs to have `requiretty` disabled (comment out the line with it, or set it per user by changing the line to `Defaults:username  !requiretty`).
-  - You must disable sudo passwords by setting `NOPASSWD` in the sudoers file.
-
-Accelerated mode can offer 2-4 times faster performance (especially for things like file transfers) compared to OpenSSH, and you can enable it for a playbook by adding the option `accelerate: true` to your playbook, like so:
-
-{lang="text",linenos=off}
-    ---
-    - hosts: all
-      accelerate: true
-      [...]
-
-It goes without saying, if you use accelerated mode, you need to have the port through which it communicates open in your firewall (port 5099 by default, or whatever port you set with the `accelerate_port` option after `accelerate`).
-
-Accelerate mode is a spiritual descendant of the now-deprecated 'Fireball' mode, which used a similar method for accelerating Ansible communications, but required ZeroMQ to be installed on the controlled server (which is at odds with Ansible's simple no-dependency, no-daemon philosophy), and didn't work with sudo commands at all.
-
-### Faster OpenSSH in Ansible 1.5+
-
-Ansible 1.5 and later contains a very nice improvement to Ansible's default OpenSSH implementation.
-
-Instead of copying files, running them on the remote server, then removing them, the new method of OpenSSH transfer will send and execute commands for most Ansible modules directly over the SSH connection.
-
-This method of connection is only available in Ansible 1.5+, and it can be enabled by adding `pipelining=True` under the `[ssh_connection]` section of the Ansible configuration file (`ansible.cfg`, which will be covered in more detail later).
+This method of connection can be enabled by adding `pipelining=True` under the `[ssh_connection]` section of the Ansible configuration file (`ansible.cfg`, which will be covered in more detail later).
 
 W> The `pipelining=True` configuration option won't help much unless you have removed or commented the `Defaults requiretty` option in `/etc/sudoers`. This is commented out in the default configuration for most OSes, but you might want to double-check this setting to make sure you're getting the fastest connection possible!
 
