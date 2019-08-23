@@ -368,11 +368,11 @@ So in the example above, I visited `http://192.168.84.3:30681/`, and got the def
 
 For a final example, it might be convenient for the playbook to output a debug message with the NodePort the Service is using. In addition to applying or deleting Kubernetes manifests, the `k8s` module can get cluster and resource information that can be used elsewhere in your playbooks.
 
-Add two final tasks to retrieve the NodePort for the `a4d-nginx` service, then display it using `debug`:
+Add two final tasks to retrieve the NodePort for the `a4d-nginx` service using `k8s_info`, then display it using `debug`:
 
 {lang="text",starting-line-number=42}
         - name: Get the details of the a4d-nginx Service.
-          k8s:
+          k8s_info:
             api_version: v1
             kind: Service
             name: a4d-nginx
@@ -381,7 +381,7 @@ Add two final tasks to retrieve the NodePort for the `a4d-nginx` service, then d
     
         - name: Print the NodePort of the a4d-nginx Service.
           debug:
-            var: a4d_nginx_service.result.spec.ports[0].nodePort
+            var: a4d_nginx_service.resources[0].spec.ports[0].nodePort
 
 When you run the playbook, you should now see the NodePort in the debug output:
 

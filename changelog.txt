@@ -37,6 +37,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   28. Clarified explanation of `vagrant up` and `vagrant provision` in chapter 2 (thanks to @charlieok!).
   29. Fixed other typos in chapters 1 and 2 (thanks to @charlieok!).
   30. Rewrote section on backgrounded asynchronous tasks, since polling has been broken since Ansible 2.0 (see [Issue #91](https://github.com/geerlingguy/ansible-for-devops/issues/91)).
+  31. Fixed issue with retrieving nodePort from K8s cluster in chapter 14; switched from `k8s` to `k8s_info` module.
 
 ## Version 1.17 (2018-09-12)
 
