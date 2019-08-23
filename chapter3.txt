@@ -488,65 +488,57 @@ To run a command in the background, you set the following options:
   - `-B <seconds>`: the maximum amount of time (in seconds) to let the job run.
   - `-P <seconds>`: the amount of time (in seconds) to wait between polling the servers for an updated job status.
 
-### Update servers asynchronously, monitoring progress
+> **Note**: As of Ansible 2.0, asynchronous polling on the command line (via the `-P` flag) no longer displays output in real time. Please follow the progress of this bug's resolution in the issue [v2 async events are not triggered](https://github.com/ansible/ansible/issues/14681). For now, you can still run jobs in the background and get job status information separately, but you can't see the polling status real-time.
 
-Let's run `yum -y update` on all our servers to get them up to date. If we leave out `-P`, Ansible defaults to polling every 10 seconds:
+### Update servers asynchronously with asynchronous jobs
+
+Let's run `yum -y update` on all our servers to get them up to date. If you set `-P 0`, Ansible fires off the command on the servers, then prints the background job information to the screen and exits:
 
 {lang="text",linenos=off}
-    $ ansible multi -b -B 3600 -a "yum -y update"
-    background launch...
-    
-    
-    192.168.60.6 | success >> {
-        "ansible_job_id": "763350539037",
-        "results_file": "/root/.ansible_async/763350539037",
+    $ ansible multi -b -B 3600 -P 0 -a "yum -y update"
+    192.168.60.4 | CHANGED => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python"
+        },
+        "ansible_job_id": "333866395772.18507",
+        "changed": true,
+        "finished": 0,
+        "results_file": "/root/.ansible_async/333866395772.18507",
         "started": 1
     }
     
     ... [other hosts] ...
 
-Wait a little while (or a *long* while, depending on how old the system image is we used to build our example VMs!), and eventually, you should see something like:
+While the background task is running, you can check on the status elsewhere using Ansible's `async_status` module, as long as you have the `ansible_job_id` value to pass in as `jid`:
 
 {lang="text",linenos=off}
-    <job 763350539037> finished on 192.168.60.6 => {
-        "ansible_job_id": "763350539037",
+    $ ansible multi -b -m async_status -a "jid=169825235950.3572"
+    192.168.60.6 | CHANGED => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python"
+        },
+        "ansible_job_id": "761320869373.18496",
         "changed": true,
         "cmd": [
             "yum",
             "-y",
             "update"
         ],
-        "delta": "0:13:13.973892",
-        "end": "2021-02-09 04:47:58.259723",
+        "delta": "0:00:09.017121",
+        "end": "2019-08-23 02:32:58.727209",
         "finished": 1,
-    
-    ... [more info and stdout from job] ...
-
-While a background task is running, you can also check on the status elsewhere using Ansible's `async_status` module, as long as you have the `ansible_job_id` value to pass in as `jid`:
-
-{lang="text",linenos=off}
-    $ ansible multi -b -m async_status -a "jid=763350539037"
-
-### Fire-and-forget tasks
-
-You may also need to run occasional long-running maintenance scripts, or other tasks that take many minutes or hours to complete, and you'd rather not babysit the task. In these cases, you can set the `-B` value as high as you want (be generous, so your task will complete before Ansible kills it!), and set `-P` to '0', so Ansible fires off the command then forgets about it:
-
-{lang="text",linenos=off}
-    $ ansible multi -B 3600 -P 0 -a "/path/to/fire-and-forget-script.sh"
-    background launch...
-    
-    
-    192.168.60.5 | success >> {
-        "ansible_job_id": "204960925196",
-        "results_file": "/root/.ansible_async/204960925196",
-        "started": 1
+        "rc": 0,
+        "start": "2019-08-23 02:32:49.710088",
+        ...
+        "stdout_lines": [
+            "Loaded plugins: fastestmirror",
+            "Determining fastest mirrors",
+            " * base: mirror.genesisadaptive.com",
+            " * extras: mirror.mobap.edu",
+            " * updates: mirror.mobap.edu",
+            "No packages marked for update"
+        ]
     }
-    
-    ... [other hosts] ...
-    
-    $
-
-Running the command this way doesn't allow status updates via `async_status` and a jid, but you can still inspect the file `~/.ansible_async/<jid>` on the remote server. This option is usually more helpful for 'fire-and-forget' tasks.
 
 W> For tasks you don't track remotely, it's usually a good idea to log the progress of the task *somewhere*, and also send some sort of alert on failure---especially, for example, when running backgrounded tasks that perform backup operations, or when running business-critical database maintenance tasks.
 
