@@ -43,7 +43,7 @@ Let's start building our individual server playbooks (in the `playbooks` directo
 
 **Varnish**
 
-Create a `main.yml` file within the the `playbooks/varnish` directory, with the following contents:
+Create a `main.yml` file within the `playbooks/varnish` directory, with the following contents:
 
 {lang="text"}
     ---
@@ -126,7 +126,7 @@ In terms of our caching/load balancing layer, this should suffice. For a true pr
 
 **Apache / PHP**
 
-Create a `main.yml` file within the the `playbooks/www` directory, with the following contents:
+Create a `main.yml` file within the `playbooks/www` directory, with the following contents:
 
 {lang="text"}
     ---
@@ -274,7 +274,7 @@ As this is the heart of the example application we're deploying to the infrastru
 
   - (9-23) Iterate through all the `lamp-db` MySQL hosts defined in the playbook inventory and test the ability to connect to them---as well as whether they are configured as master or slave, using the `mysql_test_connection()` function defined later (40-73).
   - (25-39) Check the first defined `lamp-memcached` Memcached host defined in the playbook inventory, confirming the ability to connect with the cache and to create, retrieve, or delete a cached value.
-  - (41-76) Define the `mysql_test_connection()` function, which tests the the ability to connect to a MySQL server and also returns its replication status.
+  - (41-76) Define the `mysql_test_connection()` function, which tests the ability to connect to a MySQL server and also returns its replication status.
   - (78-91) Print the results of all the MySQL and Memcached tests, along with `{{ inventory_hostname }}` as the page title, so we can easily see which web server is serving the viewed page.
 
 At this point, the heart of our infrastructure---the application that will test and display the status of all our servers---is ready to go.
@@ -311,7 +311,7 @@ In our `vars.yml` file (again, alongside `main.yml`), add the following:
     
     memcached_listen_ip: "0.0.0.0"
 
-We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to all interfaces so it will accept connections through the server's network interface.
+We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to all interfaces so it will accept connections through the server's network interface.
 
 W> The **principle of least privilege** "requires that in a particular abstraction layer of a computing environment, every module ... must be able to access only the information and resources that are necessary for its legitimate purpose" (Source: [Wikipedia](http://en.wikipedia.org/wiki/Principle_of_least_privilege)). Always restrict services and ports to only those servers or users that need access!
 

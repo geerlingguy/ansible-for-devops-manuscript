@@ -330,7 +330,7 @@ T> Make sure you get notifications or check in on your servers periodically so y
 
 If you were building a secure bank vault, you wouldn't want to have many doors and windows leading into the vault. You'd instead build reinforced concrete walls, and have one or two strong metal doors.
 
-Similarly, you should close any port not explicitly required to remain open on all your servers---whether in a DMZ in your network or open the the entire Internet. There are dozens of different ways to manage firewalls nowadays, from `iptables` and helpful tools like `ufw` and `firewalld` that help make iptables configuration easier, to AWS security groups and other external firewall services.
+Similarly, you should close any port not explicitly required to remain open on all your servers---whether in a DMZ in your network or open to the entire Internet. There are dozens of different ways to manage firewalls nowadays, from `iptables` and helpful tools like `ufw` and `firewalld` that help make iptables configuration easier, to AWS security groups and other external firewall services.
 
 Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, RHEL, and CentOS distributions).
 

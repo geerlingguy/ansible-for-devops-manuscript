@@ -605,7 +605,7 @@ Remember when we added the line `notify: restart forever apps` to the task that 
         - name: restart forever apps
           command: "forever restartall"
 
-At this point, the Ansible playbooks and Vagrant configuration should be complete. The playbook will clone the `demo-nodejs-api` project, run its tests to make sure everything's working correctly, then start the app using `forever` and make sure it's started whenever the the server reboots.
+At this point, the Ansible playbooks and Vagrant configuration should be complete. The playbook will clone the `demo-nodejs-api` project, run its tests to make sure everything's working correctly, then start the app using `forever` and make sure it's started whenever the server reboots.
 
 Run the command below to test all the new servers and make sure the app is running correctly:
 

@@ -255,7 +255,7 @@ I> Another simple way to build the scaffolding for a role is to use the command:
 
 Let's clean up the Node.js server example from Chapter four, and break out one of the main parts of the configuration---installing Node.js and any required npm modules.
 
-Create a `roles` folder in the same directory as the main `playbook.yml` file like, we created in Chapter 4's first example. Inside the `roles` folder, create a new folder: `nodejs` (which will be our role's name). Create two folders inside the `nodejs` role directory: `meta` and `tasks`.
+Create a `roles` folder in the same directory as the main `playbook.yml` file like we created in Chapter 4's first example. Inside the `roles` folder, create a new folder: `nodejs` (which will be our role's name). Create two folders inside the `nodejs` role directory: `meta` and `tasks`.
 
 Inside the `meta` folder, add a simple `main.yml` file with the following contents:
 

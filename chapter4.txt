@@ -616,7 +616,7 @@ T> Why use `shell` instead of `command`? Ansible's `command` module is the prefe
 T> 
 T> There are two other modules which assist in executing shell commands remotely: `script` executes shell scripts (though it's almost always a better idea to convert shell scripts into idempotent Ansible playbooks!), and `raw` executes raw commands via SSH (it should only be used in circumstances where you can't use one of the other options).
 T> 
-T> It's best to use an Ansible module for every task. If you have to resort to a regular command-line command, try the the `command` module first. If you require the options mentioned above, use `shell`. Use of `script` or `raw` should be exceedingly rare, and won't be covered in this book.
+T> It's best to use an Ansible module for every task. If you have to resort to a regular command-line command, try the `command` module first. If you require the options mentioned above, use `shell`. Use of `script` or `raw` should be exceedingly rare, and won't be covered in this book.
 
 Now, we'll install Drush using the latest version from GitHub:
 
