@@ -39,6 +39,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   30. Rewrote section on backgrounded asynchronous tasks, since polling has been broken since Ansible 2.0 (see [Issue #91](https://github.com/geerlingguy/ansible-for-devops/issues/91)).
   31. Fixed issue with retrieving nodePort from K8s cluster in chapter 14; switched from `k8s` to `k8s_info` module.
   32. Fixed minor typos in chapter 4, 6, 8, 9, and 10 (thanks to @jlmuir!).
+  33. Fixed text regarding `include_tasks` and dynamic filenames in chapter 6 (thanks to @atatevyan!).
 
 ## Version 1.17 (2018-09-12)
 

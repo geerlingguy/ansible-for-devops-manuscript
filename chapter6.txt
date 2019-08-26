@@ -468,20 +468,17 @@ If I had gone this route, and continued with the rest of the playbook tasks in o
     - name: Include OS-specific variables.
       include_vars: "{{ ansible_os_family }}.yml"
     
-    - include_tasks: setup-RedHat.yml
-      when: ansible_os_family == 'RedHat'
-    
-    - include_tasks: setup-Debian.yml
-      when: ansible_os_family == 'Debian'
+    - name: Include OS-specific setup tasks.
+      include_tasks: setup-{{ ansible_os_family }}.yml
     
     - name: Other OS-agnostic tasks...
 
 Two important things to notice about this style of distribution-specific inclusion:
 
-  1. When including vars files (with `include_vars`), you can actually *use variables in the name of the file*. This is handy in many situtations, and here we're including a vars file in the format `distribution_name.yml`. For our purposes, since the role will be used on Debian and RHEL-based hosts, we can create `Debian.yml` and `RedHat.yml` files in our role's `defaults` and `vars` folders, and put distribution-specific variables there.
-  2. When including playbook files (with `include`), you can't use variables in the name of the file, but you can do the next best thing: include the files by name explicitly, and use a condition to tell Ansible whether to run the tasks inside (the `when` condition will be applied to every task inside the included playbook).
+  1. When including vars and tasks files (with `include_vars` or `include_tasks`), you can actually *use variables in the name of the file*. This is handy in many situtations; here we're including a vars file in the format `distribution_name.yml`. For our purposes, since the role will be used on Debian and RHEL-based hosts, we can create `Debian.yml` and `RedHat.yml` files in our role's `defaults` and `vars` folders, and put distribution-specific variables there.
+  2. For the tasks, we include tasks files in the role's `tasks` directory, for example `setup-Debian.yml` or `setup-RedHat.yml`.
 
-After setting things up this way, I put RHEL and CentOS-specific tasks (like `yum` tasks) into `tasks/setup-RedHat.yml`, and Debian and Ubuntu-specific tasks (like `apt` tasks) into `tasks/setup-Debian.yml`. There are other ways of making roles work cross-platform, but using distribution-specific variables files and included playbooks is one of the simplest.
+After setting things up this way, I put RHEL and CentOS-specific tasks (like `yum` tasks) into `tasks/setup-RedHat.yml`, and Debian and Ubuntu-specific tasks (like `apt` tasks) into `tasks/setup-Debian.yml`. There are other ways of making roles work cross-platform, but using distribution-specific variables files and included task files is one of the simplest.
 
 Now this Apache role can be used across different distributions, and with clever usage of variables in tasks and in configuration templates, it can be used in a wide variety of infrastructure that needs Apache installed.
 
