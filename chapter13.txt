@@ -124,7 +124,7 @@ We'll create a VM using Vagrant to run our Docker containers so the same Docker 
     VAGRANTFILE_API_VERSION = "2"
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.vm.box = "geerlingguy/ubuntu1604"
+      config.vm.box = "geerlingguy/ubuntu1804"
       config.vm.network :private_network, ip: "192.168.33.39"
       config.ssh.insert_key = false
     
@@ -144,15 +144,15 @@ We'll create a VM using Vagrant to run our Docker containers so the same Docker 
     
     end
 
-We'll use Ubuntu 16.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `angstwad.docker_ubuntu`), then run some additional setup tasks, and finally build and start the required Docker containers:
+We'll use Ubuntu 16.04 for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `geerlingguy.docker`), then run some additional setup tasks, and finally build and start the required Docker containers:
 
 {lang="text"}
     ---
     - hosts: all
-      become: yes
+      become: true
     
       roles:
-        - role: angstwad.docker_ubuntu
+        - role: geerlingguy.docker
     
       tasks:
         - import_tasks: setup.yml
@@ -160,17 +160,15 @@ We'll use Ubuntu 16.04 for this example, and we've specified an Ansible playbook
 
 We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo` by setting `become: yes`.
 
-Angstwad's `docker_ubuntu` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
+The `geerlingguy.docker` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
 
 {lang="text"}
     ---
     - name: Install Pip.
       apt: name=python-pip state=present
-      become: yes
     
     - name: Install Docker Python library.
       pip: name=docker state=present
-      become: yes
 
 Ansible needs the `docker` Python library in order to control Docker via Python, so we install `pip`, then use it to install `docker`.
 
@@ -182,30 +180,33 @@ Next is the meat of the playbook: `docker.yml` (also in the `provisioning` direc
       docker_image:
         name: "{{ item.name }}"
         tag: "{{ item.tag }}"
-        path: "/vagrant/provisioning/{{ item.directory }}"
-        state: build
+        source: build
+        build:
+          path: "/vagrant/provisioning/{{ item.directory }}"
+          pull: false
+        state: present
       with_items:
-        - { name: data, tag: "data", directory: data }
-        - { name: www, tag: "flask", directory: www }
-        - { name: db, tag: mysql, directory: db }
+        - { name: data, tag: latest, directory: data }
+        - { name: flask, tag: latest, directory: www }
+        - { name: db, tag: latest, directory: db }
 
 Don't worry that we haven't yet created the actual Dockerfiles required to create the Docker images; we'll do that after we finish structuring everything with Ansible.
 
-Like our earlier usage of `docker_image`, we supply a `name`, `path`, and `state` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `www`, and `db`, and we're pointing Docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
+Like our earlier usage of `docker_image`, we supply a `name`, `build.path`, and `source` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `flask`, and `db`, and we're pointing Docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
 
 After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker_container` tasks:
 
-{lang="text",starting-line-number=13}
+{lang="text",starting-line-number=16}
     # Data containers don't need to be running to be utilized.
     - name: Run a Data container.
       docker_container:
-        image: data:data
+        image: data:latest
         name: data
         state: present
     
     - name: Run a Flask container.
       docker_container:
-        image: www:flask
+        image: www:latest
         name: www
         state: started
         command: python /opt/www/index.py
@@ -213,7 +214,7 @@ After building the images, we will need to start each of them (or at least make 
     
     - name: Run a MySQL container.
       docker_container:
-        image: db:mysql
+        image: db:latest
         name: db
         state: started
         volumes_from: data
@@ -254,7 +255,7 @@ At this point, we should have a directory structure like:
         setup.yml
       Vagrantfile
 
-W> It's best to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed. Check out these two resources in particular for tips and tricks with managing and configuring containers with Ansible on CoreOS servers: [Managing CoreOS with Ansible](https://coreos.com/blog/managing-coreos-with-ansible/) and [Provisioning CoreOS with Ansible](http://www.tazj.in/en/1410951452).
+W> It's best to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed.
 
 ### Data storage container
 
@@ -275,7 +276,7 @@ T> This container builds on top of the official `busybox` base image. Busybox is
 
 ### Flask container
 
-[Flask](http://flask.pocoo.org/) is a lightweight Python web framework "based on Werkzeug, Jinja 2 and good intentions". It's a great web framework for small, fast, and robust websites and apps, or even an API. For our purposes, we need to build a Flask app that connects to a MySQL database and displays the status of the connection on a basic web page (very much like our PHP example, in the earlier Highly-Available Infrastructure example).
+[Flask](https://palletsprojects.com/p/flask/) is a lightweight Python web framework "based on Werkzeug, Jinja 2 and good intentions". It's a great web framework for small, fast, and robust websites and apps, or even an API. For our purposes, we need to build a Flask app that connects to a MySQL database and displays the status of the connection on a basic web page (very much like our PHP example, in the earlier Highly-Available Infrastructure example).
 
 Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.j2`):
 
@@ -284,21 +285,23 @@ Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.
     from flask import Flask
     from flask import Markup
     from flask import render_template
-    from flask.ext.sqlalchemy import SQLAlchemy
+    from flask_sqlalchemy import SQLAlchemy
+    from sqlalchemy import text
     
     app = Flask(__name__)
     
     # Configure MySQL connection.
-    db = SQLAlchemy()
     db_uri = 'mysql://flask:flask@{{ host_ip_address }}/flask'
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
-    db.init_app(app)
+    db = SQLAlchemy(app)
     
     @app.route("/")
     def test():
         mysql_result = False
         try:
-            if db.session.query("1").from_statement("SELECT 1").all():
+            query = text('SELECT 1')
+            result = db.engine.execute(query)
+            if [row[0] for row in result][0] == 1:
                 mysql_result = True
         except:
             pass
@@ -337,11 +340,12 @@ Now that we have the app defined, we need to build the container to run the app.
 
 {lang="text"}
     # A simple Flask app container.
-    FROM geerlingguy/docker-ubuntu1604-ansible
+    FROM geerlingguy/docker-ubuntu1804-ansible
     MAINTAINER Jeff Geerling <geerlingguy@mac.com>
     
     # Install Flask app dependencies.
-    RUN apt-get install -y libmysqlclient-dev python-dev python-pip
+    RUN apt-get install -y libmysqlclient-dev build-essential \
+      python-dev python-pip
     RUN pip install flask flask-sqlalchemy mysql-python
     
     # Install playbook and run it.
@@ -366,11 +370,11 @@ In order for the Flask app to function properly, we need to get the `host_ip_add
 {lang="text"}
     ---
     - hosts: localhost
-      become: yes
+      become: true
     
       tasks:
         - name: Get host IP address.
-          shell: "/sbin/ip route|awk '/default/ { print $3 }'"
+          shell: "/sbin/ip route | awk '/default/ { print $3 }'"
           register: host_ip
           changed_when: false
     

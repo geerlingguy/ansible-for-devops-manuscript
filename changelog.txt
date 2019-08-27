@@ -40,6 +40,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   31. Fixed issue with retrieving nodePort from K8s cluster in chapter 14; switched from `k8s` to `k8s_info` module.
   32. Fixed minor typos in chapter 4, 6, 8, 9, and 10 (thanks to @jlmuir!).
   33. Fixed text regarding `include_tasks` and dynamic filenames in chapter 6 (thanks to @atatevyan!).
+  34. Rewrite Docker Flask app example in chapter 13 to fix many broken things.
 
 ## Version 1.17 (2018-09-12)
 
