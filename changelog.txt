@@ -41,6 +41,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   32. Fixed minor typos in chapter 4, 6, 8, 9, and 10 (thanks to @jlmuir!).
   33. Fixed text regarding `include_tasks` and dynamic filenames in chapter 6 (thanks to @atatevyan!).
   34. Rewrite Docker Flask app example in chapter 13 to fix many broken things.
+  35. Fixed deprecation notices caused by outdated examples in chapters 4, 7 and 13 (refer to issue #165).
 
 ## Version 1.17 (2018-09-12)
 

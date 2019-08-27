@@ -680,6 +680,8 @@ However, let's assume the VMs were provisioned by another system, and you need t
                         'ansible_ssh_user': 'vagrant',
                         'ansible_ssh_private_key_file':
                             '~/.vagrant.d/insecure_private_key',
+                        'ansible_python_interpreter':
+                            '/usr/bin/python3',
                         'example_variable': 'value'
                     }
                 },
@@ -780,6 +782,7 @@ You can build an inventory script in whatever language you'd like. For example, 
             'ansible_ssh_user' => 'vagrant',
             'ansible_ssh_private_key_file' => '~/.vagrant.d/\
     insecure_private_key',
+            'ansible_python_interpreter' => '/usr/bin/python3',
             'example_variable' => 'value',
           ],
         ],

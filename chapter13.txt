@@ -82,10 +82,12 @@ Inside the new playbook, add the following:
         - name: Ensure Docker image is built from the test Dockerfile.
           docker_image:
             name: test
-            path: test
-            state: build
+            source: build
+            build:
+              path: test
+            state: present
 
-The playbook uses the `docker_image` module to build an image. Provide a name for the image, the path to the Dockerfile (in this case, inside the `test` directory), and tell Ansible via the `state` parameter whether the image should be `present`, `absent`, or built (via `build`).
+The playbook uses the `docker_image` module to build an image. Provide a name for the image, tell Ansible the source for the image is a `build`, then provide the path to the Dockerfile in the `build` parameters (in this case, inside the `test` directory). Finally, tell Ansible via the `state` parameter the image should be `present`, to ensure it is built and available.
 
 I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker` package. On other distributions, you may need to install the `docker` Python library via Pip (`pip install docker`).
 
@@ -489,7 +491,8 @@ There are also a few variables defined which we'll use later in the playbook to 
         - name: Make the latest version of the base image available locally.
           docker_image:
             name: '{{ base_image }}'
-            force: yes
+            source: pull
+            force_source: true
     
         - name: Create the Docker container.
           docker_container:
@@ -510,7 +513,7 @@ In a `pre_tasks` area, we'll set up the Docker container so we can get Hubot on 
 
 Now that we have a container running and in the inventory, we can build inside of it, using the `docker` connection plugin. Following the best practices we established earlier in the book, we'll put all the reusable logic inside an Ansible role, which we'll create in a moment. For now, we can call the role about to be created in the playbook's `roles` section:
 
-{lang="text",starting-line-number=29}
+{lang="text",starting-line-number=30}
       roles:
         - name: hubot-slack
           delegate_to: '{{ container_name }}'
@@ -519,7 +522,7 @@ Note the `delegate_to`. Any task, playbook, or role we want Ansible to run insid
 
 Before building the `hubot-slack` role, let's finish off the container image build process and the rest of the main playbook:
 
-{lang="text",starting-line-number=33}
+{lang="text",starting-line-number=34}
       post_tasks:
         - name: Clean up the container.
           shell: >
@@ -527,7 +530,7 @@ Before building the `hubot-slack` role, let's finish off the container image bui
             rm -rf /var/lib/apt/lists/*
           delegate_to: '{{ container_name }}'
           args:
-            warn: no
+            warn: false
     
         - name: Commit the container.
           command: >
