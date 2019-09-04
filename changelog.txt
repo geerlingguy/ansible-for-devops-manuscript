@@ -42,6 +42,11 @@ Hopefully these notes will help readers figure out what's changed since the last
   33. Fixed text regarding `include_tasks` and dynamic filenames in chapter 6 (thanks to @atatevyan!).
   34. Rewrite Docker Flask app example in chapter 13 to fix many broken things.
   35. Fixed deprecation notices caused by outdated examples in chapters 4, 7 and 13 (refer to issue #165).
+  36. Fixed `state=link` confusion with ownership in chapter 3 (thanks to @vedvyas and Jeff L!).
+  37. Fixed deprecated `with_items` use with `yum` module in playbook idempotence example in chapter 4 (thanks to Jeff L!).
+  38. Fixed line numbering issue in node.js example in chapter 4 (thanks to Jeff L!).
+  39. Removed a few uses of `shell` module where not required in chapter 4 Drupal example (thanks to Jeff L!).
+  40. Updated Solr version in chapter 4 example to 8.2.0, and switched from `shell` to `command` for Solr install command (thanks to Jeff L!).
 
 ## Version 1.17 (2018-09-12)
 

@@ -137,7 +137,7 @@ First, I want to make sure Vagrant configured the VMs with the right hostnames. 
 
 Ansible will run this command against all three of the servers, and return the results (if Ansible can't reach one a server, it will show an error for that server, but continue running the command on the others).
 
-T> If Ansible reports `No hosts matched` or returns some other inventory-related error, try setting the `ANSIBLE_HOSTS` environment variable explicitly: `export ANSIBLE_HOSTS=/etc/ansible/hosts`. Generally Ansible will read the file in `/etc/ansible/hosts` automatically, but depending on how you installed Ansible, you may need to explicitly set `ANSIBLE_HOSTS` for the `ansible` command to work correctly.
+T> If Ansible reports `No hosts matched` or returns some other inventory-related error, try setting the `ANSIBLE_INVENTORY` environment variable explicitly: `export ANSIBLE_INVENTORY=/etc/ansible/hosts`. Generally Ansible will read the file in `/etc/ansible/hosts` automatically, but depending on how you installed Ansible, you may need to explicitly set `ANSIBLE_INVENTORY` for the `ansible` command to work correctly.
 
 T> If you get an error like `The authenticity of host '192.168.60.5' can't be established.`, this is because SSH has a security feature which requires you to confirm the server's 'host key' the first time you connect. You can type `yes` on the command line (in this case multiple times) to dismiss the warning and accept the hostkey, or you can also set the environment variable `ANSIBLE_HOST_KEY_CHECKING=False`. The behavior for host key acceptance can also be configured in your SSH configuration file.
 
@@ -465,12 +465,14 @@ Here's how to create a directory:
 Here's how to create a symlink (set `state=link`):
 
 {lang="text",linenos=off}
-    $ ansible multi -m file -a "src=/src/symlink dest=/dest/symlink \
-    owner=root group=root state=link"
+    $ ansible multi -m file -a "src=/src/file dest=/dest/symlink \
+    state=link"
+
+The `src` is the symlink's target file, and the `dest` is the path where the symlink itself should be.
 
 ### Delete directories and files
 
-You can set the `state` to `absent` to delete a file or directory.
+You can set the `state` to `absent` to delete a file, directory, or symlink.
 
 {lang="text",linenos=off}
     $ ansible multi -m file -a "dest=/tmp/test state=absent"
