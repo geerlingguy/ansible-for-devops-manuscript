@@ -97,7 +97,7 @@ That could be rather cumbersome, though, especially if you have many tasks that 
 
 {lang="text",linenos=off}
     vars:
-      var_proxy:
+      proxy_vars:
         http_proxy: http://example-proxy:80/
         https_proxy: https://example-proxy:443/
         [etc...]
@@ -105,7 +105,7 @@ That could be rather cumbersome, though, especially if you have many tasks that 
     tasks:
     - name: Download a file, using example-proxy as a proxy.
       get_url: url=http://www.example.com/file.tar.gz dest=~/Downloads/
-      environment: var_proxy
+      environment: proxy_vars
 
 If a proxy needs to be set system-wide (as is the case behind many corporate firewalls), I like to do so using the global `/etc/environment` file:
 

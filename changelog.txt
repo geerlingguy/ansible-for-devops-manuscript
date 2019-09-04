@@ -47,6 +47,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   38. Fixed line numbering issue in node.js example in chapter 4 (thanks to Jeff L!).
   39. Removed a few uses of `shell` module where not required in chapter 4 Drupal example (thanks to Jeff L!).
   40. Updated Solr version in chapter 4 example to 8.2.0, and switched from `shell` to `command` for Solr install command (thanks to Jeff L!).
+  41. Switch from deprecated `copy: no` to `remote_src: true` usage in Solr example in chapter 4 (thanks to Jeff L!).
 
 ## Version 1.17 (2018-09-12)
 

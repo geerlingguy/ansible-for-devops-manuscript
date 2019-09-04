@@ -730,7 +730,7 @@ T> The entire example Drupal LAMP server playbook is in this book's code reposit
 
 ## Real-world playbook: Ubuntu server with Solr
 
-Apache Solr is a fast and scalable search server optimized for full-text search, word highlighting, faceted search, fast indexing, and more. It's a very popular search server, and it's pretty easy to install and configure using Ansible. In the following example, we're going to set up Apache Solr using Ubuntu 16.04 and Java.
+Apache Solr is a fast and scalable search server optimized for full-text search, word highlighting, faceted search, fast indexing, and more. It's a very popular search server, and it's pretty easy to install and configure using Ansible. In the following example, we're going to set up Apache Solr using Ubuntu 16.04 and Java, on a server or VM with at least 512 MB of RAM.
 
 {width=40%}
 ![Apache Solr Server.](images/4-playbook-solr.png)
@@ -809,7 +809,7 @@ We need to expand the Solr archive so we can run the installer inside, and we ca
           unarchive:
             src: "{{ download_dir }}/solr-{{ solr_version }}.tgz"
             dest: "{{ download_dir }}"
-            copy: no
+            remote_src: true
             creates: "{{ download_dir }}/solr-{{ solr_version }}/\
     README.txt"
 
