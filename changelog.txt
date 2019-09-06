@@ -6,11 +6,14 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
+  1. TODO
+
+## Version 1.20 (2019-09-05)
+
   1. Updated some outdated links in introduction.
   2. Updated Express app version requirement in chapter 4 since 3.x is no longer supported.
   3. Fixed Ubuntu LTS version reference in chapter 4 LAMP example (thanks to @deoren!).
   4. Adjust apt module usage in chapter 4 LAMP example to fix deprecation warning (thanks to dglinder!).
-  ----------- Website updated to here ------------------------------------------
   5. Fixed 'capcacity' typo in chapter 9 (thanks to Ruan A!).
   6. Completely refactored and updated Ruby on Rails deployment example in chapter 9 to use the latest OS and Ruby versions.
   7. Fixed some ham-fisted typos regarding Ansible, Inc. in the Introduction (thanks to @eCubeH!).
