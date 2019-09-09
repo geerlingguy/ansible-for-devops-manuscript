@@ -38,31 +38,22 @@
 
 ## Improvements/new chapter ideas
 
-  - New things from blog:
-    - `reboot:` module (see Sam Doran's blog post)
-    - Profiling roles and tasks with callback plugins (see Sam Doran's blog post)
+  - VPN/Bastion/Jump host usage with Ansible (SSH)
+  - High Performance / Scalable Ansible:
+    - Profiling roles / tasks with callback plugins (see Sam Doran's blog post)
+    - https://www.jeffgeerling.com/blog/2017/slow-ansible-playbook-check-ansiblecfg
+    - `synchronize` vs `copy`
+  - Testing with [Molecule](https://github.com/geerlingguy/ansible-for-devops/issues/101)
+  - `reboot` module
   - Ansible AWX:
     - Difference between tower and AWX
     - Getting started with AWX vs Tower?
-  - Testing with [Molecule](https://github.com/geerlingguy/ansible-for-devops/issues/101)
-  - Ansible and Jinja2 (advanced)
-  - New features
-    - 2.0: Playbook Execution Strategies (`linear`, `free`, etc.).
-  - High Performance / Scalable Ansible:
-    - https://www.jeffgeerling.com/blog/2017/slow-ansible-playbook-check-ansiblecfg
-    - `synchronize` vs `copy`
-    - Merge all packages into one task (can use with_items)
-    - Simple vars? (do complex var objects cause slowdown?)
-    - Asynchronous actions
-    - Polling
-    - Distributed Ansible
-    - Redis-based fact cache
+  - 2.0: Playbook Execution Strategies (`linear`, `free`, etc.).
   - Networking (routers? other stuff?)
   - Windows and Ansible (maybe?)
   - Security and Secret management
     - SSH private key management and security (see emails to/from Erik-jan Reimers)
     - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
-  - Patch management with Ansible (like Pulp? See how Puppet does it?).
   - Playbooks, Roles, and Variables - organization for large teams and large projects
     - Specifically asked about this by Guy Matz (Guy.Matz.CFT@jcrew.com)
 
