@@ -17,7 +17,14 @@ The WSL downloads Ubuntu and places it in a special privileged VM layer that's a
 Microsoft has the most up-to-date [installation guide](https://msdn.microsoft.com/en-us/commandline/wsl/install_guide) on their Developer Network site, but the installation process is straightforward:
 
   1. Turn on Developer mode (inside Settings > Update and Security > For developers).
-  2. Open a PowerShell prompt as an administrator and run the command: `Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux`
+  2. Open a PowerShell prompt as an administrator and run the command:
+
+     {lang="text",linenos=off}
+     ~~~~~~~~
+     Enable-WindowsOptionalFeature -Online -FeatureName \
+     Microsoft-Windows-Subsystem-Linux
+     ~~~~~~~~
+
   3. Restart your computer when prompted.
 
 At this point, the WSL is installed, but Ubuntu has not yet been installed. To do that:

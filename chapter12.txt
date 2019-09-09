@@ -483,7 +483,7 @@ Then run the playbook:
 {lang="text",linenos="off"}
     ansible-playbook -i inventory main.yml
 
-After a couple minutes, assuming Let's Encrypt could reach your server at `subdomain.example.com` on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
+After a couple minutes, assuming Let's Encrypt could reach your server at subdomain.example.com on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
 
 ### Access your server over HTTPS!
 

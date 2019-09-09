@@ -398,7 +398,11 @@ Now add the user `johndoe` to the app servers with the group I just created and 
 {lang="text",linenos=off}
     $ ansible app -b -m user -a "name=johndoe group=admin createhome=yes"
 
-If you want to automatically create an SSH key for the new user (if one doesn't already exist), you can run the same command with the additional parameter `generate_ssh_key=yes`. You can also set the UID of the user by passing in `uid=[uid]`, set the user's shell with `shell=[shell]`, and the password with `password=[encrypted-password]`.
+If you want to automatically create an SSH key for the new user (if one doesn't already exist), you can run the same command with the additional parameter `generate_ssh_key=yes`. You can also set:
+
+  - The UID of the user with `uid=[uid]`
+  - The user's shell with `shell=[shell]`
+  - The users's password with `password=[encrypted-password]`
 
 What if you want to delete the account?
 

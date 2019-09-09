@@ -512,7 +512,7 @@ Most of the Vagrantfile is straightforward, and similar to other examples used i
     "~/.vagrant.d/insecure_private_key"
           }
 
-  1. `ansible.inventory_path` defines an inventory file to be used with the `ansible.playbook`. You could certainly create a dynamic inventory script for use with Vagrant, but because we know the IP addresses ahead of time, and are expecting a few specially-crafted inventory group names, it's simpler to build the inventory file for Vagrant provisioning by hand (we'll do this next).
+  1. `ansible.inventory_path` defines the inventory file for the `ansible.playbook`. You could certainly create a dynamic inventory script for use with Vagrant, but because we know the IP addresses ahead of time, and are expecting a few specially-crafted inventory group names, it's simpler to build the inventory file for Vagrant provisioning by hand (we'll do this next).
   2. `ansible.limit` is set to `all` so Vagrant knows it should run the Ansible playbook connected to all VMs, and not just the current VM. You could technically use `ansible.limit` with a provisioner configuration for each of the individual VMs, and just run the VM-specific playbook through Vagrant, but our live production infrastructure will be using one playbook to configure all the servers, so we'll do the same locally.
   3. `ansible.extra_vars` contains the vagrant SSH user configuration for Ansible. It's more standard to include these settings in a static inventory file or use Vagrant's automatically-generated inventory file, but it's easiest to set them once for all servers here.
 
@@ -1099,7 +1099,7 @@ The `nginx` variables remove the default virtualhost entry and ensure Nginx will
 
 W> Note that this demonstration configuration does not use a custom certificate to authenticate logging connections. You should normally configure your own secure certificate and give the logstash-forwarder role the path to the certificate using the `logstash_forwarder_ssl_certificate_file` variable. If you use the example provided with the project, you could expose your logging infrastructure to the outside, and you'll get a `***SECURITY RISK***` warning in the logs every time the Logstash role is run.
 
-To allow Vagrant to pass the proper connection details to Ansible, create `provisioning/web/inventory` with the `webs` host details:
+To allow Vagrant to pass the proper connection details to Ansible, create a file named `provisioning/web/inventory` with the `webs` host details:
 
 {lang="text"}
     webs ansible_ssh_host=192.168.9.91 ansible_ssh_port=22

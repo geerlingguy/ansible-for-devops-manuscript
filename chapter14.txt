@@ -136,7 +136,10 @@ We'll operate on all the `k8s` servers defined in the `inventory`, and we'll nee
 
 Next, because Vagrant's virtual network interfaces can confuse Kubernetes and Flannel (the Kubernetes networking plugin we're going to use for inter-node communication), we need to copy a custom Flannel manifest file into the VM. Instead of printing the whole file in this book (it's a _lot_ of YAML!), you can grab a copy of the file from the URL: https://github.com/geerlingguy/ansible-for-devops/blob/master/kubernetes/files/manifests/kube-system/kube-flannel-vagrant.yml
 
-Save the file in your project folder in the path: `files/manifests/kube-system/kube-flannel-vagrant.yml`.
+Save the file in your project folder in the path:
+
+{lang="text",linenos=off}
+    files/manifests/kube-system/kube-flannel-vagrant.yml
 
 Now add a task to copy the manifest file into place using `pre_tasks` (we need to do this before any Ansible roles are run):
 
