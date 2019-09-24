@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  1. TODO
+  1. Fixed typo with duplicate 'to's in Foreword (thanks to @jmowens!).
 
 ## Version 1.20 (2019-09-05)
 
