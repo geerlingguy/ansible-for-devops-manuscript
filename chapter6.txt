@@ -511,7 +511,7 @@ I> Ansible Galaxy is still evolving rapidly, and has seen many improvements. The
 
 If your infrastructure configuration requires five, ten, fifteen or more Ansible roles, installing them all via `ansible-galaxy install` commands can be exhausting. Additionally, if you host roles internally (e.g. via an internal Git or Mercurial repository), you can't install the roles through Ansible Galaxy. You can, however, pass the `ansible-galaxy` command a "requirements" file with the `-r` option to automatically download all dependencies.
 
-Ansible allows a simple `.txt` format that is very basic (though this format is deprecated and may be removed), but you should generally use the more standard and expressive YAML format, which allows you to install roles from Ansible Galaxy, GitHub, an HTTP download, BitBucket, or your own repository. It also allows you to specify the path into which the roles should be downloaded. An example `requirements.yml` file looks like this:
+Ansible allows a simple `.txt` format that is very basic (though this format is deprecated and may be removed), but you should use the more standard and expressive YAML format, which allows you to install roles from Ansible Galaxy, GitHub, an HTTP download, BitBucket, or your own repository. It also allows you to specify the path into which the roles should be downloaded. An example `requirements.yml` file looks like this:
 
 {lang="text"}
     ---
@@ -522,17 +522,16 @@ Ansible allows a simple `.txt` format that is very basic (though this format is 
     - src: geerlingguy.php
       version: 3.5.1
     
-    # From GitHub, to a given path, with a custom name and version.
+    # From GitHub, with a custom name and version.
     - src: https://github.com/geerlingguy/ansible-role-passenger
-      path: /etc/ansible/roles/
       name: passenger
-      version: 1.1.1
+      version: 1.2.0
     
     # From a web server, with a custom name.
     - src: https://www.example.com/ansible/roles/my-role-name.tar.gz
       name: my-role
 
-To install the roles defined in a requirements file, use the command `ansible-galaxy install -r requirements.yml`. For more documentation on Ansible requirements files, see the official documentation: [Advanced Control over Role Requirements Files](http://docs.ansible.com/ansible/galaxy.html#advanced-control-over-role-requirements-files).
+To install the roles defined in a requirements file, use the command `ansible-galaxy install -r requirements.yml`. For more documentation on Ansible requirements files, see the official documentation: [Installing Multiple Roles From a File](https://galaxy.ansible.com/docs/using/installing.html#installing-multiple-roles-from-a-file).
 
 ### A LAMP server in nine lines of YAML
 
