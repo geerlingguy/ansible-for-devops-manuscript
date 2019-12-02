@@ -158,10 +158,10 @@ Running this should give output like:
 
 ### Setting user and sudo options with `ansible-playbook`
 
-If no `remote_user` is defined alongside the `hosts` in a playbook, Ansible assumes you'll connect as the user defined in your inventory file for a particular host, and then will fall back to your local user account name. You can explicitly define a remote user to use for remote plays using the `--remote-user` (`-u`) option:
+If no `remote_user` is defined alongside the `hosts` in a playbook, Ansible assumes you'll connect as the user defined in your inventory file for a particular host, and then will fall back to your local user account name. You can explicitly define a remote user to use for remote plays using the `--user` (`-u`) option:
 
 {lang="text",linenos=off}
-    $ ansible-playbook playbook.yml --remote-user=johndoe
+    $ ansible-playbook playbook.yml --user=johndoe
 
 In some situations, you will need to pass along your sudo password to the remote server to perform commands via `sudo`. In these situations, you'll need use the `--ask-become-pass` (`-K`) option. You can also explicitly force all tasks in a playbook to use sudo with `--become` (`-b`). Finally, you can define the sudo user for tasks run via `sudo` (the default is root) with the `--become-user` (`-U`) option.
 
