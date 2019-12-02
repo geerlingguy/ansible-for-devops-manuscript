@@ -12,6 +12,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   4. Fixed incorrect `--remote-user` flag for `ansible-playbook` in chapter 4's 'user options' section (thanks to peurKe!).
   5. Fixed order of first two paragraphs in chapter 4's extra yum repository example (thanks to rusnino!)
   6. Fixed incorrect `ansible` command to install `git` if missing in chapter 3 version control example (thanks to rusnino!).
+  7. Removed extra mention of `with_items` from chapter 4's Apache installation example since it uses a list passed to the yum module directly (thanks to guntbert!).
 
 ## Version 1.20 (2019-09-05)
 
