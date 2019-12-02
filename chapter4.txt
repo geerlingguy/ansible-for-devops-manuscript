@@ -268,8 +268,8 @@ Ansible makes things a little more robust. Even though the following is slightly
 
 Let's walk through this playbook step-by-step:
 
-  1. We can install extra yum repositories using the `yum` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
-  2. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
+  1. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
+  2. We can install extra yum repositories using the `yum` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
   3. `yum` installs the EPEL repository (and automatically imports its GPG key).
   4. Since this server is being used only for test purposes, we disable the system firewall so it won't interfere with testing (using the `service` module).
   5. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).

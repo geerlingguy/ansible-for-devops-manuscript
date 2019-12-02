@@ -9,7 +9,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   1. Fixed typo with duplicate 'to's in Foreword (thanks to @jmowens!).
   2. Fixed role `requirements.yml` file example for git role source (it was using 1.x parameters and didn't work in 2.x - thanks to @7php!).
   3. Fixed typo in chapter 13 regarding Ubuntu version used for Flask app (thanks to Kasia G!).
-  4. Fixed incorrect `--remote-user` flag for `ansible-playbook` in chapter 4's 'user options' section (thanks to @peurKe!).
+  4. Fixed incorrect `--remote-user` flag for `ansible-playbook` in chapter 4's 'user options' section (thanks to peurKe!).
+  5. Fixed order of first two paragraphs in chapter 4's extra yum repository example (thanks to rusnino!)
 
 ## Version 1.20 (2019-09-05)
 
