@@ -13,7 +13,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. Fixed order of first two paragraphs in chapter 4's extra yum repository example (thanks to rusnino!)
   6. Fixed incorrect `ansible` command to install `git` if missing in chapter 3 version control example (thanks to rusnino!).
   7. Removed extra mention of `with_items` from chapter 4's Apache installation example since it uses a list passed to the yum module directly (thanks to guntbert!).
-  8. Remove confusion in chapter 4 `with_items` example by formatting the dict in a list using YAML instead of JSON (thanks to @dirks!).
+  8. Remove confusion in chapter 4 `with_items` example by formatting the dict in a list using YAML instead of JSON (thanks to dirks!).
+  9. Removed unused `restart solr` handler from example in chapter 4 because YAGNI (thanks to dirks!).
 
 ## Version 1.20 (2019-09-05)
 

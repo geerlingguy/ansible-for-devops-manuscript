@@ -742,7 +742,7 @@ Apache Solr is a fast and scalable search server optimized for full-text search,
 {width=40%}
 ![Apache Solr Server.](images/4-playbook-solr.png)
 
-### Include a variables file, and more `pre_tasks` and `handlers`
+### Include a variables file, and more `pre_tasks`
 
 Just like the previous LAMP server example, we'll begin this playbook (again named `playbook.yml`) by telling Ansible our variables will be in a separate `vars.yml` file:
 
@@ -770,15 +770,6 @@ Back in our playbook, after the `vars_files`, we also need to make sure the apt 
       pre_tasks:
         - name: Update apt cache if needed.
           apt: update_cache=true cache_valid_time=3600
-
-Like the Drupal playbook, we again use `handlers` to define certain tasks that are notified by tasks in the `tasks` section. This time, we just need a handler to restart `solr`, a service that will be configured by the Apache Solr installation:
-
-{lang="text",starting-line-number=12}
-      handlers:
-        - name: restart solr
-          service: name=solr state=restarted
-
-We can call this handler with the option `notify: restart solr` in any play in our playbook.
 
 ### Install Java 8
 
