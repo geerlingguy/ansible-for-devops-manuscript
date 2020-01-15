@@ -652,7 +652,7 @@ This book will not provide a detailed guide for using Serverspec with your Ansib
 
 There are also a number of other projects which abstract the testing process a little further than the above approach; some allowing more control and easier use outside of the Travis CI environment, others focused more on Ansible roles in particular:
 
-  - [molecule](https://github.com/metacloud/molecule) - A generalized solution for testing Ansible roles in any environment.
+  - [molecule](https://github.com/ansible/molecule) - A generalized solution for testing Ansible roles in any environment.
   - [goss](https://github.com/aelsabbahy/goss) - A generalized server validation tool.
   - [rolespec](https://github.com/nickjj/rolespec) - A library for testing Ansible roles on Travis or locally.
 
