@@ -489,7 +489,7 @@ I> Ansible < 1.9.5 only supported DigitalOcean's legacy v1 API, which is no long
 
 ### Dynamic inventory with AWS
 
-Many of this book's readers are familiar with Amazon Web Services (especially EC2, S3, ElastiCache, and Route53), and likely have managed or currently manage an infrastructure within Amazon's cloud. Ansible has very strong support for managing AWS-based infrastructure, and includes a [dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/ec2.py) to help you run playbooks on your hosts in a variety of ways.
+Many of this book's readers are familiar with Amazon Web Services (especially EC2, S3, ElastiCache, and Route53), and likely have managed or currently manage an infrastructure within Amazon's cloud. Ansible has very strong support for managing AWS-based infrastructure, and includes a [dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py) to help you run playbooks on your hosts in a variety of ways.
 
 There are a few excellent guides to using Ansible with AWS, for example:
 

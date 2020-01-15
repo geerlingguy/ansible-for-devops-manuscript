@@ -20,6 +20,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   12. [#197](https://github.com/geerlingguy/ansible-for-devops/issues/197): The Jinja2 project was renamed to 'Jinja', so references in the text were updated accordingly.
   13. [#198](https://github.com/geerlingguy/ansible-for-devops/issues/198): Update chapter 4 Drupal playbook example to use Drupal 8.8.x.
   14. [#189](https://github.com/geerlingguy/ansible-for-devops/issues/189): Update molecule project GitHub URL in chapter 11 (thanks to apatard!).
+  15. [#194](https://github.com/geerlingguy/ansible-for-devops/issues/194): Fixed link to AWS dynamic inventory script in chapter 7 (thanks to @goagex!).
 
 ## Version 1.20 (2019-09-05)
 
