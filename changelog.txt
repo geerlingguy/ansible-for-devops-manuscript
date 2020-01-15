@@ -18,6 +18,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   10. Removed extra `%` in regexp for sudo example in chapter 10's 'use sudo' section (thanks to danmichaelo!).
   11. [#196](https://github.com/geerlingguy/ansible-for-devops/issues/196): Rebuilt and rewrote ELK example in chapter 8 to use modern versions of the ELK stack components and Filebeat.
   12. [#197](https://github.com/geerlingguy/ansible-for-devops/issues/197): The Jinja2 project was renamed to 'Jinja', so references in the text were updated accordingly.
+  13. [#198](https://github.com/geerlingguy/ansible-for-devops/issues/198): Update chapter 4 Drupal playbook example to use Drupal 8.8.x.
 
 ## Version 1.20 (2019-09-05)
 

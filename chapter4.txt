@@ -550,8 +550,8 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
 
 {lang="text"}
     ---
-    # The core version you want to use (e.g. 8.5.x, 8.6.x).
-    drupal_core_version: "8.5.x"
+    # The core version you want to use (e.g. 8.8.x, 8.9.x).
+    drupal_core_version: "8.8.x"
     
     # The path where Drupal will be downloaded and installed.
     drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
@@ -559,7 +559,7 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
     # The resulting domain will be [domain].test (with .test appended).
     domain: "drupal"
 
-Now, when Ansible reaches the play that copies this template into place, the Jinja template will have the variable names replaced with the values `/var/www/drupal-8.5.x-dev` and `drupal` (or whatever values you'd like!).
+Now, when Ansible reaches the play that copies this template into place, the Jinja template will have the variable names replaced with the values `/var/www/drupal-8.8.x-dev` and `drupal` (or whatever values you'd like!).
 
 The last two tasks (lines 75-86) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
