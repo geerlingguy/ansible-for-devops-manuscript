@@ -16,6 +16,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   8. Remove confusion in chapter 4 `with_items` example by formatting the dict in a list using YAML instead of JSON (thanks to dirks!).
   9. Removed unused `restart solr` handler from example in chapter 4 because YAGNI (thanks to dirks!).
   10. Removed extra `%` in regexp for sudo example in chapter 10's 'use sudo' section (thanks to danmichaelo!).
+  11. [#196](https://github.com/geerlingguy/ansible-for-devops/issues/196): Rebuilt and rewrote ELK example in chapter 8 to use modern versions of the ELK stack components and Filebeat.
 
 ## Version 1.20 (2019-09-05)
 
