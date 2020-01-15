@@ -85,7 +85,7 @@ Let's create the two files referenced in the above playbook. First, `vars.yml`, 
 
 The first variable tells the `geerlingguy.firewall` role to open TCP ports 22 and 80 for incoming traffic. The second variable tells the `geerlingguy.varnish` we will supply a custom `default.vcl` for Varnish configuration.
 
-Create a `templates` directory inside the `playbooks/varnish` directory, and inside, create a `default.vcl.j2` file. This file will use Jinja2 syntax to build Varnish's custom `default.vcl` file:
+Create a `templates` directory inside the `playbooks/varnish` directory, and inside, create a `default.vcl.j2` file. This file will use Jinja syntax to build Varnish's custom `default.vcl` file:
 
 {lang="text"}
     vcl 4.0;
@@ -171,7 +171,7 @@ As in the Varnish example, create the two files referenced in the above playbook
       - "22"
       - "80"
 
-Create a `templates` directory inside the `playbooks/www` directory, and inside, create an `index.php.j2` file. This file will use Jinja2 syntax to build a (relatively) simple PHP script to display the health and status of all the servers in our infrastructure:
+Create a `templates` directory inside the `playbooks/www` directory, and inside, create an `index.php.j2` file. This file will use Jinja syntax to build a (relatively) simple PHP script to display the health and status of all the servers in our infrastructure:
 
 {lang=php}
     <?php
@@ -1323,7 +1323,7 @@ Ansible's `gluster_volume` module (added in Ansible 1.9) does all the hard work 
   - `state`: Setting this to `present` makes sure the brick is present. It will also start the volume when it is first created by default, though this behavior can be overridden by the `start_on_create` option.
   - `name` and `brick` give the Gluster brick a name and location on the server, respectively. In this example, the brick will be located on the boot volume, so we also have to add `force: yes`, or Gluster will complain about not having the brick on a separate volume.
   - `replicas` tells Gluster how many replicas to ensure exist; this number can vary depending on how many servers you have in the brick's `cluster`, and how tolerance you have for server outages. We won't get much into tuning GlusterFS for performance and resiliency, but most situations warrant a value of `2` or `3`.
-  - `cluster` defines all the hosts which will contain the distributed filesystem. In this case, all the `gluster` servers in our Ansible inventory should be included, so we use a Jinja2 `join` filter to join all the addresses into a list.
+  - `cluster` defines all the hosts which will contain the distributed filesystem. In this case, all the `gluster` servers in our Ansible inventory should be included, so we use a Jinja `join` filter to join all the addresses into a list.
   - `host` sets the host for peer probing explicitly. If you don't set this, you can sometimes get errors on brick creation, depending on your network configuration.
 
 We only need to run the `gluster_volume` module once for all the servers, so we add `run_once: true`.

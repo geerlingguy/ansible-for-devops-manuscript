@@ -319,9 +319,9 @@ Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.
     if __name__ == "__main__":
         app.run(host="0.0.0.0", port=80)
 
-This app defines one route (`/`), listens on every interface on port 80, and shows a MySQL connection status page rendered by the template `index.html`. There's nothing particularly complicated in this application, but there is one Jinja2 variable (`{{ host_ip_address }}`) which an Ansible playbook will replace during deployment, and the app has a few dependencies (like `flask-sqlalchemy`) which will need to be installed via the Dockerfile.
+This app defines one route (`/`), listens on every interface on port 80, and shows a MySQL connection status page rendered by the template `index.html`. There's nothing particularly complicated in this application, but there is one Jinja variable (`{{ host_ip_address }}`) which an Ansible playbook will replace during deployment, and the app has a few dependencies (like `flask-sqlalchemy`) which will need to be installed via the Dockerfile.
 
-Since we are using a Jinja2 template to render the page, let's create that template in `docker/provisioning/www/templates/index.html` (Flask automatically picks up any templates inside a `templates` directory):
+Since we are using a Jinja template to render the page, let's create that template in `docker/provisioning/www/templates/index.html` (Flask automatically picks up any templates inside a `templates` directory):
 
 {lang=html}
     <!DOCTYPE html>
@@ -336,7 +336,7 @@ Since we are using a Jinja2 template to render the page, let's create that templ
     </body>
     </html>
 
-In this case, the `.html` template contains a Jinja2 variable (`{{ result }}`), and Flask will fill in the variable with the status of the MySQL connection.
+In this case, the `.html` template contains a Jinja variable (`{{ result }}`), and Flask will fill in the variable with the status of the MySQL connection.
 
 Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy an Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
 

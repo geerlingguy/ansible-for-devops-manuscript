@@ -423,7 +423,7 @@ Similarly, when specifying a template, add the filename or the full path from wi
         dest: /etc/myapp/example.xml
         mode: 0644
 
-The `copy` module copies files from within the module's `files` folder, and the `template` module runs given template files through the Jinja2 templating engine, merging in any variables available during your playbook run before copying the file to the server.
+The `copy` module copies files from within the module's `files` folder, and the `template` module runs given template files through the Jinja templating engine, merging in any variables available during your playbook run before copying the file to the server.
 
 ### Organizing more complex and cross-platform roles
 

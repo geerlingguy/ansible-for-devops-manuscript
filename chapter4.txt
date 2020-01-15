@@ -286,7 +286,7 @@ We're beginning to have a nice little Node.js app server set up. Let's set up a 
 
 T> You may be wondering why sometimes quotes are used in these YAML playbooks, and sometimes not. I typically use quotes around my parameters in the following scenarios:
 T> 
-T>   1. If I have a Jinja2 variable (e.g. `{{ variable_here }}`) at the beginning or end of the line; otherwise YAML will parse the line as nested objects due to the braces.
+T>   1. If I have a Jinja variable (e.g. `{{ variable_here }}`) at the beginning or end of the line; otherwise YAML will parse the line as nested objects due to the braces.
 T>   2. If there are any colons (`:`) in the string (e.g. for URLs).
 T> 
 T> The easiest way to make sure you're quoting things correctly is to use YAML syntax highlighting in your code editor.
@@ -528,9 +528,9 @@ We also need to add a VirtualHost entry to give Apache the site's document root 
 
 The first command enables all the required Apache modules by symlinking them from `/etc/apache2/mods-available` to `/etc/apache2/mods-enabled`.
 
-The second command copies a Jinja2 template we define inside a `templates` folder to Apache's `sites-available` folder, with the correct owner and permissions. Additionally, we `notify` the `restart apache` handler, because copying in a new VirtualHost means Apache needs to be restarted to pick up the change.
+The second command copies a Jinja template we define inside a `templates` folder to Apache's `sites-available` folder, with the correct owner and permissions. Additionally, we `notify` the `restart apache` handler, because copying in a new VirtualHost means Apache needs to be restarted to pick up the change.
 
-Let's look at our Jinja2 template (denoted by the extra `.j2` on the end of the filename), `drupal.test.conf.j2`:
+Let's look at our Jinja template (denoted by the extra `.j2` on the end of the filename), `drupal.test.conf.j2`:
 
 {lang="jinja"}
     <VirtualHost *:80>
@@ -544,7 +544,7 @@ Let's look at our Jinja2 template (denoted by the extra `.j2` on the end of the 
         </Directory>
     </VirtualHost>
 
-This is a fairly standard Apache VirtualHost definition, but we have a few Jinja2 template variables mixed in. The syntax for printing a variable in a Jinja2 template is the same syntax we use in our Ansible playbooks---two brackets around the variable's name (like so: `{{ variable }}`).
+This is a fairly standard Apache VirtualHost definition, but we have a few Jinja template variables mixed in. The syntax for printing a variable in a Jinja template is the same syntax we use in our Ansible playbooks---two brackets around the variable's name (like so: `{{ variable }}`).
 
 There are three variables we will need (`drupal_core_version`, `drupal_core_path`, and `domain`), so add them to the empty `vars.yml` file we created earlier:
 
@@ -559,7 +559,7 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
     # The resulting domain will be [domain].test (with .test appended).
     domain: "drupal"
 
-Now, when Ansible reaches the play that copies this template into place, the Jinja2 template will have the variable names replaced with the values `/var/www/drupal-8.5.x-dev` and `drupal` (or whatever values you'd like!).
+Now, when Ansible reaches the play that copies this template into place, the Jinja template will have the variable names replaced with the values `/var/www/drupal-8.5.x-dev` and `drupal` (or whatever values you'd like!).
 
 The last two tasks (lines 75-86) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
