@@ -698,7 +698,7 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             path: "{{ drupal_core_path }}/sites/default/settings.php"
             mode: 0744
     
-        - name: Set permissions on files directory.
+        - name: Set permissions properly on files directory.
           file:
             path: "{{ drupal_core_path }}/sites/default/files"
             mode: 0777
