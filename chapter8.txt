@@ -895,17 +895,18 @@ Among various modern logging and reporting toolsets, the 'ELK' stack (Elasticsea
 {width=80%}
 ![An example Kibana logging dashboard.](images/8-elk-kibana-example.png)
 
-In our example, we'll configure a single ELK server to handle aggregation, searching, and graphical display of logged data from a variety of other servers, and give some common configuration examples to send common system logs, web server logs, etc.
+In our example, we'll configure a single ELK server to handle aggregation, searching, and graphical display of logged data from a variety of other servers, and give a configuration example to aggregate common system and web server logs.
 
 ### ELK Playbook
 
-Just like our previous example, we're going to let a few roles from Ansible Galaxy do the heavy lifting of actually installing and configuring Elasticsearch, Logstash, and Kibana. If you're interested in reading through the roles that do this work, feel free to peruse them after they've been downloaded.
+Just like our previous example, we're going to let a few roles from Ansible Galaxy do the heavy lifting of actually installing and configuring Elasticsearch, Logstash, Filebeat, and Kibana. If you're interested in reading through the roles that do this work, feel free to peruse them after they've been downloaded.
 
-In this example, I'm going to highlight the important parts rather than walk through each role and variable in detail. Then I'll show how you can use this base server to aggregate logs, then how to point your other servers' log files to it using Logstash Forwarder.
+In this example, I'm going to highlight the important parts rather than walk through each role and variable in detail. Then I'll show how you can use this base server to aggregate logs, then how to point other servers' log files to the central server using Filebeat.
 
 Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
 
 {lang="text"}
+    ---
     - hosts: logs
       gather_facts: yes
     
@@ -923,35 +924,63 @@ Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
         - geerlingguy.elasticsearch-curator
         - geerlingguy.kibana
         - geerlingguy.logstash
-        - geerlingguy.logstash-forwarder
+        - geerlingguy.filebeat
 
-This assumes you have a `logs` group in your inventory with at least one server listed. The playbook includes a vars file located in `provisioning/elk/vars/main.yml`, so create that file, and then put the following inside:
+This assumes you have a `logs` group in your inventory with at least one server listed. The playbook includes a vars file located in `provisioning/elk/vars/main.yml`, so create that file and put the following inside:
 
 {lang="text"}
     ---
     java_packages:
-      - openjdk-7-jdk
+      - openjdk-8-jdk
     
     nginx_user: www-data
-    nginx_worker_connections: 1024
     nginx_remove_default_vhost: true
+    nginx_vhosts:
+      # Kibana proxy.
+      - listen: "80 default_server"
+        filename: kibana.conf
+        server_name: logs.test
+        extra_parameters: |
+          location / {
+              include /etc/nginx/proxy_params;
+              proxy_pass          http://localhost:5601;
+              proxy_set_header   Authorization "";
+              proxy_read_timeout  90s;
+          }
     
-    kibana_server_name: logs
-    kibana_username: kibana
-    kibana_password: password
+    elasticsearch_curator_pip_package: python3-pip
     
-    logstash_monitor_local_syslog: false
-    logstash_forwarder_files:
-      - paths:
+    logstash_ssl_key_file: elk-example.p8
+    logstash_ssl_certificate_file: elk-example.crt
+    
+    filebeat_output_logstash_enabled: true
+    filebeat_output_logstash_hosts:
+      - "logs.test:5044"
+    
+    filebeat_ssl_key_file: elk-example.p8
+    filebeat_ssl_certificate_file: elk-example.crt
+    filebeat_ssl_insecure: "true"
+    
+    filebeat_inputs:
+      - type: log
+        paths:
           - /var/log/auth.log
-        fields:
-          type: syslog
 
-You'll want to use something other than 'password' for `kibana_password`. Other options are straightforward, with the exception of the two `logstash_*` variables.
+The Nginx variables define one `server` directive, which proxies requests on port 80 to the Kibana instance running on port 5601 (Kibana's default port).
 
-The first variable tells the `geerlingguy.logstash` role to ignore the local syslog file, because in this case, we're only interested in logging authorization attempts through the local `auth.log`.
+The Logstash SSL variables give the name of a local file which will be copied into place and used by Logstash to encrypt log traffic to and from Logstash. You can generate the certificate using the command:
 
-The second variable gives the `geerlingguy.logstash-forwarder` role a list of files to monitor, along with metadata to tell logstash what kind of file is being monitored. In this case, we are only worried about the `auth.log` file, and we know it's a syslog-style file. (Logstash needs to know what kind of file you're monitoring so it can parse the logged messages correctly).
+{lang=text,linenos=off}
+    openssl req -x509 -batch -nodes -days 3650 -newkey rsa:2048 -keyout elk-example.key -out elk-example.crt -subj '/CN=logs.test'
+
+Set the `CN` value to the hostname of your ELK server (in our example, `logs.test`. Then convert the key format to pkcs8 (the format required by Logstash) using the command:
+
+{lang=text,linenos=off}
+    openssl pkcs8 -in elk-example.key -topk8 -nocrypt -out elk-example.p8
+
+The Filebeat variables tell Filebeat to connect to the Logstash server (in this case, the hostname `logs.test` on the default Logstash port `5044`), and supply the certificate and key Filebeat should use to encrypt log traffic. The `filebeat_ssl_insecure` variable tells Logstash to accept a self-signed certificate like the one we generated with `openssl`.
+
+The last variable, `filebeat_inputs`, supplies a list of `inputs` Filebeat will pick up and stream to Logstash. In this case, it's just one input, the `auth.log` file which logs all authentication-related events on a Debian-based server.
 
 If you want to get this ELK server up and running quickly, you can create a local VM using Vagrant like you have in most other examples in the book. Create a `Vagrantfile` in the same directory as the `provisioning` folder, with the following contents:
 
@@ -962,22 +991,24 @@ If you want to get this ELK server up and running quickly, you can create a loca
     VAGRANTFILE_API_VERSION = "2"
     
     Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.vm.box = "geerlingguy/ubuntu1204"
+      config.vm.box = "geerlingguy/ubuntu1804"
+      config.ssh.insert_key = false
     
       config.vm.provider :virtualbox do |v|
+        v.memory = 2048
+        v.cpus = 2
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-        v.customize ["modifyvm", :id, "--memory", 1024]
-        v.customize ["modifyvm", :id, "--cpus", 2]
         v.customize ["modifyvm", :id, "--ioapic", "on"]
       end
     
       # ELK server.
       config.vm.define "logs" do |logs|
-        logs.vm.hostname = "logs"
+        logs.vm.hostname = "logs.test"
         logs.vm.network :private_network, ip: "192.168.9.90"
     
         logs.vm.provision :ansible do |ansible|
-          ansible.playbook = "provisioning/elk/playbook.yml"
+          ansible.compatibility_mode = "2.0"
+          ansible.playbook = "provisioning/elk/main.yml"
           ansible.inventory_path = "provisioning/elk/inventory"
           ansible.become = true
         end
@@ -985,54 +1016,63 @@ If you want to get this ELK server up and running quickly, you can create a loca
     
     end
 
-This Vagrant configuration expects an inventory file at `provisioning/elk/inventory`, so quickly create one with the following contents:
+This Vagrant configuration expects an inventory file at `provisioning/elk/inventory`, so create one with the following contents:
 
 {lang="text"}
-    logs ansible_ssh_host=192.168.9.90 ansible_ssh_port=22
+    [logs]
+    logs.test ansible_ssh_host=192.168.9.90 ansible_ssh_port=22
 
-Now, run `vagrant up`. The build should take about five minutes, and upon completion, if you add a line like `logs  192.168.9.90` to your `/etc/hosts` file, you can visit `http://logs/` in your browser and see Kibana's default homepage:
+Now, run `vagrant up`. The build should take about five minutes, and upon completion, if you add a line like `logs.test  192.168.9.90` to your `/etc/hosts` file, you can visit `http://logs.test/` in your browser and see Kibana's default homepage:
 
 {width=80%}
 ![Kibana's default homepage.](images/8-elk-kibana-default.png)
 
-Kibana helpfully links to an example dashboard for Logstash (under the "Are you a Logstash User?" section), and if you select it, you should see a live dashboard that shows logged activity for the past day:
+You can start exploring log data after configuring Kibana to search filebeat indices:
+
+  1. Click on the home page link to 'Connect to your Elasticsearch index'
+  2. Enter an index pattern like `filebeat-*` (which will match all Filebeat indices), and click 'Next step'
+  3. Choose `@timestamp` for the Time Filter field name, and click 'Create index pattern'
+
+Now that Kibana knows how to read the filebeat index, you can discover and search through log data in the 'Discover' UI, which is the top link in the sidebar:
 
 {width=80%}
-![Kibana's default Logstash dashboard.](images/8-elk-kibana-logstash-dashboard.png)
+![Exploring log data from filebeat.](images/8-elk-kibana-logstash-dashboard.png)
 
-In this example, we won't dive too deep into customizing Kibana's dashboard customization, since there are many guides to using Kibana available freely, including [Kibana's official guide](http://www.elasticsearch.org/guide/en/kibana/current/index.html). For our purposes, we'll use the default dashboard.
+We won't dive too deep into customizing Kibana's interface with saved searches, visualizations, and dashboards, since there are many guides to using Kibana, including [Kibana's official guide](https://www.elastic.co/guide/en/kibana/current/tutorial-build-dashboard.html).
 
-I> This example uses Kibana 3.x, but a stable release of Kibana 4.x is on the horizon (as of early 2015). Some of the screenshots may show a different interface than the latest release, but this book will likely be updated with newer screenshots and updated guides once the 4.x release comes out.
+I> The screenshots in this example are from Kibana 7.x; other versions may have a slightly different interface.
 
 ### Forwarding Logs from Other Servers
 
-It's great that we have the ELK stack running. Elasticsearch will store and make available log data with one search index per day, Logstash will listen for log entries, Logstash Forwarder will send entries in `/var/log/auth.log` to Logstash, and Kibana will organize the logged data in useful visualizations.
+It's great that we have the ELK stack running. Elasticsearch will store and make available log data with one search index per day, Logstash will listen for log entries, Filebeat will send entries in `/var/log/auth.log` to Logstash, and Kibana will organize the logged data in useful visualizations.
 
-Configuring additional servers to direct their logs to our new Logstash server is fairly simple using Logstash Forwarder. The basic steps we'll follow are:
+Configuring additional servers to direct their logs to our new Logstash server is fairly simple using Filebeat. The basic steps we'll follow are:
 
   1. Set up another server in the Vagrantfile.
-  2. Set up an Ansible playbook to install and configure Logstash Forwarder alongside the application running on the server.
+  2. Set up an Ansible playbook to install and configure Filebeat alongside the application running on the server.
   3. Boot the server and watch as the logs are forwarded to the main ELK server.
 
 Let's begin by creating a new Nginx web server. It's useful to monitor web server access logs for a variety of reasons, especially to watch for traffic spikes and increases in non-200 responses for certain resources. Add the following server definition inside the Vagrantfile, just after the `end` of the ELK server definition:
 
-{lang=ruby,starting-line-number=28}
+{lang=ruby,starting-line-number=30}
       # Web server.
-      config.vm.define "webs" do |webs|
-        webs.vm.hostname = "webs"
-        webs.vm.network :private_network, ip: "192.168.9.91"
-
-        webs.vm.provision :ansible do |ansible|
-          ansible.playbook = "provisioning/web/playbook.yml"
+      config.vm.define "web" do |web|
+        web.vm.hostname = "web.test"
+        web.vm.network :private_network, ip: "192.168.9.91"
+    
+        web.vm.provision :ansible do |ansible|
+          ansible.compatibility_mode = "2.0"
+          ansible.playbook = "provisioning/web/main.yml"
           ansible.inventory_path = "provisioning/web/inventory"
           ansible.become = true
         end
       end
 
-We'll next set up the simple playbook to install and configure both Nginx and Logstash Forwarder, at `provisioning/web/playbook.yml`:
+We'll next set up the playbook to install and configure both Nginx and Filebeat, at `provisioning/web/main.yml`:
 
 {lang="text"}
-    - hosts: webs
+    ---
+    - hosts: web
       gather_facts: yes
     
       vars_files:
@@ -1044,19 +1084,28 @@ We'll next set up the simple playbook to install and configure both Nginx and Lo
     
       roles:
         - geerlingguy.nginx
-        - geerlingguy.logstash-forwarder
+        - geerlingguy.filebeat
     
       tasks:
         - name: Set up virtual host for testing.
           copy:
             src: files/example.conf
-            dest: /etc/nginx/conf.d/example.conf
+            dest: /etc/nginx/sites-enabled/example.conf
             owner: root
             group: root
             mode: 0644
           notify: restart nginx
+    
+        - name: Ensure logs server is in hosts file.
+          lineinfile:
+            dest: /etc/hosts
+            regexp: '.*logs\.test$'
+            line: "192.168.9.90 logs.test"
+            state: present
 
-This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forwarder` roles, and in the `tasks`, there is an additional task to configure one virtualhost in a Nginx configuration directory, via the file `example.conf`. Create that file now at the path `provisioning/web/files/example.conf`, and define one Nginx virtualhost for our testing:
+This playbook runs the `geerlingguy.nginx` and `geerlingguy.filebeat` roles, and in the `tasks`, there are two additional tasks: one to configure a server in Nginx's configuration (`example.conf`), and one to ensure the webserver knows the correct IP address for the `logs.test` server.
+
+Create the Nginx configuration file at the path `provisioning/web/files/example.conf`, and define one Nginx virtualhost for our testing:
 
 {lang="text"}
     server {
@@ -1069,61 +1118,63 @@ This playbook installs the `geerlingguy.nginx` and `geerlingguy.logstash-forward
       error_log /var/log/nginx/error.log debug;
     }
 
-Since this is the only `server` definition, and it's set as the `default_server` on port 80, all requests will be directed to it. We routed the `access_log` to `/var/log/nginx/access.log`, and told Nginx to write log entries using the `combined` format, which is how our Logstash server will expect nginx access logs to be formatted.
+Since this is the only `server` definition, and it's set as the `default_server` on port 80, all requests will be directed to it. We routed the `access_log` to `/var/log/nginx/access.log`, and told Nginx to write log entries using the `combined` format, which is how our Logstash server expects nginx access logs to be formatted.
 
 Next, set up the required variables to tell the `nginx` and `logstash-forwarder` roles how to configure their respective services. Inside `provisioning/web/vars/main.yml`:
 
 {lang="text"}
     ---
     nginx_user: www-data
-    nginx_worker_connections: 1024
     nginx_remove_default_vhost: true
     
-    logstash_forwarder_logstash_server: 192.168.9.90
-    logstash_forwarder_logstash_server_port: 5000
+    filebeat_output_logstash_enabled: true
+    filebeat_output_logstash_hosts:
+      - "logs.test:5044"
     
-    logstash_forwarder_files:
-      - paths:
-          - /var/log/secure
-        fields:
-          type: syslog
-      - paths:
+    filebeat_ssl_key_file: elk-example.p8
+    filebeat_ssl_certificate_file: elk-example.crt
+    filebeat_ssl_insecure: "true"
+    
+    filebeat_inputs:
+      - type: log
+        paths:
+          - /var/log/auth.log
+      - type: log
+        paths:
           - /var/log/nginx/access.log
-        fields:
-          type: nginx
 
-The `nginx` variables remove the default virtualhost entry and ensure Nginx will run optimally on our Ubuntu server. The `logstash_forwarder` variables tell the logstash-forwarder role what logs to forward to our central log server:
+The `nginx` variables remove the default virtualhost entry and ensure Nginx will run optimally on our Ubuntu server. The `filebeat` variables tell the filebeat role how to connect to the central ELK server, and which logs to deliver to Logstash:
 
-  - `logstash_forwarder_logstash_server` and `_port`: Defines the server IP or domain and port to which logs should be transported.
-  - `logstash_forwarder_files`: Defines a list of `paths` and `fields`, which identify a file or list of files to be transported to the log server, along with a `type` for the files. In this case, the authentication log (`/var/log/secure`) is a `syslog`-formatted log file, and `/var/log/nginx/access.log` is of type `nginx` (which will be parsed correctly on the Logstash server since it's in the combined log format popularized by Apache).
+  - `filebeat_output_logstash_enabled` and `_hosts`: Tells the role to configure Filebeat to connect to Logstash, and the host and port to use.
+  - `logstash_ssl_*`: Provide a key and certificate to use for encrypted log transport (note that these files should be in the same directory as the playbook, copied over from the `elk` playbook).
+  - `filebeat_inputs`: Defines a list of inputs, which identify log files or other types of log inputs. In this case, we're configuring the authentication log (`/var/log/auth.log`), which is a `syslog`-formatted log file, and `/var/log/nginx/access.log`, which has the combined-format access log from Nginx.
 
-W> Note that this demonstration configuration does not use a custom certificate to authenticate logging connections. You should normally configure your own secure certificate and give the logstash-forwarder role the path to the certificate using the `logstash_forwarder_ssl_certificate_file` variable. If you use the example provided with the project, you could expose your logging infrastructure to the outside, and you'll get a `***SECURITY RISK***` warning in the logs every time the Logstash role is run.
-
-To allow Vagrant to pass the proper connection details to Ansible, create a file named `provisioning/web/inventory` with the `webs` host details:
+To allow Vagrant to pass the proper connection details to Ansible, create a file named `provisioning/web/inventory` with the `web.test` host details:
 
 {lang="text"}
-    webs ansible_ssh_host=192.168.9.91 ansible_ssh_port=22
+    [web]
+    web.test ansible_ssh_host=192.168.9.91 ansible_ssh_port=22
 
-Run `vagrant up` again. Vagrant should verify that the first server (`logs`) is running, then create and run the Ansible provisioner on the newly-defined `webs` Nginx server.
+Run `vagrant up` again. Vagrant should verify that the first server (`logs`) is running, then create and run the Ansible provisioner on the newly-defined `web` Nginx server.
 
-You can load `http://192.168.9.91/` or `http://webs/` in your browser, and you should see a `Welcome to nginx!` message on the page. You can refresh the page a few times, then switch back over to `http://logs/` to view some new log entries on the ELK server:
+You can load `http://192.168.9.91/` or `http://web.test/` in your browser, and you should see a `Welcome to nginx!` message on the page. You can refresh the page a few times, then switch back over to `http://logs.test/` to view some new log entries on the ELK server:
 
 {width=80%}
 ![Entries populating the Logstash Search Kibana dashboard.](images/8-logstash-forwarding-nginx.png)
 
-T> If you refresh the page a few times, and no entries show up in the Kibana Logstash dashboard, it could be that Nginx is buffering the log entries. In this case, keep refreshing a while (so you generate a few dozen or hundred entries), and Nginx will eventually write the entries to disk (thus allowing Logstash Forwarder to convey the logs to the Logstash server). Read more about Nginx log buffering in the [Nginx's ngx_http_log_module documentation](http://nginx.org/en/docs/http/ngx_http_log_module.html).
+T> If you refresh the page a few times, and no entries show up in the Kibana search, Nginx may be buffering the log entries. In this case, keep refreshing a while (so you generate a few dozen or hundred entries), and Nginx will eventually write the entries to disk (thus allowing Filebeat to convey the logs to the Logstash server). Read more about Nginx log buffering in the [Nginx's ngx_http_log_module documentation](http://nginx.org/en/docs/http/ngx_http_log_module.html).
 
-A few requests being logged through logstash forwarder isn't all that exciting. Let's use the popular `ab` tool available most anywhere to put some load on the web server. On a modest MacBook Air, running the command below resulted in Nginx serving around 1,200 requests per second.
+A few requests being logged through logstash forwarder isn't all that exciting. Let's use the popular `ab` tool available most anywhere to put some load on the web server. On a modest laptop, running the command below resulted in Nginx serving around 1,200 requests per second.
 
 {lang="text",linenos=off}
-    ab -n 20000 -c 50 http://webs/
+    ab -n 20000 -c 50 http://web.test/
 
 During the course of the load test, I set Kibana to show only the past 5 minutes of log data (automatically refreshed every 5 seconds) and I could monitor the requests on the ELK server just a few seconds after they were served by Nginx:
 
 {width=80%}
 ![Monitoring a deluge of Nginx requests in near-realtime.](images/8-logstash-forwarding-ab-load.png)
 
-Logstash Forwarder uses a highly-efficient TCP-like protocol, Lumberjack, to transmit log entries securely between servers. With the right tuning and scaling, you can efficiently process and display thousands of requests per second across your infrastructure! For most, even the simple example demonstrated above would adequately cover an entire infrastructure's logging and log analysis needs.
+Filebeat uses a highly-efficient TCP-like protocol, Lumberjack, to transmit log entries securely between servers. With the right tuning and scaling, you can efficiently process and display thousands of requests per second across your infrastructure! For most, even the simple example demonstrated above would adequately cover an entire infrastructure's logging and log analysis needs.
 
 ### Summary
 
