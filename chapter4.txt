@@ -226,11 +226,14 @@ Finally, the playbook will need to do something on the hosts, so we add a `tasks
 
 Adding extra package repositories (yum or apt) is one thing many admins will do before any other work on a server to ensure that certain packages are available, or are at a later version than the ones in the base installation.
 
-In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL/CentOS 7.x):
+In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL/CentOS 7.x as the `root` user):
 
 {lang="bash"}
+    # Install EPEL repo.
+    yum install -y epel-release
+    
     # Import Remi GPG key.
-    wget https://rpms.famillecollet.com/RPM-GPG-KEY-remi \
+    wget https://rpms.remirepo.net/RPM-GPG-KEY-remi \
       -O /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
     
@@ -238,19 +241,19 @@ In the shell script below, we want to add both the EPEL and Remi repositories, s
     rpm -Uvh --quiet \
       https://rpms.remirepo.net/enterprise/remi-release-7.rpm
     
-    # Install EPEL repo.
-    yum install epel-release
-    
     # Install Node.js (npm plus all its dependencies).
-    yum --enablerepo=epel install npm
+    yum --enablerepo=epel -y install npm
 
-This shell script uses the rpm command to import the EPEL and Remi repository GPG keys, then adds the repositories, and finally installs Node.js. It works okay for a simple deployment (or by hand), but it's silly to run all these commands (some of which could take time or stop your script entirely if your connection is flaky or bad) if the result has already been achieved (namely, two repositories and their GPG keys have been added).
+This shell script uses the rpm command to install the EPEL repository, import the Remi repository GPG keys, add the Remi repository, and finally install Node.js. It works okay for a simple deployment (or by hand), but it's silly to run all these commands (some of which could take time or stop your script entirely if your connection is flaky or bad) if the result has already been achieved (namely, two repositories and their GPG keys have been added).
 
 I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and just run your commands with `--nogpgcheck` (or, in Ansible, set the `disable_gpg_check` parameter of the yum module to `yes`), but it's a good idea to leave this enabled. GPG stands for *GNU Privacy Guard*, and it's a way that developers and package distributors can sign their packages (so you know it's from the original author, and hasn't been modified or corrupted). Unless you *really* know what you're doing, don't disable security settings like GPG key checks.
 
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables and other nifty Ansible features we'll discuss later:
 
 {lang="text",starting-line-number=9}
+        - name: Install EPEL repo.
+          yum: name=epel-release state=present
+    
         - name: Import Remi GPG key.
           rpm_key:
             key: "https://rpms.remirepo.net/RPM-GPG-KEY-remi"
@@ -260,9 +263,6 @@ Ansible makes things a little more robust. Even though the following is slightly
           yum:
             name: "https://rpms.remirepo.net/enterprise/remi-release-7.rpm"
             state: present
-    
-        - name: Install EPEL repo.
-          yum: name=epel-release state=present
     
         - name: Ensure firewalld is stopped (since this is for testing).
           service: name=firewalld state=stopped
@@ -275,9 +275,9 @@ Ansible makes things a little more robust. Even though the following is slightly
 
 Let's walk through this playbook step-by-step:
 
-  1. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
-  2. We can install extra yum repositories using the `yum` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
-  3. `yum` installs the EPEL repository (and automatically imports its GPG key).
+  1. `yum` installs the EPEL repository (and automatically imports its GPG key).
+  2. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
+  3. We can install extra yum repositories using the `yum` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
   4. Since this server is being used only for test purposes, we disable the system firewall so it won't interfere with testing (using the `service` module).
   5. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
   6. Since NPM is now installed, we use Ansible's `npm` module to install a Node.js utility, `forever`, to launch our app and keep it running. Setting `global` to `yes` tells NPM to install the `forever` node module in `/usr/lib/node_modules/` so it will be available to all users and Node.js apps on the system.
