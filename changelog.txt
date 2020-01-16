@@ -24,7 +24,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   16. [#193](https://github.com/geerlingguy/ansible-for-devops/pull/193): Fixed usage of `ansible_kubectl_namespace` in `kubectl` connection example in chapter 14 (thanks to SamyCoenen!).
   17. [#192](https://github.com/geerlingguy/ansible-for-devops/issues/192): Fix idempotence of Drupal playbooks by ensuring codebase is owned by the Apache user, `www-data` (thanks in part to arashpath!).
   18. [#190](https://github.com/geerlingguy/ansible-for-devops/pull/190): Fixed order of EPEL repo installation in Node.js example in chapter 4 to be more technically correct (thanks to arashpath!).
-  19. [#184](https://github.com/geerlingguy/ansible-for-devops/issues/184): Update Node.js shell script install example in chapter 4 with newer Remi repo URL and more correct ordering (thanks to arashpath!).
+  19. [#184](https://github.com/geerlingguy/ansible-for-devops/issues/184): Update Node.js shell script install example in chapter 4 with newer Remi repo URL and more correct ordering (thanks to peurKe and arashpath!).
 
 ## Version 1.20 (2019-09-05)
 
