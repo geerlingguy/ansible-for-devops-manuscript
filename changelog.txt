@@ -21,6 +21,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   13. [#198](https://github.com/geerlingguy/ansible-for-devops/issues/198): Update chapter 4 Drupal playbook example to use Drupal 8.8.x.
   14. [#189](https://github.com/geerlingguy/ansible-for-devops/issues/189): Update molecule project GitHub URL in chapter 11 (thanks to apatard!).
   15. [#194](https://github.com/geerlingguy/ansible-for-devops/issues/194): Fixed link to AWS dynamic inventory script in chapter 7 (thanks to @goagex!).
+  16. [#193](https://github.com/geerlingguy/ansible-for-devops/pull/193): Fixed usage of `ansible_kubectl_namespace` in `kubectl` connection example in chapter 14 (thanks to SamyCoenen!).
 
 ## Version 1.20 (2019-09-05)
 
