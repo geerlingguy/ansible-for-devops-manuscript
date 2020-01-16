@@ -214,13 +214,14 @@ While this syntax is often seen in the wild, I don't recommend it except for cer
 {lang="text",linenos=off}
     - name: Install Drupal.
       command: >
-        drush si -y
-        --site-name="{{ drupal_site_name }}"
+        drush si -y --site-name="{{ drupal_site_name }}"
         --account-name=admin
-        --account-pass={{ drupal_admin_pass }}
-        --db-url=mysql://root@localhost/{{ domain }}
-        chdir={{ drupal_core_path }}
+        --account-pass=admin
+        --db-url=mysql://{{ domain }}:1234@localhost/{{ domain }}
+        --root={{ drupal_core_path }}
         creates={{ drupal_core_path }}/sites/default/settings.php
+      notify: restart apache
+      become_user: www-data
 
 Sometimes the above is as good as you can do to keep unwieldy tasks formatted in a legible manner.
 

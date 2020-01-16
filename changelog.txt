@@ -22,6 +22,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   14. [#189](https://github.com/geerlingguy/ansible-for-devops/issues/189): Update molecule project GitHub URL in chapter 11 (thanks to apatard!).
   15. [#194](https://github.com/geerlingguy/ansible-for-devops/issues/194): Fixed link to AWS dynamic inventory script in chapter 7 (thanks to @goagex!).
   16. [#193](https://github.com/geerlingguy/ansible-for-devops/pull/193): Fixed usage of `ansible_kubectl_namespace` in `kubectl` connection example in chapter 14 (thanks to SamyCoenen!).
+  17. [#192](https://github.com/geerlingguy/ansible-for-devops/issues/192): Fix idempotence of Drupal playbooks by ensuring codebase is owned by the Apache user, `www-data` (thanks in part to arashpath!).
 
 ## Version 1.20 (2019-09-05)
 

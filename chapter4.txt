@@ -675,12 +675,22 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             repo: https://git.drupal.org/project/drupal.git
             version: "{{ drupal_core_version }}"
             dest: "{{ drupal_core_path }}"
+          register: git_checkout
+    
+        - name: Ensure Drupal codebase is owned by www-data.
+          file:
+            path: "{{ drupal_core_path }}"
+            owner: www-data
+            group: www-data
+            recurse: true
+          when: git_checkout.changed | bool
     
         - name: Install Drupal dependencies with Composer.
           command: >
             /usr/local/bin/composer install
             chdir={{ drupal_core_path }}
             creates={{ drupal_core_path }}/vendor/autoload.php
+          become_user: www-data
     
         - name: Install Drupal.
           command: >
@@ -691,19 +701,7 @@ We'll use `git` again to clone Drupal to the Apache document root we defined ear
             --root={{ drupal_core_path }}
             creates={{ drupal_core_path }}/sites/default/settings.php
           notify: restart apache
-    
-        # SEE: https://drupal.org/node/2121849#comment-8413637
-        - name: Set permissions properly on settings.php.
-          file:
-            path: "{{ drupal_core_path }}/sites/default/settings.php"
-            mode: 0744
-    
-        - name: Set permissions properly on files directory.
-          file:
-            path: "{{ drupal_core_path }}/sites/default/files"
-            mode: 0777
-            state: directory
-            recurse: yes
+          become_user: www-data
 
 First, we clone Drupal's git repository, using the `version` defined in our `vars.yml` file as `drupal_core_version`. The `git` module's `version` parameter defines the branch (`master`, `8.2.x`, etc.), tag (`1.0.1`, `8.2.5`, etc.), or individual commit hash (`50a1877`, etc.) to clone.
 
