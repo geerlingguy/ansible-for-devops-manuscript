@@ -1147,7 +1147,7 @@ The `nginx` variables remove the default virtualhost entry and ensure Nginx will
 
   - `filebeat_output_logstash_enabled` and `_hosts`: Tells the role to configure Filebeat to connect to Logstash, and the host and port to use.
   - `logstash_ssl_*`: Provide a key and certificate to use for encrypted log transport (note that these files should be in the same directory as the playbook, copied over from the `elk` playbook).
-  - `filebeat_inputs`: Defines a list of inputs, which identify log files or other types of log inputs. In this case, we're configuring the authentication log (`/var/log/auth.log`), which is a `syslog`-formatted log file, and `/var/log/nginx/access.log`, which has the combined-format access log from Nginx.
+  - `filebeat_inputs`: Defines a list of inputs, which identify log files or other types of log inputs. In this case, we're configuring the authentication log (`/var/log/auth.log`), which is a `syslog`-formatted log file, and the combined-format access log from Nginx (`/var/log/nginx/access.log`).
 
 To allow Vagrant to pass the proper connection details to Ansible, create a file named `provisioning/web/inventory` with the `web.test` host details:
 

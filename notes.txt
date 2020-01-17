@@ -3,7 +3,6 @@
 ## General TODO
 
   - Import people from LeanPub mailing list into MailChimp Mailing List.
-  - Fix iBooks - add screenshots of some of the pages to the released book.
   - Create favicon.ico for website.
 
 ## Editing notes:
