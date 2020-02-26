@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - No changes.
+  1. Fixed typo with duplicate 'on's in chapter 13 Docker example (thanks to @kevinbowen777!).
 
 ## Version 1.21 (2020-01-16)
 

@@ -117,7 +117,7 @@ Let's build a more useful Docker-powered environment, with a container that runs
 {width=60%}
 ![Docker stack for Flask App](images/8-flask-docker-stack.png)
 
-We'll create a VM using Vagrant to run our Docker containers so the same Docker configuration can be tested on on any machine capable of running Ansible and Vagrant. Create a `docker` folder, and inside it, the following `Vagrantfile`:
+We'll create a VM using Vagrant to run our Docker containers so the same Docker configuration can be tested on any machine capable of running Ansible and Vagrant. Create a `docker` folder, and inside it, the following `Vagrantfile`:
 
 {lang=ruby}
     # -*- mode: ruby -*-
