@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. Added note about use of `dnf-automatic` instead of `yum-cron` for RHEL and CentOS 8 and the latest versions of Fedora in chapter 10 automatic updates section.
   4. [#209](https://github.com/geerlingguy/ansible-for-devops/issues/209): Don't use `sudo` when running `ansible-galaxy install` in chapter 9 multi-server deployment example (thanks to @kevinbowen777!).
   5. [#208](https://github.com/geerlingguy/ansible-for-devops/issues/208): Clean up playbook variables section in chapter 5 and clarify use of Facter and Ohai if they are present on the systems being managed.
+  6. [#203](https://github.com/geerlingguy/ansible-for-devops/issues/203): Fixed two clumsy sentences in GlusterFS example in chapter 8 (thanks to @kevinbowen777!).
 
 ## Version 1.21 (2020-01-16)
 
