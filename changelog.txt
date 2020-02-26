@@ -9,6 +9,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   1. [#211](https://github.com/geerlingguy/ansible-for-devops/issues/211): Fixed typo with duplicate 'on's in chapter 13 Docker example (thanks to @kevinbowen777!).
   2. [#210](https://github.com/geerlingguy/ansible-for-devops/issues/210): Updated automatic updates example in chapter 10 to use more modern unattended-upgrades configuration files (thanks to @kevinbowen777!).
   3. Added note about use of `dnf-automatic` instead of `yum-cron` for RHEL and CentOS 8 and the latest versions of Fedora in chapter 10 automatic updates section.
+  4. [#209](https://github.com/geerlingguy/ansible-for-devops/issues/209): Don't use `sudo` when running `ansible-galaxy install` in chapter 9 multi-server deployment example (thanks to @kevinbowen777!).
 
 ## Version 1.21 (2020-01-16)
 

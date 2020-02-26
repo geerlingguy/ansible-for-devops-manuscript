@@ -790,7 +790,7 @@ Now, to make sure we have all these roles installed, create a requirements file 
     - src: geerlingguy.haproxy
     - src: geerlingguy.apache
 
-To install the required roles, run `sudo ansible-galaxy install -r requirements.yml`.
+To install the required roles, run `ansible-galaxy install -r requirements.yml`.
 
 At this point, if you want to bring up your local load-balanced infrastructure, run `vagrant up` in the `deployments-balancer` directory, and wait a few minutes. Once everything is up and running, visit `http://192.168.4.2/`, and you should see the default Ubuntu Apache2 landing page:
 
