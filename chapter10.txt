@@ -272,7 +272,7 @@ W> As mentioned in an earlier sidebar, GPG package signature checking is enabled
 
 ### Automating updates for RHEL systems
 
-RHEL 6 and later (and modern versions of Fedora, and RHEL derivatives like CentOS) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
+RHEL and CentOS 6 and 7 (and older versions of Fedora) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
 
 {lang="text"}
     - name: Install yum-cron.
@@ -282,6 +282,8 @@ RHEL 6 and later (and modern versions of Fedora, and RHEL derivatives like CentO
       service: name=yum-cron state=started enabled=yes
 
 Further configuration (such as packages to exclude from automatic updates) is done in the `yum.conf` file, at `/etc/yum.conf`.
+
+For RHEL and CentOS 8 and later (and the latest versions of Fedora), you would need to install `dnf-automatic` instead of `yum-cron`, and the service name that you need to make sure to start is `dnf-automatic-install.timer` (instead of `yum-cron`).
 
 ### Automating updates for Debian-based systems
 
@@ -305,10 +307,8 @@ Debian and its derivatives typically use the `unattended-upgrades` package to co
 The template files copied in the second task should look something like the following:
 
 {lang="text"}
-    # File: /etc/apt/apt.conf.d/10periodic
+    # File: /etc/apt/apt.conf.d/20auto-upgrades
     APT::Periodic::Update-Package-Lists "1";
-    APT::Periodic::Download-Upgradeable-Packages "1";
-    APT::Periodic::AutocleanInterval "7";
     APT::Periodic::Unattended-Upgrade "1";
 
 This file provides configuration for the `apt` script that runs as part of the unattended upgrades package, and tells apt whether to enable unattended upgrades.
@@ -317,9 +317,15 @@ This file provides configuration for the `apt` script that runs as part of the u
     # File: /etc/apt/apt.conf.d/50unattended-upgrades
     Unattended-Upgrade::Automatic-Reboot "false";
     
+    Unattended-Upgrade::DevRelease "false";
+    
     Unattended-Upgrade::Allowed-Origins {
-            "Ubuntu lucid-security";
-    //      "Ubuntu lucid-updates";
+            "${distro_id}:${distro_codename}";
+            "${distro_id}:${distro_codename}-security";
+            "${distro_id}ESM:${distro_codename}";
+    //      "${distro_id}:${distro_codename}-updates";
+    //      "${distro_id}:${distro_codename}-proposed";
+    //      "${distro_id}:${distro_codename}-backports";
     };
 
 This file provides further configuration for unattended upgrades, like whether to automatically restart the server for package and kernel upgrades requiring a reboot, or what `apt` sources should be checked for updated packages.
