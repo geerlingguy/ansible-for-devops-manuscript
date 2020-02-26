@@ -149,6 +149,7 @@ Create a `main.yml` file within the `playbooks/www` directory, with the followin
           file:
             path: /var/www/html/index.html
             state: absent
+    
         - name: Copy our fancy server-specific home page.
           template:
             src: templates/index.php.j2
