@@ -13,6 +13,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. [#208](https://github.com/geerlingguy/ansible-for-devops/issues/208): Clean up playbook variables section in chapter 5 and clarify use of Facter and Ohai if they are present on the systems being managed.
   6. [#203](https://github.com/geerlingguy/ansible-for-devops/issues/203): Fixed two clumsy sentences in GlusterFS example in chapter 8 (thanks to @kevinbowen777!).
   7. [#207](https://github.com/geerlingguy/ansible-for-devops/issues/207): Clarified reasoning behind `pre_tasks` section in relation to the rest of a play in chapter 4 (thanks to @gaddman!).
+  8. [#213](https://github.com/geerlingguy/ansible-for-devops/issues/213): Fixed paragraph describing non-existent tasks in Drupal example in chapter 4 (thanks to @dirks!).
 
 ## Version 1.21 (2020-01-16)
 

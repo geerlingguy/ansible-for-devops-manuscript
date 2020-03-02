@@ -715,8 +715,6 @@ To install Drupal, we use Drush's `si` command (short for `site-install`) to run
 
 Once the site is installed, we also restart Apache for good measure (using `notify` again, like we did when updating Apache's configuration).
 
-The final two tasks set permissions on Drupal's settings.php and files folder to 744 and 777, respectively.
-
 ### Drupal LAMP server summary
 
 To run the playbook on a server (either via a local VM for testing or on another server), use the following command:
