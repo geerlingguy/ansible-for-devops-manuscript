@@ -14,6 +14,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   6. [#203](https://github.com/geerlingguy/ansible-for-devops/issues/203): Fixed two clumsy sentences in GlusterFS example in chapter 8 (thanks to @kevinbowen777!).
   7. [#207](https://github.com/geerlingguy/ansible-for-devops/issues/207): Clarified reasoning behind `pre_tasks` section in relation to the rest of a play in chapter 4 (thanks to @gaddman!).
   8. [#213](https://github.com/geerlingguy/ansible-for-devops/issues/213): Fixed paragraph describing non-existent tasks in Drupal example in chapter 4 (thanks to @dirks!).
+  9. [#216](https://github.com/geerlingguy/ansible-for-devops/issues/216): Fixed use of deprecated `-s` in ad hoc tasks in Gluster example (thanks to @hatchmount77!).
 
 ## Version 1.21 (2020-01-16)
 

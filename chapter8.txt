@@ -1375,7 +1375,7 @@ Now that we have everything set up, the folder structure should look like this:
 Change directory into the `gluster` directory, and run `vagrant up`. After a few minutes, provisioning should have completed successfully. To ensure Gluster is working properly, you can run the following two commands, which should give information about Gluster's peer connections and the configured `gluster` volume:
 
 {lang="text",linenos=off}
-    $ ansible gluster -i inventory -a "gluster peer status" -s
+    $ ansible gluster -i inventory -a "gluster peer status" -b
     192.168.29.2 | success | rc=0 >>
     Number of Peers: 1
     
@@ -1393,7 +1393,7 @@ Change directory into the `gluster` directory, and run `vagrant up`. After a few
     State: Peer in Cluster (Connected)
 
 {lang="text",linenos=off}
-    $ ansible gluster -i inventory -a "gluster volume info" -s
+    $ ansible gluster -i inventory -a "gluster volume info" -b
     192.168.29.3 | success | rc=0 >>
     
     Volume Name: gluster
