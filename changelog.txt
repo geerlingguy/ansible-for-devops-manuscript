@@ -21,6 +21,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   9. [#216](https://github.com/geerlingguy/ansible-for-devops/issues/216): Fixed use of deprecated `-s` in ad hoc tasks in Gluster example (thanks to @hatchmount77!).
   10. [#217](https://github.com/geerlingguy/ansible-for-devops/issues/217): Fixed `free -h` command and grammar in chapter 1 ad-hoc examples (thanks to @ew0k!).
   11. [#215](https://github.com/geerlingguy/ansible-for-devops/issues/215): Fixed three grammar issues (well two really, one wasn't a problem) identified by KDP's quality scan.
+  12. Updated book version to 1.22, set latest Ansible version to 2.9.5.
 
 ## Version 1.21 (2020-01-16)
 
@@ -43,7 +44,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   17. [#192](https://github.com/geerlingguy/ansible-for-devops/issues/192): Fix idempotence of Drupal playbooks by ensuring codebase is owned by the Apache user, `www-data` (thanks in part to arashpath!).
   18. [#190](https://github.com/geerlingguy/ansible-for-devops/pull/190): Fixed order of EPEL repo installation in Node.js example in chapter 4 to be more technically correct (thanks to arashpath!).
   19. [#184](https://github.com/geerlingguy/ansible-for-devops/issues/184): Update Node.js shell script install example in chapter 4 with newer Remi repo URL and more correct ordering (thanks to peurKe and arashpath!).
-  20. Updated book version to 1.21, set latest Ansible version to 2.9.3.
+  20. Updated book version to 1.21, set latest Ansible version to 2.9.5.
 
 ## Version 1.20 (2019-09-05)
 
