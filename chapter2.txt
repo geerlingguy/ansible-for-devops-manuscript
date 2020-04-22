@@ -51,10 +51,12 @@ It's this last feature that is most important for us. Ansible is one of many pro
 Open the Vagrantfile that was created when we used the `vagrant init` command earlier. Add the following lines just before the final 'end' (Vagrantfiles use Ruby syntax, in case you're wondering):
 
 {lang="ruby"}
-    # Provisioning configuration for Ansible.
-    config.vm.provision "ansible" do |ansible|
-      ansible.playbook = "playbook.yml"
-    end
+```
+# Provisioning configuration for Ansible.
+config.vm.provision "ansible" do |ansible|
+  ansible.playbook = "playbook.yml"
+end
+```
 
 This is a very basic configuration to get you started using Ansible with Vagrant. There are [many other Ansible options](https://www.vagrantup.com/docs/provisioning/ansible.html) you can use once we get deeper into using Ansible. For now, we just want to set up a very basic playbook---a simple file you create to tell Ansible how to configure your VM.
 
@@ -62,88 +64,122 @@ This is a very basic configuration to get you started using Ansible with Vagrant
 
 Let's create the Ansible `playbook.yml` file now. Create an empty text file in the same folder as your Vagrantfile, and put in the following contents:
 
-{lang="text"}
-    ---
-    - hosts: all
-      become: yes
-      tasks:
-      - name: Ensure NTP (for time synchronization) is installed.
-        yum: name=ntp state=present
-      - name: Ensure NTP is running.
-        service: name=ntpd state=started enabled=yes
+{lang="yaml"}
+```
+---
+- hosts: all
+  become: yes
+
+  tasks:
+  - name: Ensure Chrony (for time synchronization) is installed.
+    yum:
+      name: chrony
+      state: present
+
+  - name: Ensure chrony is running.
+    service:
+      name: chronyd
+      state: started
+      enabled: yes
+```
 
 I'll get into what this playbook is doing in a minute. For now, let's run the playbook on our VM. Make sure you're in the same directory as the Vagrantfile and new playbook.yml file, and enter `vagrant provision`. You should see status messages for each of the 'tasks' you defined, and then a recap showing what Ansible did on your VM---something like the following:
 
 {lang="text",linenos=off}
-    PLAY RECAP **********************************************************
-    default              : ok=3    changed=1    unreachable=0    failed=0
+```
+PLAY RECAP **********************************************************
+default              : ok=3    changed=0    unreachable=0    failed=0
+```
 
 Ansible just took the simple playbook you defined, parsed the YAML syntax, and ran a bunch of commands via SSH to configure the server as you specified. Let's go through the playbook, step by step:
 
-{lang="text"}
-    ---
+{lang="yaml"}
+```
+---
+```
 
 This first line is a marker showing that the rest of the document will be formatted in YAML (read a [getting started guide for YAML](http://www.yaml.org/start.html)).
 
-{lang="text",starting-line-number=2}
-    - hosts: all
+{lang="yaml",starting-line-number=2}
+```
+- hosts: all
+```
 
 This line tells Ansible to which hosts this playbook applies. `all` works here, since Vagrant is invisibly using its own Ansible inventory file (instead of the one we created earlier in `/etc/ansible/hosts`), which just defines the Vagrant VM.
 
-{lang="text",starting-line-number=3}
-      become: yes
+{lang="yaml",starting-line-number=3}
+```
+  become: yes
+```
 
-Since we need privileged access to install NTP and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook (you're telling Ansible to 'become' the root user with `sudo`, or an equivalent).
+Since we need privileged access to install Chrony and modify system configuration, this line tells Ansible to use `sudo` for all the tasks in the playbook (you're telling Ansible to 'become' the root user with `sudo`, or an equivalent).
 
-{lang="text",starting-line-number=4}
-      tasks:
+{lang="yaml",starting-line-number=5}
+```
+  tasks:
+```
 
 All the tasks after this line will be run on all hosts (or, in our case, our one VM).
 
-{lang="text",starting-line-number=5}
-      - name: Ensure NTP daemon (for time synchronization) is installed.
-        yum: name=ntp state=present
+{lang="yaml",starting-line-number=6}
+```
+  - name: Ensure Chrony (for time synchronization) is installed.
+    yum:
+      name: chrony
+      state: present
+```
 
-This command is the equivalent of running `yum install ntp`, but is much more intelligent; it will check if ntp is installed, and, if not, install it. This is the equivalent of the following shell script:
-
-{lang="text",linenos=off}
-    if ! rpm -qa | grep -qw ntp; then
-        yum install -y ntp
-    fi
-
-However, the above script is still not quite as robust as Ansible's `yum` command. What if ntpdate is installed, but not ntp? This script would require extra tweaking and complexity to match the simple Ansible yum command, especially after we explore the yum module more intimately (or the `apt` module for Debian-flavored Linux, or `package` for OS-agnostic package installation).
-
-{lang="text",starting-line-number=7}
-      - name: Ensure NTP is running.
-        service: name=ntpd state=started enabled=yes
-
-This final task both checks and ensures that the ntpd service is started and running, and sets it to start at system boot. A shell script with the same effect would be:
+This command is the equivalent of running `yum install chrony`, but is much more intelligent; it will check if Chrony is installed, and, if not, install it. This is the equivalent of the following shell script:
 
 {lang="text",linenos=off}
-    # Start ntpd if it's not already running.
-    if ps aux | grep -q "[n]tpd"
-    then
-        echo "ntpd is running." > /dev/null
-    else
-        systemctl start ntpd.service > /dev/null
-        echo "Started ntpd."
-    fi
-    # Make sure ntpd is enabled on system startup.
-    systemctl enable ntpd.service
+```
+if ! rpm -qa | grep -qw chrony; then
+    yum install -y chrony
+fi
+```
 
-You can see how things start getting complex in the land of shell scripts! And this shell script is still not as robust as what you get with Ansible. To maintain idempotency and handle error conditions, you'll have to do a lot more extra work with basic shell scripts than you do with Ansible.
+However, the above script is still not quite as robust as Ansible's `yum` command. What if some other package with `chrony` in its name is installed, but not `chrony`? This script would require extra tweaking and complexity to match the simple Ansible yum command, especially after we explore the yum module more intimately (or the `apt` module for Debian-flavored Linux, or `package` for OS-agnostic package installation).
 
-We could be even more terse (and really demonstrate Ansible's powerful simplicity) and not use Ansible's `name` module to give human-readable names to each command, resulting in the following playbook:
+{lang="yaml",starting-line-number=11}
+```
+  - name: Ensure chrony is running.
+    service:
+      name: chronyd
+      state: started
+      enabled: yes
+```
+
+This final task both checks and ensures that the `chronyd` service is started and running, and sets it to start at system boot. A shell script with the same effect would be:
+
+{lang="text",linenos=off}
+```
+# Start chronyd if it's not already running.
+if ps aux | grep -q "[c]hronyd"
+then
+    echo "chronyd is running." > /dev/null
+else
+    systemctl start chronyd.service > /dev/null
+    echo "Started chronyd."
+fi
+# Make sure chronyd is enabled on system startup.
+systemctl enable chronyd.service
+```
+
+You can see how things start getting complex in the land of shell scripts! And this shell script is still not as robust as what you get with Ansible. To maintain idempotency and handle error conditions, you'll have to do even more work with basic shell scripts than you do with Ansible.
+
+We could be more terse (and demonstrate Ansible's powerful simplicity) ignoring Ansible's self-documenting `name` parameter and shorthand `key=value` syntax, resulting in the following playbook:
 
 {lang="text"}
-    ---
-    - hosts: all
-      become: yes
-      tasks:
-      - yum: name=ntp state=present
-      - service: name=ntpd state=started enabled=yes
+```
+---
+- hosts: all
+  become: yes
+  tasks:
+  - yum: name=chrony state=present
+  - service: name=chronyd state=started enabled=yes
+```
 
-I> Just as with code and configuration files, documentation in Ansible (e.g. using the `name` function and/or adding comments to the YAML for complicated tasks) is not absolutely necessary. However, I'm a firm believer in thorough (but concise) documentation, so I almost always document what my tasks will do by providing a `name` for each one. This also helps when you're running the playbooks, so you can see what's going on in a human-readable format.
+I> Just as with code and configuration files, documentation in Ansible (e.g. using the `name` parameter and/or adding comments to the YAML for complicated tasks) is not absolutely necessary. However, I'm a firm believer in thorough (but concise) documentation, so I always document what my tasks will do by providing a `name` for each one. This also helps when you're running the playbooks, so you can see what's going on in a human-readable format.
 
 ## Cleaning Up
 
@@ -154,13 +190,15 @@ Once you're finished experimenting with the CentOS Vagrant VM, you can remove it
 Your workstation is on the path to becoming an "infrastructure-in-a-box," and you can now ensure your infrastructure is as well-tested as the code that runs on top of it. With one small example, you've got a glimpse at the simple-yet-powerful Ansible playbook. We'll dive deeper into Ansible playbooks later, and we'll also explore Vagrant a little more as we go.
 
 {lang="text",linenos=off}
-     ______________________________________
-    / I have not failed, I've just found   \
-    | 10,000 ways that won't work. (Thomas |
-    \ Edison)                              /
-     --------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ ______________________________________
+/ I have not failed, I've just found   \
+| 10,000 ways that won't work. (Thomas |
+\ Edison)                              /
+ --------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```
