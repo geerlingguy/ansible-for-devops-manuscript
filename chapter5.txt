@@ -202,8 +202,10 @@ Variables may be included inline with the rest of a playbook, in a `vars` sectio
 ```
 ---
 - hosts: example
+
   vars:
     foo: bar
+
   tasks:
     # Prints "Variable 'foo' is set to bar".
     - debug:
@@ -217,8 +219,10 @@ Variables may also be included in a separate file, using the `vars_files` sectio
 ---
 # Main playbook file.
 - hosts: example
+
   vars_files:
     - vars.yml
+
   tasks:
     - debug:
         msg: "Variable 'foo' is set to {{ foo }}"
@@ -233,24 +237,29 @@ foo: bar
 
 Notice how the variables are all at the root level of the YAML file. They don't need to be under any kind of `vars` heading when they are included as a standalone file.
 
-Variable files can also be imported conditionally. Say, for instance, you have one set of variables for your CentOS servers (where the Apache service is named `httpd`), and another for your Debian servers (where the Apache service is named `apache2`). In this case, you could use a conditional `vars_files` include:
+Variable files can also be imported conditionally. Say, for instance, you have one set of variables for your CentOS servers (where the Apache service is named `httpd`), and another for your Debian servers (where the Apache service is named `apache2`). In this case, you can conditionally include variables files using `include_vars`:
 
 {lang="yaml"}
 ```
 ---
 - hosts: example
-  vars_files:
-    - "apache_default.yml"
-    - "apache_{{ ansible_os_family }}.yml"
+
+  pre_tasks:
+    - include_vars: "{{ item }}"
+      with_first_found:
+        - "apache_{{ ansible_os_family }}.yml"
+        - "apache_default.yml"
+
   tasks:
-    - service:
-        name: "{{ apache }}"
+    - name: Ensure Apache is running.
+      service:
+        name: "{{ apache_service_name }}"
         state: running
 ```
 
-Then, add two files in the same folder as your example playbook, `apache_CentOS.yml`, and `apache_default.yml`. Define the variable `apache: httpd` in the CentOS file, and `apache: apache2` in the default file.
+Then, add two files in the same folder as your example playbook, `apache_RedHat.yml`, and `apache_default.yml`. Define the variable `apache_service_name: httpd` in the CentOS file, and `apache_service_name: apache2` in the default file.
 
-As long as you don't disable `gather_facts` (or if you run a `setup` task at some point to gather facts manually), Ansible stores the OS of the server in the variable `ansible_os_family`, and will include the vars file with the resulting name. If ansible can't find a file with that name, it will use the variables loaded from the first loaded file (`apache_default.yml`). So, on a Debian or Ubuntu server, Ansible would correctly use `apache2` as the service name, even though there is no `apache_Debian.yml` or `apache_Ubuntu.yml` file available.
+As long as you don't disable `gather_facts` (or if you run a `setup` task at some point to gather facts manually), Ansible stores the OS of the server in the variable `ansible_os_family`, and will include the vars file with the resulting name. If ansible can't find a file with that name, it will use the variables loaded from `apache_default.yml`. So, on a Debian or Ubuntu server, Ansible would correctly use `apache2` as the service name, even though there is no `apache_Debian.yml` or `apache_Ubuntu.yml` file available.
 
 ### Inventory variables {#inventory-variables}
 
