@@ -83,9 +83,9 @@ Linux will also read global environment variables added to `/etc/environment`, s
 
 In any case, it's pretty simple to manage environment variables on the server with `lineinfile`. If your application requires many environment variables (as is the case in many Java applications), you might consider using `copy` or `template` with a local file instead of using `lineinfile` with a large list of items.
 
-### Per-play environment variables
+### Per-task environment variables
 
-You can also set the environment for just one play, using the `environment` option for that play. As an example, let's say you need to set an http proxy for a certain file download. This can be done with:
+You can also set the environment for just one task, using the `environment` option for that task. As an example, let's say you need to set an http proxy for a certain file download. This can be done with:
 
 {lang="text",linenos=off}
     - name: Download a file, using example-proxy as a proxy.
@@ -128,7 +128,7 @@ If a proxy needs to be set system-wide (as is the case behind many corporate fir
         - regexp: "^ftp_proxy="
           line: "ftp_proxy=http://example-proxy:80/"
 
-Doing it this way allows me to configure whether the proxy is enabled per-server (using the `proxy_state` variable), and with one play, set the http, https, and ftp proxies. You can use a similar kind of play for any other types of environment variables you need to set system-wide.
+Doing it this way allows me to configure whether the proxy is enabled per-server (using the `proxy_state` variable), and with one task, set the http, https, and ftp proxies. You can use a similar kind of task for any other types of environment variables you need to set system-wide.
 
 T> You can test remote environment variables using the `ansible` command: `ansible test -m shell -a 'echo $TEST'`. When doing so, be careful with your use of quotes and escaping---you might end up using double quotes where you meant to use single quotes, or vice-versa, and end up printing a local environment variable instead of one from the remote server!
 
@@ -138,9 +138,9 @@ Variables in Ansible work just like variables in most other systems. Variables a
 
 Valid variable names include `foo`, `foo_bar`, `foo_bar_5`, and `fooBar`, though the standard is to use all lowercase letters, and typically avoid numbers in variable names (no `camelCase` or `UpperCamelCase`).
 
-Invalid variable names include `_foo`, `foo-bar`, `5_foo_bar`, `foo.bar` and `foo bar`.
+Invalid variable names include `foo-bar`, `12`, `foo.bar` and `foo bar`.
 
-In an inventory file, a variable's value is assigned using an equals sign, like so:
+In an ini-style inventory file, a variable's value is assigned using an equals sign, like so:
 
 {lang="text",linenos=off}
     foo=bar
@@ -322,6 +322,8 @@ Now that you know the overall structure of the variable, you can use either of t
     {{ ansible_eth0.ipv4.address }}
     {{ ansible_eth0['ipv4']['address'] }}
 
+W> Be careful when using dot (`.`) syntax: if a key you access has certain characters or whitespace (e.g. if a key is `some-string`, the dot syntax (`dict.some-string`) will result in an error. If in doubt, use the bracket syntax (`dict['some-string']`).
+
 ### Host and Group variables
 
 Ansible conveniently lets you define or override variables on a per-host or per-group basis. As we learned earlier, your inventory file can define groups and hosts like so:
@@ -427,7 +429,7 @@ T> If you run a playbook against similar servers or virtual machines (e.g. all y
 
 #### Local Facts (Facts.d)
 
-Another way of defining host-specific facts is to place `.fact` file in a special directory on remote hosts, `/etc/ansible/facts.d/`. These files can be either JSON or INI files, or you could use executables that return JSON. As an example, create the file `/etc/ansible/facts.d/settings.fact` on a remote host, with the following contents:
+Another way of defining host-specific facts is to place a `.fact` file in a special directory on remote hosts, `/etc/ansible/facts.d/`. These files can be either JSON or INI files, or you could use executables that return JSON. As an example, create the file `/etc/ansible/facts.d/settings.fact` on a remote host, with the following contents:
 
 {lang="text"}
     [users]
@@ -549,8 +551,6 @@ For convenience, or for automated playbook runs (e.g. on a continuous integratio
     vault_pass.txt
 
 You could also use an executable script (e.g. `~/.ansible/vault_pass.py` with execute permissions, `700`), as long as the script outputs a single line of text, the vault password.
-
-T> You can make Ansible's Vault operations slightly faster by installing Python's `cryptography` library, with `pip install cryptography`.
 
 I> Are you worried about the security of Vault-encrypted files? AES-256 encryption is extremely secure; it would take _billions of billions_ of years to decrypt this single file, even if all of today's fastest supercomputer clusters were all put to the task 24x7. Of course, every vault is only as secure as its password, so make sure you use a secure password and store _it_ securely!
 
