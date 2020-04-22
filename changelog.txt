@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - N/A
+  1. [#246](https://github.com/geerlingguy/ansible-for-devops/issues/246): Update formatting of code examples.
 
 ## Version 1.22 (2020-03-20)
 
