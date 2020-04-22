@@ -169,7 +169,7 @@ You can see how things start getting complex in the land of shell scripts! And t
 
 We could be more terse (and demonstrate Ansible's powerful simplicity) ignoring Ansible's self-documenting `name` parameter and shorthand `key=value` syntax, resulting in the following playbook:
 
-{lang="text"}
+{lang="yaml"}
 ```
 ---
 - hosts: all
