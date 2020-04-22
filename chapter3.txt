@@ -494,7 +494,7 @@ To run a command in the background, you set the following options:
   - `-B <seconds>`: the maximum amount of time (in seconds) to let the job run.
   - `-P <seconds>`: the amount of time (in seconds) to wait between polling the servers for an updated job status.
 
-> **Note**: As of Ansible 2.0, asynchronous polling on the command line (via the `-P` flag) no longer displays output in real time. Please follow the progress of this bug's resolution in the issue [v2 async events are not triggered](https://github.com/ansible/ansible/issues/14681). For now, you can still run jobs in the background and get job status information separately, but you can't see the polling status real-time.
+W> As of Ansible 2.0, asynchronous polling on the command line (via the `-P` flag) no longer displays output in real time. Please follow the progress of this bug's resolution in the issue [v2 async events are not triggered](https://github.com/ansible/ansible/issues/14681). For now, you can still run jobs in the background and get job status information separately, but you can't see the polling status real-time.
 
 ### Update servers asynchronously with asynchronous jobs
 
