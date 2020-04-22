@@ -1112,12 +1112,14 @@ Playbooks are Ansible's primary means of automating infrastructure management. A
 The more you understand the fundamental components of a playbook, the more efficient you will be at building and expanding your infrastructure with Ansible.
 
 {lang="text",linenos=off}
-     ____________________________________
-    / Men have become the tools of their \
-    \ tools. (Henry David Thoreau)       /
-     ------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ ____________________________________
+/ Men have become the tools of their \
+\ tools. (Henry David Thoreau)       /
+ ------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```

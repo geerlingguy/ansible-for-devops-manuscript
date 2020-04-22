@@ -53,7 +53,9 @@ You could also install Ansible via [Homebrew](http://brew.sh/) with `brew instal
 If you have `python-pip` and `python-devel` (`python-dev` on Debian/Ubuntu) installed, use `pip` to install Ansible (this assumes you also have the 'Development Tools' package installed, so you have `gcc`, `make`, etc. available):
 
 {lang="text",linenos=off}
-    $ sudo pip install ansible
+```
+$ sudo pip install ansible
+```
 
 Using pip allows you to upgrade Ansible with `pip install --upgrade ansible`.
 
@@ -62,54 +64,64 @@ Using pip allows you to upgrade Ansible with `pip install --upgrade ansible`.
 The easiest way to install Ansible on a Fedora-like system is to use the official yum package. If you're running Red Hat Enterprise Linux (RHEL) or CentOS, you need to install EPEL's RPM before you install Ansible (see the info section below for instructions):
 
 {lang="text",linenos=off}
-    $ yum -y install ansible
+```
+$ yum -y install ansible
+```
 
 I> On RHEL/CentOS systems, `python-pip` and `ansible` are available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `yum repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following commands:
 I>
 I> {lang="text",linenos=off}
-I> ~~~~~~~~~~~~~~~
+I> ~~~
 I> # If you're on RHEL/CentOS 6:
 I> $ rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/\
 I> epel-release-6-8.noarch.rpm
 I> # If you're on RHEL/CentOS 7:
 I> $ yum install epel-release
-I> ~~~~~~~~~~~~~~~
+I> ~~~
 
 *Debian/Ubuntu:*
 
 The easiest way to install Ansible on a Debian or Ubuntu system is to use the official apt package.
 
 {lang="text",linenos=off}
-    $ sudo apt-add-repository -y ppa:ansible/ansible
-    $ sudo apt-get update
-    $ sudo apt-get install -y ansible
+```
+$ sudo apt-add-repository -y ppa:ansible/ansible
+$ sudo apt-get update
+$ sudo apt-get install -y ansible
+```
 
 I> If you get an error like "sudo: add-apt-repository: command not found", you're probably missing the `python-software-properties` package. Install it with the command:
 I>
 I> {lang="text",linenos=off}
-I> ~~~~~~~~~~~~~~~
+I> ~~~
 I> $ sudo apt-get install python-software-properties
-I> ~~~~~~~~~~~~~~~
+I> ~~~
 
 **Once Ansible is installed**, make sure it's working properly by entering `ansible --version` on the command line. You should see the currently-installed version:
 
 {lang="text",linenos=off}
-    $ ansible --version
-    ansible 2.9.5
+```
+$ ansible --version
+ansible 2.9.5
+```
 
 ## Creating a basic inventory file {#basic-inventory}
 
 Ansible uses an inventory file (basically, a list of servers) to communicate with your servers. Like a hosts file (at `/etc/hosts`) that matches IP addresses to domain names, an Ansible inventory file matches servers (IP addresses or domain names) to groups. Inventory files can do a lot more, but for now, we'll just create a simple file with one server. Create a file at `/etc/ansible/hosts` (the default location for Ansible's inventory file), and add one server to it:
 
 {lang="text",linenos=off}
-    $ sudo mkdir /etc/ansible
-    $ sudo touch /etc/ansible/hosts
+```
+$ sudo mkdir /etc/ansible
+$ sudo touch /etc/ansible/hosts
+```
 
 Edit this hosts file with nano, vim, or whatever editor you'd like, but note you'll need to edit it with sudo as root. Put the following into the file:
 
 {lang="text"}
-    [example]
-    www.example.com
+```
+[example]
+www.example.com
+```
 
 ...where `example` is the group of servers you're managing and `www.example.com` is the domain name (or IP address) of a server in that group. If you're not using port 22 for SSH on this server, you will need to add it to the address, like `www.example.com:2222`, since Ansible defaults to port 22 and won't get this value from your ssh config file.
 
@@ -122,7 +134,9 @@ I> Replace the `www.example.com` in the above example with the name or IP addres
 Now that you've installed Ansible and created an inventory file, it's time to run a command to see if everything works! Enter the following in the terminal (we'll do something safe so it doesn't make any changes on the server):
 
 {lang="text",linenos=off}
-    $ ansible example -m ping -u [username]
+```
+$ ansible example -m ping -u [username]
+```
 
 ...where `[username]` is the user you use to log into the server. If everything worked, you should see a message that shows `www.example.com | SUCCESS >>`, then the result of your ping. If it didn't work, run the command again with `-vvvv` on the end to see verbose output. Chances are you don't have SSH keys configured properly---if you login with `ssh username@www.example.com` and that works, the above Ansible command should work, too.
 
@@ -133,7 +147,9 @@ T> Need a primer on SSH key-based authentication? Please read through Ubuntu's c
 Let's run a more useful command:
 
 {lang="text",linenos=off}
-    $ ansible example -a "free -h" -u [username]
+```
+$ ansible example -a "free -h" -u [username]
+```
 
 In this example, we quickly see memory usage (in a human-readable format) on all the servers (for now, just one) in the `example` group. Commands like this are helpful for quickly finding a server that has a value out of a normal range. I often use commands like `free -h` (to see memory statistics), `df -h` (to see disk usage statistics), and the like to make sure none of my servers is behaving erratically. While it's good to track these details in an external tool like [Nagios](http://www.nagios.org/), [Munin](http://munin-monitoring.org/), or [Cacti](http://www.cacti.net/), it's also nice to check these stats on all your servers with one simple command and one terminal window!
 
@@ -142,13 +158,15 @@ In this example, we quickly see memory usage (in a human-readable format) on all
 That's it! You've just learned about configuration management and Ansible, installed it, told it about your server, and ran a couple commands on that server through Ansible. If you're not impressed yet, that's okay---you've only seen the *tip* of the iceberg.
 
 {lang="text",linenos=off}
-     _______________________________________
-    / A doctor can bury his mistakes but an \
-    | architect can only advise his clients |
-    \ to plant vines. (Frank Lloyd Wright)  /
-     ---------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ _______________________________________
+/ A doctor can bury his mistakes but an \
+| architect can only advise his clients |
+\ to plant vines. (Frank Lloyd Wright)  /
+ ---------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```
