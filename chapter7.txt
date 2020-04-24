@@ -7,72 +7,80 @@ Later, a slightly more involved inventory file was introduced (see Chapter 3's [
 Let's jump back to a basic inventory file example and build from there:
 
 {lang="text"}
-    # Inventory file at /etc/ansible/hosts
-    
-    # Groups are defined using square brackets (e.g. [groupname]).
-    # Each server in the group is defined on its own line.
-    [myapp]
-    www.myapp.com
+```
+# Inventory file at /etc/ansible/hosts
+
+# Groups are defined using square brackets (e.g. [groupname]).
+# Each server in the group is defined on its own line.
+[myapp]
+www.myapp.com
+```
 
 If you want to run an ansible playbook on all the `myapp` servers in this inventory (so far, just one, `www.myapp.com`), you can set up the playbook like so:
 
 {lang="text",linenos=off}
-    ---
-    - hosts: myapp
-    
-      tasks:
-        [...]
+```
+---
+- hosts: myapp
+
+  tasks:
+    [...]
+```
 
 If you want to run an ad-hoc command against all the `myapp` servers in the inventory, you can run a command like so:
 
 {lang="text",linenos=off}
-    # Use ansible to check memory usage on all the myapp servers.
-    $ ansible myapp -a "free -m"
+```
+# Use ansible to check memory usage on all the myapp servers.
+$ ansible myapp -a "free -m"
+```
 
 ## A real-world web application server inventory
 
 The example above might be adequate for single-server services and tiny apps or websites, but most real-world applications require many more servers, and usually separate servers per application concern (database, caching, application, queuing, etc.). Let's take a look at a real-world inventory file for a small web application that monitors server uptime, [Server Check.in](https://servercheck.in/).
 
 {lang="text"}
-    # Individual Server Check.in servers.
-    [servercheck-web]
-    www1.servercheck.in
-    www2.servercheck.in
-    
-    [servercheck-web:vars]
-    ansible_ssh_user=servercheck_svc
-    
-    [servercheck-db]
-    db1.servercheck.in
-    
-    [servercheck-log]
-    log.servercheck.in
-    
-    [servercheck-backup]
-    backup.servercheck.in
-    
-    [servercheck-nodejs]
-    atl1.servercheck.in
-    atl2.servercheck.in
-    nyc1.servercheck.in
-    nyc2.servercheck.in
-    nyc3.servercheck.in
-    ned1.servercheck.in
-    ned2.servercheck.in
-    
-    [servercheck-nodejs:vars]
-    ansible_ssh_user=servercheck_svc
-    foo=bar
-    
-    # Server Check.in distribution-based groups.
-    [centos:children]
-    servercheck-web
-    servercheck-db
-    servercheck-nodejs
-    servercheck-backup
-    
-    [ubuntu:children]
-    servercheck-log
+```
+# Individual Server Check.in servers.
+[servercheck-web]
+www1.servercheck.in
+www2.servercheck.in
+
+[servercheck-web:vars]
+ansible_ssh_user=servercheck_svc
+
+[servercheck-db]
+db1.servercheck.in
+
+[servercheck-log]
+log.servercheck.in
+
+[servercheck-backup]
+backup.servercheck.in
+
+[servercheck-nodejs]
+atl1.servercheck.in
+atl2.servercheck.in
+nyc1.servercheck.in
+nyc2.servercheck.in
+nyc3.servercheck.in
+ned1.servercheck.in
+ned2.servercheck.in
+
+[servercheck-nodejs:vars]
+ansible_ssh_user=servercheck_svc
+foo=bar
+
+# Server Check.in distribution-based groups.
+[centos:children]
+servercheck-web
+servercheck-db
+servercheck-nodejs
+servercheck-backup
+
+[ubuntu:children]
+servercheck-log
+```
 
 This inventory may look a little overwhelming at first, but if you break it apart into simple groupings (web app servers, database servers, logging server, and node.js app servers), it describes a straightforward architecture.
 
@@ -88,7 +96,9 @@ Describing infrastructure in such a way affords a lot of flexibility when using 
 As an example, when the [Shellshock](https://en.wikipedia.org/wiki/Shellshock_(software_bug)) vulnerability was disclosed in 2014, patched bash packages were released for all the major distributions within hours. To update all the Server Check.in servers, all that was needed was:
 
 {lang="text",linenos=off}
-    $ ansible centos -m yum -a "name=bash state=latest"
+```
+$ ansible centos -m yum -a "name=bash state=latest"
+```
 
 You could even go further and create a small playbook that would patch the vulnerability, then run tests to make sure the vulnerability was no longer present, as illustrated in [this playbook](https://raymii.org/s/articles/Patch_CVE-2014-6271_Shellshock_with_Ansible.html). This would also allow you to run the playbook in check mode or run it through a continuous integration system to verify the fix works in a non-prod environment.
 
@@ -97,45 +107,47 @@ This infrastructure inventory is also nice in that you could create a top-level 
 Consider, for example, this example master playbook to completely configure all the servers:
 
 {lang="text"}
-    ---
-    # Set up basic, standardized components across all servers.
-    - hosts: all
-      become: yes
-      roles:
-        - security
-        - logging
-        - firewall
-    
-    # Configure web application servers.
-    - hosts: servercheck-web
-      roles:
-        - nginx
-        - php
-        - servercheck-web
-    
-    # Configure database servers.
-    - hosts: servercheck-db
-      roles:
-        - pgsql
-        - db-tuning
-    
-    # Configure logging server.
-    - hosts: servercheck-log
-      roles:
-        - java
-        - elasticsearch
-        - logstash
-        - kibana
-    
-    # Configure backup server.
-    - hosts: servercheck-backup
-      roles:
-        - backup
-    
-    # Configure Node.js application servers.
-    - hosts: servercheck-nodejs
-      roles:
-        - servercheck-node
+```
+---
+# Set up basic, standardized components across all servers.
+- hosts: all
+  become: yes
+  roles:
+    - security
+    - logging
+    - firewall
+
+# Configure web application servers.
+- hosts: servercheck-web
+  roles:
+    - nginx
+    - php
+    - servercheck-web
+
+# Configure database servers.
+- hosts: servercheck-db
+  roles:
+    - pgsql
+    - db-tuning
+
+# Configure logging server.
+- hosts: servercheck-log
+  roles:
+    - java
+    - elasticsearch
+    - logstash
+    - kibana
+
+# Configure backup server.
+- hosts: servercheck-backup
+  roles:
+    - backup
+
+# Configure Node.js application servers.
+- hosts: servercheck-nodejs
+  roles:
+    - servercheck-node
+```
 
 There are a number of different ways you can structure your infrastructure-management playbooks and roles, and we'll explore some in later chapters, but for a simple infrastructure, something like this is adequate and maintainable.
 
@@ -148,17 +160,21 @@ In this case, it's easiest to use individual inventory files, rather than the ce
 For example, I could take the entire contents of `/etc/ansible/hosts` above, and stash that inside an inventory file named `inventory-prod`, then duplicate it, changing server names where appropriate (e.g. the `[servercheck-web]` group would only have `www-dev1.servercheck.in` for the development environment), and naming the files for the environments:
 
 {lang="text",linenos=off}
-    servercheck/
-      inventories/
-        inventory-prod
-        inventory-cert
-        inventory-dev
-      playbook.yml
+```
+servercheck/
+  inventories/
+    inventory-prod
+    inventory-cert
+    inventory-dev
+  playbook.yml
+```
 
 Now, when running `playbook.yml` to configure the development infrastructure, I would pass in the path to the dev inventory (assuming my current working directory is `servercheck/`):
 
 {lang="text",linenos=off}
-    $ ansible-playbook playbook.yml -i inventories/inventory-dev
+```
+$ ansible-playbook playbook.yml -i inventories/inventory-dev
+```
 
 Using inventory variables (which will be explored further), and well-constructed roles and/or tasks that use the variables effectively, you could architect your entire infrastructure, with environment-specific configurations, by changing some things in your inventory files.
 
@@ -171,20 +187,22 @@ For extremely simple use cases---usually when you need to define one or two conn
 Assuming we have a standalone inventory file for a basic web application, here are some examples of variable definition inside the file:
 
 {lang="text"}
-    [www]
-    # You can define host-specific variables inline with the host.
-    www1.example.com ansible_ssh_user=johndoe
-    www2.example.com
-    
-    [db]
-    db1.example.com
-    db2.example.com
-    
-    # You can add a '[group:vars]' heading to create variables that will apply
-    # to an entire inventory group.
-    [db:vars]
-    ansible_ssh_port=5222
-    database_performance_mode=true
+```
+[www]
+# You can define host-specific variables inline with the host.
+www1.example.com ansible_ssh_user=johndoe
+www2.example.com
+
+[db]
+db1.example.com
+db2.example.com
+
+# You can add a '[group:vars]' heading to create variables that
+# will apply to an entire inventory group.
+[db:vars]
+ansible_ssh_port=5222
+database_performance_mode=true
+```
 
 It's usually better to avoid throwing too many variables inside static inventory files, because not only are these variables typically less visible, they are also mixed in with your architecture definition. Especially for host-specific vars (which appear on one long line per host), this is an unmaintainable, low-visibility approach to host and group-specific variables.
 
@@ -197,44 +215,54 @@ For [Hosted Apache Solr](https://hostedapachesolr.com/), different servers in a 
 As an illustration of the use of `host_vars`, we'll assume we have the following directory layout:
 
 {lang="text",linenos=off}
-    hostedapachesolr/
-      host_vars/
-        nyc1.hostedapachesolr.com
-      inventory/
-        hosts
-      main.yml
+```
+hostedapachesolr/
+  host_vars/
+    nyc1.hostedapachesolr.com
+  inventory/
+    hosts
+  main.yml
+```
 
 The `inventory/hosts` file contains a simple definition of all the servers by group:
 
 {lang="text"}
-    [solr]
-    nyc1.hostedapachesolr.com
-    nyc2.hostedapachesolr.com
-    jap1.hostedapachesolr.com
-    ...
-    
-    [log]
-    log.hostedapachesolr.com
+```
+[solr]
+nyc1.hostedapachesolr.com
+nyc2.hostedapachesolr.com
+jap1.hostedapachesolr.com
+...
+
+[log]
+log.hostedapachesolr.com
+```
 
 Ansible will search for a file at either:
 
 {lang="text",linenos=off}
-    hostedapachesolr/host_vars/nyc1.hostedapachesolr.com
+```
+hostedapachesolr/host_vars/nyc1.hostedapachesolr.com
+```
 
 Or:
 
 {lang="text",linenos=off}
-    hostedapachesolr/inventory/host_vars/nyc1.hostedapachesolr.com
+```
+hostedapachesolr/inventory/host_vars/nyc1.hostedapachesolr.com
+```
 
 If there are any variables defined in the file (in YAML format), those variables will override all other playbook and role variables and gathered facts, *only for the single host*.
 
 The `nyc1.hostedapachesolr.com` host_vars file looks like:
 
 {lang="text"}
-    ---
-    tomcat_xmx: "1024m"
+```
+---
+tomcat_xmx: "4096m"
+```
 
-The default for `tomcat_xmx` may normally be `640m`, but when Ansible runs a playbook against nyc1.hostedapachesolr.com, the value of `tomcat_xmx` will be `1024m` instead.
+The default for `tomcat_xmx` may normally be `2048m`, but when Ansible runs a playbook against nyc1.hostedapachesolr.com, the value of `tomcat_xmx` will be `4096m` instead.
 
 Overriding host variables with `host_vars` is much more maintainable than doing so directly in static inventory files, and also provides greater visibility into what hosts are getting what overrides.
 
@@ -245,21 +273,25 @@ Much like `host_vars`, Ansible will automatically load any files named after inv
 Using the same example as above, we'll override one particular variable for an entire group of servers. First, we add a `group_vars` directory with a file named after the group needing the overridden variable:
 
 {lang="text",linenos=off}
-    hostedapachesolr/
-      group_vars/
-        solr
-      host_vars/
-        nyc1.hostedapachesolr.com
-      inventory/
-        hosts
-      main.yml
+```
+hostedapachesolr/
+  group_vars/
+    solr
+  host_vars/
+    nyc1.hostedapachesolr.com
+  inventory/
+    hosts
+  main.yml
+```
 
 Then, inside `group_vars/solr`, use YAML to define a list of variables that will be applied to servers in the `solr` group:
 
-{lang="text"}
-    ---
-    do_something_amazing=true
-    foo=bar
+{lang="yaml"}
+```
+---
+do_something_amazing: true
+foo: bar
+```
 
 Typically, if your playbook is only being run on one group of hosts, it's easier to define the variables in the playbook via an included vars file. However, in many cases you will be running a playbook or applying a set of roles to multiple inventory groups. In these situations, you may need to use `group_vars` to override specific variables for one or more groups of servers.
 
@@ -295,7 +327,9 @@ Once you have these four things set up and ready to go, you should be able to co
 There are a few different ways you can specify your DigitalOcean Personal Access Token (including passing it via `api_token` to each DigitalOcean-related task, or exporting it in your local environment as `DO_API_TOKEN` or `DO_API_KEY`). For our example, we'll use environment variables (since these are easy to configure, and work both with Ansible's `digital_ocean` module and the dynamic inventory script). Open up a terminal session, and enter the following command:
 
 {lang="text",linenos=off}
-    $ export DO_API_TOKEN=YOUR_API_TOKEN_HERE
+```
+$ export DO_API_TOKEN=YOUR_API_TOKEN_HERE
+```
 
 Before we can use a dynamic inventory script to discover our DigitalOcean droplets, let's use Ansible to provision a new droplet.
 
@@ -306,26 +340,28 @@ W> Creating cloud instances ('Droplets', in DigitalOcean parlance) will incur mi
 Create a new playbook named `provision.yml`, with the following contents:
 
 {lang="text"}
-    ---
-    - hosts: localhost
-      connection: local
-      gather_facts: False
-    
-      tasks:
-        - name: Create new Droplet.
-          digital_ocean:
-            state: present
-            command: droplet
-            name: ansible-test
-            private_networking: yes
-            size_id: s-1vcpu-1gb
-            image_id: centos-7-x64
-            region_id: nyc3
-            # Customize this for your account.
-            ssh_key_ids: 138954
-            # Required for idempotence/only one droplet creation.
-            unique_name: yes
-          register: do
+```
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  tasks:
+    - name: Create new Droplet.
+      digital_ocean:
+        state: present
+        command: droplet
+        name: ansible-test
+        private_networking: yes
+        size_id: s-1vcpu-1gb
+        image_id: centos-7-x64
+        region_id: nyc3
+        # Customize this for your account.
+        ssh_key_ids: 138954
+        # Required for idempotence/only one droplet creation.
+        unique_name: yes
+      register: do
+```
 
 The `digital_ocean` module lets you create, manage, and delete droplets with ease. You can read the documentation for all the options, but the above is an overview of the main options. `name` sets the hostname for the droplet, `state` can also be set to `deleted` if you want the droplet to be destroyed, and other options tell DigitalOcean where to set up the droplet, and with what OS and configuration.
 
@@ -336,103 +372,109 @@ T> As an example, to get all the available images, use `curl --silent "https://a
 We used `register` as part of the `digital_ocean` task so we could immediately start using and configuring the new host if needed. Running the above playbook returns the following output (using `debug: var=do` in an additional task to dump the contents of our registered variable, `do`):
 
 {lang="text",linenos=off}
-    $ ansible-playbook provision.yml
-    
-    PLAY [localhost] ***************************************************************
-    
-    TASK [Create new Droplet.] *****************************************************
-    changed: [localhost]
-    
-    TASK [debug] *******************************************************************
-    ok: [localhost] => {
-        "do": {
-            "changed": true,
-            "droplet": {
-                "backup_ids": [],
-                "created_at": "2017-07-22T00:58:51Z",
-                "disk": 20,
-                "features": [
-                    "private_networking",
-                    "virtio"
-                ],
-                "id": 20203631,
-                "image": {
-                    ...
-                },
-                "ip_address": "162.243.20.29",
-                "kernel": null,
-                "locked": false,
-                "memory": 512,
-                "name": "ansible-test",
-                "networks": {
-                    ...
-                },
-                "next_backup_window": null,
-                "private_ip_address": "10.1.1.2",
-                "region": {
-                    ...
-                },
-                "size": {
-                    ...
-                },
-                "size_slug": "512mb",
-                "snapshot_ids": [],
-                "status": "active",
-                "tags": [],
-                "vcpus": 1,
-                "volume_ids": []
-            }
+```
+$ ansible-playbook provision.yml
+
+PLAY [localhost] ***********************************************
+
+TASK [Create new Droplet.] *************************************
+changed: [localhost]
+
+TASK [debug] ***************************************************
+ok: [localhost] => {
+    "do": {
+        "changed": true,
+        "droplet": {
+            "backup_ids": [],
+            "created_at": "2017-07-22T00:58:51Z",
+            "disk": 20,
+            "features": [
+                "private_networking",
+                "virtio"
+            ],
+            "id": 20203631,
+            "image": {
+                ...
+            },
+            "ip_address": "162.243.20.29",
+            "kernel": null,
+            "locked": false,
+            "memory": 512,
+            "name": "ansible-test",
+            "networks": {
+                ...
+            },
+            "next_backup_window": null,
+            "private_ip_address": "10.1.1.2",
+            "region": {
+                ...
+            },
+            "size": {
+                ...
+            },
+            "size_slug": "512mb",
+            "snapshot_ids": [],
+            "status": "active",
+            "tags": [],
+            "vcpus": 1,
+            "volume_ids": []
         }
     }
-    
-    PLAY RECAP **********************************************************
-    localhost            : ok=2    changed=1    unreachable=0    failed=0
+}
+
+PLAY RECAP *****************************************************
+localhost          : ok=2   changed=1   unreachable=0   failed=0
+```
 
 Since `do` contains the new droplet's IP address (alongside other relevant information), you can place your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
 
 {lang="text",starting-line-number=21}
-        - name: Add new host to our inventory.
-          add_host:
-            name: "{{ do.droplet.ip_address }}"
-            groups: do
-          when: do.droplet is defined
-          changed_when: False
-    
-    - hosts: do
-      remote_user: root
-      gather_facts: False
-    
-      tasks:
-        - name: Wait for port 22 to become available.
-          local_action: "wait_for port=22 host={{ inventory_hostname }}"
-    
-        - name: Install tcpdump.
-          yum: name=tcpdump state=present
+```
+    - name: Add new host to our inventory.
+      add_host:
+        name: "{{ do.droplet.ip_address }}"
+        groups: do
+      when: do.droplet is defined
+      changed_when: False
+
+- hosts: do
+  remote_user: root
+  gather_facts: False
+
+  tasks:
+    - name: Wait for port 22 to become available.
+      local_action: "wait_for port=22 host={{ inventory_hostname }}"
+
+    - name: Install tcpdump.
+      yum: name=tcpdump state=present
+```
 
 At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it should create a new droplet (if it has not already been created), then add that droplet to the `do` inventory group, and finally, run a new play on all the `do` hosts (including the new droplet). Here are the results:
 
 {lang="text",linenos=off}
-    $ ansible-playbook provision.yml
-    
-    PLAY [localhost] ****************************************************
-    
-    TASK: [Create new Droplet.] *****************************************
-    changed: [localhost]
-    
-    TASK: [Add new host to our inventory.] ******************************
-    ok: [localhost]
-    
-    PLAY [do] ***********************************************************
-    
-    TASK [Wait for port 22 to become available.] ***********************************
-    ok: [162.243.20.29 -> localhost]
-    
-    TASK: [Install tcpdump.] ********************************************
-    changed: [162.243.20.29]
-    
-    PLAY RECAP **********************************************************
-    162.243.20.29        : ok=2    changed=1    unreachable=0    failed=0
-    localhost            : ok=2    changed=1    unreachable=0    failed=0
+```
+$ ansible-playbook provision.yml
+
+PLAY [localhost] ***********************************************
+
+TASK: [Create new Droplet.] ************************************
+changed: [localhost]
+
+TASK: [Add new host to our inventory.] *************************
+ok: [localhost]
+
+PLAY [do] ******************************************************
+
+TASK [Wait for port 22 to become available.] *******************
+ok: [162.243.20.29 -> localhost]
+
+TASK: [Install tcpdump.] ***************************************
+changed: [162.243.20.29]
+
+PLAY RECAP *****************************************************
+162.243.20.29      : ok=2   changed=1   unreachable=0   failed=0
+localhost          : ok=2   changed=1   unreachable=0   failed=0
+```
 
 If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
 
@@ -449,39 +491,39 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
   1. Install `dopy` via pip (the DigitalOcean Python library):
 
      {lang="text",line-numbers=off}
-     ~~~~~~~~
+     ~~~
      $ pip install dopy
-     ~~~~~~~~
+     ~~~
 
   2. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/digital_ocean.py) from Ansible on GitHub:
 
      {lang="text",line-numbers=off}
-     ~~~~~~~~
+     ~~~
      $ curl -O https://raw.githubusercontent.com/ansible/ansible/devel/\
      contrib/inventory/digital_ocean.py
-     ~~~~~~~~
+     ~~~
 
   3. Make the inventory script executable:
 
      {lang="text",line-numbers=off}
-     ~~~~~~~~
+     ~~~
      $ chmod +x digital_ocean.py
-     ~~~~~~~~
+     ~~~
 
   4. Make sure you have `DO_API_TOKEN` set in your environment.
   5. Make sure the script is working by running the script directly (with the command below). After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
 
      {lang="text",line-numbers=off}
-     ~~~~~~~~
+     ~~~
      $ ./digital_ocean.py --pretty
-     ~~~~~~~~
+     ~~~
 
   6. Ping all your DigitalOcean droplets:
 
      {lang="text",line-numbers=off}
-     ~~~~~~~~
+     ~~~
      $ ansible all -m ping -i digital_ocean.py -u root
-     ~~~~~~~~
+     ~~~
 
 Now that you have all your hosts being loaded through the dynamic inventory script, you can use `add_hosts` to build groups of the Droplets for use in your playbooks. Alternatively, if you want to fork the `digital_ocean.py` inventory script, you can modify it to suit your needs; exclude certain servers, build groups based on certain criteria, etc.
 
@@ -507,41 +549,48 @@ Sometimes, especially when provisioning new servers, you will need to modify the
 In the DigitalOcean example above, `add_host` was used to add the new droplet to the `do` group:
 
 {lang="text",linenos=off}
-    [...]
-        - name: Add new host to our inventory.
-          add_host:
-            name: "{{ do.droplet.ip_address }}"
-            groups: do
-          when: do.droplet is defined
-    
-    - hosts: do
-      remote_user: root
-    
-      tasks:
-    [...]
+```
+[...]
+    - name: Add new host to our inventory.
+      add_host:
+        name: "{{ do.droplet.ip_address }}"
+        groups: do
+      when: do.droplet is defined
+
+- hosts: do
+  remote_user: root
+
+  tasks:
+[...]
+```
 
 You could add multiple groups with add_host, and you can also add other variables for the host inline with `add_host`. As an example, let's say you created a VM using an image that exposes SSH on port 2288 and requires an application-specific memory limit specific to this VM:
 
 {lang="text",linenos=off}
-    - name: Add new host to our inventory.
-      add_host:
-        name: "{{ do.droplet.ip_address }}"
-        ansible_ssh_port: 2288
-        myapp_memory_maximum: "1G"
-      when: do.droplet is defined
+```
+- name: Add new host to our inventory.
+  add_host:
+    name: "{{ do.droplet.ip_address }}"
+    ansible_ssh_port: 2288
+    myapp_memory_maximum: "1G"
+  when: do.droplet is defined
+```
 
 The custom port will be used when Ansible connects to this host, and the `myapp_memory_maximum` will be passed into the playbooks just as any other inventory variable.
 
 The `group_by` module is even simpler, and allows you to create dynamic groups during the course of a playbook run. Usage is extremely simple:
 
 {lang="text",linenos=off}
-    - hosts: all
-      gather_facts: yes
-      tasks:
-        - name: Create an inventory group for each architecture.
-          group_by: "key=architecture-{{ ansible_machine }}"
-    
-        - debug: var=groups
+```
+- hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Create an inventory group for each architecture.
+      group_by:
+        key: "architecture-{{ ansible_machine }}"
+
+    - debug: var=groups
+```
 
 After running the above playbook, you'd see all your normal inventory groups, plus groups for `architecture-x86_64`, `i386`, etc. (depending on what kind of server architectures you use).
 
@@ -550,7 +599,9 @@ After running the above playbook, you'd see all your normal inventory groups, pl
 If you need to combine static and dynamic inventory, or even if you wish to use multiple dynamic inventories (for example, if you are managing servers hosted by two different cloud providers), you can pass a directory to `ansible` or `ansible-playbook`, and Ansible will combine the output of all the inventories (both static and dynamic) inside the directory:
 
 {lang="text",linenos=off}
-    `ansible-playbook -i path/to/inventories main.yml`
+```
+ansible-playbook -i path/to/inventories main.yml
+```
 
 One caveat: Ansible ignores `.ini` and backup files in the directory, but will attempt to parse every text file and execute every executable file in the directory---don't leave random files in mixed inventory folders!
 
@@ -562,30 +613,32 @@ You could create an executable binary, a script, or anything else that can be ru
 
 Let's start working our own custom dynamic inventory script by outlining the basic JSON format Ansible expects:
 
-{lang=json}
-    {
-        "group": {
-            "hosts": [
-                "192.168.28.71",
-                "192.168.28.72"
-            ],
-            "vars": {
-                "ansible_ssh_user": "johndoe",
-                "ansible_ssh_private_key_file": "~/.ssh/mykey",
-                "example_variable": "value"
-            }
-        },
-        "_meta": {
-            "hostvars": {
-                "192.168.28.71": {
-                    "host_specific_var": "bar"
-                },
-                "192.168.28.72": {
-                    "host_specific_var": "foo"
-                }
+{lang="json"}
+```
+{
+    "group": {
+        "hosts": [
+            "192.168.28.71",
+            "192.168.28.72"
+        ],
+        "vars": {
+            "ansible_ssh_user": "johndoe",
+            "ansible_ssh_private_key_file": "~/.ssh/mykey",
+            "example_variable": "value"
+        }
+    },
+    "_meta": {
+        "hostvars": {
+            "192.168.28.71": {
+                "host_specific_var": "bar"
+            },
+            "192.168.28.72": {
+                "host_specific_var": "foo"
             }
         }
     }
+}
+```
 
 Ansible expects a dictionary of groups (with each group having a list of `hosts`, and group variables in the group's `vars` dictionary), and a `_meta` dictionary that stores host variables for all hosts individually inside a `hostvars` dictionary.
 
@@ -598,160 +651,172 @@ The dynamic inventory script can do anything to get the data (call an external A
 To create a test dynamic inventory script for demonstration purposes, let's set up a quick set of two VMs using Vagrant. Create the following `Vagrantfile` in a new directory:
 
 {lang=ruby}
-    VAGRANTFILE_API_VERSION = "2"
-    
-    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.ssh.insert_key = false
-      config.vm.provider :virtualbox do |v|
-        v.memory = 256
-        v.linked_clone = true
-      end
-    
-      # Application server 1.
-      config.vm.define "inventory1" do |inventory|
-        inventory.vm.hostname = "inventory1.test"
-        inventory.vm.box = "geerlingguy/ubuntu1804"
-        inventory.vm.network :private_network, ip: "192.168.28.71"
-      end
-    
-      # Application server 2.
-      config.vm.define "inventory2" do |inventory|
-        inventory.vm.hostname = "inventory2.test"
-        inventory.vm.box = "geerlingguy/ubuntu1804"
-        inventory.vm.network :private_network, ip: "192.168.28.72"
-      end
-    end
+```
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.ssh.insert_key = false
+  config.vm.provider :virtualbox do |v|
+    v.memory = 256
+    v.linked_clone = true
+  end
+
+  # Application server 1.
+  config.vm.define "inventory1" do |inventory|
+    inventory.vm.hostname = "inventory1.test"
+    inventory.vm.box = "geerlingguy/ubuntu1804"
+    inventory.vm.network :private_network, ip: "192.168.28.71"
+  end
+
+  # Application server 2.
+  config.vm.define "inventory2" do |inventory|
+    inventory.vm.hostname = "inventory2.test"
+    inventory.vm.box = "geerlingguy/ubuntu1804"
+    inventory.vm.network :private_network, ip: "192.168.28.72"
+  end
+end
+```
 
 Run `vagrant up` to boot two VMs running Ubuntu, with the IP addresses `192.168.28.71`, and `192.168.28.72`. A simple inventory file could be used to control the VMs with Ansible:
 
 {lang="text"}
-    [group]
-    192.168.28.71 host_specific_var=foo
-    192.168.28.72 host_specific_var=bar
-    
-    [group:vars]
-    ansible_ssh_user=vagrant
-    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
-    example_variable=value
+```
+[group]
+192.168.28.71 host_specific_var=foo
+192.168.28.72 host_specific_var=bar
+
+[group:vars]
+ansible_ssh_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+example_variable=value
+```
 
 However, let's assume the VMs were provisioned by another system, and you need to get the information through a dynamic inventory script. Here's a simple implementation of a dynamic inventory script in Python:
 
 {lang=python}
-    #!/usr/bin/env python
-    
-    '''
-    Example custom dynamic inventory script for Ansible, in Python.
-    '''
-    
-    import os
-    import sys
-    import argparse
-    
-    try:
-        import json
-    except ImportError:
-        import simplejson as json
-    
-    class ExampleInventory(object):
-    
-        def __init__(self):
-            self.inventory = {}
-            self.read_cli_args()
-    
-            # Called with `--list`.
-            if self.args.list:
-                self.inventory = self.example_inventory()
-            # Called with `--host [hostname]`.
-            elif self.args.host:
-                # Not implemented, since we return _meta info `--list`.
-                self.inventory = self.empty_inventory()
-            # If no groups or vars are present, return empty inventory.
-            else:
-                self.inventory = self.empty_inventory()
-    
-            print json.dumps(self.inventory);
-    
-        # Example inventory for testing.
-        def example_inventory(self):
-            return {
-                'group': {
-                    'hosts': ['192.168.28.71', '192.168.28.72'],
-                    'vars': {
-                        'ansible_ssh_user': 'vagrant',
-                        'ansible_ssh_private_key_file':
-                            '~/.vagrant.d/insecure_private_key',
-                        'ansible_python_interpreter':
-                            '/usr/bin/python3',
-                        'example_variable': 'value'
-                    }
-                },
-                '_meta': {
-                    'hostvars': {
-                        '192.168.28.71': {
-                            'host_specific_var': 'foo'
-                        },
-                        '192.168.28.72': {
-                            'host_specific_var': 'bar'
-                        }
+```
+#!/usr/bin/env python
+
+'''
+Example custom dynamic inventory script for Ansible, in Python.
+'''
+
+import os
+import sys
+import argparse
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
+class ExampleInventory(object):
+
+    def __init__(self):
+        self.inventory = {}
+        self.read_cli_args()
+
+        # Called with `--list`.
+        if self.args.list:
+            self.inventory = self.example_inventory()
+        # Called with `--host [hostname]`.
+        elif self.args.host:
+            # Not implemented, since we return _meta info `--list`.
+            self.inventory = self.empty_inventory()
+        # If no groups or vars are present, return empty inventory.
+        else:
+            self.inventory = self.empty_inventory()
+
+        print json.dumps(self.inventory);
+
+    # Example inventory for testing.
+    def example_inventory(self):
+        return {
+            'group': {
+                'hosts': ['192.168.28.71', '192.168.28.72'],
+                'vars': {
+                    'ansible_ssh_user': 'vagrant',
+                    'ansible_ssh_private_key_file':
+                        '~/.vagrant.d/insecure_private_key',
+                    'ansible_python_interpreter':
+                        '/usr/bin/python3',
+                    'example_variable': 'value'
+                }
+            },
+            '_meta': {
+                'hostvars': {
+                    '192.168.28.71': {
+                        'host_specific_var': 'foo'
+                    },
+                    '192.168.28.72': {
+                        'host_specific_var': 'bar'
                     }
                 }
             }
-    
-        # Empty inventory for testing.
-        def empty_inventory(self):
-            return {'_meta': {'hostvars': {}}}
-    
-        # Read the command line args passed to the script.
-        def read_cli_args(self):
-            parser = argparse.ArgumentParser()
-            parser.add_argument('--list', action = 'store_true')
-            parser.add_argument('--host', action = 'store')
-            self.args = parser.parse_args()
-    
-    # Get the inventory.
-    ExampleInventory()
+        }
+
+    # Empty inventory for testing.
+    def empty_inventory(self):
+        return {'_meta': {'hostvars': {}}}
+
+    # Read the command line args passed to the script.
+    def read_cli_args(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--list', action = 'store_true')
+        parser.add_argument('--host', action = 'store')
+        self.args = parser.parse_args()
+
+# Get the inventory.
+ExampleInventory()
+```
 
 Save the above as `inventory.py` in the same folder as the `Vagrantfile` you created earlier (make sure you booted the two VMs with `vagrant up`), and make the file executable `chmod +x inventory.py`.
 
 Run the inventory script manually to verify it returns the proper JSON response when run with `--list`:
 
 {lang="text",linenos=off}
-    $ ./inventory.py --list
-    {"group": {"hosts": ["192.168.28.71", "192.168.28.72"], "vars":
-    {"ansible_ssh_user": "vagrant", "ansible_ssh_private_key_file":
-    "~/.vagrant.d/insecure_private_key", "example_variable": "value
-    "}}, "_meta": {"hostvars": {"192.168.28.72": {"host_specific_va
-    r": "bar"}, "192.168.28.71": {"host_specific_var": "foo"}}}}
+```
+$ ./inventory.py --list
+{"group": {"hosts": ["192.168.28.71", "192.168.28.72"], "vars":
+{"ansible_ssh_user": "vagrant", "ansible_ssh_private_key_file":
+"~/.vagrant.d/insecure_private_key", "example_variable": "value
+"}}, "_meta": {"hostvars": {"192.168.28.72": {"host_specific_va
+r": "bar"}, "192.168.28.71": {"host_specific_var": "foo"}}}}
+```
 
 Test Ansible's ability to use the inventory script to contact the two VMs:
 
 {lang="text",linenos=off}
-    $ ansible all -i inventory.py -m ping
-    192.168.28.71 | success >> {
-        "changed": false,
-        "ping": "pong"
-    }
-    
-    192.168.28.72 | success >> {
-        "changed": false,
-        "ping": "pong"
-    }
+```
+$ ansible all -i inventory.py -m ping
+192.168.28.71 | SUCCESS >> {
+    "changed": false,
+    "ping": "pong"
+}
+
+192.168.28.72 | SUCCESS >> {
+    "changed": false,
+    "ping": "pong"
+}
+```
 
 Since Ansible can connect, verify the configured host variables (`foo` and `bar`) are set correctly on their respective hosts:
 
 {lang="text",linenos=off}
-    $ ansible all -i inventory.py -m debug -a "var=host_specific_var"
-    192.168.28.71 | success >> {
-        "var": {
-            "host_specific_var": "foo"
-        }
+```
+$ ansible all -i inventory.py -m debug -a "var=host_specific_var"
+192.168.28.71 | SUCCESS >> {
+    "var": {
+        "host_specific_var": "foo"
     }
-    
-    192.168.28.72 | success >> {
-        "var": {
-            "host_specific_var": "bar"
-        }
+}
+
+192.168.28.72 | SUCCESS >> {
+    "var": {
+        "host_specific_var": "bar"
     }
+}
+```
 
 The only alteration for real-world usage you'd need to make to the above `inventory.py` script would be changing the `example_inventory()` method to something that incorporates the business logic you would need for your own inventory, whether it would be calling an external API with all the server data or pulling in the information from a database or other data store.
 
@@ -760,89 +825,91 @@ The only alteration for real-world usage you'd need to make to the above `invent
 You can build an inventory script in whatever language you'd like. For example, the Python script from above can be ported to functional PHP as follows:
 
 {lang=php}
-    #!/usr/bin/php
-    <?php
-    
-    /**
-     * @file
-     * Example custom dynamic inventory script for Ansible, in PHP.
-     */
-    
-    /**
-     * Example inventory for testing.
-     *
-     * @return array
-     *   An example inventory with two hosts.
-     */
-    function example_inventory() {
-      return [
-        'group' => [
-          'hosts' => ['192.168.28.71', '192.168.28.72'],
-          'vars' => [
-            'ansible_ssh_user' => 'vagrant',
-            'ansible_ssh_private_key_file' => '~/.vagrant.d/\
-    insecure_private_key',
-            'ansible_python_interpreter' => '/usr/bin/python3',
-            'example_variable' => 'value',
-          ],
+```
+#!/usr/bin/php
+<?php
+
+/**
+ * @file
+ * Example custom dynamic inventory script for Ansible, in PHP.
+ */
+
+/**
+ * Example inventory for testing.
+ *
+ * @return array
+ *   An example inventory with two hosts.
+ */
+function example_inventory() {
+  return [
+    'group' => [
+      'hosts' => ['192.168.28.71', '192.168.28.72'],
+      'vars' => [
+        'ansible_ssh_user' => 'vagrant',
+        'ansible_ssh_private_key_file' => '~/.vagrant.d/\
+insecure_private_key',
+        'ansible_python_interpreter' => '/usr/bin/python3',
+        'example_variable' => 'value',
+      ],
+    ],
+    '_meta' => [
+      'hostvars' => [
+        '192.168.28.71' => [
+          'host_specific_var' => 'foo',
         ],
-        '_meta' => [
-          'hostvars' => [
-            '192.168.28.71' => [
-              'host_specific_var' => 'foo',
-            ],
-            '192.168.28.72' => [
-              'host_specific_var' => 'bar',
-            ],
-          ],
+        '192.168.28.72' => [
+          'host_specific_var' => 'bar',
         ],
-      ];
-    }
-    
-    /**
-     * Empty inventory for testing.
-     *
-     * @return array
-     *   An empty inventory.
-     */
-    function empty_inventory() {
-      return ['_meta' => ['hostvars' => new stdClass()]];
-    }
-    
-    /**
-     * Get inventory.
-     *
-     * @param array $argv
-     *   Array of command line arguments (as in $_SERVER['argv']).
-     *
-     * @return array
-     *   Inventory of groups or vars, depending on arguments.
-     */
-    function get_inventory($argv = []) {
-      $inventory = new stdClass();
-    
-      // Called with `--list`.
-      if (!empty($argv[1]) && $argv[1] == '--list') {
-        $inventory = example_inventory();
-      }
-      // Called with `--host [hostname]`.
-      elseif ((!empty($argv[1]) && $argv[1] == '--host') && \
-    !empty($argv[2])) {
-        // Not implemented, since we return _meta info `--list`.
-        $inventory = empty_inventory();
-      }
-      // If no groups or vars are present, return an empty inventory.
-      else {
-        $inventory = empty_inventory();
-      }
-    
-      print json_encode($inventory);
-    }
-    
-    // Get the inventory.
-    get_inventory($_SERVER['argv']);
-    
-    ?>
+      ],
+    ],
+  ];
+}
+
+/**
+ * Empty inventory for testing.
+ *
+ * @return array
+ *   An empty inventory.
+ */
+function empty_inventory() {
+  return ['_meta' => ['hostvars' => new stdClass()]];
+}
+
+/**
+ * Get inventory.
+ *
+ * @param array $argv
+ *   Array of command line arguments (as in $_SERVER['argv']).
+ *
+ * @return array
+ *   Inventory of groups or vars, depending on arguments.
+ */
+function get_inventory($argv = []) {
+  $inventory = new stdClass();
+
+  // Called with `--list`.
+  if (!empty($argv[1]) && $argv[1] == '--list') {
+    $inventory = example_inventory();
+  }
+  // Called with `--host [hostname]`.
+  elseif ((!empty($argv[1]) && $argv[1] == '--host') && \
+!empty($argv[2])) {
+    // Not implemented, since we return _meta info `--list`.
+    $inventory = empty_inventory();
+  }
+  // If no groups or vars are present, return an empty inventory.
+  else {
+    $inventory = empty_inventory();
+  }
+
+  print json_encode($inventory);
+}
+
+// Get the inventory.
+get_inventory($_SERVER['argv']);
+
+?>
+```
 
 If you were to save the code above into the file `inventory.php`, mark it executable (`chmod +x inventory.php`), and run the same Ansible command as earlier (referencing `inventory.php` instead of `inventory.py`), the command should succeed, just as with the previous Python example.
 
@@ -871,12 +938,14 @@ W> The security of your server inventory and infrastructure management should be
 From the most basic infrastructure consisting of one server to a multi-tenant, dynamic infrastructure with thousands of them, Ansible offers many options for describing your servers and overriding playbook and role variables for specific hosts or groups. With Ansible's flexible inventory system, you should be able to describe all your servers, however they're managed and wherever they're hosted.
 
 {lang="text",linenos=off}
-     ___________________________________
-    / A pint of sweat saves a gallon of \
-    \ blood. (General Patton)           /
-     -----------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ ___________________________________
+/ A pint of sweat saves a gallon of \
+\ blood. (General Patton)           /
+ -----------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```
