@@ -18,7 +18,7 @@ www.myapp.com
 
 If you want to run an ansible playbook on all the `myapp` servers in this inventory (so far, just one, `www.myapp.com`), you can set up the playbook like so:
 
-{lang="text",linenos=off}
+{lang="yaml",linenos=off}
 ```
 ---
 - hosts: myapp
@@ -106,7 +106,7 @@ This infrastructure inventory is also nice in that you could create a top-level 
 
 Consider, for example, this example master playbook to completely configure all the servers:
 
-{lang="text"}
+{lang="yaml"}
 ```
 ---
 # Set up basic, standardized components across all servers.
@@ -256,7 +256,7 @@ If there are any variables defined in the file (in YAML format), those variables
 
 The `nyc1.hostedapachesolr.com` host_vars file looks like:
 
-{lang="text"}
+{lang="yaml"}
 ```
 ---
 tomcat_xmx: "4096m"
@@ -339,7 +339,7 @@ W> Creating cloud instances ('Droplets', in DigitalOcean parlance) will incur mi
 
 Create a new playbook named `provision.yml`, with the following contents:
 
-{lang="text"}
+{lang="yaml"}
 ```
 ---
 - hosts: localhost
@@ -428,7 +428,7 @@ localhost          : ok=2   changed=1   unreachable=0   failed=0
 
 Since `do` contains the new droplet's IP address (alongside other relevant information), you can place your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
 
-{lang="text",starting-line-number=21}
+{lang="yaml",starting-line-number=21}
 ```
     - name: Add new host to our inventory.
       add_host:
@@ -548,7 +548,7 @@ Sometimes, especially when provisioning new servers, you will need to modify the
 
 In the DigitalOcean example above, `add_host` was used to add the new droplet to the `do` group:
 
-{lang="text",linenos=off}
+{lang="yaml",linenos=off}
 ```
 [...]
     - name: Add new host to our inventory.
@@ -566,7 +566,7 @@ In the DigitalOcean example above, `add_host` was used to add the new droplet to
 
 You could add multiple groups with add_host, and you can also add other variables for the host inline with `add_host`. As an example, let's say you created a VM using an image that exposes SSH on port 2288 and requires an application-specific memory limit specific to this VM:
 
-{lang="text",linenos=off}
+{lang="yaml",linenos=off}
 ```
 - name: Add new host to our inventory.
   add_host:
@@ -580,7 +580,7 @@ The custom port will be used when Ansible connects to this host, and the `myapp_
 
 The `group_by` module is even simpler, and allows you to create dynamic groups during the course of a playbook run. Usage is extremely simple:
 
-{lang="text",linenos=off}
+{lang="yaml",linenos=off}
 ```
 - hosts: all
   gather_facts: yes
@@ -650,7 +650,7 @@ The dynamic inventory script can do anything to get the data (call an external A
 
 To create a test dynamic inventory script for demonstration purposes, let's set up a quick set of two VMs using Vagrant. Create the following `Vagrantfile` in a new directory:
 
-{lang=ruby}
+{lang="ruby"}
 ```
 VAGRANTFILE_API_VERSION = "2"
 
@@ -693,7 +693,7 @@ example_variable=value
 
 However, let's assume the VMs were provisioned by another system, and you need to get the information through a dynamic inventory script. Here's a simple implementation of a dynamic inventory script in Python:
 
-{lang=python}
+{lang="python"}
 ```
 #!/usr/bin/env python
 
@@ -824,7 +824,7 @@ The only alteration for real-world usage you'd need to make to the above `invent
 
 You can build an inventory script in whatever language you'd like. For example, the Python script from above can be ported to functional PHP as follows:
 
-{lang=php}
+{lang="php"}
 ```
 #!/usr/bin/php
 <?php
