@@ -32,28 +32,30 @@ The code repository for this app is located on GitHub in the [demo-rails-app rep
 
 Begin by creating a new Vagrant VM for local testing using the following Vagrantfile:
 
-{lang=ruby}
-    # -*- mode: ruby -*-
-    # vi: set ft=ruby :
-    
-    Vagrant.configure(2) do |config|
-      config.vm.box = "geerlingguy/ubuntu1804"
-    
-      config.vm.provider "virtualbox" do |v|
-        v.name = "rails-demo"
-        v.memory = 1024
-        v.cpus = 2
-      end
-    
-      config.vm.hostname = "rails-demo"
-      config.vm.network :private_network, ip: "192.168.33.7"
-    
-      config.vm.provision "ansible" do |ansible|
-        ansible.playbook = "playbooks/main.yml"
-        ansible.become = true
-      end
-    
-    end
+{lang="ruby"}
+```
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "geerlingguy/ubuntu1804"
+
+  config.vm.provider "virtualbox" do |v|
+    v.name = "rails-demo"
+    v.memory = 1024
+    v.cpus = 2
+  end
+
+  config.vm.hostname = "rails-demo"
+  config.vm.network :private_network, ip: "192.168.33.7"
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbooks/main.yml"
+    ansible.become = true
+  end
+
+end
+```
 
 In this case, we have a VM at the IP address `192.168.33.7`. When provisioned, it will run the Ansible playbook defined in `playbooks/main.yml` on the VM.
 
@@ -69,57 +71,61 @@ To prepare for our application deployment, we need to do the following:
 
 Let's create a new playbook just for the provisioning tasks (we'll worry about deployment later), in a new file, `playbooks/provision.yml`:
 
-{lang="text"}
-    ---
-    - hosts: all
-      become: yes
-    
-      vars_files:
-        - vars.yml
-    
-      roles:
-        - geerlingguy.git
-        - geerlingguy.nodejs
-        - geerlingguy.ruby
-        - geerlingguy.passenger
-    
-      tasks:
-        - name: Install app dependencies.
-          apt:
-            name:
-              - libsqlite3-dev
-              - libreadline-dev
-              - tzdata
-            state: present
-    
-        - name: Ensure app directory exists and is writeable.
-          file:
-            path: "{{ app_directory }}"
-            state: directory
-            owner: "{{ app_user }}"
-            group: "{{ app_user }}"
-            mode: 0755
+{lang="yaml"}
+```
+---
+- hosts: all
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+  roles:
+    - geerlingguy.git
+    - geerlingguy.nodejs
+    - geerlingguy.ruby
+    - geerlingguy.passenger
+
+  tasks:
+    - name: Install app dependencies.
+      apt:
+        name:
+          - libsqlite3-dev
+          - libreadline-dev
+          - tzdata
+        state: present
+
+    - name: Ensure app directory exists and is writeable.
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: 0755
+```
 
 This is a straightforward playbook. We'll need to define a few variables to make sure the `geerlingguy.ruby` role installs the correct version of Ruby (at least 2.6.0), and the `geerlingguy.passenger` role is configured to serve our app correctly.
 
 There are also a few other variables we will need, like `app_directory` and `app_user`, so let's create the variables file now, at `playbooks/vars.yml`:
 
-{lang="text"}
-    # Variables for our app.
-    app_directory: /opt/demo-rails-app
-    app_user: www-data
-    
-    # Variables for Passenger and Nginx.
-    passenger_server_name: 0.0.0.0
-    passenger_app_root: /opt/demo-rails-app/public
-    passenger_app_env: production
-    passenger_ruby: /usr/local/bin/ruby
-    
-    # Variables for Ruby installation.
-    ruby_install_from_source: true
-    ruby_download_url: https://cache.ruby-lang.org/pub/ruby/2.6/\
-    ruby-2.6.0.tar.gz
-    ruby_version: 2.6.0
+{lang="yaml"}
+```
+# Variables for our app.
+app_directory: /opt/demo-rails-app
+app_user: www-data
+
+# Variables for Passenger and Nginx.
+passenger_server_name: 0.0.0.0
+passenger_app_root: /opt/demo-rails-app/public
+passenger_app_env: production
+passenger_ruby: /usr/local/bin/ruby
+
+# Variables for Ruby installation.
+ruby_install_from_source: true
+ruby_download_url: https://cache.ruby-lang.org/pub/ruby/2.6/\
+ruby-2.6.0.tar.gz
+ruby_version: 2.6.0
+```
 
 The passenger variables tell Passenger to run a server available on every network interface, and to launch our app (which will be located in `/opt/demo-rails-app/public`) with `production` settings (the app's environment), using the `ruby` binary we have installed in `/usr/local/bin/ruby`.
 
@@ -127,9 +133,11 @@ The Ruby variables tell the `ruby` role to install Ruby 2.6.0 from source, since
 
 The playbook specified in our Vagrantfile, `playbooks/main.yml`, doesn't yet exist. Let's create the playbook and include the above `provisioning.yml` playbook so our server will be provisioned successfully. We'll separate out the deployment steps into another playbook and include that separately. Inside `playbooks/main.yml`:
 
-{lang="text"}
-    ---
-    - import_playbook: provision.yml
+{lang="yaml"}
+```
+---
+- import_playbook: provision.yml
+```
 
 ### Deploying a Rails app to the server
 
@@ -137,10 +145,12 @@ All the dependencies for our app's deployment were configured in `provision.yml`
 
 Add a line to the `main.yml` file to include a new `deploy.yml` playbook:
 
-{lang="text"}
-    ---
-    - import_playbook: provision.yml
-    - import_playbook: deploy.yml
+{lang="yaml"}
+```
+---
+- import_playbook: provision.yml
+- import_playbook: deploy.yml
+```
 
 Now we're ready to create the `deploy.yml` playbook, which will do the following:
 
@@ -154,70 +164,72 @@ Now we're ready to create the `deploy.yml` playbook, which will do the following
 
 Most of these tasks will use Ansible's modules, but for a few, we'll just wrap the normal deployment-related commands in `command` since there aren't pre-existing modules to take care of them for us:
 
-{lang="text"}
-    ---
-    - hosts: all
-      become: yes
-    
-      vars_files:
-        - vars.yml
-    
-      roles:
-        - geerlingguy.passenger
-    
-      tasks:
-        - name: Ensure demo application is at correct release.
-          git:
-            repo: https://github.com/geerlingguy/demo-rails-app.git
-            version: "{{ app_version }}"
-            dest: "{{ app_directory }}"
-            accept_hostkey: true
-            force: yes
-          register: app_updated
-          notify: restart nginx
-    
-        - name: Ensure secrets file is present.
-          template:
-            src: templates/secrets.yml.j2
-            dest: "{{ app_directory }}/config/secrets.yml"
-            owner: "{{ app_user }}"
-            group: "{{ app_user }}"
-            mode: 0664
-          notify: restart nginx
-    
-        - name: Install required dependencies with bundler.
-          command: "bundle install --path vendor/bundle \
-    chdir={{ app_directory }}"
-          when: app_updated.changed == true
-          notify: restart nginx
-    
-        - name: Check if database exists.
-          stat: "path={{ app_directory }}/db/{{ app_environment.\
-    RAILS_ENV }}.sqlite3"
-          register: app_db_exists
-    
-        - name: Create database.
-          command: "bundle exec rake db:create chdir={{ app_directory }}"
-          when: app_db_exists.stat.exists == false
-          notify: restart nginx
-    
-        - name: Perform deployment-related rake tasks.
-          command: "{{ item }} chdir={{ app_directory }}"
-          with_items:
-            - bundle exec rake db:migrate
-            - bundle exec rake assets:precompile
-          environment: "{{ app_environment }}"
-          when: app_updated.changed == true
-          notify: restart nginx
-    
-        - name: Ensure demo application has correct user for files.
-          file:
-            path: "{{ app_directory }}"
-            state: directory
-            owner: "{{ app_user }}"
-            group: "{{ app_user }}"
-            recurse: yes
-          notify: restart nginx
+{lang="yaml"}
+```
+---
+- hosts: all
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+  roles:
+    - geerlingguy.passenger
+
+  tasks:
+    - name: Ensure demo application is at correct release.
+      git:
+        repo: https://github.com/geerlingguy/demo-rails-app.git
+        version: "{{ app_version }}"
+        dest: "{{ app_directory }}"
+        accept_hostkey: true
+        force: yes
+      register: app_updated
+      notify: restart nginx
+
+    - name: Ensure secrets file is present.
+      template:
+        src: templates/secrets.yml.j2
+        dest: "{{ app_directory }}/config/secrets.yml"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: 0664
+      notify: restart nginx
+
+    - name: Install required dependencies with bundler.
+      command: "bundle install --path vendor/bundle \
+chdir={{ app_directory }}"
+      when: app_updated.changed == true
+      notify: restart nginx
+
+    - name: Check if database exists.
+      stat: "path={{ app_directory }}/db/{{ app_environment.\
+RAILS_ENV }}.sqlite3"
+      register: app_db_exists
+
+    - name: Create database.
+      command: "bundle exec rake db:create chdir={{ app_directory }}"
+      when: app_db_exists.stat.exists == false
+      notify: restart nginx
+
+    - name: Perform deployment-related rake tasks.
+      command: "{{ item }} chdir={{ app_directory }}"
+      with_items:
+        - bundle exec rake db:migrate
+        - bundle exec rake assets:precompile
+      environment: "{{ app_environment }}"
+      when: app_updated.changed == true
+      notify: restart nginx
+
+    - name: Ensure demo application has correct user for files.
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        recurse: yes
+      notify: restart nginx
+```
 
 The first thing you'll notice (besides the fact we've included the `vars.yml` file again, since we need those variables in this playbook as well) is we've added the `geerlingguy.passenger` role in this playbook. Since we'll be using one of the handlers defined in that role (`restart nginx`), we need to include the role explicitly. We could've added a separate handler specific to this playbook, but using a role's handlers usually makes maintenance easier.
 
@@ -236,42 +248,46 @@ There are a few new variables we need to add to `vars.yml`, and we also need to 
 
 First, we'll create the secrets file, inside `playbooks/templates/secrets.yml.j2`:
 
-{lang="text"}
-    development:
-      secret_key_base: {{ app_secrets.dev }}
-    
-    test:
-      secret_key_base: {{ app_secrets.test }}
-    
-    production:
-      secret_key_base: {{ app_secrets.prod }}
+{lang="yaml"}
+```
+development:
+  secret_key_base: {{ app_secrets.dev }}
+
+test:
+  secret_key_base: {{ app_secrets.test }}
+
+production:
+  secret_key_base: {{ app_secrets.prod }}
+```
 
 We'll be using a dictionary variable for `app_secrets`, so let's add it and all the other new variables to `playbooks/vars.yml`:
 
-{lang="text"}
-    ---
-    # Variables for our app.
-    app_version: 2.0.1
-    app_directory: /opt/demo-rails-app
-    app_user: www-data
-    app_secrets:
-      dev: fe562ec1e21eecc5af4d83f6a157a7
-      test: 4408f36dd290766d2f368fdfcedf4d
-      prod: 9bf801da1a24c9a103ea86a1438caa
-    app_environment:
-      RAILS_ENV: production
-    
-    # Variables for Passenger and Nginx.
-    passenger_server_name: 0.0.0.0
-    passenger_app_root: /opt/demo-rails-app/public
-    passenger_app_env: production
-    passenger_ruby: /usr/local/bin/ruby
-    
-    # Variables for Ruby installation.
-    ruby_install_from_source: true
-    ruby_download_url: http://cache.ruby-lang.org/pub/ruby/2.2/\
-    ruby-2.2.0.tar.gz
-    ruby_version: 2.2.0
+{lang="yaml"}
+```
+---
+# Variables for our app.
+app_version: 2.0.1
+app_directory: /opt/demo-rails-app
+app_user: www-data
+app_secrets:
+  dev: fe562ec1e21eecc5af4d83f6a157a7
+  test: 4408f36dd290766d2f368fdfcedf4d
+  prod: 9bf801da1a24c9a103ea86a1438caa
+app_environment:
+  RAILS_ENV: production
+
+# Variables for Passenger and Nginx.
+passenger_server_name: 0.0.0.0
+passenger_app_root: /opt/demo-rails-app/public
+passenger_app_env: production
+passenger_ruby: /usr/local/bin/ruby
+
+# Variables for Ruby installation.
+ruby_install_from_source: true
+ruby_download_url: http://cache.ruby-lang.org/pub/ruby/2.2/\
+ruby-2.2.0.tar.gz
+ruby_version: 2.2.0
+```
 
 Note the addition of the following variables to support our `deploy.yml` playbook:
 
@@ -286,40 +302,46 @@ Since we now have our `provision.yml` and `deploy.yml` playbooks completed, and 
 The structure of your project folder should look like this:
 
 {lang="text",linenos=off}
-    deployments/
-      playbooks/
-        templates/
-          secrets.yml.j2
-        deploy.yml
-        main.yml
-        provision.yml
-        vars.yml
-      Vagrantfile
+```
+deployments/
+  playbooks/
+    templates/
+      secrets.yml.j2
+    deploy.yml
+    main.yml
+    provision.yml
+    vars.yml
+  Vagrantfile
+```
 
 Before running the playbook, we need to make sure all the role dependencies are present. If you were building everything from scratch, you might have a `roles` directory with all the roles inside, but in this case, since we're using roles from Ansible Galaxy, it's best to not include the role files directly with our playbook, but instead, add a `requirements.yml` file to the project and install the roles automatically with Galaxy.
 
 Inside `requirements.yml`:
 
-{lang="text"}
-    ---
-    - src: geerlingguy.git
-    - src: geerlingguy.ruby
-    - src: geerlingguy.nodejs
-    - src: geerlingguy.passenger
+{lang="yaml"}
+```
+---
+- src: geerlingguy.git
+- src: geerlingguy.ruby
+- src: geerlingguy.nodejs
+- src: geerlingguy.passenger
+```
 
 In the same directory as the requirements file, run the command `$ ansible-galaxy install -r requirements.yml`, and after a minute, all the required roles will be downloaded to your default Ansible roles directory, if they're not already present.
 
 Change directory back to the main directory containing the `Vagrantfile`, and run `vagrant up`. Assuming everything runs correctly, you should see the playbook complete successfully after a few minutes:
 
 {lang="text",linenos=off}
-    TASK [Ensure demo application has correct user for files.] **********
-    changed: [default]
+```
+TASK [Ensure demo application has correct user for files.] **********
+changed: [default]
 
-    RUNNING HANDLER [geerlingguy.passenger : restart nginx] *************
-    changed: [default]
+RUNNING HANDLER [geerlingguy.passenger : restart nginx] *************
+changed: [default]
 
-    PLAY RECAP **********************************************************
-    default              : ok=55   changed=31   unreachable=0    failed=0
+PLAY RECAP **********************************************************
+default              : ok=55   changed=31   unreachable=0    failed=0
+```
 
 Now, jump over to a web browser and load `http://192.168.33.7/`. You should see something like the following:
 
@@ -340,25 +362,31 @@ First, to test deployment without provisioning, we need to create an inventory f
 Create the file `playbooks/inventory-ansible` with the following contents:
 
 {lang="text"}
-    [rails]
-    192.168.33.7
-    
-    [rails:vars]
-    ansible_ssh_user=vagrant
-    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
+[rails]
+192.168.33.7
+
+[rails:vars]
+ansible_ssh_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
 
 T> If you were creating this playbook for a server or VM running outside of Vagrant's control, you'd probably have already created an inventory file or added the server to your global inventory, but when we're working with Vagrant, it's often convenient to use Vagrant's own dynamically-managed inventory. Running playbooks outside of Vagrant's `up`/`provision` functionality requires us to create a separate inventory file.
 
 Test the ability to run the `deploy.yml` playbook by running the following command inside the `playbooks` directory:
 
 {lang="text",linenos=off}
-    $ ansible-playbook deploy.yml -i inventory-ansible
+```
+$ ansible-playbook deploy.yml -i inventory-ansible
+```
 
 Hopefully the playbook completed its run successfully. It may have reported a change in the "Ensure demo application has correct user for files" task, and if so, it will have restarted Passenger. Run it again, and ansible should report no changes:
 
 {lang="text",linenos=off}
-    PLAY RECAP **********************************************************
-    192.168.33.7         : ok=18   changed=0    unreachable=0    failed=0
+```
+PLAY RECAP **********************************************************
+192.168.33.7         : ok=18   changed=0    unreachable=0    failed=0
+```
 
 Hopefully you've noticed running the `deploy.yml` playbook standalone is much faster than running the `provision` and `deploy` playbooks together (deployment only takes 18 tasks, while both playbooks add up to 80+ tasks!). In the future, we can deploy application updates using only the `deploy.yml` playbook and changing the `app_version` either in `vars.yml` or by specifying the version on the command line in the `ansible-playbook` command.
 
@@ -369,7 +397,9 @@ Our application is a fairly generic web application with updates to application 
 Update `app_version` to `2.1.0`, and then run the following command again:
 
 {lang="text",linenos=off}
-    $ ansible-playbook deploy.yml -i inventory-ansible
+```
+$ ansible-playbook deploy.yml -i inventory-ansible
+```
 
 After a minute or so, the deployment should complete. Once complete, you'll see the new-and-improved version of the Demonstration Ruby on Rails Application:
 
@@ -395,104 +425,114 @@ We'll emulate part of Server Check.in's infrastructure (the check server applica
 
 To begin, create four lightweight Vagrant VMs using the following Vagrantfile:
 
-{lang=ruby}
-    # -*- mode: ruby -*-
-    # vi: set ft=ruby :
-    
-    Vagrant.configure("2") do |config|
-      # Base VM OS configuration.
-      config.vm.box = "geerlingguy/ubuntu1804"
-      config.vm.synced_folder '.', '/vagrant', disabled: true
-      config.ssh.insert_key = false
-    
-      config.vm.provider :virtualbox do |v|
-        v.memory = 256
-        v.cpus = 1
-        v.linked_clone = true
-      end
-    
-      # Define four VMs with static private IP addresses.
-      boxes = [
-        { :name => "nodejs1", :ip => "192.168.3.2" },
-        { :name => "nodejs2", :ip => "192.168.3.3" },
-        { :name => "nodejs3", :ip => "192.168.3.4" },
-        { :name => "nodejs4", :ip => "192.168.3.5" }
-      ]
-    
-      # Provision each of the VMs.
-      boxes.each do |opts|
-        config.vm.define opts[:name] do |config|
-          config.vm.hostname = opts[:name]
-          config.vm.network :private_network, ip: opts[:ip]
-    
-          # Provision all the VMs using Ansible after last VM is up.
-          if opts[:name] == "nodejs4"
-            config.vm.provision "ansible" do |ansible|
-              ansible.playbook = "playbooks/main.yml"
-              ansible.inventory_path = "inventory"
-              ansible.limit = "all"
-            end
-          end
+{lang="ruby"}
+```
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Base VM OS configuration.
+  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.ssh.insert_key = false
+
+  config.vm.provider :virtualbox do |v|
+    v.memory = 256
+    v.cpus = 1
+    v.linked_clone = true
+  end
+
+  # Define four VMs with static private IP addresses.
+  boxes = [
+    { :name => "nodejs1", :ip => "192.168.3.2" },
+    { :name => "nodejs2", :ip => "192.168.3.3" },
+    { :name => "nodejs3", :ip => "192.168.3.4" },
+    { :name => "nodejs4", :ip => "192.168.3.5" }
+  ]
+
+  # Provision each of the VMs.
+  boxes.each do |opts|
+    config.vm.define opts[:name] do |config|
+      config.vm.hostname = opts[:name]
+      config.vm.network :private_network, ip: opts[:ip]
+
+      # Provision all the VMs using Ansible after last VM is up.
+      if opts[:name] == "nodejs4"
+        config.vm.provision "ansible" do |ansible|
+          ansible.playbook = "playbooks/main.yml"
+          ansible.inventory_path = "inventory"
+          ansible.limit = "all"
         end
       end
-    
     end
+  end
+
+end
+```
 
 The above `Vagrantfile` defines four VMs with 256MB of RAM and a unique hostname and IP address (defined by the `boxes` variable). Our Node.js app doesn't require much in the way of processing power or memory.
 
 In the `provision` section of the playbook, we told Vagrant to provision the all the VMs with Ansible, using the inventory file `inventory`, and the playbook `playbooks/main.yml`. Create these two files in the same folder as your Vagrantfile:
 
 {lang="text",linenos=off}
-    deployments-rolling/
-      playbooks/
-        main.yml
-      inventory
-      Vagrantfile
+```
+deployments-rolling/
+  playbooks/
+    main.yml
+  inventory
+  Vagrantfile
+```
 
 Inside the `inventory` file, we just need to define a list of all the Node.js API app VMs by IP address:
 
 {lang="text"}
-    [nodejs-api]
-    192.168.3.2
-    192.168.3.3
-    192.168.3.4
-    192.168.3.5
-    
-    [nodejs-api:vars]
-    ansible_ssh_user=vagrant
-    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
+[nodejs-api]
+192.168.3.2
+192.168.3.3
+192.168.3.4
+192.168.3.5
+
+[nodejs-api:vars]
+ansible_ssh_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
 
 Inside the `main.yml` playbook, we'll call out two separate playbooks---one for the initial provisioning (installing Node.js and making sure the server is configured correctly), and another for deployment (ensuring our Node.js API app is present and running):
 
-{lang="text"}
-    ---
-    - import_playbook: provision.yml
-    - import_playbook: deploy.yml
+{lang="yaml"}
+```
+---
+- import_playbook: provision.yml
+- import_playbook: deploy.yml
+```
 
 Go ahead and create the `provision.yml` and `deploy.yml` playbooks, starting with `provision.yml`:
 
-{lang="text"}
-    ---
-    - hosts: nodejs-api
-      become: yes
-    
-      vars:
-        nodejs_install_npm_user: root
-        npm_config_prefix: "/usr"
-        nodejs_npm_global_packages:
-          - forever
-        firewall_allowed_tcp_ports:
-          - "22"
-          - "8080"
-    
-      pre_tasks:
-        - name: Update apt cache if needed.
-          apt: update_cache=yes cache_valid_time=3600
-    
-      roles:
-        - geerlingguy.firewall
-        - geerlingguy.nodejs
-        - geerlingguy.git
+{lang="yaml"}
+```
+---
+- hosts: nodejs-api
+  become: yes
+
+  vars:
+    nodejs_install_npm_user: root
+    npm_config_prefix: "/usr"
+    nodejs_npm_global_packages:
+      - forever
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "8080"
+
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.nodejs
+    - geerlingguy.git
+```
 
 This playbook runs on all the servers defined in our inventory file, and runs three roles on the servers: `geerlingguy.firewall` (which installs and configures a firewall, in this case opening ports 22 for SSH and 8080 for our app), `geerlingguy.nodejs` (which installs Node.js, NPM, and the `forever` package (installed globally), which we'll use to run our app as a daemon), and `geerlingguy.git` (which installs `git`, used for app deployment).
 
@@ -500,127 +540,149 @@ Since we're using two roles from Ansible Galaxy, it's best practice to also incl
 
 Create a `requirements.yml` file in the root folder and add the following:
 
-{lang="text"}
-    ---
-    - src: geerlingguy.firewall
-    - src: geerlingguy.nodejs
-    - src: geerlingguy.git
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.nodejs
+- src: geerlingguy.git
+```
 
 Whenever someone wants to run the playbook, the command `ansible-galaxy install -r requirements.yml` will install all the required roles.
 
 At this point, your project directory should be structured like the following:
 
 {lang="text",linenos=off}
-    deployments-rolling/
-      playbooks/
-        deploy.yml
-        main.yml
-        provision.yml
-      inventory
-      requirements.yml
-      Vagrantfile
+```
+deployments-rolling/
+  playbooks/
+    deploy.yml
+    main.yml
+    provision.yml
+  inventory
+  requirements.yml
+  Vagrantfile
+```
 
 Before we run `vagrant up` and see our infrastructure in action, we need to build out the `deploy.yml` playbook, which will ensure our app is present and running correctly on all the servers.
 
 Inside `deploy.yml`, add the following:
 
-{lang="text"}
-    ---
-    - hosts: nodejs-api
-      gather_facts: no
-      become: yes
-    
-      vars_files:
-        - vars.yml
+{lang="yaml"}
+```
+---
+- hosts: nodejs-api
+  gather_facts: no
+  become: yes
+
+  vars_files:
+    - vars.yml
+```
 
 Use `become`, and set `gather_facts` to `no` to save a little time during deployments, since our app doesn't require any of the gathered system facts to run.
 
 Since we have a few variables to define, and we'd like to track them separately for easier file revision history, we'll define the variables in a `vars.yml` file in the same directory as the `deploy.yml` playbook:
 
-{lang="text"}
-    ---
-    app_repository: https://github.com/geerlingguy/demo-nodejs-api.git
-    app_version: "2.0.0"
-    app_directory: /opt/demo-nodejs-api
+{lang="yaml"}
+```
+---
+app_repository: https://github.com/geerlingguy/demo-nodejs-api.git
+app_version: "2.0.0"
+app_directory: /opt/demo-nodejs-api
+```
 
 Once you've saved the `vars.yml` file, continue building out `deploy.yml`, starting with a task to clone the app's repository (which we just defined in `vars.yml`):
 
-{lang="text",starting-line-number=9}
-      tasks:
-        - name: Ensure Node.js API app is present.
-          git:
-            repo: "{{ app_repository }}"
-            version: "{{ app_version }}"
-            dest: "{{ app_directory }}"
-            accept_hostkey: true
-          register: app_updated
-          notify: restart forever apps
+{lang="yaml",starting-line-number=9}
+```
+  tasks:
+    - name: Ensure Node.js API app is present.
+      git:
+        repo: "{{ app_repository }}"
+        version: "{{ app_version }}"
+        dest: "{{ app_directory }}"
+        accept_hostkey: true
+      register: app_updated
+      notify: restart forever apps
+```
 
 Using variables for the `git` module's `repo` and `version` affords flexibility; app version changes might happen frequently, and it's easier to manage them in a separate `vars.yml` file.
 
 We also want to `notify` a `restart forever apps` handler whenever the codebase is changed. We'll define the `restart forever apps` handler later in the playbook.
 
-{lang="text",starting-line-number=18}
-        - name: Stop all running instances of the app.
-          command: "forever stopall"
-          when: app_updated.changed
-    
-        - name: Ensure Node.js API app dependencies are present.
-          npm: "path={{ app_directory }}"
-          when: app_updated.changed
-    
-        - name: Run Node.js API app tests.
-          command: "npm test chdir={{ app_directory }}"
-          when: app_updated.changed
+{lang="yaml",starting-line-number=18}
+```
+    - name: Stop all running instances of the app.
+      command: "forever stopall"
+      when: app_updated.changed
+
+    - name: Ensure Node.js API app dependencies are present.
+      npm: "path={{ app_directory }}"
+      when: app_updated.changed
+
+    - name: Run Node.js API app tests.
+      command: "npm test chdir={{ app_directory }}"
+      when: app_updated.changed
+```
 
 Once the app is present on the server, we need to use `npm` to install dependencies (using Ansible's `npm` module), then run the app's test suite using `npm test`. To save time, we only stop the application, update dependencies, and run tests if the application has changed (using the `app_updated` variable we registered when checking out the application code).
 
 Running the tests for the app during every deployment ensures the app is present and in a functioning state. Having a thorough unit and integration test suite running on every deployment is prerequisite to a frequent or continuously-integrated project! Running the tests during deployments also enables zero-downtime deployments, as we'll see later.
 
-{lang="text",starting-line-number=25}
-        - name: Get list of all running Node.js apps.
-          command: forever list
-          register: forever_list
-          changed_when: false
-    
-        - name: Ensure Node.js API app is started.
-          command: "forever start {{ app_directory }}/app.js"
-          when: "forever_list.stdout.find('app.js') == -1"
+{lang="yaml",starting-line-number=25}
+```
+    - name: Get list of all running Node.js apps.
+      command: forever list
+      register: forever_list
+      changed_when: false
+
+    - name: Ensure Node.js API app is started.
+      command: "forever start {{ app_directory }}/app.js"
+      when: "forever_list.stdout.find('app.js') == -1"
+```
 
 Once the app is present and running correctly, we need to make sure it's started. There's a command to get the list of all running apps (using `forever`), then a command to start the app if it's not already running.
 
-{lang="text",starting-line-number=34}
-        - name: Add cron entry to start Node.js API app on reboot.
-          cron:
-            name: "Start Node.js API app"
-            special_time: reboot
-            job: "forever start {{ app_directory }}/app.js"
+{lang="yaml",starting-line-number=34}
+```
+    - name: Add cron entry to start Node.js API app on reboot.
+      cron:
+        name: "Start Node.js API app"
+        special_time: reboot
+        job: "forever start {{ app_directory }}/app.js"
+```
 
 The final task adds a cron job to make sure the app is started after the server reboots. Since we're managing the deamonization of our app using `forever` instead of the OS's init system, it's best to make sure the app starts on system boot using a `reboot` cron job.
 
 Remember when we added the line `notify: restart forever apps` to the task that ensured the app was present on the server? It's time to define this handler, which runs the command `forever restartall` (which does exactly what it says):
 
-{lang="text",starting-line-number=40}
-      handlers:
-        - name: restart forever apps
-          command: "forever restartall"
+{lang="yaml",starting-line-number=40}
+```
+  handlers:
+    - name: restart forever apps
+      command: "forever restartall"
+```
 
 At this point, the Ansible playbooks and Vagrant configuration should be complete. The playbook will clone the `demo-nodejs-api` project, run its tests to make sure everything's working correctly, then start the app using `forever` and make sure it's started whenever the server reboots.
 
 Run the command below to test all the new servers and make sure the app is running correctly:
 
 {lang="text",linenos=off}
-    $ for i in {2..5}; \
-        do curl -w "\n" "http://192.168.3.$i:8080/hello/john"; \
-      done
+```
+$ for i in {2..5}; \
+    do curl -w "\n" "http://192.168.3.$i:8080/hello/john"; \
+  done
+```
 
 If all the servers are online, you should see the text `"hello john"` repeated four times (once for each server):
 
 {lang="text",linenos=off}
-    "hello john"
-    "hello john"
-    "hello john"
-    "hello john"
+```
+"hello john"
+"hello john"
+"hello john"
+"hello john"
+```
 
 Run `vagrant provision` to run the entire provisioning and deployment process again, or just run `ansible-playbook -i inventory playbooks/deploy.yml` to run the deployment playbook again. In either case, you should see no changes, and Ansible should verify everything is `ok`.
 
@@ -633,7 +695,9 @@ Now, after a little extra time in development, we have new features to deploy in
 Change the `app_version` in `playbooks/vars.yml` to `2.0.1`, and run the deployment playbook again:
 
 {lang="text",linenos=off}
-    ansible-playbook -i inventory playbooks/deploy.yml
+```
+ansible-playbook -i inventory playbooks/deploy.yml
+```
 
 Uh oh---after we deployed the new version, our tests started failing! Since we deployed to all four servers asynchronously, all four application servers are offline, and our boss and customers are going to be very angry.
 
@@ -643,23 +707,27 @@ Ansible has two particular settings to protect you when you deploy to many serve
 
 Open the deployment playbook (`playbooks/deploy.yml`) and modify the initial settings to match the following:
 
-{lang="text"}
-    ---
-    - hosts: nodejs-api
-      gather_facts: no
-      become: yes
-      serial: 2
+{lang="yaml"}
+```
+---
+- hosts: nodejs-api
+  gather_facts: no
+  become: yes
+  serial: 2
+```
 
 Note the addition of `serial: 2`. This tells Ansible to run the entire playbook on two servers at a time. If you update `app_version` to `2.0.1` again, and run the playbook, you should see it run on two of the four servers, and once it hits the test failure, the playbook execution will stop---leaving your other two servers up (and saving you a few hours on a conference bridge explaining the outage).
 
 You could again revert back to `2.0.0`, but in the time you were deploying the failed version, developers finished a new version that got all tests passing again, `2.0.2`. Go ahead and update `app_version` and run the playbook again.
 
 {lang="text",linenos=off}
-    PLAY RECAP **********************************************************
-    192.168.3.2          : ok=8    changed=5    unreachable=0    failed=0
-    192.168.3.3          : ok=8    changed=5    unreachable=0    failed=0
-    192.168.3.4          : ok=8    changed=5    unreachable=0    failed=0
-    192.168.3.5          : ok=8    changed=5    unreachable=0    failed=0
+```
+PLAY RECAP **********************************************************
+192.168.3.2          : ok=8    changed=5    unreachable=0    failed=0
+192.168.3.3          : ok=8    changed=5    unreachable=0    failed=0
+192.168.3.4          : ok=8    changed=5    unreachable=0    failed=0
+192.168.3.5          : ok=8    changed=5    unreachable=0    failed=0
+```
 
 *Whew!* Everything is back online and operational, and all tests are passing with the latest version of the application.
 
@@ -687,108 +755,116 @@ For a demonstration of zero-downtime deployment with a load balancer, let's buil
 
 First, create a new project folder `deployments-balancer`, and within it, create the following Vagrantfile:
 
-{lang=ruby}
-    # -*- mode: ruby -*-
-    # vi: set ft=ruby :
-    
-    Vagrant.configure("2") do |config|
-      # Base VM OS configuration.
-      config.vm.box = "geerlingguy/ubuntu1804"
-      config.vm.synced_folder '.', '/vagrant', disabled: true
-      config.ssh.insert_key = false
-    
-      config.vm.provider :virtualbox do |v|
-        v.memory = 256
-        v.cpus = 1
-        v.linked_clone = true
-      end
-    
-      # Define four VMs with static private IP addresses.
-      boxes = [
-        { :name => "bal1", :ip => "192.168.4.2" },
-        { :name => "app1", :ip => "192.168.4.3" },
-        { :name => "app2", :ip => "192.168.4.4" }
-      ]
-    
-      # Provision each of the VMs.
-      boxes.each do |opts|
-        config.vm.define opts[:name] do |config|
-          config.vm.hostname = opts[:name]
-          config.vm.network :private_network, ip: opts[:ip]
-    
-          # Provision all the VMs using Ansible after last VM is up.
-          if opts[:name] == "app2"
-            config.vm.provision "ansible" do |ansible|
-              ansible.playbook = "playbooks/provision.yml"
-              ansible.inventory_path = "inventory"
-              ansible.limit = "all"
-            end
-          end
+{lang="ruby"}
+```
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Base VM OS configuration.
+  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.ssh.insert_key = false
+
+  config.vm.provider :virtualbox do |v|
+    v.memory = 256
+    v.cpus = 1
+    v.linked_clone = true
+  end
+
+  # Define four VMs with static private IP addresses.
+  boxes = [
+    { :name => "bal1", :ip => "192.168.4.2" },
+    { :name => "app1", :ip => "192.168.4.3" },
+    { :name => "app2", :ip => "192.168.4.4" }
+  ]
+
+  # Provision each of the VMs.
+  boxes.each do |opts|
+    config.vm.define opts[:name] do |config|
+      config.vm.hostname = opts[:name]
+      config.vm.network :private_network, ip: opts[:ip]
+
+      # Provision all the VMs using Ansible after last VM is up.
+      if opts[:name] == "app2"
+        config.vm.provision "ansible" do |ansible|
+          ansible.playbook = "playbooks/provision.yml"
+          ansible.inventory_path = "inventory"
+          ansible.limit = "all"
         end
       end
-    
     end
+  end
+
+end
+```
 
 This Vagrantfile will create three servers running Ubuntu: `bal1` (the balancer), and `app1` and `app2` (the application servers). We referenced an Ansible playbook at `playbooks/provision.yml` (to install the required software on the servers), as well as a custom inventory file at `inventory`. First, create the inventory file (`inventory`, in the same directory as the Vagrantfile), with the appropriate groupings and connection variables:
 
 {lang="text"}
-    [balancer]
-    192.168.4.2
-    
-    [app]
-    192.168.4.3
-    192.168.4.4
-    
-    [deployments:children]
-    balancer
-    app
-    
-    [deployments:vars]
-    ansible_ssh_user=vagrant
-    ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
+[balancer]
+192.168.4.2
+
+[app]
+192.168.4.3
+192.168.4.4
+
+[deployments:children]
+balancer
+app
+
+[deployments:vars]
+ansible_ssh_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+```
 
 With this inventory, we can operate on just the `balancer`, just the `app` servers, or all the servers together (in the `deployments` group). Next, create a playbook (at `playbooks/provision.yml`) to provision the servers:
 
-{lang="text"}
-    ---
-    - hosts: balancer
-      become: yes
-    
-      vars:
-        firewall_allowed_tcp_ports:
-          - "22"
-          - "80"
-        haproxy_backend_servers:
-          - name: 192.168.4.3
-            address: 192.168.4.3:80
-          - name: 192.168.4.4
-            address: 192.168.4.4:80
-    
-      roles:
-        - geerlingguy.firewall
-        - geerlingguy.haproxy
-    
-    - hosts: app
-      become: yes
-    
-      vars:
-        firewall_allowed_tcp_ports:
-          - "22"
-          - "80"
-    
-      roles:
-        - geerlingguy.firewall
-        - geerlingguy.apache
+{lang="yaml"}
+```
+---
+- hosts: balancer
+  become: yes
+
+  vars:
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+    haproxy_backend_servers:
+      - name: 192.168.4.3
+        address: 192.168.4.3:80
+      - name: 192.168.4.4
+        address: 192.168.4.4:80
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.haproxy
+
+- hosts: app
+  become: yes
+
+  vars:
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "80"
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.apache
+```
 
 These two plays set up a firewall on both servers, and configure HAProxy on the load balancer, and Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `haproxy_backend_servers`. We let the `geerlingguy.firewall`, `geerlingguy.haproxy`, and `geerlingguy.apache` roles do all the hard work for us.
 
 Now, to make sure we have all these roles installed, create a requirements file to install the roles from Ansible Galaxy. Create `requirements.yml` in the same directory as the Vagrantfile, with the following contents:
 
-{lang="text"}
-    ---
-    - src: geerlingguy.firewall
-    - src: geerlingguy.haproxy
-    - src: geerlingguy.apache
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.haproxy
+- src: geerlingguy.apache
+```
 
 To install the required roles, run `ansible-galaxy install -r requirements.yml`.
 
@@ -800,13 +876,15 @@ At this point, if you want to bring up your local load-balanced infrastructure, 
 Verify round-robin load balancing is working by running the following command:
 
 {lang="text"}
-    $ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; \
-    done
-    Set-Cookie: SERVERID=192.168.4.4; path=/
-    Set-Cookie: SERVERID=192.168.4.3; path=/
-    Set-Cookie: SERVERID=192.168.4.4; path=/
-    Set-Cookie: SERVERID=192.168.4.3; path=/
-    Set-Cookie: SERVERID=192.168.4.4; path=/
+```
+$ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; \
+done
+Set-Cookie: SERVERID=192.168.4.4; path=/
+Set-Cookie: SERVERID=192.168.4.3; path=/
+Set-Cookie: SERVERID=192.168.4.4; path=/
+Set-Cookie: SERVERID=192.168.4.3; path=/
+Set-Cookie: SERVERID=192.168.4.4; path=/
+```
 
 You should see the load balancer distributing requests between the two backend app servers.
 
@@ -814,41 +892,43 @@ When you deploy new code to the application servers, you need to guarantee the l
 
 Create another playbook alongside `provision.yml` called `deploy.yml`, with the following contents:
 
-{lang="text"}
-    ---
-    - hosts: app
-      become: yes
-      serial: 1
-    
-      pre_tasks:
-        - name: Disable the backend server in HAProxy.
-          haproxy:
-            state: disabled
-            host: '{{ inventory_hostname }}'
-            socket: /var/lib/haproxy/stats
-            backend: habackend
-          delegate_to: "{{ item }}"
-          with_items: "{{ groups.balancer }}"
-    
-      tasks:
-        - debug: msg="Deployment would be done here."
-    
-      post_tasks:
-        - name: Wait for backend to come back up.
-          wait_for:
-            host: '{{ inventory_hostname }}'
-            port: 80
-            state: started
-            timeout: 60
-    
-        - name: Enable the backend server in HAProxy.
-          haproxy:
-            state: enabled
-            host: '{{ inventory_hostname }}'
-            socket: /var/lib/haproxy/stats
-            backend: habackend
-          delegate_to: "{{ item }}"
-          with_items: "{{ groups.balancer }}"
+{lang="yaml"}
+```
+---
+- hosts: app
+  become: yes
+  serial: 1
+
+  pre_tasks:
+    - name: Disable the backend server in HAProxy.
+      haproxy:
+        state: disabled
+        host: '{{ inventory_hostname }}'
+        socket: /var/lib/haproxy/stats
+        backend: habackend
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.balancer }}"
+
+  tasks:
+    - debug: msg="Deployment would be done here."
+
+  post_tasks:
+    - name: Wait for backend to come back up.
+      wait_for:
+        host: '{{ inventory_hostname }}'
+        port: 80
+        state: started
+        timeout: 60
+
+    - name: Enable the backend server in HAProxy.
+      haproxy:
+        state: enabled
+        host: '{{ inventory_hostname }}'
+        socket: /var/lib/haproxy/stats
+        backend: habackend
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.balancer }}"
+```
 
 This playbook doesn't do much in terms of actual deployment, but it does illustrate how to do a zero-downtime rolling update over two or more application servers:
 
@@ -858,28 +938,34 @@ This playbook doesn't do much in terms of actual deployment, but it does illustr
 Run the playbook on the local infrastructure with the following command:
 
 {lang="text"}
-    $ ansible-playbook -i inventory playbooks/deploy.yml
+```
+$ ansible-playbook -i inventory playbooks/deploy.yml
+```
 
 It should only take a few seconds to run, and once it's finished, all the servers should be back in the mix for the load balancer. If you want to quickly confirm the deployment playbook is working as it should, add a task which always fails, immediately following the `debug` task:
 
-{lang="text",starting-line-number=15}
-    [...]
-    tasks:
-      - debug: msg="Deployment would be done here."
-      - command: /bin/false
+{lang="yaml",starting-line-number=15}
+```
+# [...]
+tasks:
+  - debug: msg="Deployment would be done here."
+  - command: /bin/false
 
-    post_tasks:
-    [...]
+post_tasks:
+# [...]
+```
 
 If you run the deployment playbook again, wait for it to fail, then run the `curl` command again, you'll notice all the requests are being directed to the second app server:
 
 {lang="text"}
-    $ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; done
-    Set-Cookie: SERVERID=192.168.4.4; path=/
-    Set-Cookie: SERVERID=192.168.4.4; path=/
-    Set-Cookie: SERVERID=192.168.4.4; path=/
-    Set-Cookie: SERVERID=192.168.4.4; path=/
-    Set-Cookie: SERVERID=192.168.4.4; path=/
+```
+$ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; done
+Set-Cookie: SERVERID=192.168.4.4; path=/
+Set-Cookie: SERVERID=192.168.4.4; path=/
+Set-Cookie: SERVERID=192.168.4.4; path=/
+Set-Cookie: SERVERID=192.168.4.4; path=/
+Set-Cookie: SERVERID=192.168.4.4; path=/
+```
 
 Fix the deployment by removing the `/bin/false` command. Run the playbook one more time to restore the infrastructure to a fully functional state.
 
@@ -910,10 +996,12 @@ There are a few other Ansible modules and options which are helpful in the conte
 
 [`run_once`](http://docs.ansible.com/playbooks_delegation.html#run-once) and `delegate_to` are extremely helpful in scenarios like updating a database schema or clearing an application's cache, where you need a particular task to only run one time, on a particular server:
 
-{lang="text",linenos=off}
-    - command: /opt/app/upgrade-database-schema
-      run_once: true
-      delegate_to: app1.example.com
+{lang="yaml",linenos=off}
+```
+- command: /opt/app/upgrade-database-schema
+  run_once: true
+  delegate_to: app1.example.com
+```
 
 Using `run_once` with `delegate_to` is similar to the pattern of using `when: inventory_hostname == groups.groupname[0]`, but is a little more precise in describing what you're trying to achieve---running a command once on a specific host.
 
@@ -931,14 +1019,16 @@ Another important aspect of a successful deployment is communication. If you're 
 
 Many playbooks include notifications in both the `pre_tasks` and `post_tasks` sections, notifying admins in a chat channel when a deployment begins or ends. For example:
 
-{lang="text",linenos=off}
-    post_tasks:
-      - name: Tell everyone on IRC the deployment is complete.
-        irc:
-          channel: my-org
-          server: irc.example.com
-          msg: "Deployment complete!"
-        delegate_to: 127.0.0.1
+{lang="yaml",linenos=off}
+```
+post_tasks:
+  - name: Tell everyone on IRC the deployment is complete.
+    irc:
+      channel: my-org
+      server: irc.example.com
+      msg: "Deployment complete!"
+    delegate_to: 127.0.0.1
+```
 
 For a great primer on Ansible notifications, see Ansible Inc's blog post: [Listen to your Servers Talk](http://www.ansible.com/blog/listen-to-your-servers-talk).
 
@@ -949,14 +1039,16 @@ Automating deployments with Ansible enables your development team to have their 
 This chapter outlined only a few of the most popular deployment techniques, but Ansible is flexible enough to handle almost any situation out of the box.
 
 {lang="text",linenos=off}
-     _______________________________________
-    / One machine can do the work of fifty  \
-    | ordinary men. No machine can do the   |
-    | work of one extraordinary man.        |
-    \ (Elbert Hubbard)                      /
-     ---------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ _______________________________________
+/ One machine can do the work of fifty  \
+| ordinary men. No machine can do the   |
+| work of one extraordinary man.        |
+\ (Elbert Hubbard)                      /
+ ---------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```
