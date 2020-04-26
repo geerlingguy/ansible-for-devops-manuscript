@@ -108,28 +108,31 @@ Let's look at the security settings configured in `/etc/ssh/sshd_config` (mentio
 
 For our secure server, we want to disable password-based SSH authentication (make sure you can already log in via your SSH key before you do this!), disable remote root login, and change the port over which SSH operates. Let's do it!
 
-{lang="text"}
-    - hosts: example
-      tasks:
-        - name: Update SSH configuration to be more secure.
-          lineinfile:
-            dest: /etc/ssh/sshd_config
-            regexp: "{{ item.regexp }}"
-            line: "{{ item.line }}"
-            state: present
-          with_items:
-            - regexp: "^PasswordAuthentication"
-              line: "PasswordAuthentication no"
-            - regexp: "^PermitRootLogin"
-              line: "PermitRootLogin no"
-            - regexp: "^Port"
-              line: "Port 2849"
-          notify: restart ssh
+{lang="yaml"}
+```
+---
+- hosts: example
+  tasks:
+    - name: Update SSH configuration to be more secure.
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      with_items:
+        - regexp: "^PasswordAuthentication"
+          line: "PasswordAuthentication no"
+        - regexp: "^PermitRootLogin"
+          line: "PermitRootLogin no"
+        - regexp: "^Port"
+          line: "Port 2849"
+      notify: restart ssh
 
-      handlers:
-        # Note: Use 'sshd' for Red Hat and its derivatives.
-        - name: restart ssh
-          service: name=ssh state=restarted
+  handlers:
+    # Note: Use 'sshd' for Red Hat and its derivatives.
+    - name: restart ssh
+      service: name=ssh state=restarted
+```
 
 In this extremely simple playbook, we set three options in SSH configuration (`PasswordAuthentication no`, `PermitRootLogin no`, and `Port 2849`) using Ansible's `lineinfile` module, then use a handler we define in the `handlers` section to restart the ssh service.
 
@@ -145,10 +148,14 @@ Using sudo also forces you to be more explicit when performing certain actions w
 
 In Ansible, it's preferred you log into the remote server with a normal or admin-level system account, and use the `sudo` parameter with a value of `yes` with any play or playbook include requiring elevated privileges. For example, if restarting Apache requires elevated privileges, you would write the play like so:
 
-{lang="text",linenos=off}
-    - name: Restart Apache.
-      service: name=httpd state=restarted
-      become: yes
+{lang="yaml",linenos=off}
+```
+- name: Restart Apache.
+  service:
+    name: httpd
+    state: restarted
+  become: yes
+```
 
 Add `become_user: [username]` to a task to specify a specific user account to use with `sudo` (this will only apply if `become` is already set on the task or in the playbook).
 
@@ -156,24 +163,28 @@ You can also use Ansible to control sudo's configuration, defining who should ha
 
 As an example, set up the user `johndoe` with permission to use any command as root via `sudo` by adding a line in the `/etc/sudoers` file with Ansible's `lineinfile` module:
 
-{lang="text",linenos=off}
-    - name: Add sudo rights for deployment user.
-      lineinfile:
-        dest: /etc/sudoers
-        regexp: '^johndoe'
-        line: 'johndoe ALL=(ALL) NOPASSWD: ALL'
-        state: present
+{lang="yaml",linenos=off}
+```
+- name: Add sudo rights for deployment user.
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: '^johndoe'
+    line: 'johndoe ALL=(ALL) NOPASSWD: ALL'
+    state: present
+```
 
 If you're ever editing the sudoers file by hand, you should use `visudo`, which validates your changes and makes sure you don't break sudo when you save the changes. When using Ansible with `lineinfile`, you have to use caution when making changes, and make sure your syntax is correct.
 
 Another way of changing the sudoers file, and ensuring the integrity of the file, is to create a sudoers file locally, and copy it using Ansible's `copy` module, with a validation command, like so:
 
-{lang="text",linenos=off}
-    - name: Copy validated sudoers file into place.
-      copy:
-        src: sudoers
-        dest: /etc/sudoers
-        validate: 'visudo -cf %s'
+{lang="yaml",linenos=off}
+```
+- name: Copy validated sudoers file into place.
+  copy:
+    src: sudoers
+    dest: /etc/sudoers
+    validate: 'visudo -cf %s'
+```
 
 The `%s` is a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination. The same parameter can be passed into Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
 
@@ -185,13 +196,18 @@ Before the widespread use of configuration management tools for servers, when sn
 
 If you're not actively using a piece of software, or there's an obsolete cron task, get rid of it. If you're using Ansible for your entire infrastructure, this shouldn't be an issue, since you could just bring up new servers to replace old ones when you have major configuration and/or package changes. But if not, consider adding in a 'cleanup' role or at least a task to remove packages that shouldn't be installed, like:
 
-{lang="text"}
-    - name: Remove unused packages.
-      apt: name={{ item }} state=absent purge=yes
-      with_items:
-        - apache2
-        - nano
-        - mailutils
+{lang="yaml",linenos=off}
+```
+- name: Remove unused packages.
+  apt:
+    name: "{{ item }}"
+    state: absent
+    purge: yes
+  with_items:
+    - apache2
+    - nano
+    - mailutils
+```
 
 With modules like `yum`, `apt`, `file`, and `mysql_db`, a `state=absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
 
@@ -218,18 +234,20 @@ For the former method, please read the next section on file permissions to learn
 
 Every Ansible module that deals with files has file ownership and permission parameters available, including `owner`, `group`, and `mode`. Almost every time you handle files (using `copy`, `template`, `file`, etc.), you should explicitly define the correct permissions and ownership. For example, for a configuration file (in our example, the GitLab configuration file) that should *only* be readable or writeable by the root user, set the following:
 
-{lang="text"}
-    - name: Configure the GitLab global configuration file.
-      file:
-        path: /etc/gitlab/gitlab.rb
-        owner: root
-        group: root
-        mode: 0600
+{lang="yaml",linenos=off}
+```
+- name: Configure the GitLab global configuration file.
+  file:
+    path: /etc/gitlab/gitlab.rb
+    owner: root
+    group: root
+    mode: 0600
+```
 
 I> File permissions may seem a bit obtuse, and sometimes, they may cause headaches. But in reality, using octal numbers to represent file permissions is a helpful way to encapsulate a lot of configuration in three numbers. The main thing to remember is the following: for each of the file's *user*, *group*, and for *everyone* (each of the three digits), use the following digits to represent permission levels:
 I>
 I> {lang="text",linenos=off}
-I> ~~~~~~~~~~~~~~~
+I> ~~~
 I> 7: rwx (read/write/execute)
 I> 6: rw- (read/write)
 I> 5: r-x (read/execute)
@@ -238,7 +256,7 @@ I> 3: -wx (write/execute)
 I> 2: -w- (write)
 I> 1: --x (execute)
 I> 0: --- (no permissions)
-I> ~~~~~~~~~~~~~~~
+I> ~~~
 I>
 I> Basically, 4 = read, 2 = write and 1 = execute. Therefore read (4) and write (2) is 6 in the octal representation, and read (4) and execute (1) is 5.
 
@@ -255,12 +273,16 @@ At a minimum, you should schedule regular patch maintenance and package upgrade 
 With Ansible, since you already have your entire infrastructure described via Ansible inventories, you should be able to use a command like the following to upgrade all installed packages on a RHEL system:
 
 {lang="text",linenos="off"}
-    $ ansible webservers -m yum -a "name=* state=latest"
+```
+$ ansible webservers -m yum -a "name=* state=latest"
+```
 
 On a Debian-based system, the syntax is similar:
 
 {lang="text",linenos="off"}
-    $ ansible webservers -m apt -a "upgrade=dist update_cache=yes"
+```
+$ ansible webservers -m apt -a "upgrade=dist update_cache=yes"
+```
 
 The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `yum` or `apt` to tell them what to do (edit `/etc/yum.conf` for `yum` on RHEL-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
 
@@ -274,12 +296,19 @@ W> As mentioned in an earlier sidebar, GPG package signature checking is enabled
 
 RHEL and CentOS 6 and 7 (and older versions of Fedora) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
 
-{lang="text"}
-    - name: Install yum-cron.
-      yum: name=yum-cron state=present
-    
-    - name: Ensure yum-cron is running and enabled on boot.
-      service: name=yum-cron state=started enabled=yes
+{lang="yaml",linenos=off}
+```
+- name: Install yum-cron.
+  yum:
+    name: yum-cron
+    state: present
+
+- name: Ensure yum-cron is running and enabled on boot.
+  service:
+    name: yum-cron
+    state: started
+    enabled: yes
+```
 
 Further configuration (such as packages to exclude from automatic updates) is done in the `yum.conf` file, at `/etc/yum.conf`.
 
@@ -289,44 +318,52 @@ For RHEL and CentOS 8 and later (and the latest versions of Fedora), you would n
 
 Debian and its derivatives typically use the `unattended-upgrades` package to configure automatic updates. Like `yum-cron`, it is easy to install, and its configuration is placed in a variety of files within `/etc/apt/apt.conf.d/`:
 
-{lang="text"}
-    - name: Install unattended upgrades package.
-      apt: name=unattended-upgrades state=present
-    
-    - name: Copy unattended-upgrades configuration files in place.
-      template:
-        src: "../templates/{{ item }}.j2"
-        dest: "/etc/apt/apt.conf.d/{{ item }}"
-        owner: root
-        group: root
-        mode: 0644
-      with_items:
-        - 10periodic
-        - 50unattended-upgrades
+{lang="yaml",linenos=off}
+```
+- name: Install unattended upgrades package.
+  apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Copy unattended-upgrades configuration files in place.
+  template:
+    src: "../templates/{{ item }}.j2"
+    dest: "/etc/apt/apt.conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - 10periodic
+    - 50unattended-upgrades
+```
 
 The template files copied in the second task should look something like the following:
 
-{lang="text"}
-    # File: /etc/apt/apt.conf.d/20auto-upgrades
-    APT::Periodic::Update-Package-Lists "1";
-    APT::Periodic::Unattended-Upgrade "1";
+{lang="text",linenos=off}
+```
+# File: /etc/apt/apt.conf.d/20auto-upgrades
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+```
 
 This file provides configuration for the `apt` script that runs as part of the unattended upgrades package, and tells apt whether to enable unattended upgrades.
 
-{lang="text"}
-    # File: /etc/apt/apt.conf.d/50unattended-upgrades
-    Unattended-Upgrade::Automatic-Reboot "false";
-    
-    Unattended-Upgrade::DevRelease "false";
-    
-    Unattended-Upgrade::Allowed-Origins {
-            "${distro_id}:${distro_codename}";
-            "${distro_id}:${distro_codename}-security";
-            "${distro_id}ESM:${distro_codename}";
-    //      "${distro_id}:${distro_codename}-updates";
-    //      "${distro_id}:${distro_codename}-proposed";
-    //      "${distro_id}:${distro_codename}-backports";
-    };
+{lang="text",linenos=off}
+```
+# File: /etc/apt/apt.conf.d/50unattended-upgrades
+Unattended-Upgrade::Automatic-Reboot "false";
+
+Unattended-Upgrade::DevRelease "false";
+
+Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}";
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESM:${distro_codename}";
+//      "${distro_id}:${distro_codename}-updates";
+//      "${distro_id}:${distro_codename}-proposed";
+//      "${distro_id}:${distro_codename}-backports";
+};
+```
 
 This file provides further configuration for unattended upgrades, like whether to automatically restart the server for package and kernel upgrades requiring a reboot, or what `apt` sources should be checked for updated packages.
 
@@ -344,60 +381,66 @@ Ansible includes built-in support for configuring server firewalls with `ufw` (c
 
 Below is an entire firewall configuration to lock down most everything on a Debian or Ubuntu server, allowing traffic only through ports 22 (SSH), 80 (HTTP), and 123 (NTP):
 
-{lang="text"}
-    - name: Configure open ports with ufw.
-      ufw:
-        rule: "{{ item.rule }}"
-        port: "{{ item.port }}"
-        proto: "{{ item.proto }}"
-      with_items:
-        - { rule: 'allow', port: 22, proto: 'tcp' }
-        - { rule: 'allow', port: 80, proto: 'tcp' }
-        - { rule: 'allow', port: 123, proto: 'udp' }
-    
-    - name: Configure default incoming/outgoing rules with ufw.
-      ufw:
-        direction: "{{ item.direction }}"
-        policy: "{{ item.policy }}"
-        state: enabled
-      with_items:
-        - { direction: outgoing, policy: allow }
-        - { direction: incoming, policy: deny }
+{lang="yaml",linenos=off}
+```
+- name: Configure open ports with ufw.
+  ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  with_items:
+    - { rule: 'allow', port: 22, proto: 'tcp' }
+    - { rule: 'allow', port: 80, proto: 'tcp' }
+    - { rule: 'allow', port: 123, proto: 'udp' }
+
+- name: Configure default incoming/outgoing rules with ufw.
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+    state: enabled
+  with_items:
+    - { direction: outgoing, policy: allow }
+    - { direction: incoming, policy: deny }
+```
 
 If you run a playbook with the above rules, the log into the machine (or use the `ansible` command) and run `sudo ufw status verbose`, you should see the configuration has been updated to the following:
 
 {lang="text",linenos=off}
-    $ sudo ufw status verbose
-    Status: active
-    Logging: on (low)
-    Default: deny (incoming), allow (outgoing), disabled (routed)
-    New profiles: skip
+```
+$ sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
 
-    To                         Action      From
-    --                         ------      ----
-    22/tcp                     ALLOW IN    Anywhere
-    80/tcp                     ALLOW IN    Anywhere
-    123/udp                    ALLOW IN    Anywhere
-    22/tcp (v6)                ALLOW IN    Anywhere (v6)
-    80/tcp (v6)                ALLOW IN    Anywhere (v6)
-    123/udp (v6)               ALLOW IN    Anywhere (v6)
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+80/tcp                     ALLOW IN    Anywhere
+123/udp                    ALLOW IN    Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+80/tcp (v6)                ALLOW IN    Anywhere (v6)
+123/udp (v6)               ALLOW IN    Anywhere (v6)
+```
 
 ### Configuring a firewall with `firewalld` on RHEL, Fedora, or CentOS
 
 The same firewall configuration can be done via `firewalld` for RHEL-based systems with similar ease:
 
-{lang="text"}
-    - name: Configure open ports with firewalld.
-      firewalld:
-        state: "{{ item.state }}"
-        port: "{{ item.port }}"
-        zone: external
-        immediate: yes
-        permanent: yes
-      with_items:
-        - { state: 'enabled', port: '22/tcp' }
-        - { state: 'enabled', port: '80/tcp' }
-        - { state: 'enabled', port: '123/udp' }
+{lang="yaml",linenos=off}
+```
+- name: Configure open ports with firewalld.
+  firewalld:
+    state: "{{ item.state }}"
+    port: "{{ item.port }}"
+    zone: external
+    immediate: yes
+    permanent: yes
+  with_items:
+    - { state: 'enabled', port: '22/tcp' }
+    - { state: 'enabled', port: '80/tcp' }
+    - { state: 'enabled', port: '123/udp' }
+```
 
 W> The `immediate` parameter was added in Ansible 1.9, and is required to make the rules effective immediately when the `permanent` parameter is set to `yes`. If you are running an older version of Ansible, you will need to restart to see your changes, or set `permanent` to `no`.
 
@@ -406,16 +449,18 @@ I> `firewalld` doesn't have an explicit command to allow setting default inbound
 If you run `sudo firewall-cmd --zone=external --list-all`, you should see the open ports:
 
 {lang="text",linenos=off}
-    $ sudo firewall-cmd --zone=external --list-all
-    external
-      interfaces:
-      sources:
-      services: ssh
-      ports: 123/udp 80/tcp 22/tcp
-      masquerade: yes
-      forward-ports:
-      icmp-blocks:
-      rich rules:
+```
+$ sudo firewall-cmd --zone=external --list-all
+external
+  interfaces:
+  sources:
+  services: ssh
+  ports: 123/udp 80/tcp 22/tcp
+  masquerade: yes
+  forward-ports:
+  icmp-blocks:
+  rich rules:
+```
 
 Some still prefer configuring firewalls with `iptables` (which is sometimes obtuse, but is almost infinitely malleable). This approach is used in the `geerlingguy.firewall` role on Ansible Galaxy, which translates variables like `firewall_allowed_tcp_ports` and `firewall_forwarded_tcp_ports` into `iptables` rules, and provides a `firewall` service for loading firewall rules.
 
@@ -429,18 +474,20 @@ Checking server logs is one of the most effective ways to not only see what atta
 
 But logs are completely worthless if they aren't being populated with effective data, aren't being monitored in any way, or are *the cause* of an outage! Many root cause analyses conclude, "the server's disk was full because log file *x* took up all the free space".
 
-{title="I have my eyes on you, 218.78.214.9...",lang="text"}
-    sshd[19731]: input_userauth_request: invalid user db2admin
-    sshd[19731]: Received disconnect from 218.78.214.9: 11: Bye Bye
-    sshd[19732]: Invalid user jenkins from 218.78.214.9
-    sshd[19733]: input_userauth_request: invalid user jenkins
-    sshd[19733]: Received disconnect from 218.78.214.9: 11: Bye Bye
-    sshd[19734]: Invalid user jenkins from 218.78.214.9
-    sshd[19735]: input_userauth_request: invalid user jenkins
-    sshd[19735]: Received disconnect from 218.78.214.9: 11: Bye Bye
-    sshd[19736]: Invalid user minecraft from 218.78.214.9
-    sshd[19737]: input_userauth_request: invalid user minecraft
-    sshd[19737]: Received disconnect from 218.78.214.9: 11: Bye Bye
+{title="I have my eyes on you, 218.78.214.9...",lang="text",linenos=off}
+```
+sshd[19731]: input_userauth_request: invalid user db2admin
+sshd[19731]: Received disconnect from 218.78.214.9: 11: Bye Bye
+sshd[19732]: Invalid user jenkins from 218.78.214.9
+sshd[19733]: input_userauth_request: invalid user jenkins
+sshd[19733]: Received disconnect from 218.78.214.9: 11: Bye Bye
+sshd[19734]: Invalid user jenkins from 218.78.214.9
+sshd[19735]: input_userauth_request: invalid user jenkins
+sshd[19735]: Received disconnect from 218.78.214.9: 11: Bye Bye
+sshd[19736]: Invalid user minecraft from 218.78.214.9
+sshd[19737]: input_userauth_request: invalid user minecraft
+sshd[19737]: Received disconnect from 218.78.214.9: 11: Bye Bye
+```
 
 Only you will know what logs are the most important to monitor on your servers, but some of the most common ones are database slow query logs, web server access and error logs, authorization logs, and cron logs. Use tools like the ELK stack (demonstrated in a cookbook in Chapter 8), Munin, Nagios, or even a hosted service to make sure logs are populated and monitored.
 
@@ -454,17 +501,27 @@ If you allow password-based login (for SSH, for your web app, or for anything el
 
 Here's a set of tasks you could add to your playbook to install Fail2Ban and make sure it's started on either Debian or RHEL-based distributions:
 
-{lang="text"}
-    - name: Install fail2ban (RedHat).
-      yum: name=fail2ban state=present enablerepo=epel
-      when: ansible_os_family == 'RedHat'
-    
-    - name: Install fail2ban (Debian).
-      apt: name=fail2ban state=present
-      when: ansible_os_family == 'Debian'
-    
-    - name: Ensure fail2ban is running and enabled on boot.
-      service: name=fail2ban state=started enabled=yes
+{lang="yaml",linenos=off}
+```
+- name: Install fail2ban (RedHat).
+  yum:
+    name: fail2ban
+    state: present
+    enablerepo: epel
+  when: ansible_os_family == 'RedHat'
+
+- name: Install fail2ban (Debian).
+  apt:
+    name: fail2ban
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure fail2ban is running and enabled on boot.
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+```
 
 Fail2Ban configuration is managed in a series of `.conf` files inside `/etc/fail2ban`, and most configuration can be done by overriding defaults in a local override file, `/etc/fail2ban/jail.local`. See the [Fail2Ban manual](http://www.fail2ban.org/wiki/index.php/MANUAL_0_8) for more information.
 
@@ -480,18 +537,29 @@ SELinux is usually installed and enabled by default on Fedora, RHEL and CentOS s
 
 To enable SELinux in `targeted` mode (which is the most secure mode without being almost impossible to work with), make sure the Python SELinux library is installed, then use Ansible's `selinux` module:
 
-{lang="text",linenos=off}
-    - name: Install Python SELinux library.
-      yum: name=libselinux-python state=present
-    
-    - Ensure SELinux is enabled in `targeted` mode.
-      selinux: policy=targeted state=enforcing
+{lang="yaml",linenos=off}
+```
+- name: Install Python SELinux library.
+  yum:
+    name: libselinux-python
+    state: present
+
+- Ensure SELinux is enabled in `targeted` mode.
+  selinux:
+    policy: targeted
+    state: enforcing
+```
 
 Ansible also has a `seboolean` module that allows setting SELinux booleans. A very common setting for web servers involves setting the `httpd_can_network_connect` boolean:
 
-{lang="text",linenos=off}
-    - name: Ensure httpd can connect to the network.
-      seboolean: name=httpd_can_network_connect state=yes persistent=yes
+{lang="yaml",linenos=off}
+```
+- name: Ensure httpd can connect to the network.
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+```
 
 The Ansible `file` module also integrates well with SELinux, allowing the four security context fields for a file or directory to be set, one per parameter:
 
@@ -516,13 +584,15 @@ This chapter contains a broad overview of some Linux security best practices, an
 Much of the security configuration in this chapter is encapsulated in a role on Ansible Galaxy, for use on your own servers: [security role by geerlingguy](https://galaxy.ansible.com/geerlingguy/security/).
 
 {lang="text",linenos=off}
-     _____________________________________
-    / Bad planning on your part does not  \
-    | constitute an emergency on my part. |
-    \ (Proverb)                           /
-     -------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ _____________________________________
+/ Bad planning on your part does not  \
+| constitute an emergency on my part. |
+\ (Proverb)                           /
+ -------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```

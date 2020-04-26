@@ -28,15 +28,17 @@ Ansible has a very thorough [Ansible Tower User Guide](http://releases.ansible.c
 Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then create a directory (e.g. `tower`) and do the following within the directory:
 
 {lang="text",linenos=off}
-    # Create a new Vagrantfile using the Tower base box from Ansible.
-    $ vagrant init tower http://vms.ansible.com/ansible-tower-2.3.1-\
-    virtualbox.box
-    
-    # Build the Tower VM.
-    $ vagrant up
-    
-    # Log into the VM (Tower will display connection information).
-    $ vagrant ssh
+```
+# Create a new Vagrantfile using the Tower base box from Ansible.
+$ vagrant init tower http://vms.ansible.com/ansible-tower-2.3.1-\
+virtualbox.box
+
+# Build the Tower VM.
+$ vagrant up
+
+# Log into the VM (Tower will display connection information).
+$ vagrant ssh
+```
 
 I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
 
@@ -61,15 +63,17 @@ The first step is to make sure you have a test playbook you can run using Ansibl
   4. Create a new project directory: `mkdir ansible-for-devops && cd ansible-for-devops`
   5. Create a new playbook file, `main.yml`, within the new directory, with the following contents:
 
-{lang="text"}
-    ---
-    - hosts: all
-      gather_facts: no
-      connection: local
-    
-      tasks:
-        - name: Check the date on the server.
-          command: date
+{lang="yaml"}
+```
+---
+- hosts: all
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Check the date on the server.
+      command: date
+```
 
 Switch back to your web browser and get everything set up to run the test playbook inside Ansible Tower's web UI:
 
@@ -134,53 +138,59 @@ Jenkins is easy to install and configure, with the Java SDK as its only requirem
 
 Create a new directory for the Jenkins VM named `jenkins`. Inside the directory, create a `Vagrantfile` to describe the machine and the Ansible provisioning to Vagrant, with the following contents:
 
-{lang=ruby}
-    VAGRANTFILE_API_VERSION = "2"
-    
-    Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-      config.vm.box = "geerlingguy/ubuntu1604"
-      config.vm.hostname = "jenkins.test"
-      config.vm.network :private_network, ip: "192.168.76.76"
-      config.ssh.insert_key = false
-    
-      config.vm.provider :virtualbox do |v|
-        v.memory = 512
-      end
-    
-      # Ansible provisioning.
-      config.vm.provision "ansible" do |ansible|
-        ansible.playbook = "provision.yml"
-        ansible.become = true
-      end
-    end
+{lang="ruby"}
+```
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "geerlingguy/ubuntu1604"
+  config.vm.hostname = "jenkins.test"
+  config.vm.network :private_network, ip: "192.168.76.76"
+  config.ssh.insert_key = false
+
+  config.vm.provider :virtualbox do |v|
+    v.memory = 512
+  end
+
+  # Ansible provisioning.
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "provision.yml"
+    ansible.become = true
+  end
+end
+```
 
 This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
 
-{lang="text"}
-    ---
-    - hosts: all
-    
-      vars:
-        firewall_allowed_tcp_ports:
-          - "22"
-          - "8080"
-        jenkins_plugins:
-          - ansicolor
-    
-      roles:
-        - geerlingguy.firewall
-        - geerlingguy.ansible
-        - geerlingguy.java
-        - geerlingguy.jenkins
+{lang="yaml"}
+```
+---
+- hosts: all
+
+  vars:
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "8080"
+    jenkins_plugins:
+      - ansicolor
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.ansible
+    - geerlingguy.java
+    - geerlingguy.jenkins
+```
 
 This playbook uses a set of roles from Ansible Galaxy to install all the required components for our Jenkins CI server. To make sure you have all the required roles installed on your host machine, add a `requirements.yml` file in the `jenkins` folder, containing all the roles being used in the playbook:
 
-{lang="text"}
-    ---
-    - src: geerlingguy.firewall
-    - src: geerlingguy.ansible
-    - src: geerlingguy.java
-    - src: geerlingguy.jenkins
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.ansible
+- src: geerlingguy.java
+- src: geerlingguy.jenkins
+```
 
 The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
 
@@ -204,15 +214,17 @@ It's preferred to keep your playbooks and server configuration in a code reposit
   3. Create a new project directory: `sudo mkdir ansible-for-devops && cd ansible-for-devops`
   4. Create a new playbook file, `main.yml`, within the new directory, with the following contents (use sudo to create the file, e.g. `sudo vi main.yml`):
 
-{lang="text"}
-    ---
-    - hosts: 127.0.0.1
-      gather_facts: no
-      connection: local
-    
-      tasks:
-        - name: Check the date on the server.
-          command: date
+{lang="yaml"}
+```
+---
+- hosts: 127.0.0.1
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Check the date on the server.
+      command: date
+```
 
 If you want, test the playbook while you're logged in: `ansible-playbook main.yml`.
 
@@ -224,13 +236,13 @@ With Jenkins running, configure a Jenkins job to run a playbook on the local ser
   - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:
 
     {lang="text"}
-    ~~~~~~~~
+    ~~~
     # Force Ansible to output jobs with color.
     export ANSIBLE_FORCE_COLOR=true
     
     # Run the local test playbook.
     ansible-playbook /opt/ansible-for-devops/main.yml
-    ~~~~~~~~
+    ~~~
 
 Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, click the 'Build Now' link to start a build. After a few seconds, you should see a new item in the 'Build History' block. Click on the (hopefully) blue circle to the left of '#1', and it will take you to the console output of the job. It should look something like this:
 
@@ -269,48 +281,53 @@ For this purpose, Ansible has a `debug` module, which prints variables or messag
 
 As an extremely basic example, here are two of the ways I normally use debug while building a playbook:
 
-{lang="text"}
-    - hosts: 127.0.0.1
-      gather_facts: no
-      connection: local
-    
-      tasks:
-        - name: Register the output of the 'uptime' command.
-          command: uptime
-          register: system_uptime
-    
-        - name: Print the registered output of the 'uptime' command.
-          debug: var=system_uptime.stdout
-    
-        - name: Print a simple message if a command resulted in a change.
-          debug: msg="Command resulted in a change!"
-          when: system_uptime.changed
+{lang="yaml"}
+```
+---
+- hosts: 127.0.0.1
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Register the output of the 'uptime' command.
+      command: uptime
+      register: system_uptime
+
+    - name: Print the registered output of the 'uptime' command.
+      debug: var=system_uptime.stdout
+
+    - name: Print a simple message if a command resulted in a change.
+      debug: msg="Command resulted in a change!"
+      when: system_uptime.changed
+```
 
 Running this playbook gives the following output:
 
 {lang="text",linenos=off}
-    $ ansible-playbook debug.yml
-    
-    PLAY [127.0.0.1] ****************************************************
-    
-    TASK: [Register the output of the 'uptime' command.] ****************
-    changed: [127.0.0.1]
-    
-    TASK: [Print the registered output of the 'uptime' command.] ********
-    ok: [127.0.0.1] => {
-        "var": {
-            "system_uptime.stdout":
-                "15:01  up 15:18, 2 users, load averages: 1.23 1.33 1.42"
-        }
+```
+$ ansible-playbook debug.yml
+
+PLAY [127.0.0.1] ****************************************************
+
+TASK: [Register the output of the 'uptime' command.] ****************
+changed: [127.0.0.1]
+
+TASK: [Print the registered output of the 'uptime' command.] ********
+ok: [127.0.0.1] => {
+    "var": {
+        "system_uptime.stdout":
+            "15:01  up 15:18, 2 users, load averages: 1.23 1.33 1.42"
     }
-    
-    TASK: [Print a simple message if a command resulted in a change.] ***
-    ok: [127.0.0.1] => {
-        "msg": "Command resulted in a change!"
-    }
-    
-    PLAY RECAP **********************************************************
-    127.0.0.1            : ok=3    changed=1    unreachable=0    failed=0
+}
+
+TASK: [Print a simple message if a command resulted in a change.] ***
+ok: [127.0.0.1] => {
+    "msg": "Command resulted in a change!"
+}
+
+PLAY RECAP **********************************************************
+127.0.0.1            : ok=3    changed=1    unreachable=0    failed=0
+```
 
 Debug messages are helpful when actively debugging a playbook or when you need extra verbosity in the playbook's output, but if you need to perform an explicit test on some variable, or bail out of a playbook for some reason, Ansible provides the `fail` module, and its more terse cousin, `assert`.
 
@@ -318,30 +335,33 @@ Debug messages are helpful when actively debugging a playbook or when you need e
 
 Both `fail` and `assert`, when triggered, will abort the playbook run, and the only difference is in the simplicity of their usage. To illustrate, let's look at an example:
 
-{lang="text"}
-    - hosts: 127.0.0.1
-      gather_facts: no
-      connection: local
-    
-      vars:
-        should_fail_via_fail: true
-        should_fail_via_assert: false
-        should_fail_via_complex_assert: false
-    
-      tasks:
-        - name: Fail if conditions warrant a failure.
-          fail: msg="There was an epic failure."
-          when: should_fail_via_fail
-    
-        - name: Stop playbook if an assertion isn't validated.
-          assert: that="should_fail_via_assert != true"
-    
-        - name: Assertions can have contain conditions.
-          assert:
-            that:
-              - should_fail_via_fail != true
-              - should_fail_via_assert != true
-              - should_fail_via_complex_assert != true
+{lang="yaml"}
+```
+---
+- hosts: 127.0.0.1
+  gather_facts: no
+  connection: local
+
+  vars:
+    should_fail_via_fail: true
+    should_fail_via_assert: false
+    should_fail_via_complex_assert: false
+
+  tasks:
+    - name: Fail if conditions warrant a failure.
+      fail: msg="There was an epic failure."
+      when: should_fail_via_fail
+
+    - name: Stop playbook if an assertion isn't validated.
+      assert: that="should_fail_via_assert != true"
+
+    - name: Assertions can have contain conditions.
+      assert:
+        that:
+          - should_fail_via_fail != true
+          - should_fail_via_assert != true
+          - should_fail_via_complex_assert != true
+```
 
 Switch the boolean values of `should_fail_via_fail`, `should_fail_via_assert`, and `should_fail_via_complex_assert` to trigger each of the three `fail`/`assert` tasks, to see how they work.
 
@@ -362,11 +382,13 @@ This is helpful for two purposes:
 
 When using `--check` mode, certain tasks may need to be forced to run to ensure the playbook completes successfully: (e.g. a `command` task that registers variables used in later tasks). You can set `check_mode: no` to do this:
 
-{lang="text",linenos=off}
-    - name: A task that runs all the time, even in check mode.
-      command: mytask --option1 --option2
-      register: my_var
-      check_mode: no
+{lang="yaml",linenos=off}
+```
+- name: A task that runs all the time, even in check mode.
+  command: mytask --option1 --option2
+  register: my_var
+  check_mode: no
+```
 
 For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
 
@@ -411,17 +433,9 @@ Because multi-OS, clean-slate tests are important to us, we will do the followin
   1. Start a fresh, minimal OS container for each OS our role supports.
   2. Run our role inside the container (and then test idempotence and functionality).
 
-For many of my roles and playbooks, I support the following OSes, therefore I maintain images on Docker Hub for the explicit purpose of testing Ansible roles and playbooks:
+For many of my roles and playbooks, I support almost all supported versions of popular distros (including Ubuntu, Debian, CentOS, Red Hat Enterprise Linux (UBI), Amazon Linux, and Fedora, therefore I maintain images on Docker Hub for the explicit purpose of testing Ansible roles and playbooks.
 
-  - [CentOS 6](https://hub.docker.com/r/geerlingguy/docker-centos6-ansible/)
-  - [CentOS 7](https://hub.docker.com/r/geerlingguy/docker-centos7-ansible/)
-  - [Fedora 27](https://hub.docker.com/r/geerlingguy/docker-fedora27-ansible/)
-  - [Fedora 29](https://hub.docker.com/r/geerlingguy/docker-fedora29-ansible/)
-  - [Debian 8](https://hub.docker.com/r/geerlingguy/docker-debian8-ansible/)
-  - [Debian 9](https://hub.docker.com/r/geerlingguy/docker-debian9-ansible/)
-  - [Ubuntu 14.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1404-ansible/)
-  - [Ubuntu 16.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1604-ansible/)
-  - [Ubuntu 18.04](https://hub.docker.com/r/geerlingguy/docker-ubuntu1804-ansible/)
+My Ansible content site (ansible.jeffgeerling.com) has a full listing of the [container images I maintain for Ansible Testing](https://ansible.jeffgeerling.com/#container-images-testing).
 
 The rest of this section will demonstrate how to test an example Ansible role against all these OSes with one simple Travis configuration file.
 
@@ -430,44 +444,50 @@ The rest of this section will demonstrate how to test an example Ansible role ag
 Create a new 'tests' directory in your role or project directory, and create a test playbook inside:
 
 {lang="text",linenos=off}
-    # Directory structure:
-    my_role/
-      tests/
-        test.yml <-- the test playbook
+```
+# Directory structure:
+my_role/
+  tests/
+    test.yml <-- the test playbook
+```
 
 Inside `test.yml`, add:
 
-{lang="text"}
-    ---
-    - hosts: all
-    
-      roles:
-        - role_under_test
+{lang="yaml"}
+```
+---
+- hosts: all
+
+  roles:
+    - role_under_test
+```
 
 In this playbook we tell Ansible to run our role on all hosts; since the playbook will run inside a Docker container with the option `--connection=local`, this basically means "run it on localhost". You can add `vars`, `vars_files`, `pre_tasks`, etc. if you need to adjust anything or prep the environment before your role runs, but I try to avoid overriding pre-packaged defaults, since they should ideally work across all environments---including barebones test environments.
 
 The next step is to add a `.travis.yml` file to your role so Travis CI knows how to run your tests. Add the file to the root level of your role, and add the following scaffolding:
 
-{lang="text",linenos=off}
-    ---
-    # We need sudo for some of the Docker commands.
-    sudo: required
-    
-    env:
-      # Provide a list of OSes we want to use for testing.
-    
-    # Tell Travis to start Docker when it brings up an environment.
-    services:
-      - docker
-    
-    before_install:
-      # Pull the image from Docker Hub for the OS under test.
-    
-    script:
-      # Start the container from the image and perform tests.
-    
-    notifications:
-      # Notify Ansible Galaxy when a role builds successfully.
+{lang="yaml",linenos=off}
+```
+---
+# We need sudo for some of the Docker commands.
+sudo: required
+
+env:
+  # Provide a list of OSes we want to use for testing.
+
+# Tell Travis to start Docker when it brings up an environment.
+services:
+  - docker
+
+before_install:
+  # Pull the image from Docker Hub for the OS under test.
+
+script:
+  # Start the container from the image and perform tests.
+
+notifications:
+  # Notify Ansible Galaxy when a role builds successfully.
+```
 
 This is a fairly standard Travis file layout, and if you want to dive deeper into how Travis works, read through the guide [Customizing the Build](https://docs.travis-ci.com/user/customizing-the-build). Next, we need to fill in each section of the file, starting with the parts that control the Docker container lifecycle.
 
@@ -475,55 +495,61 @@ This is a fairly standard Travis file layout, and if you want to dive deeper int
 
 The first thing we need to do is decide on which OSes we'd like to test. For my [`geerlingguy.java`](https://galaxy.ansible.com/geerlingguy/java/) role, I support CentOS, Fedora, Debian, and Ubuntu, so at a minimum I want to support the latest LTS release of each, and for CentOS and Ubuntu, the previous LTS release as well:
 
-{lang="text",linenos=off}
-    env:
-      - distro: centos7
-      - distro: centos6
-      - distro: fedora24
-      - distro: ubuntu1604
-      - distro: ubuntu1404
-      - distro: debian8
+{lang="yaml",linenos=off}
+```
+env:
+  - distro: centos8
+  - distro: centos7
+  - distro: fedora31
+  - distro: ubuntu2004
+  - distro: ubuntu1804
+  - distro: debian10
+```
 
 One other thing that needs to be configured per-OS is the init system. Because we're dealing with OSes that have a mixture of `systemd` and `sysv` init systems, we have to specify in Travis' environment the path to the init system to use, and any extra options that we need to pass to the `docker run` command to get the image in the right state for Ansible testing. So we'll add two variables for each distribution, `init` and `run_opts`:
 
-{lang="text",linenos=off}
-    env:
-      - distro: centos7
-        init: /usr/lib/systemd/systemd
-        run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
-      - distro: centos6
-        init: /sbin/init
-        run_opts: ""
-      - distro: fedora24
-        init: /usr/lib/systemd/systemd
-        run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
-      - distro: ubuntu1604
-        init: /lib/systemd/systemd
-        run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
-      - distro: ubuntu1404
-        init: /sbin/init
-        run_opts: ""
-      - distro: debian8
-        init: /lib/systemd/systemd
-        run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+{lang="yaml",linenos=off}
+```
+env:
+  - distro: centos8
+    init: /usr/lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: centos7
+    init: /usr/lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: fedora31
+    init: /usr/lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: ubuntu2004
+    init: /lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: ubuntu1804
+    init: /lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: debian10
+    init: /lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+```
 
 I> Why use an `init` system in Docker? With Docker, it's preferable to either run apps directly (as 'PID 1') inside the container, or use a tool like Yelp's [dumb-init](https://github.com/Yelp/dumb-init) as a wrapper for your app. For our purposes, we're testing an Ansible role or playbook that could be run inside a container, but is also likely used on full VMs or bare-metal servers, where there will be a real init system controlling multiple internal processes. We want to emulate the real servers as closely as possible, therefore we set up a full init system (`systemd` or `sysv`) according to the OS.
 
 Now that we've defined the OS distributions we want to test, and what init system we want Docker to call, we can manage the Docker container's lifecycle---we need to `pull` the image, `run` the image with our options, `exec` some commands to test our project, then `stop` the container once finished. Here's the basic structure, starting with the `before_install` step:
 
-{lang="text",linenos=off}
-    before_install:
-      # Pull container from Docker Hub.
-      - 'docker pull geerlingguy/docker-${distro}-ansible:latest'
-    
-    script:
-      # Create a random file to store the container ID.
-      - container_id=$(mktemp)
-    
-      # Run container detached, with our role mounted inside.
-      - 'docker run --detach --volume="${PWD}":/etc/ansible/roles/role_under_test:ro ${run_opts} geerlingguy/docker-${distro}-ansible:latest "${init}" > "${container_id}"'
-    
-      # TODO - Test the Ansible role.
+{lang="yaml",linenos=off}
+```
+before_install:
+  # Pull container from Docker Hub.
+  - 'docker pull geerlingguy/docker-${distro}-ansible:latest'
+
+script:
+  # Create a random file to store the container ID.
+  - container_id=$(mktemp)
+
+  # Run container detached, with our role mounted inside.
+  - 'docker run --detach --volume="${PWD}":/etc/ansible/roles/role_under_test:ro ${run_opts} geerlingguy/docker-${distro}-ansible:latest "${init}" > "${container_id}"'
+
+  # TODO - Test the Ansible role.
+```
 
 Let's run through these initial commands that set up our OS environment:
 
@@ -535,10 +561,12 @@ At this point, we have a Docker container running, and we can perform actions in
 
 For example, if you wanted to check up on disk space inside the container (assuming the `df` utility is present), you could run the command:
 
-{lang="text",linenos=off}
-    script:
-      ...
-      - 'docker exec "$(cat ${container_id})" df -h'
+{lang="yaml",linenos=off}
+```
+script:
+  [...]
+  - 'docker exec "$(cat ${container_id})" df -h'
+```
 
 You can also run the command with `--tty`, which will allocate a pseudo-TTY, allowing things like colors to be passed through to Travis for prettier output.
 
@@ -551,17 +579,21 @@ Now that we have a Docker container running (one for each of the distributions l
 This is the easiest test; `ansible-playbook` has a built in command to check a playbook's syntax (including all the included files and roles), and return `0` if there are no problems, or an error code and some output if there were any syntax issues.
 
 {lang="text"}
-    ansible-playbook /etc/ansible/roles/role_under_test/test.yml --syntax-check
+```
+ansible-playbook /etc/ansible/roles/role_under_test/test.yml --syntax-check
+```
 
 Add this as a command in the `script` section of `.travis.yml`:
 
-{lang="text"}
-    script:
-      # Check the role/playbook's syntax.
-      - >
-        docker exec --tty "$(cat ${container_id})" env TERM=xterm
-        ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
-        --syntax-check
+{lang="yaml"}
+```
+script:
+  # Check the role/playbook's syntax.
+  - >
+    docker exec --tty "$(cat ${container_id})" env TERM=xterm
+    ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
+    --syntax-check
+```
 
 If there are any syntax errors, Travis will fail the build and output the errors in the log.
 
@@ -569,11 +601,13 @@ If there are any syntax errors, Travis will fail the build and output the errors
 
 The next aspect to check is whether the role runs correctly or fails on its first run. Add this after the `--syntax-check` test:
 
-{lang="text"}
-    # Run the role/playbook with ansible-playbook.
-    - >
-      docker exec --tty "$(cat ${container_id})" env TERM=xterm
-      ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
+{lang="yaml"}
+```
+# Run the role/playbook with ansible-playbook.
+- >
+  docker exec --tty "$(cat ${container_id})" env TERM=xterm
+  ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
+```
 
 Ansible returns a non-zero exit code if the playbook run fails, so Travis will know whether the command succeeded or failed.
 
@@ -581,18 +615,20 @@ Ansible returns a non-zero exit code if the playbook run fails, so Travis will k
 
 Another important test is the idempotence test---does the role change anything if it runs a second time? It should not, since all tasks you perform via Ansible should be idempotent (ensuring a static/unchanging configuration on subsequent runs with the same settings).
 
-{lang="text"}
-    # Run the role/playbook again, checking to make sure it's idempotent.
-    - idempotence=$(mktemp)
-    - >
-      docker exec "$(cat ${container_id})"
-      ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
-      | tee -a ${idempotence}
-    - >
-      tail ${idempotence}
-      | grep -q 'changed=0.*failed=0'
-      && (echo 'Idempotence test: pass' && exit 0)
-      || (echo 'Idempotence test: fail' && exit 1)
+{lang="yaml"}
+```
+# Run the role/playbook again, checking to make sure it's idempotent.
+- idempotence=$(mktemp)
+- >
+  docker exec "$(cat ${container_id})"
+  ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
+  | tee -a ${idempotence}
+- >
+  tail ${idempotence}
+  | grep -q 'changed=0.*failed=0'
+  && (echo 'Idempotence test: pass' && exit 0)
+  || (echo 'Idempotence test: fail' && exit 1)
+```
 
 This command runs the exact same command as before, but pipes the results into another temporary file (using `tee`, which pipes the output to the console and the file), and then the next command reads the output and checks to make sure 'changed' and 'failed' both report `0`. If there were no changes or failures, the idempotence test passes (and Travis sees the `0` exit and is happy). If there were any changes or failures, the test fails (and Travis sees the `1` exit and reports a build failure).
 
@@ -600,9 +636,11 @@ This command runs the exact same command as before, but pipes the results into a
 
 The last thing I check is whether the role actually did what it was supposed to do. If it configured a web server, is the server responding on port 80 or 443 without any errors? If it configured a command line application, does the application work when invoked, and do the things it's supposed to do?
 
-{lang="text"}
-    # Ensure Java is installed.
-    - 'docker exec --tty "$(cat ${container_id})" env TERM=xterm which java'
+{lang="yaml"}
+```
+# Ensure Java is installed.
+- 'docker exec --tty "$(cat ${container_id})" env TERM=xterm which java'
+```
 
 In this example, a simple test of whether or not `java` is installed is used as a functional test of the role. In other cases, I might run the command `curl http://localhost:3000/` (to check if an app is responding on a particular port), or some other command that verifies an application is installed and running correctly.
 
@@ -663,17 +701,19 @@ Each of the options has some benefits and drawbacks; you should check them all o
 Tools to help manage, test, and run playbooks regularly and easily, such as Travis CI, Jenkins, and Ansible Tower, also help deliver certainty when applying changes to your infrastructure using Ansible. In addition the information contained in this chapter, read through the [Testing Strategies](http://docs.ansible.com/test_strategies.html) documentation in Ansible's documentation for a comprehensive overview of infrastructure testing and Ansible.
 
 {lang="text",linenos=off}
-     ________________________________________
-    / The first rule of any technology used  \
-    | in a business is that automation       |
-    | applied to an efficient operation will |
-    | magnify the efficiency. The second is  |
-    | that automation applied to an          |
-    | inefficient operation will magnify the |
-    \ inefficiency. (Bill Gates)             /
-     ----------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ ________________________________________
+/ The first rule of any technology used  \
+| in a business is that automation       |
+| applied to an efficient operation will |
+| magnify the efficiency. The second is  |
+| that automation applied to an          |
+| inefficient operation will magnify the |
+\ inefficiency. (Bill Gates)             /
+ ----------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```

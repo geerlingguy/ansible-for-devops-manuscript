@@ -9,6 +9,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   1. [#246](https://github.com/geerlingguy/ansible-for-devops/issues/246): Update formatting of code examples.
   2. [#245](https://github.com/geerlingguy/ansible-for-devops/issues/245): Fix dynamic inclusion of variable files based on `ansible_os_family` in chapter 5.
   3. [#220](https://github.com/geerlingguy/ansible-for-devops/issues/220): Update 'Your first Ansible playbook' example in chapter 2 to use `chrony` instead of `ntp`, and highlight Ansible's syntax possibilities.
+  4. Updated list of tested platforms in Travis CI testing example in chapter 11.
 
 ## Version 1.22 (2020-03-20)
 
