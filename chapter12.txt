@@ -25,42 +25,46 @@ In order to use these modules, you need OpenSSL installed, and also one extra Py
 
 Here's a quick example of the tasks required to generate a self-signed cert:
 
-{lang="text",linenos=off}
-    - name: Ensure directory exists for local self-signed TLS certs.
-      file:
-        path: /etc/ssl/certs/example
-        state: directory
-    
-    - name: Generate an OpenSSL private key.
-      openssl_privatekey:
-        path: /etc/ssl/certs/example/privkey.pem
-    
-    - name: Generate an OpenSSL CSR.
-      openssl_csr:
-        path: /etc/ssl/certs/example/example.csr
-        privatekey_path: /etc/ssl/certs/example/privkey.pem
-        common_name: "example.com"
-    
-    - name: Generate a Self Signed OpenSSL certificate.
-      openssl_certificate:
-        path: /etc/ssl/certs/example/fullchain.pem
-        privatekey_path: /etc/ssl/certs/example/privkey.pem
-        csr_path: /etc/ssl/private/example/example.csr
-        provider: selfsigned
+{lang="yaml",linenos=off}
+```
+- name: Ensure directory exists for local self-signed TLS certs.
+  file:
+    path: /etc/ssl/certs/example
+    state: directory
+
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: /etc/ssl/certs/example/privkey.pem
+
+- name: Generate an OpenSSL CSR.
+  openssl_csr:
+    path: /etc/ssl/certs/example/example.csr
+    privatekey_path: /etc/ssl/certs/example/privkey.pem
+    common_name: "example.com"
+
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: /etc/ssl/certs/example/fullchain.pem
+    privatekey_path: /etc/ssl/certs/example/privkey.pem
+    csr_path: /etc/ssl/private/example/example.csr
+    provider: selfsigned
+```
 
 These tasks ensure there's a directory inside which the certificate will live, create a private key and Certificate Signing Request (CSR) in that directory, and use them to generate the final cert.
 
 You can then use this certificate to serve HTTPS requests using a web server; for example, in an Nginx `server` configuration:
 
 {lang="text",linenos=off}
-    server {
-        listen 443 ssl default_server;
-        server_name example.com;
-    
-        ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
-        ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
-        ...
-    }
+```
+server {
+    listen 443 ssl default_server;
+    server_name example.com;
+
+    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+    ...
+}
+```
 
 Let's put together a full playbook using the `openssl_*` modules and Nginx, to build a server complete with a self-signed certificate and a secure Nginx TLS configuration.
 
@@ -70,71 +74,79 @@ For the sake of convenience, this example will target a Debian 9 server (though 
 
 Create a new folder for the Self-Signed Certificate web server playbook, and add a `main.yml` playbook:
 
-{lang="text"}
-    ---
-    - hosts: all
-    
-      vars_files:
-        - vars/main.yml
-    
-      pre_tasks:
-        - name: Ensure apt cache is updated.
-          apt: update_cache=yes cache_valid_time=600
-    
-        - name: Install dependency for pyopenssl.
-          apt: name=libssl-dev state=present
+{lang="yaml"}
+```
+---
+- hosts: all
+
+  vars_files:
+    - vars/main.yml
+
+  pre_tasks:
+    - name: Ensure apt cache is updated.
+      apt: update_cache=yes cache_valid_time=600
+
+    - name: Install dependency for pyopenssl.
+      apt: name=libssl-dev state=present
+```
 
 To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later). Finally, `libssl-dev` is a dependency we'll need to have on the system to make sure `pyopenssl` can be installed by `pip` later, so we'll do that too.
 
 Next, to save some time, we can rely on some Ansible Galaxy roles to install and configure some required software on the server:
 
-{lang="text",starting-line-number=14}
-      roles:
-        - geerlingguy.firewall
-        - geerlingguy.pip
-        - geerlingguy.nginx
+{lang="yaml",starting-line-number=14}
+```
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.pip
+    - geerlingguy.nginx
+```
 
 We use the `firewall` role to configure `iptables` to only allow traffic to the server on certain ports, `pip` to install Python's Pip package manager and the required `pyOpenSSL` library, and `nginx` to install and configure Nginx.
 
 To get these roles installed, add a `requirements.yml` file to your playbook directory, with the contents:
 
-{lang="text"}
-    ---
-    - src: geerlingguy.firewall
-    - src: geerlingguy.pip
-    - src: geerlingguy.nginx
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.pip
+- src: geerlingguy.nginx
+```
 
 Then run `ansible-galaxy install -r requirements.yml` to install the roles.
 
 T> In most cases, you should create an `ansible.cfg` in the playbook directory, with at least the following contents:
 T> 
 T> {lang="text",linenos=off}
-T> ~~~~~~~~~~~~~~~
+T> ~~~
 T> [defaults]
 T> roles_path = ./roles
-T> ~~~~~~~~~~~~~~~
+T> ~~~
 T> 
 T> This way, role dependencies are installed inside the playbook directory itself instead of in your system-wide roles directory (as long as you run the `ansible-galaxy` command inside the playbook directory).
 
 Now let's define a few variables to make the `firewall`, `pip`, and `nginx` roles configure things how we want:
 
-{lang="text"}
-    # Firewall settings.
-    firewall_allowed_tcp_ports:
-      - "22"
-      - "80"
-      - "443"
-    
-    # Python settings.
-    pip_package: python3-pip
-    pip_install_packages: ['pyopenssl']
-    
-    # Nginx settings.
-    nginx_vhosts: []
-    nginx_remove_default_vhost: True
-    nginx_ppa_use: True
-    nginx_ppa_version: stable
-    nginx_docroot: /var/www/html
+{lang="yaml"}
+```
+# Firewall settings.
+firewall_allowed_tcp_ports:
+  - "22"
+  - "80"
+  - "443"
+
+# Python settings.
+pip_package: python3-pip
+pip_install_packages: ['pyopenssl']
+
+# Nginx settings.
+nginx_vhosts: []
+nginx_remove_default_vhost: True
+nginx_ppa_use: True
+nginx_ppa_version: stable
+nginx_docroot: /var/www/html
+```
 
 For the firewall, you need port 22 open for remote SSH access, port 80 for HTTP requests (which we'll redirect to HTTPS), and 443 for HTTPS.
 
@@ -144,103 +156,115 @@ For Nginx, we want the default virtual host (server) which comes with the distro
 
 Now that we have all the base packages installed and configured, the next step is to generate the self-signed certificate. To keep our playbook clean, the required tasks can go into an imported task file, imported in the `main.yml` like so:
 
-{lang="text",starting-line-number=19}
-      tasks:
-        - import_tasks: tasks/self-signed-cert.yml
+{lang="yaml",starting-line-number=19}
+```
+  tasks:
+    - import_tasks: tasks/self-signed-cert.yml
+```
 
 Create a `tasks` folder, and create a `self-signed-cert.yml` task file inside. We'll place the tasks that create the key, generate the CSR, and generate the cert into this file:
 
-{lang="text"}
-    ---
-    - name: Ensure directory exists for local self-signed TLS certs.
-      file:
-        path: "{{ certificate_dir }}/{{ server_hostname }}"
-        state: directory
-    
-    - name: Generate an OpenSSL private key.
-      openssl_privatekey:
-        path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
-    
-    - name: Generate an OpenSSL CSR.
-      openssl_csr:
-        path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
-        privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
-        common_name: "{{ server_hostname }}"
-    
-    - name: Generate a Self Signed OpenSSL certificate.
-      openssl_certificate:
-        path: "{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem"
-        privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
-        csr_path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
-        provider: selfsigned
+{lang="yaml"}
+```
+---
+- name: Ensure directory exists for local self-signed TLS certs.
+  file:
+    path: "{{ certificate_dir }}/{{ server_hostname }}"
+    state: directory
+
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+
+- name: Generate an OpenSSL CSR.
+  openssl_csr:
+    path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
+    privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+    common_name: "{{ server_hostname }}"
+
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: "{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem"
+    privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+    csr_path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
+    provider: selfsigned
+```
 
 We added a two variables which we'll now define in the `vars/main.yml` file (using variables makes it easier to change the site and/or refactor to allow multiple values in the future). Add these variables to the vars file:
 
-{lang="text",starting-line-number=19}
-    # Self-signed certificate settings.
-    certificate_dir: /etc/ssl/private
-    server_hostname: https.test
+{lang="yaml",starting-line-number=19}
+```
+# Self-signed certificate settings.
+certificate_dir: /etc/ssl/private
+server_hostname: https.test
+```
 
 Now that the playbook can generate a certificate (or on future runs, idempotently verify the certificate's existence), we need to configure Nginx to use the cert to deliver traffic using TLS for a particular URL.
 
 The `geerlingguy.nginx` role took care of the majority of Nginx configuration, but we disabled that role's management of virtual hosts, in favor of managing a single virtual host (or `server` directive) ourselves. The following tasks copy an example landing page into a defined docroot, then our custom HTTPS `server` configuration to use the generated cert for the docroot:
 
-{lang="text",starting-line-number=22}
-        - name: Ensure docroot exists.
-          file:
-            path: "{{ nginx_docroot }}"
-            state: directory
-    
-        - name: Copy example index.html file in place.
-          copy:
-            src: files/index.html
-            dest: "{{ nginx_docroot }}/index.html"
-            mode: 0755
-    
-        - name: Copy Nginx server configuration in place.
-          template:
-            src: templates/https.test.conf.j2
-            dest: /etc/nginx/sites-enabled/https.test.conf
-            mode: 0644
-          notify: restart nginx
+{lang="yaml",starting-line-number=22}
+```
+    - name: Ensure docroot exists.
+      file:
+        path: "{{ nginx_docroot }}"
+        state: directory
+
+    - name: Copy example index.html file in place.
+      copy:
+        src: files/index.html
+        dest: "{{ nginx_docroot }}/index.html"
+        mode: 0755
+
+    - name: Copy Nginx server configuration in place.
+      template:
+        src: templates/https.test.conf.j2
+        dest: /etc/nginx/sites-enabled/https.test.conf
+        mode: 0644
+      notify: restart nginx
+```
 
 Fairly straightforward, but we need to fill in a couple blanks. First, here's a quick and easy `index.html` just to allow you to test things out:
 
-{lang="text"}
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>HTTPS Self-Signed Certificate Test</title>
-      <style>* { font-family: Helvetica, Arial, sans-serif }</style>
-    </head>
-    <body>
-      <h1>HTTPS Self-Signed Certificate Test</h1>
-        <p>If you can see this message, it worked!</p>
-    </body>
-    </html>
+{lang="html"}
+```
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HTTPS Self-Signed Certificate Test</title>
+  <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+</head>
+<body>
+  <h1>HTTPS Self-Signed Certificate Test</h1>
+    <p>If you can see this message, it worked!</p>
+</body>
+</html>
+```
 
 Put that HTML into your playbook directory at `files/index.html`, then create another file, `templates/https.test.conf.j2`, with the following contents:
 
 {lang="text"}
-    # HTTPS Test server configuration.
-    
-    # Redirect HTTP traffic to HTTPS.
-    server {
-        listen 80 default_server;
-        server_name _;
-        index index.html;
-        return 301 https://$host$request_uri;
-    }
-    
-    # Serve HTTPS traffic using the self-signed certificate created by Ansible.
-    server {
-        listen 443 ssl default_server;
-        server_name {{ server_hostname }};
-        root {{ nginx_docroot }};
-    
-        ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
-        ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
-    }
+```
+# HTTPS Test server configuration.
+
+# Redirect HTTP traffic to HTTPS.
+server {
+    listen 80 default_server;
+    server_name _;
+    index index.html;
+    return 301 https://$host$request_uri;
+}
+
+# Serve HTTPS traffic using the self-signed certificate created by Ansible.
+server {
+    listen 443 ssl default_server;
+    server_name {{ server_hostname }};
+    root {{ nginx_docroot }};
+
+    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+}
+```
 
 The most important parts of this server configuration instruct Nginx to use the SSL certificate we generated (at the path `{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;`) for requests over port 443 for the domain `{{ server_hostname }}` (in this case, requests to `https://https.test/`).
 
@@ -269,11 +293,13 @@ In this example, we'll acquire a certificate from Let's Encrypt and set up auto-
 
 Instead of writing all the automation ourselves, we can rely on some roles from Ansible Galaxy to do the heavy lifting. Create a `requirements.yml` file in a new project directory, containing:
 
-{lang="text"}
-    ---
-    - src: geerlingguy.firewall
-    - src: geerlingguy.certbot
-    - src: geerlingguy.nginx
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.certbot
+- src: geerlingguy.nginx
+```
 
 We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a web server to serve content over HTTPS.
 
@@ -286,8 +312,10 @@ The `geerlingguy.certbot` role is the heart of the operation; here's how it work
 Once we have the requirements file set up, create an `ansible.cfg` file in the project directory to tell Ansible where to store and use the downloaded roles:
 
 {lang="text"}
-    [defaults]
-    roles_path = ./roles
+```
+[defaults]
+roles_path = ./roles
+```
 
 Install the required roles with: `ansible-galaxy install -r requirements.yml`.
 
@@ -297,62 +325,70 @@ Add a `main.yml` playbook to the project directory. This playbook will target se
 
 First things first, start the play on all the `letsencrypt` hosts, and since we might have to install Python to gather facts about the server for Ansible to use, disable the initial `gather_facts`:
 
-{lang="text"}
-    ---
-    - hosts: letsencrypt
-      gather_facts: false
-      become: true
-    
-      vars_files:
-        - vars/main.yml
+{lang="yaml"}
+```
+---
+- hosts: letsencrypt
+  gather_facts: false
+  become: true
+
+  vars_files:
+    - vars/main.yml
+```
 
 We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, to add the configuration for certificate generation, firewall configuration, and Nginx, we'll put all the variables in a `vars/main.yml` file.
 
 In a series of `pre_tasks` in `main.yml`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
 
-{lang="text",starting-line-number=9}
-      pre_tasks:
-        - name: Install Python if not already present.
-          raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
-          changed_when: false
-    
-        - name: Gather facts after Python is definitely present.
-          setup:
-    
-        - name: Ensure apt cache is updated.
-          apt: update_cache=true cache_valid_time=600
+{lang="yaml",starting-line-number=9}
+```
+  pre_tasks:
+    - name: Install Python if not already present.
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+      changed_when: false
+
+    - name: Gather facts after Python is definitely present.
+      setup:
+
+    - name: Ensure apt cache is updated.
+      apt: update_cache=true cache_valid_time=600
+```
 
 Now, it's time for the meat of this playbook, the `roles`. Call each one:
 
-{lang="text",starting-line-number=9}
-      roles:
-        - geerlingguy.firewall
-        - geerlingguy.nginx
-        - geerlingguy.certbot
+{lang="yaml",starting-line-number=9}
+```
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.nginx
+    - geerlingguy.certbot
+```
 
 Since the roles will be doing the heavy lifting (yay for easy-to-read playbooks!), we tell them what to do via variables in `vars/main.yml`:
 
-{lang="text"}
-    ---
-    # Firewall settings.
-    firewall_allowed_tcp_ports:
-      - "22"
-      - "80"
-      - "443"
-    
-    # Nginx settings.
-    nginx_vhosts: []
-    nginx_remove_default_vhost: true
-    nginx_ppa_use: true
-    nginx_ppa_version: stable
-    nginx_docroot: /var/www/html
-    
-    # Let's Encrypt certificate settings.
-    certbot_create_if_missing: true
-    certbot_admin_email: "{{ letsencrypt_email }}"
-    certbot_certs:
-      - domains:
-          - "{{ inventory_hostname }}"
+{lang="yaml"}
+```
+---
+# Firewall settings.
+firewall_allowed_tcp_ports:
+  - "22"
+  - "80"
+  - "443"
+
+# Nginx settings.
+nginx_vhosts: []
+nginx_remove_default_vhost: true
+nginx_ppa_use: true
+nginx_ppa_version: stable
+nginx_docroot: /var/www/html
+
+# Let's Encrypt certificate settings.
+certbot_create_if_missing: true
+certbot_admin_email: "{{ letsencrypt_email }}"
+certbot_certs:
+  - domains:
+      - "{{ inventory_hostname }}"
+```
 
 By section:
 
@@ -375,61 +411,69 @@ So for the last part of the playbook, we need to:
 
 To make sure the `nginx_docroot` exists, add a task to the `tasks` section of the playbook:
 
-{lang="text",starting-line-number=25}
-      tasks:
-        - name: Ensure docroot exists.
-          file:
-            path: "{{ nginx_docroot }}"
-            state: directory
+{lang="yaml",starting-line-number=25}
+```
+  tasks:
+    - name: Ensure docroot exists.
+      file:
+        path: "{{ nginx_docroot }}"
+        state: directory
+```
 
 I> Since `/var/www` should already exist on an Ubuntu server, this is all we need. If the parent directory heirarchy didn't exist (e.g. we had `nginx_docroot` set to `/var/www/example/html`), this task may also need `recurse: true` to ensure the parent directories exist.
 
 Now we need an HTML file inside the docroot so Nginx can serve it, otherwise Nginx will return a 404 Not Found. Create a simple HTML file named `files/index.html` in your project directory, with the following contents:
 
-{lang="text"}
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>HTTPS Let's Encrypt Test</title>
-      <style>* { font-family: Helvetica, Arial, sans-serif }</style>
-    </head>
-    <body>
-      <h1>HTTPS Let's Encrypt Test</h1>
-        <p>If you can see this message, it worked!</p>
-    </body>
-    </html>
+{lang="html"}
+```
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HTTPS Let's Encrypt Test</title>
+  <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+</head>
+<body>
+  <h1>HTTPS Let's Encrypt Test</h1>
+    <p>If you can see this message, it worked!</p>
+</body>
+</html>
+```
 
 Then add a `copy` task in `main.yml` to copy the file into place after the docroot task:
 
-{lang="text",starting-line-number=31}
-        - name: Copy example index.html file in place.
-          copy:
-            src: files/index.html
-            dest: "{{ nginx_docroot }}/index.html"
-            mode: 0755
+{lang="yaml",starting-line-number=31}
+```
+    - name: Copy example index.html file in place.
+      copy:
+        src: files/index.html
+        dest: "{{ nginx_docroot }}/index.html"
+        mode: 0755
+```
 
 Finally, we need to configure Nginx with two `server` blocks; one to redirect HTTP requests to HTTPS, and the other to serve HTTPS traffic using the Let's Encrypt certificates. Create a Nginx configuration template in `templates/https-letsencrypt.conf.j2` with the following:
 
 {lang="text"}
-    # HTTPS server configuration.
-    
-    # Redirect HTTP traffic to HTTPS.
-    server {
-        listen 80 default_server;
-        server_name _;
-        index index.html;
-        return 301 https://$host$request_uri;
-    }
-    
-    # Serve HTTPS traffic using the Let's Encrypt certificate.
-    server {
-        listen 443 ssl default_server;
-        server_name {{ inventory_hostname }};
-        root {{ nginx_docroot }};
-    
-        ssl_certificate /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/{{ inventory_hostname }}/privkey.pem;
-    }
+```
+# HTTPS server configuration.
+
+# Redirect HTTP traffic to HTTPS.
+server {
+    listen 80 default_server;
+    server_name _;
+    index index.html;
+    return 301 https://$host$request_uri;
+}
+
+# Serve HTTPS traffic using the Let's Encrypt certificate.
+server {
+    listen 443 ssl default_server;
+    server_name {{ inventory_hostname }};
+    root {{ nginx_docroot }};
+
+    ssl_certificate /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ inventory_hostname }}/privkey.pem;
+}
+```
 
 The first `server` block configures a default port 80 server which redirects _all_ traffic on port 80, for any incoming request, to the same URL, but with `https://`. This is a handy way to force all traffic to SSL by default if you're using Nginx.
 
@@ -441,13 +485,15 @@ Finally, it tells Nginx to use the certificate and key inside the default Let's 
 
 Add a task templating this Jinja template to a Nginx config file in `main.yml`, making sure to restart Nginx when the template is created or modified:
 
-{lang="text",starting-line-number=31}
-        - name: Copy Nginx server configuration in place.
-          template:
-            src: templates/https-letsencrypt.conf.j2
-            dest: /etc/nginx/sites-enabled/https-letsencrypt.conf
-            mode: 0644
-          notify: restart nginx
+{lang="yaml",starting-line-number=31}
+```
+    - name: Copy Nginx server configuration in place.
+      template:
+        src: templates/https-letsencrypt.conf.j2
+        dest: /etc/nginx/sites-enabled/https-letsencrypt.conf
+        mode: 0644
+      notify: restart nginx
+```
 
 At this point, we have a complete playbook. It should set up a firewall, create a certificate, and configure Nginx to serve a web page using the certificate. But we don't have a server to run the playbook against!
 
@@ -466,22 +512,28 @@ Once you've done that, and can confirm you can SSH into the server at the actual
 Assuming your server is reachable at `subdomain.example.com`, and your SSH username is `myuser`, create an `inventory` file in the project directory with the following contents:
 
 {lang="text"}
-    [letsencrypt]
-    subdomain.example.com
-    
-    [letsencrypt:vars]
-    ansible_ssh_user=myuser
-    letsencrypt_email=webmaster@example.com
+```
+[letsencrypt]
+subdomain.example.com
+
+[letsencrypt:vars]
+ansible_ssh_user=myuser
+letsencrypt_email=webmaster@example.com
+```
 
 Now that the playbook knows how to connect to your public server, it's time to try it out. First, make sure all the required Galaxy roles are installed:
 
 {lang="text",linenos="off"}
-    ansible-galaxy install -r requirements.yml
+```
+ansible-galaxy install -r requirements.yml
+```
 
 Then run the playbook:
 
 {lang="text",linenos="off"}
-    ansible-playbook -i inventory main.yml
+```
+ansible-playbook -i inventory main.yml
+```
 
 After a couple minutes, assuming Let's Encrypt could reach your server at subdomain.example.com on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
 
@@ -512,38 +564,44 @@ We're going to use the exact same playbook and configuration from the self-signe
 First, configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
 
 {lang="text",starting-line-number=11}
-    # Proxy HTTPS traffic using a self-signed certificate.
-    server {
-        listen 443 ssl default_server;
-        server_name {{ server_hostname }};
-    
-        location / {
-            include /etc/nginx/proxy_params;
-            proxy_pass          http://localhost:8080;
-            proxy_read_timeout  90s;
-            proxy_redirect      http://localhost:8080 {{ server_hostname }};
-        }
-    
-        ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
-        ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+```
+# Proxy HTTPS traffic using a self-signed certificate.
+server {
+    listen 443 ssl default_server;
+    server_name {{ server_hostname }};
+
+    location / {
+        include /etc/nginx/proxy_params;
+        proxy_pass          http://localhost:8080;
+        proxy_read_timeout  90s;
+        proxy_redirect      http://localhost:8080 {{ server_hostname }};
     }
+
+    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+}
+```
 
 All that's been done is the removal of the `root` directive, which was replaced with the `location` directive. This particular `location` directive tells Nginx to proxy _all_ requests to any path (`/` includes everything) to the address `http://localhost:8080`, with a 90 second backend timeout.
 
 This assumes there's a backend HTTP service running on port 8080, though! So, the second step is to run something on port 8080. Luckily, since we already have Python and a web root, we can use Python to run an HTTP server with a very simple CLI command:
 
 {lang="text",linenos="off"}
-    python3 -m http.server 8080 --directory /var/www/html
+```
+python3 -m http.server 8080 --directory /var/www/html
+```
 
 You can run that command interactively, or if you're automating it in the Ansible playbook from earlier, you can add a task after the "Copy example index.html file in place." task:
 
-{lang="text",starting-line-number=33}
-        - name: Start simple python webserver on port 8080.
-          shell: >
-            python3 -m http.server 8080 --directory {{ nginx_docroot }} &
-          changed_when: false
-          async: 45
-          poll: 0
+{lang="yaml",starting-line-number=33}
+```
+    - name: Start simple python webserver on port 8080.
+      shell: >
+        python3 -m http.server 8080 --directory {{ nginx_docroot }} &
+      changed_when: false
+      async: 45
+      poll: 0
+```
 
 Note the use of `&`, `async` and `poll` to fire and forget the command, so it can run in the background forever. It is _not_ a good idea to run applications like this in production, but for demonstration purposes it's adequate to verify Nginx is proxying HTTPS requests correctly.
 
@@ -566,12 +624,14 @@ Once you learn to automate HTTPS certificates with Ansible and proxy backend ser
 HTTPS is now an essential feature of any public-facing website and application, and it's fairly standard to use it on internal services too. Ansible automates the process of encrypting all your HTTP traffic with TLS certificates, no matter the certificate type or use case.
 
 {lang="text",linenos=off}
-     ____________________________________________
-    / Fool me once, shame on you. Fool me twice, \
-    \ prepare to die. (Klingon Proverb)          /
-     --------------------------------------------
-            \   ^__^
-             \  (oo)\_______
-                (__)\       )\/\
-                    ||----w |
-                    ||     ||
+```
+ ____________________________________________
+/ Fool me once, shame on you. Fool me twice, \
+\ prepare to die. (Klingon Proverb)          /
+ --------------------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+```
