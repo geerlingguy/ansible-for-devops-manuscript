@@ -6,7 +6,7 @@ To use SSH on Windows, you need additional software. But Ansible also requires o
 
 This appendix will guide Windows users through the author's preferred method of using Ansible on a Windows workstation.
 
-I> Ansible 1.7 and later can manage Windows hosts (see Ansible's [Windows Support](http://docs.ansible.com/intro_windows.html) documentation), but doesn't run within Windows natively. You still need to follow the instructions here to run the Ansible client on a Windows host.
+I> Ansible 1.7 and later can manage Windows hosts (see Ansible's [Windows Support](https://docs.ansible.com/ansible/latest/user_guide/intro_windows.html) documentation), but doesn't run within Windows natively. You still need to follow the instructions here to run the Ansible client on a Windows host.
 
 ## Method 1 - Use the Windows Subsystem for Linux / Bash on Ubuntu
 
@@ -20,10 +20,10 @@ Microsoft has the most up-to-date [installation guide](https://msdn.microsoft.co
   2. Open a PowerShell prompt as an administrator and run the command:
 
      {lang="text",linenos=off}
-     ~~~~~~~~
+     ~~~
      Enable-WindowsOptionalFeature -Online -FeatureName \
      Microsoft-Windows-Subsystem-Linux
-     ~~~~~~~~
+     ~~~
 
   3. Restart your computer when prompted.
 
@@ -42,23 +42,31 @@ Now that you have Bash on Ubuntu running inside Windows, you can install Ansible
 Before installing Ansible, make sure your package list is up to date by updating apt-get:
 
 {lang="text",linenos=off}
-    $ sudo apt-get update
+```
+$ sudo apt-get update
+```
 
 The easiest way to install Ansible is to use `pip`, a package manager for Python. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
 
 {lang="text",linenos=off}
-    $ sudo apt-get install -y python-pip python-dev
+```
+$ sudo apt-get install -y python-pip python-dev
+```
 
 After the installation is complete, install Ansible:
 
 {lang="text",linenos=off}
-    $ sudo pip install ansible
+```
+$ sudo pip install ansible
+```
 
 After Ansible and all its dependencies are downloaded and installed, make sure Ansible is running and working:
 
 {lang="text",linenos=off}
-    $ ansible --version
-    ansible 2.9.5
+```
+$ ansible --version
+ansible 2.9.5
+```
 
 T> Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
 
@@ -83,24 +91,30 @@ Once you've installed all three applications, you can use either the command pro
 Open PowerShell (open the Start Menu or go to the Windows home and type in 'PowerShell'), and change directory to a place where you will store some metadata about the virtual machine you're about to boot. I like having a 'VMs' folder in my home directory to contain all my virtual machines:
 
 {lang="text",linenos=off}
-    # Change directory to your user directory.
-    PS > cd C:/Users/[username]
-    # Make a 'VMs' directory and cd to it.
-    PS > md -Name VMs
-    PS > cd VMs
-    # Make a 'Ubuntu64' directory and cd to it.
-    PS > md -Name ubuntu-bionic-64
-    PS > cd ubuntu-bionic-64
+```
+# Change directory to your user directory.
+PS > cd C:/Users/[username]
+# Make a 'VMs' directory and cd to it.
+PS > md -Name VMs
+PS > cd VMs
+# Make a 'Ubuntu64' directory and cd to it.
+PS > md -Name ubuntu-bionic-64
+PS > cd ubuntu-bionic-64
+```
 
 Now, use `vagrant` to create the scaffolding for our new virtual machine:
 
 {lang="text",linenos=off}
-    PS > vagrant init ubuntu/bionic64
+```
+PS > vagrant init ubuntu/bionic64
+```
 
 Vagrant creates a 'Vagrantfile' describing a basic Ubuntu 64-bit virtual machine in the current directory, and is now ready for you to run `vagrant up` to download and build the machine. Run `vagrant up`, and wait for the box to be downloaded and installed:
 
 {lang="text",linenos=off}
-    PS > vagrant up
+```
+PS > vagrant up
+```
 
 After a few minutes, the box will be downloaded and a new virtual machine set up inside VirtualBox. Vagrant will boot and configure the machine according to the defaults defined in the Vagrantfile. Once the VM is booted and you're back at the command prompt, it's time to log into the VM.
 
@@ -109,21 +123,25 @@ After a few minutes, the box will be downloaded and a new virtual machine set up
 Use `vagrant ssh-config` to grab the SSH connection details, which you will then enter into PuTTY to connect to the VM.
 
 {lang="text",linenos=off}
-    PS > vagrant ssh-config
+```
+PS > vagrant ssh-config
+```
 
 It should show something like:
 
 {lang="text",linenos=off}
-    Host default
-      Hostname 127.0.0.1
-      User vagrant
-      Port 2222
-      UserKnownHostsFile /dev/null
-      StrictHostKeyChecking no
-      PasswordAuthentication no
-      IdentityFile C:/Users/[username]/.vagrant.d/insecure_private_key
-      IdentitiesOnly yes
-      LogLevel FATAL
+```
+Host default
+  Hostname 127.0.0.1
+  User vagrant
+  Port 2222
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking no
+  PasswordAuthentication no
+  IdentityFile C:/Users/[username]/.vagrant.d/insecure_private_key
+  IdentitiesOnly yes
+  LogLevel FATAL
+```
 
 The lines we're interested in are the Hostname, User, Port, and IdentityFile.
 
@@ -137,15 +155,19 @@ Click Open to connect, and if you receive a Security Alert concerning the server
 PuTTY will ask for login credentials; we'll use the default login for a Vagrant box (`vagrant` for both the username and password):
 
 {lang="text",linenos=off}
-    login as: vagrant
-    vagrant@127.0.0.1's password: vagrant
+```
+login as: vagrant
+vagrant@127.0.0.1's password: vagrant
+```
 
 You should now be connected to the virtual machine, and see the message of the day:
 
 {lang="text",linenos=off}
-    Welcome to Ubuntu 18.04.1 LTS (GNU/Linux 4.15.0-43-generic x86_64)
-    ...
-    vagrant@ubuntu-bionic:~$
+```
+Welcome to Ubuntu 18.04.1 LTS (GNU/Linux 4.15.0-43-generic x86_64)
+...
+vagrant@ubuntu-bionic:~$
+```
 
 If you see this prompt, you're logged in, and you can start administering the VM. The next (and final) step is to install Ansible.
 
@@ -156,23 +178,31 @@ T> This example uses PuTTY to log into the VM, but other applications like [Cygw
 Before installing Ansible, make sure your package list is up to date by updating apt-get:
 
 {lang="text",linenos=off}
-    $ sudo apt-get update
+```
+$ sudo apt-get update
+```
 
 The easiest way to install Ansible is to use `pip`, a package manager for Python. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
 
 {lang="text",linenos=off}
-    $ sudo apt-get install -y python-pip python-dev
+```
+$ sudo apt-get install -y python-pip python-dev
+```
 
 After the installation is complete, install Ansible:
 
 {lang="text",linenos=off}
-    $ sudo pip install ansible
+```
+$ sudo pip install ansible
+```
 
 After Ansible and all its dependencies are downloaded and installed, make sure Ansible is running and working:
 
 {lang="text",linenos=off}
-    $ ansible --version
-    ansible 2.9.5
+```
+$ ansible --version
+ansible 2.9.5
+```
 
 T> Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
 

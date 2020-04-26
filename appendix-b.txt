@@ -18,16 +18,18 @@ In YAML, write comments by starting a line with a hash (`#`). If the comment spa
 
 It's also a good idea to use a `name` for every task you write, besides the most trivial. If you're using the `git` module to check out a specific tag, use a `name` to indicate what repository you're using, why a tag instead of a commit hash, etc. This way, whenever your playbook is run, you'll see the comment you wrote and be assured what's going on.
 
-{lang="text",linenos=off}
-    - hosts: all
-    
-      tasks:
-    
-        # This task takes up to five minutes and is required so we will
-        # have access to the images used in our application.
-        - name: Copy the entire file repository to the application.
-          copy:
-            src: [...]
+{lang="yaml",linenos=off}
+```
+- hosts: all
+
+  tasks:
+
+    # This task takes up to five minutes and is required so we will
+    # have access to the images used in our application.
+    - name: Copy the entire file repository to the application.
+      copy:
+        src: [...]
+```
 
 This advice assumes your comments actually indicate what's happening in your playbooks! I use full sentences with a period for all comments and `name`s, but it's okay to use a slightly different style. Just be consistent, and remember, *bad comments are worse than no comments at all*.
 
@@ -37,19 +39,21 @@ If you find yourself writing a playbook over 50-100 lines and configuring three 
 
 Additionally, variables are usually better left in their own file and included using `vars_files` rather than defined inline with a playbook.
 
-{lang="text",linenos=off}
-    - hosts: all
-    
-      vars_files:
-        - vars/main.yml
+{lang="yaml",linenos=off}
+```
+- hosts: all
 
-      handlers:
-        - import_tasks: handlers/handlers.yml
-    
-      tasks:
-        - import_tasks: tasks/init.yml
-        - import_tasks: tasks/database.yml
-        - import_tasks: tasks/app.yml
+  vars_files:
+    - vars/main.yml
+
+  handlers:
+    - import_tasks: handlers/handlers.yml
+
+  tasks:
+    - import_tasks: tasks/init.yml
+    - import_tasks: tasks/database.yml
+    - import_tasks: tasks/app.yml
+```
 
 Using a more hierarchical model like this allows you to see what your playbook is doing at a higher level, and also lets you manage each portion of a configuration or deployment separately. I generally split tasks into separate files once I reach 15-20 tasks in a given file.
 
@@ -71,28 +75,34 @@ If you have a variable that needs to be overridden, but you need to include it i
 
 For example, if you need to have a variable like `package_config_path` that is defaulted to one value on Debian, and another on RHEL, but may need to be overridden from time to time, you can create two files, `vars/Debian.yml` and `vars/RedHat.yml`, with the contents:
 
-{lang="text",linenos=off}
-    ---
-    # Inside vars/Debian.yml
-    __package_config_path: /etc/package/package.conf
+{lang="yaml",linenos=off}
+```
+---
+# Inside vars/Debian.yml
+__package_config_path: /etc/package/package.conf
+```
 
-{lang="text",linenos=off}
-    ---
-    # Inside vars/RedHat.yml
-    __package_config_path: /etc/package/configfile
+{lang="yaml",linenos=off}
+```
+---
+# Inside vars/RedHat.yml
+__package_config_path: /etc/package/configfile
+```
 
 Then, in the playbook using the variable, include the platform-specific vars file and define the final `package_config_path` variable at runtime:
 
-{lang="text",linenos=off}
-    ---
-    # Include variables and define needed variables.
-    - name: Include OS-specific variables.
-      include_vars: "{{ ansible_os_family }}.yml"
+{lang="yaml",linenos=off}
+```
+---
+# Include variables and define needed variables.
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
 
-    - name: Define package_config_path.
-      set_fact:
-        package_config_path: "{{ __package_config_path }}"
-      when: package_config_path is not defined
+- name: Define package_config_path.
+  set_fact:
+    package_config_path: "{{ __package_config_path }}"
+  when: package_config_path is not defined
+```
 
 This way, any playbook using role can override the platform-specific defaults by defining `package_config_path` in its own variables.
 
@@ -100,28 +110,36 @@ This way, any playbook using role can override the platform-specific defaults by
 
 YAML is a human-readable, machine-parseable syntax that allows for almost any list, map, or array structure to be described using a few basic conventions, so it's a great fit for configuration management. Consider the following method of defining a list (or 'collection') of widgets:
 
-{lang="text",linenos=off}
-    widget:
-      - foo
-      - bar
-      - fizz
+{lang="yaml",linenos=off}
+```
+widget:
+  - foo
+  - bar
+  - fizz
+```
 
 This would translate into Python (using the `PyYAML` library employed by Ansible) as the following:
 
-{lang=python,linenos=off}
-    translated_yaml = {'widget': ['foo', 'bar', 'fizz']}
+{lang="python",linenos=off}
+```
+translated_yaml = {'widget': ['foo', 'bar', 'fizz']}
+```
 
 And what about a structured list/map in YAML?
 
-{lang="text",linenos=off}
-    widget:
-      foo: 12
-      bar: 13
+{lang="yaml",linenos=off}
+```
+widget:
+  foo: 12
+  bar: 13
+```
 
 The resulting Python:
 
-{lang=python,linenos=off}
-    translated_yaml = {'widget': {'foo': 12, 'bar': 13}}
+{lang="python",linenos=off}
+```
+translated_yaml = {'widget': {'foo': 12, 'bar': 13}}
+```
 
 A few things to note with both of the above examples:
 
@@ -133,22 +151,25 @@ A few things to note with both of the above examples:
 
 Consider the following task:
 
-{lang="text",linenos=off}
-    - name: Install foo.
-      apt: name=foo state=present
+{lang="yaml",linenos=off}
+```
+- name: Install foo.
+  apt: name=foo state=present
+```
 
 All well and good, right? Well, as you get deeper into Ansible and start defining more complex configuration, you might start seeing tasks like the following:
 
-{lang="text",linenos=off}
-    - name: Copy Phergie shell script into place.
-      template: src=templates/phergie.sh.j2 dest=/opt/phergie.sh \
-      owner={{ phergie_user }} group={{ phergie_user }} mode=755
+{lang="yaml",linenos=off}
+```
+- name: Copy Phergie shell script into place.
+  template: src=templates/phergie.sh.j2 dest=/opt/phergie.sh \
+  owner={{ phergie_user }} group={{ phergie_user }} mode=755
+```
 
 The one-line syntax (which uses Ansible-specific `key=value` shorthand for defining parameters) has some positive attributes:
 
   - Simpler tasks (like installations and copies) are compact and readable. `apt: name=apache2 state=present` and `apt-get install -y apache2` are similarly concise; in this way, an Ansible playbook feels very much like a shell script.
   - Playbooks are more compact, and more configuration is be displayed on one screen.
-  - Ansible's official documentation follows this format, as do many existing roles and playbooks.
 
 However, as highlighted in the above example, there are a few issues with this `key=value` syntax:
 
@@ -166,44 +187,50 @@ The following methods are most often used to define Ansible tasks in playbooks:
 
 Ansible's shorthand syntax uses `key=value` parameters after the name of a module as a key:
 
-{lang="text",linenos=off}
-    - name: Install Nginx.
-      yum: name=nginx state=present
+{lang="yaml",linenos=off}
+```
+- name: Install Nginx.
+  yum: name=nginx state=present
+```
 
 For any situation where an equivalent shell command would roughly match what I'm writing in the YAML, I prefer this method, since it's immediately obvious what's happening, and it's highly unlikely any of the parameters (like `state=present`) will change frequently during development.
 
-Ansible's official documentation generally uses this syntax, so it maps nicely to examples you'll find from Ansible, Inc. and many other sources.
+Ansible's official documentation sometimes uses this syntax for shorter examples, and it also translates easily to ad-hoc commands.
 
 #### Structured map/multi-line (`key:value`)
 
 Define a structured map of parameters (using `key: value`, with each parameter on its own line) for a task:
 
-{lang="text",linenos=off}
-    - name: Copy Phergie shell script into place.
-      template:
-        src: "templates/phergie.sh.j2"
-        dest: "/home/{{ phergie_user }}/phergie.sh"
-        owner: "{{ phergie_user }}"
-        group: "{{ phergie_user }}"
-        mode: 0755
+{lang="yaml",linenos=off}
+```
+- name: Copy Phergie shell script into place.
+  template:
+    src: "templates/phergie.sh.j2"
+    dest: "/home/{{ phergie_user }}/phergie.sh"
+    owner: "{{ phergie_user }}"
+    group: "{{ phergie_user }}"
+    mode: 0755
+```
 
 A few notes on this syntax:
 
   - The structure is all valid YAML, and functions similarly to Ansible's shorthand syntax.
   - Strings, booleans, integers, octals, etc. are all preserved (instead of being converted to strings).
   - Each parameter *must* be on its own line; multiple variables can't be chained together (e.g. `mode: 0755, owner: root, user: root`) to save space.
-  - YAML syntax highlighting works slightly better for this format than `key=value`, since each key will be highlighted, and values will be displayed as constants, strings, etc.
+  - YAML syntax highlighting works better for this format than `key=value`, since each key will be highlighted, and values will be displayed as constants, strings, etc.
 
 #### Folded scalars/multi-line (`>`)
 
 Use the `>` character to break up Ansible's shorthand `key=value` syntax over multiple lines.
 
-{lang="text",linenos=off}
-    - name: Copy Phergie shell script into place.
-      template: >
-        src=templates/phergie.sh.j2
-        dest=/home/{{ phergie_user }}/phergie.sh
-        owner={{ phergie_user }} group={{ phergie_user }} mode=755
+{lang="yaml",linenos=off}
+```
+- name: Copy Phergie shell script into place.
+  template: >
+    src=templates/phergie.sh.j2
+    dest=/home/{{ phergie_user }}/phergie.sh
+    owner={{ phergie_user }} group={{ phergie_user }} mode=755
+```
 
 In YAML, the `>` character denotes a *folded scalar*, where every line that follows (as long as it's indented further than the line with the `>`) will be joined with the line above by a space. So the above YAML and the earlier `template` example will function exactly the same.
 
@@ -211,19 +238,21 @@ This syntax allows arbitrary splitting of lines on parameters, but it does not p
 
 While this syntax is often seen in the wild, I don't recommend it except for certain situations, like tasks using the `command` and `shell` modules with extra options:
 
-{lang="text",linenos=off}
-    - name: Install Drupal.
-      command: >
-        drush si -y --site-name="{{ drupal_site_name }}"
-        --account-name=admin
-        --account-pass=admin
-        --db-url=mysql://{{ domain }}:1234@localhost/{{ domain }}
-        --root={{ drupal_core_path }}
-        creates={{ drupal_core_path }}/sites/default/settings.php
-      notify: restart apache
-      become_user: www-data
+{lang="yaml",linenos=off}
+```
+- name: Install Drupal.
+  command: >
+    drush si -y --site-name="{{ drupal_site_name }}"
+    --account-name=admin
+    --account-pass=admin
+    --db-url=mysql://{{ domain }}:1234@localhost/{{ domain }}
+    --root={{ drupal_core_path }}
+    creates={{ drupal_core_path }}/sites/default/settings.php
+  notify: restart apache
+  become_user: www-data
+```
 
-Sometimes the above is as good as you can do to keep unwieldy tasks formatted in a legible manner.
+Sometimes the above is as good as you can do to keep unwieldy `command` or `shell` tasks formatted in a legible manner.
 
 ### Using `|` to format multiline variables
 
@@ -231,31 +260,39 @@ In addition to using `>` to join multiple lines using spaces, YAML allows the us
 
 For example:
 
-{lang="text"}
-    extra_lines: |
-      first line
-      second line
-      third line
+{lang="yaml"}
+```
+extra_lines: |
+  first line
+  second line
+  third line
+```
 
 Would be translated to a block of text with newlines intact:
 
 {lang="text"}
-    first line
-    second line
-    third line
+```
+first line
+second line
+third line
+```
 
 Using a folded scalar (`>`) would concatenate the lines, which might not be desirable. For example:
 
-{lang="text"}
-    extra_lines: >
-      first line
-      second line
-      third line
+{lang="yaml"}
+```
+extra_lines: >
+  first line
+  second line
+  third line
+```
 
 Would be translated to a single string with no newlines:
 
 {lang="text"}
-    first line second line third line
+```
+first line second line third line
+```
 
 ## Using `ansible-playbook`
 
@@ -275,7 +312,7 @@ Set `forks=[number]` in Ansible's configuration file to set the default `forks` 
 
 Ansible's main configuration file, in `/etc/ansible/ansible.cfg`, allows a wealth of optimizations and customizations for running playbooks and ad-hoc tasks.
 
-Read through the official documentation's [Ansible Configuration File](http://docs.ansible.com/intro_configuration.html) page for customizable options in `ansible.cfg`.
+Read through the official documentation's [Ansible Configuration File](https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html) page for customizable options in `ansible.cfg`.
 
 ## Summary
 
