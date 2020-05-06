@@ -11,6 +11,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   3. [#220](https://github.com/geerlingguy/ansible-for-devops/issues/220): Update 'Your first Ansible playbook' example in chapter 2 to use `chrony` instead of `ntp`, and highlight Ansible's syntax possibilities.
   4. Updated list of tested platforms in Travis CI testing example in chapter 11.
   5. Mention `ansible-bender` alongside mention of legacy Ansible Container software in Docker example in chapter 13.
+  6. [#101](https://github.com/geerlingguy/ansible-for-devops/issues/101): Describe a modern Ansible testing workflow by move testing content into dedicated chapter, chapter 12, covering `yamllint`, `ansible-lint`, Molecule, and other testing strategies. Also, bump former chapters 12-14 into chapters 13-15.
 
 ## Version 1.22 (2020-03-20)
 

@@ -1,757 +1,634 @@
-# Chapter 13 - Docker and Ansible
+# Chapter 13 - Automating HTTPS and TLS Certificates
 
-Docker is a highly optimized platform for building and running containers on local machines and servers in a highly efficient manner. You can think of Docker containers as sort-of lightweight virtual machines. This book won't go into the details of how Docker and Linux containers work, but will provide an introduction to how Ansible can integrate with Docker to build, manage, and deploy containers.
+Today's application environment almost always requires the use of HTTP (and HTTPS) for certain traffic---end users interacting with a website, microservices communicating with each other internally or via the public Internet, or external APIs interacting with your apps.
 
-I> Prior to running example Docker commands or building and managing containers using Ansible, you'll need to make sure Docker is installed either on your workstation or a VM or server where you'll be testing everything. Please see the [installation guide for Docker](https://docs.docker.com/installation/) for help installing Docker on whatever platform you're using.
+HTTPS was originally used only for sensitive transactions, like banking transactions or secure web forms. It also used to require extra server CPU to encrypt data. But today, when Google boosts search results for HTTPS-only sites, and when processors barely show a difference with encrypted or unencrypted traffic, it's almost universally understood that all HTTP services should be served via `https://`.
 
-## A brief introduction to Docker containers
+Traditionally, one blocker to using HTTPS _everywhere_ was certificates were difficult to acquire, manage, and renew. And they were also expensive!
 
-Starting with an extremely simple example, let's build a Docker image from a Dockerfile. In this case, we want to show how Dockerfiles work and how we can use Ansible to build the image in the same way as if we were to use the command line with `docker build`.
+Now, between Let's Encrypt's free certificates, more affordable wildcard certs, and universal Server Name Indication (SNI) support, there is almost never an excuse _not_ to use HTTPS...
 
-Let's start with a Dockerfile:
+Except, that is, for the fact certificate management has been tricky to automate. This chapter will show how Ansible solves this last problem by managing certificates and securing all your HTTP traffic!
 
-{lang="docker"}
+## Generating Self-Signed Certificates with Ansible
+
+Whenever I'm building and testing a new server configuration that requires TLS connections (typically HTTPS traffic over port 443), I need to use one or more valid certificates which can be accepted by a browser user, or by something like `curl`, so I can verify my TLS configuration is correct.
+
+Ansible makes generating self-signed certificates easy. There are four `openssl_*` crypto-related modules useful in generating certificates:
+
+  - `openssl_certificate` - Generate and/or check OpenSSL certificates
+  - `openssl_csr` - Generate OpenSSL Certificate Signing Request (CSR)
+  - `openssl_privatekey` - Generate OpenSSL private keys
+  - `openssl_publickey` - Generate an OpenSSL public key from its private key
+
+In order to use these modules, you need OpenSSL installed, and also one extra Python dependency used by Ansible to interact with OpenSSL, the `pyOpenSSL` library.
+
+Here's a quick example of the tasks required to generate a self-signed cert:
+
+{lang="yaml",linenos=off}
 ```
-# Build an example Docker container image.
-FROM busybox
-LABEL maintainer="Jeff Geerling"
+- name: Ensure directory exists for local self-signed TLS certs.
+  file:
+    path: /etc/ssl/certs/example
+    state: directory
 
-# Run a command when the container starts.
-CMD ["/bin/true"]
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: /etc/ssl/certs/example/privkey.pem
+
+- name: Generate an OpenSSL CSR.
+  openssl_csr:
+    path: /etc/ssl/certs/example/example.csr
+    privatekey_path: /etc/ssl/certs/example/privkey.pem
+    common_name: "example.com"
+
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: /etc/ssl/certs/example/fullchain.pem
+    privatekey_path: /etc/ssl/certs/example/privkey.pem
+    csr_path: /etc/ssl/private/example/example.csr
+    provider: selfsigned
 ```
 
-This Docker container doesn't do much, but that's okay; we just want to build it and verify that it's present and working---first with Docker, then with Ansible.
+These tasks ensure there's a directory inside which the certificate will live, create a private key and Certificate Signing Request (CSR) in that directory, and use them to generate the final cert.
 
-Save the above file as `Dockerfile` inside a new directory, and then on the command line, run the following command to build the container:
+You can then use this certificate to serve HTTPS requests using a web server; for example, in an Nginx `server` configuration:
 
 {lang="text",linenos=off}
 ```
-$ docker build -t test .
+server {
+    listen 443 ssl default_server;
+    server_name example.com;
+
+    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+    ...
+}
 ```
 
-After a few seconds, the Docker image should be built, and if you list all local images with `docker image`, you should see your new test image (along with the busybox image, which was used as a base):
+Let's put together a full playbook using the `openssl_*` modules and Nginx, to build a server complete with a self-signed certificate and a secure Nginx TLS configuration.
 
-{lang="text",linenos=off}
-```
-$ docker images
-REPOSITORY  TAG     IMAGE ID      CREATED             VIRTUAL SIZE
-test        latest  50d6e6479bc7  About a minute ago  2.433 MB
-busybox     latest  4986bf8c1536  2 weeks ago         2.433 MB
-```
+### Idempotent Nginx HTTPS playbook with a self-signed cert
 
-If you want to run the container image you just created, enter the following:
+For the sake of convenience, this example will target a Debian 9 server (though it would be mostly unchanged for any other distribution), and there's a fully tested example included in this book's GitHub repository: [HTTPS Self-Signed Certificate Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-self-signed).
 
-{lang="text",linenos=off}
-```
-$ docker run --name=test test
-```
-
-This creates a Docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps -a` command:
-
-{lang="text",linenos=off}
-```
-$ docker ps -a
-CONTAINER ID  IMAGE        [...]  CREATED        STATUS
-bae0972c26d4  test:latest  [...]  3 seconds ago  Exited (0) 2s ago
-```
-
-You can control the container using either the container ID (in this case, `bae0972c26d4`) or the name (`test`); start with `docker start [container]`, stop with `docker stop [container]`, delete/remove with `docker rm [container]`.
-
-If you delete the container (`docker rm test`) and the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image with `docker build`, then running the resulting image with `docker run`. For example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show the container exited with the status code `1` instead of `0`.
-
-For our purposes, this is a good introduction to how Docker works. To summarize:
-
-  - Dockerfiles contain the instructions Docker uses to build containers.
-  - `docker build` builds Dockerfiles and generates container images.
-  - `docker images` lists all images present on the system.
-  - `docker run` runs created images.
-  - `docker ps -a` lists all containers, both running and stopped.
-
-When developing Dockerfiles to containerize your own applications, you will likely want to get familiar with the Docker CLI and how the process works from a manual perspective. But when building the final images and running them on your servers, Ansible can help ease the process.
-
-## Using Ansible to build and manage containers
-
-Ansible has built-in Docker modules that integrate nicely with Docker for container management. We're going to use them to automate the building and running of the container (managed by the Dockerfile) we just created.
-
-Move the Dockerfile you had into a subdirectory, and create a new Ansible playbook (call it `main.yml`) in the project root directory. The directory layout should look like:
-
-{lang="text",linenos=off}
-```
-docker/
-  main.yml
-  test/
-    Dockerfile
-```
-
-Inside the new playbook, add the following:
-
-{lang="yaml"}
-```
----
-- hosts: localhost
-  connection: local
-
-  tasks:
-    - name: Ensure Docker image is built from the test Dockerfile.
-      docker_image:
-        name: test
-        source: build
-        build:
-          path: test
-        state: present
-```
-
-The playbook uses the `docker_image` module to build an image. Provide a name for the image, tell Ansible the source for the image is a `build`, then provide the path to the Dockerfile in the `build` parameters (in this case, inside the `test` directory). Finally, tell Ansible via the `state` parameter the image should be `present`, to ensure it is built and available.
-
-I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker` package. On other distributions, you may need to install the `docker` Python library via Pip (`pip install docker`).
-
-Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker images (`$ docker images`). If all was successful, you should see a fresh `test` image in the list.
-
-Run `docker ps -a` again, though, and you'll see the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
-
-{lang="yaml",starting-line-number=12}
-```
-    - name: Ensure the test container is running.
-      docker_container:
-        image: test:latest
-        name: test
-        state: started
-```
-
-If you run the playbook again, Ansible will start the Docker container. Check the list of containers with `docker ps -a`, and you'll note the `test` container is again present.
-
-You can remove the container and the image via ansible by changing the `state` parameter to `absent` for both tasks.
-
-T> This playbook assumes you have both Docker and Ansible installed on whatever host you're using to test Docker containers. If this is not the case, you may need to modify the example so the Ansible playbook is targeting the correct `hosts` and using the right connection settings. Additionally, if the user account under which you run the playbook can't run `docker` commands, you may need to use `become` with this playbook.
-
-I> The code example above can be found in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker).
-
-## Building a Flask app with Ansible and Docker
-
-Let's build a more useful Docker-powered environment, with a container that runs our application (built with Flask, a lightweight Python web framework), and a container that runs a database (MySQL), along with a data container. We need a separate data container to persist the MySQL database, because data changed inside the MySQL container is lost every time the container stops.
-
-{width=60%}
-![Docker stack for Flask App](images/8-flask-docker-stack.png)
-
-We'll create a VM using Vagrant to run our Docker containers so the same Docker configuration can be tested on any machine capable of running Ansible and Vagrant. Create a `docker` folder, and inside it, the following `Vagrantfile`:
-
-{lang="ruby"}
-```
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-VAGRANTFILE_API_VERSION = "2"
-
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "geerlingguy/ubuntu1804"
-  config.vm.network :private_network, ip: "192.168.33.39"
-  config.ssh.insert_key = false
-
-  config.vm.hostname = "docker.test"
-  config.vm.provider :virtualbox do |v|
-    v.customize ["modifyvm", :id, "--name", "docker.test"]
-    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    v.customize ["modifyvm", :id, "--memory", 1024]
-    v.customize ["modifyvm", :id, "--cpus", 2]
-    v.customize ["modifyvm", :id, "--ioapic", "on"]
-  end
-
-  # Enable provisioning with Ansible.
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "provisioning/main.yml"
-  end
-
-end
-```
-
-We'll use Ubuntu for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `geerlingguy.docker`), then run some additional setup tasks, and finally build and start the required Docker containers:
+Create a new folder for the Self-Signed Certificate web server playbook, and add a `main.yml` playbook:
 
 {lang="yaml"}
 ```
 ---
 - hosts: all
-  become: true
 
+  vars_files:
+    - vars/main.yml
+
+  pre_tasks:
+    - name: Ensure apt cache is updated.
+      apt: update_cache=yes cache_valid_time=600
+
+    - name: Install dependency for pyopenssl.
+      apt: name=libssl-dev state=present
+```
+
+To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later). Finally, `libssl-dev` is a dependency we'll need to have on the system to make sure `pyopenssl` can be installed by `pip` later, so we'll do that too.
+
+Next, to save some time, we can rely on some Ansible Galaxy roles to install and configure some required software on the server:
+
+{lang="yaml",starting-line-number=14}
+```
   roles:
-    - role: geerlingguy.docker
+    - geerlingguy.firewall
+    - geerlingguy.pip
+    - geerlingguy.nginx
+```
 
+We use the `firewall` role to configure `iptables` to only allow traffic to the server on certain ports, `pip` to install Python's Pip package manager and the required `pyOpenSSL` library, and `nginx` to install and configure Nginx.
+
+To get these roles installed, add a `requirements.yml` file to your playbook directory, with the contents:
+
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.pip
+- src: geerlingguy.nginx
+```
+
+Then run `ansible-galaxy install -r requirements.yml` to install the roles.
+
+T> In most cases, you should create an `ansible.cfg` in the playbook directory, with at least the following contents:
+T> 
+T> {lang="text",linenos=off}
+T> ~~~
+T> [defaults]
+T> roles_path = ./roles
+T> ~~~
+T> 
+T> This way, role dependencies are installed inside the playbook directory itself instead of in your system-wide roles directory (as long as you run the `ansible-galaxy` command inside the playbook directory).
+
+Now let's define a few variables to make the `firewall`, `pip`, and `nginx` roles configure things how we want:
+
+{lang="yaml"}
+```
+# Firewall settings.
+firewall_allowed_tcp_ports:
+  - "22"
+  - "80"
+  - "443"
+
+# Python settings.
+pip_package: python3-pip
+pip_install_packages: ['pyopenssl']
+
+# Nginx settings.
+nginx_vhosts: []
+nginx_remove_default_vhost: True
+nginx_ppa_use: True
+nginx_ppa_version: stable
+nginx_docroot: /var/www/html
+```
+
+For the firewall, you need port 22 open for remote SSH access, port 80 for HTTP requests (which we'll redirect to HTTPS), and 443 for HTTPS.
+
+For Pip, we need to make sure the right version of pip is installed (so `python3-pip` for Debian 9, which has Python 3 installed by default), and we tell it to install the latest version of the `pyopenssl` package.
+
+For Nginx, we want the default virtual host (server) which comes with the distro package install to be removed, we want to set the role's vhosts to an empty array (since we'll manage Nginx `server` configuration ourselves), and finally we'll use the docroot `/var/www/html`.
+
+Now that we have all the base packages installed and configured, the next step is to generate the self-signed certificate. To keep our playbook clean, the required tasks can go into an imported task file, imported in the `main.yml` like so:
+
+{lang="yaml",starting-line-number=19}
+```
   tasks:
-    - import_tasks: setup.yml
-    - import_tasks: docker.yml
+    - import_tasks: tasks/self-signed-cert.yml
 ```
 
-We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo` by setting `become: yes`.
-
-The `geerlingguy.docker` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
+Create a `tasks` folder, and create a `self-signed-cert.yml` task file inside. We'll place the tasks that create the key, generate the CSR, and generate the cert into this file:
 
 {lang="yaml"}
 ```
 ---
-- name: Install Pip.
-  apt: name=python-pip state=present
+- name: Ensure directory exists for local self-signed TLS certs.
+  file:
+    path: "{{ certificate_dir }}/{{ server_hostname }}"
+    state: directory
 
-- name: Install Docker Python library.
-  pip: name=docker state=present
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+
+- name: Generate an OpenSSL CSR.
+  openssl_csr:
+    path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
+    privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+    common_name: "{{ server_hostname }}"
+
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: "{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem"
+    privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
+    csr_path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
+    provider: selfsigned
 ```
 
-Ansible needs the `docker` Python library in order to control Docker via Python, so we install `pip`, then use it to install `docker`.
+We added a two variables which we'll now define in the `vars/main.yml` file (using variables makes it easier to change the site and/or refactor to allow multiple values in the future). Add these variables to the vars file:
 
-Next is the meat of the playbook: `docker.yml` (also in the `provisioning` directory). The first task is to build Docker images for our data, application, and database containers:
-
-{lang="yaml"}
+{lang="yaml",starting-line-number=19}
 ```
----
-- name: Build Docker images from Dockerfiles.
-  docker_image:
-    name: "{{ item.name }}"
-    tag: "{{ item.tag }}"
-    source: build
-    build:
-      path: "/vagrant/provisioning/{{ item.directory }}"
-      pull: false
-    state: present
-  with_items:
-    - { name: data, tag: latest, directory: data }
-    - { name: flask, tag: latest, directory: www }
-    - { name: db, tag: latest, directory: db }
+# Self-signed certificate settings.
+certificate_dir: /etc/ssl/private
+server_hostname: https.test
 ```
 
-Don't worry that we haven't yet created the actual Dockerfiles required to create the Docker images; we'll do that after we finish structuring everything with Ansible.
+Now that the playbook can generate a certificate (or on future runs, idempotently verify the certificate's existence), we need to configure Nginx to use the cert to deliver traffic using TLS for a particular URL.
 
-Like our earlier usage of `docker_image`, we supply a `name`, `build.path`, and `source` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `flask`, and `db`, and we're pointing Docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
+The `geerlingguy.nginx` role took care of the majority of Nginx configuration, but we disabled that role's management of virtual hosts, in favor of managing a single virtual host (or `server` directive) ourselves. The following tasks copy an example landing page into a defined docroot, then our custom HTTPS `server` configuration to use the generated cert for the docroot:
 
-After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker_container` tasks:
-
-{lang="yaml",starting-line-number=16}
+{lang="yaml",starting-line-number=22}
 ```
-# Data containers don't need to be running to be utilized.
-- name: Run a Data container.
-  docker_container:
-    image: data:latest
-    name: data
-    state: present
+    - name: Ensure docroot exists.
+      file:
+        path: "{{ nginx_docroot }}"
+        state: directory
 
-- name: Run a Flask container.
-  docker_container:
-    image: www:latest
-    name: www
-    state: started
-    command: python /opt/www/index.py
-    ports: "80:80"
+    - name: Copy example index.html file in place.
+      copy:
+        src: files/index.html
+        dest: "{{ nginx_docroot }}/index.html"
+        mode: 0755
 
-- name: Run a MySQL container.
-  docker_container:
-    image: db:latest
-    name: db
-    state: started
-    volumes_from: data
-    ports: "3306:3306"
-    env:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: flask
-      MYSQL_USER: flask
-      MYSQL_PASSWORD: flask
+    - name: Copy Nginx server configuration in place.
+      template:
+        src: templates/https.test.conf.j2
+        dest: /etc/nginx/sites-enabled/https.test.conf
+        mode: 0644
+      notify: restart nginx
 ```
 
-Each of these containers' configuration is a little more involved than the previous. In the case of the first container, it's just `present`; Ansible will ensure a `data` container is present.
-
-For the Flask container, we need to make sure our app is not only running, but *continues* to run. So, unlike our earlier usage of `/bin/true` to run a container briefly and exit, in this case we will provide an explicit command to run:
-
-{lang="yaml",starting-line-number=25}
-```
-    command: python /opt/www/index.py
-```
-
-Calling the script directly will launch the app in the foreground and log everything to stdout, making it easy to inspect what's going on with `docker logs [container]` if needed.
-
-Additionally, we want to map the container's port 80 to the host's port 80, so external users can load pages over HTTP. This is done using the `ports` option, passing data just as you would using Docker's `--publish` syntax.
-
-The Flask container will have a static web application running on it, and has no need for extra non-transient file storage, but the MySQL container will mount a data volume from the `data` container, so it has a place to store data that won't vanish when the container dies and is restarted.
-
-Thus, for the `db` container, we have two special options: the `volumes_from` option, which mounts volumes from the specified container (in this case, the `data` container), and the `command`, which calls a shell script to start MySQL. We'll get to why we're running a shell script and not launching a MySQL daemon directly in a bit.
-
-Now that we have the playbook structured to build our Docker-based infrastructure, we'll build out each of the three Dockerfiles and related configuration to support the `data`, `www`, and `db` containers.
-
-At this point, we should have a directory structure like:
-
-{lang="text",linenos=off}
-```
-docker/
-  provisioning/
-    data/
-    db/
-    www/
-    docker.yml
-    main.yml
-    setup.yml
-  Vagrantfile
-```
-
-W> It's best to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed.
-
-### Data storage container
-
-For the data storage container, we don't need much; we just need to create a directory and set it as an exposed mount point using `VOLUME`:
-
-{lang="docker"}
-```
-# Build a simple MySQL data volume Docker container.
-FROM busybox
-MAINTAINER Jeff Geerling <geerlingguy@mac.com>
-
-# Create data volume for MySQL.
-RUN mkdir -p /var/lib/mysql
-VOLUME /var/lib/mysql
-```
-
-We create a directory (line 6), and expose the directory as a volume (line 7) which can be mounted by the host or other containers. Save the above into a new file, `docker/provisioning/data/Dockerfile`.
-
-T> This container builds on top of the official `busybox` base image. Busybox is an extremely simple distribution that is Linux-like but does not contain every option or application generally found in popular distributions like Debian, Ubuntu, or RHEL. Since we only need to create and share a directory, we don't need any additional 'baggage' inside the container. In the Docker world, it's best to use the most minimal base images possible, and to only install and run the bare necessities inside each container to support the container's app.
-
-### Flask container
-
-[Flask](https://palletsprojects.com/p/flask/) is a lightweight Python web framework "based on Werkzeug, Jinja 2 and good intentions". It's a great web framework for small, fast, and robust websites and apps, or even an API. For our purposes, we need to build a Flask app that connects to a MySQL database and displays the status of the connection on a basic web page (very much like our PHP example, in the earlier Highly-Available Infrastructure example).
-
-Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.j2`):
-
-{lang="python"}
-```
-# Infrastructure test page.
-from flask import Flask
-from flask import Markup
-from flask import render_template
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
-
-app = Flask(__name__)
-
-# Configure MySQL connection.
-db_uri = 'mysql://flask:flask@{{ host_ip_address }}/flask'
-app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
-db = SQLAlchemy(app)
-
-@app.route("/")
-def test():
-    mysql_result = False
-    try:
-        query = text('SELECT 1')
-        result = db.engine.execute(query)
-        if [row[0] for row in result][0] == 1:
-            mysql_result = True
-    except:
-        pass
-
-    if mysql_result:
-        result = Markup('<span style="color: green;">PASS</span>')
-    else:
-        result = Markup('<span style="color: red;">FAIL</span>')
-
-    # Return the page with the result.
-    return render_template('index.html', result=result)
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
-```
-
-This app defines one route (`/`), listens on every interface on port 80, and shows a MySQL connection status page rendered by the template `index.html`. There's nothing particularly complicated in this application, but there is one Jinja variable (`{{ host_ip_address }}`) which an Ansible playbook will replace during deployment, and the app has a few dependencies (like `flask-sqlalchemy`) which will need to be installed via the Dockerfile.
-
-Since we are using a Jinja template to render the page, let's create that template in `docker/provisioning/www/templates/index.html` (Flask automatically picks up any templates inside a `templates` directory):
+Fairly straightforward, but we need to fill in a couple blanks. First, here's a quick and easy `index.html` just to allow you to test things out:
 
 {lang="html"}
 ```
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Flask + MySQL Docker Example</title>
+  <title>HTTPS Self-Signed Certificate Test</title>
   <style>* { font-family: Helvetica, Arial, sans-serif }</style>
 </head>
 <body>
-  <h1>Flask + MySQL Docker Example</h1>
-  <p>MySQL Connection: {{ result }}</p>
+  <h1>HTTPS Self-Signed Certificate Test</h1>
+    <p>If you can see this message, it worked!</p>
 </body>
 </html>
 ```
 
-In this case, the `.html` template contains a Jinja variable (`{{ result }}`), and Flask will fill in the variable with the status of the MySQL connection.
+Put that HTML into your playbook directory at `files/index.html`, then create another file, `templates/https.test.conf.j2`, with the following contents:
 
-Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy an Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
-
-{lang="docker"}
+{lang="text"}
 ```
-# A simple Flask app container.
-FROM geerlingguy/docker-ubuntu1804-ansible
-MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+# HTTPS Test server configuration.
 
-# Install Flask app dependencies.
-RUN apt-get install -y libmysqlclient-dev build-essential \
-  python-dev python-pip
-RUN pip install flask flask-sqlalchemy mysql-python
+# Redirect HTTP traffic to HTTPS.
+server {
+    listen 80 default_server;
+    server_name _;
+    index index.html;
+    return 301 https://$host$request_uri;
+}
 
-# Install playbook and run it.
-COPY playbook.yml /etc/ansible/playbook.yml
-COPY index.py.j2 /etc/ansible/index.py.j2
-COPY templates /etc/ansible/templates
-RUN mkdir -m 755 /opt/www
-RUN ansible-playbook /etc/ansible/playbook.yml --connection=local
+# Serve HTTPS traffic using the self-signed certificate created by Ansible.
+server {
+    listen 443 ssl default_server;
+    server_name {{ server_hostname }};
+    root {{ nginx_docroot }};
 
-EXPOSE 80
+    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+}
 ```
 
-Instead of installing apt and pip packages using Ansible, we'll install them using `RUN` commands in the Dockerfile. This allows those commands to be cached by Docker. Generally, more complicated package installation and configuration is easier and more maintainable inside Ansible, but in the case of package installation, having Docker cache the steps so future `docker build` commands take seconds instead of minutes is worth the verbosity of the Dockerfile.
+The most important parts of this server configuration instruct Nginx to use the SSL certificate we generated (at the path `{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;`) for requests over port 443 for the domain `{{ server_hostname }}` (in this case, requests to `https://https.test/`).
 
-At the end of the Dockerfile, we run a playbook (which should be located in the same directory as the Dockerfile) and expose port 80 so the app can be accessed via HTTP by the outside world. Next we'll create the app deployment playbook.
+I> Production-ready TLS configuration will usually have more options defined than the above `server` directive. It's best practice to always configure TLS as secure as possible (later examples meant for production use will do so), but this example does the bare minimum to get SSL working with Nginx defaults.
 
-W> Purists might cringe at the sight of an Ansible playbook inside a Dockerfile, and for good reason! Commands like the `ansible-playbook` command cover up configuration that might normally be done (and cached) within Docker. Additionally, using the `ansible/ubuntu16.04-ansible` base image (which includes Ansible) requires an initial download that's 50+ MB larger than a comparable Debian or Ubuntu image without Ansible. However, for brevity and ease of maintenance, we're using Ansible to manage all the app configuration inside the container (otherwise we'd need to run a bunch of verbose and incomprehensible shell commands to replace Ansible's `template` functionality).
-W> 
-W> Using a tool like [ansible-bender](https://github.com/ansible-community/ansible-bender), or building containers with Ansible _directly_ (using the `docker` connection plugin, mentioned later in this chapter), are ways you can still automate container image builds without running Ansible inside the image.
+Notice the `notify: restart nginx` in the `Copy Nginx server configuration in place.` task; this will force Nginx to restart after any configuration changes are made (or during the first provision, when the template is copied).
 
-In order for the Flask app to function properly, we need to get the `host_ip_address`, then replace the variable in the `index.py.j2` template. Create the Flask deployment playbook at `docker/provisioning/www/playbook.yml`:
+Once you run this playbook, if there were no errors, you should be able to securely access `https://https.test/` (assuming you have a record for that domain in your hosts file pointing to your server's IP address!). You might receive a security warning since it's self-signed, but all modern browsers and HTTPS-enabled tools should now be able to load the site over an encrypted connection!
+
+{width=80%}
+![HTTPS Test site loads with a security warning](images/13-https-test-chrome.png)
+
+W> If you rebuild the server for `https.test` more than once (thus creating a new self-signed certificate), be sure to delete the certificate you previously added to your list of trusted certificates (e.g. via Keychain Access on Mac OS X for Chrome and Safari, or in FireFox under Preferences > Advanced > Certificates).
+
+## Automating Let's Encrypt with Ansible for free Certs
+
+Self-signed certs are helpful in making sure certain environments can be accessed via HTTPS, but they have a number of downsides, the major one being that every visitor has to confirm a security exception the first time they visit, and similarly command line tools like curl and HTTP libraries usually fail when they encounter a self-signed cert, unless you specifically ignore cert trust settings (which is a security risk).
+
+It's usually best to use a valid certificate from one of the trusted Certificate Authorities (CAs).
+
+Traditionally, you had to give some money to a Certificate Authority (CA) and work through a mostly-manual process to acquire a certificate. You can still do this, and there are use cases where this is still the best option, but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_, easy-to-automate certificates to everyone, with the goal of creating "a more secure and privacy-respecting Web."
+
+In this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
+
+### Use Galaxy roles to get things done faster
+
+Instead of writing all the automation ourselves, we can rely on some roles from Ansible Galaxy to do the heavy lifting. Create a `requirements.yml` file in a new project directory, containing:
 
 {lang="yaml"}
 ```
 ---
-- hosts: localhost
+- src: geerlingguy.firewall
+- src: geerlingguy.certbot
+- src: geerlingguy.nginx
+```
+
+We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a web server to serve content over HTTPS.
+
+The `geerlingguy.certbot` role is the heart of the operation; here's how it works:
+
+  1. First, it either installs Certbot from the system packages or from source, depending on the value of `certbot_install_from_source`. Source installs are usually more usable since Certbot sometimes adds helpful features that will never be backported into system packages.
+  2. Then it creates a certificate if configured via `certbot_create_if_missing` and if the certificate(s) specified in `certbot_certs` do not yet exist. It creates the certificates using the `certbot_create_command` and can also stop and start certain services while the certificates are being created.
+  3. Finally, if `certbot_auto_renew` is `true`, it sets up a cron job for certificate renewal, using the `certbot renew` command along with the options passed in via `certbot_auto_renew_options`. Auto renewal is one of the main benefits of Let's Encrypt, because as long as your renewal process is working, you'll never wake up to an outage due to an expired certificate again!
+
+Once we have the requirements file set up, create an `ansible.cfg` file in the project directory to tell Ansible where to store and use the downloaded roles:
+
+{lang="text"}
+```
+[defaults]
+roles_path = ./roles
+```
+
+Install the required roles with: `ansible-galaxy install -r requirements.yml`.
+
+### Create the playbook
+
+Add a `main.yml` playbook to the project directory. This playbook will target servers running Ubuntu's minimal distribution (which may not include Python), so we need to do a couple special things to make sure Ansible can operate on the server in `pre_tasks`. Then we'll run the three roles we downloaded from Ansible Galaxy, and configure Nginx to serve a simple web page using a Let's Encrypt certificate.
+
+First things first, start the play on all the `letsencrypt` hosts, and since we might have to install Python to gather facts about the server for Ansible to use, disable the initial `gather_facts`:
+
+{lang="yaml"}
+```
+---
+- hosts: letsencrypt
+  gather_facts: false
   become: true
 
-  tasks:
-    - name: Get host IP address.
-      shell: "/sbin/ip route | awk '/default/ { print $3 }'"
-      register: host_ip
-      changed_when: false
-
-    - name: Set host_ip_address variable.
-      set_fact:
-        host_ip_address: "{{ host_ip.stdout }}"
-
-    - name: Copy Flask app into place.
-      template:
-        src: /etc/ansible/index.py.j2
-        dest: /opt/www/index.py
-        mode: 0755
-
-    - name: Copy Flask templates into place.
-      copy:
-        src: /etc/ansible/templates
-        dest: /opt/www
-        mode: 0755
+  vars_files:
+    - vars/main.yml
 ```
 
-The shell command that registers the `host_ip` is an easy way to retrieve the IP while still letting Docker do its own virtual network management.
+We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, to add the configuration for certificate generation, firewall configuration, and Nginx, we'll put all the variables in a `vars/main.yml` file.
 
-The last two tasks copy the flask app and templates directory into place.
+In a series of `pre_tasks` in `main.yml`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
 
-The `docker/provisioning/www` directory should now contain the following:
-
-{lang="text",linenos=off}
-```
-www/
-  templates/
-    index.html
-  Dockerfile
-  index.py.j2
-  playbook.yml
-```
-
-### MySQL container
-
-We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL works inside a Docker container, with a persistent data volume from the previously-configured `data` container.
-
-For MySQL, there is already a very well-maintained and flexible community MySQL Docker image we can rely on. To use it, we'll wrap it in our own Dockerfile (in case we want to make further customizations in the future).
-
-{lang="docker"}
-```
-# A simple MySQL container.
-FROM mysql:5.7
-MAINTAINER Jeff Geerling <geerlingguy@mac.com>
-
-EXPOSE 3306
-```
-
-This Dockerfile tells Docker to pull from the mysql image on Docker Hub, and then expose port 3306.
-
-The `docker/provisioning/db` directory should now contain the following:
-
-{lang="text",linenos=off}
-```
-db/
-  Dockerfile
-```
-
-### Ship it!
-
-Now that everything's in place, you should be able to cd into the main `docker` directory, and run `vagrant up`. After 10 minutes or so, Vagrant should show Ansible provisioning was successful, and if you visit `http://192.168.33.39/` in your browser, you should see something like the following:
-
-{width=80%}
-![Docker orchestration success!](images/8-docker-success.png)
-
-If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) on GitHub.
-
-The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
-
-## Building containers with Ansible from the outside
-
-In the previous example, an Ansible playbook was run _inside_ a Docker container to build the Flask application image. While this approach works and is maintainable, it also makes for a lot of cruft. One major advantage of container-based app deployment is a nice tidy container image per service.
-
-To use Ansible inside a container requires a lot of dependencies---Python, Ansible's dependencies, and Ansible itself.
-
-One solution to this problem is to use [`ansible-bender`](https://github.com/ansible-community/ansible-bender). One of the key features of `ansible-bender` is a container image build system which applies Ansible tasks to a Docker image. So instead of Ansible running inside the container being built, you use Ansible to build the container.
-
-I> Earlier in Ansible's history, there was a project called [Ansible Container], which used a sidecar container running Ansible to apply Ansible roles to a container image, and stored each role as one container image layer. That project never achived critical mass and was left in a state of disrepair after around 2018.
-
-### Build a Hubot Slack bot container with `ansible_connection: docker`
-
-Most examples in this book use the default `ansible_connection` plugin, `ssh`, which connects to servers using SSH. A few examples also use the `local` plugin, which runs commands locally without SSH.
-
-There are actually a few dozen connection plugins that ship with Ansible, including `kubectl` for interacting with Kubernetes pods, `saltstack` for piggybacking salt minions, `winrm` for connecting over Microsoft's WinRM, and `docker`, which runs tasks in Docker containers.
-
-This last connection plugin is helpful if you want to build Docker container images using Ansible without the overhead of installing Ansible inside the container.
-
-To learn how the `docker` connection plugin works, we'll build a Hubot Slack bot.
-
-#### Hubot and Slack
-
-To give a little background, [Hubot](https://hubot.github.com) is an open-source chat bot from GitHub, written in CoffeeScript, which can be connected to many different chat systems. [Slack](https://slack.com) is an popular chat platform used by many businesses to communicate. Many teams benefit from a bot like Hubot, as they can store data in Hubot for quick retrieval, or even connect Hubot to other services (like CI tools) and kick off deployments, check infrastructure health, and do other helpful things.
-
-#### Building a Docker container with Ansible
-
-The first step in setting up our bot project is to create a new directory (e.g. `docker-hubot`) and an Ansible playbook, we'll call it `main.yml`.
-
-You'll have to have Docker installed and running on the computer where you'll run this playbook, and the first few setup steps will use `connection: local` to get the container build started:
-
-{lang="text"}
-```
----
-- hosts: localhost
-  connection: local
-  gather_facts: no
-
-  vars:
-    base_image: node:8
-    container_name: hubot_slack
-    image_namespace: a4d
-    image_name: hubot-slack
-```
-
-There are also a few variables defined which we'll use later in the playbook to define things like the Docker base image to be used, the name for the container we're building, and the namespace and name for the final generated Docker image. We don't need to `gather_facts` since we aren't going to do much on the local connection.
-
-{lang="text",starting-line-number=12}
+{lang="yaml",starting-line-number=9}
 ```
   pre_tasks:
-    - name: Make the latest version of the base image available locally.
-      docker_image:
-        name: '{{ base_image }}'
-        source: pull
-        force_source: true
+    - name: Install Python if not already present.
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+      changed_when: false
 
-    - name: Create the Docker container.
-      docker_container:
-        image: '{{ base_image }}'
-        name: '{{ container_name }}'
-        command: sleep infinity
+    - name: Gather facts after Python is definitely present.
+      setup:
 
-    - name: Add the newly created container to the inventory.
-      add_host:
-        hostname: '{{ container_name }}'
-        ansible_connection: docker
+    - name: Ensure apt cache is updated.
+      apt: update_cache=true cache_valid_time=600
 ```
 
-In a `pre_tasks` area, we'll set up the Docker container so we can get Hubot on it:
+Now, it's time for the meat of this playbook, the `roles`. Call each one:
 
-  1. The `docker_image` task: Pull the `base_image` (Ansible's equivalent of `docker pull`), and make sure the latest version is always present when the playbook runs.
-  2. The `docker_container` task: Create a Docker container (Ansible's equivalent of `docker run`) from the `base_image`.
-  3. The `add_host` task: Add the just-created container to the Ansible inventory.
-
-Now that we have a container running and in the inventory, we can build inside of it, using the `docker` connection plugin. Following the best practices we established earlier in the book, we'll put all the reusable logic inside an Ansible role, which we'll create in a moment. For now, we can call the role about to be created in the playbook's `roles` section:
-
-{lang="text",starting-line-number=30}
+{lang="yaml",starting-line-number=9}
 ```
   roles:
-    - name: hubot-slack
-      delegate_to: '{{ container_name }}'
+    - geerlingguy.firewall
+    - geerlingguy.nginx
+    - geerlingguy.certbot
 ```
 
-Note the `delegate_to`. Any task, playbook, or role we want Ansible to run inside the Docker container needs to be delegated to the container.
+Since the roles will be doing the heavy lifting (yay for easy-to-read playbooks!), we tell them what to do via variables in `vars/main.yml`:
 
-Before building the `hubot-slack` role, let's finish off the container image build process and the rest of the main playbook:
-
-{lang="text",starting-line-number=34}
+{lang="yaml"}
 ```
-  post_tasks:
-    - name: Clean up the container.
+---
+# Firewall settings.
+firewall_allowed_tcp_ports:
+  - "22"
+  - "80"
+  - "443"
+
+# Nginx settings.
+nginx_vhosts: []
+nginx_remove_default_vhost: true
+nginx_ppa_use: true
+nginx_ppa_version: stable
+nginx_docroot: /var/www/html
+
+# Let's Encrypt certificate settings.
+certbot_create_if_missing: true
+certbot_admin_email: "{{ letsencrypt_email }}"
+certbot_certs:
+  - domains:
+      - "{{ inventory_hostname }}"
+```
+
+By section:
+
+  - For a typical webserver, we need port `22` for SSH access, port `80` for unencrypted HTTP access (Let's Encrypt needs this to operate using it's default verification mechanism), and port `443` for encrypted HTTPS access.
+  - For Nginx, we will configure our own custom virtual host in a bit, so we make sure the default vhost is removed, and we'll also install the latest version of Nginx from the Nginx Ubuntu PPA. We added an extra variable `nginx_docroot` to tell our own automation code where to put a test web page and serve it via Nginx.
+  - The Certbot role only requires a few variables to ensure a certificate is added:
+    - `certbot_create_if_missing`: The role will check if the certificate exists, and if it doesn't (e.g. on the first playbook run) it will create it. If it does exist, it will be idempotent and make no changes.
+    - `certbot_admin_email`: Let's Encrypt lets you [associate an email address](https://letsencrypt.org/docs/expiration-emails/) with every certificate it generates, and uses this email address to notify the owner of any problems with the certificate, like impending expiration due to a server issue.
+    - `certbot_certs`: You can add one or more certificates using this list; and each certificate can cover one or more domains using Subject Alternative Name (SAN) certificates.
+
+Two of the Jinja variables used in the vars file are not defined in vars---rather, they will come from the inventory. We'll set that up soon.
+
+Now that we have the playbook configuring an HTTP/S-ready firewall, a Let's Encrypt certificate generated by Certbot, and a barebones Nginx web server, we need to configure Nginx to serve some content, and to serve it over HTTPS using the Let's Encrypt certificate.
+
+So for the last part of the playbook, we need to:
+
+  1. Ensure the `nginx_docroot` directory exists.
+  2. Create and copy over a sample `index.html` file to serve from that document root.
+  3. Create and copy over a Nginx server configuration which directs all traffic to HTTPS and serves the traffic using the generated Let's Encrypt certificate.
+
+To make sure the `nginx_docroot` exists, add a task to the `tasks` section of the playbook:
+
+{lang="yaml",starting-line-number=25}
+```
+  tasks:
+    - name: Ensure docroot exists.
+      file:
+        path: "{{ nginx_docroot }}"
+        state: directory
+```
+
+I> Since `/var/www` should already exist on an Ubuntu server, this is all we need. If the parent directory heirarchy didn't exist (e.g. we had `nginx_docroot` set to `/var/www/example/html`), this task may also need `recurse: true` to ensure the parent directories exist.
+
+Now we need an HTML file inside the docroot so Nginx can serve it, otherwise Nginx will return a 404 Not Found. Create a simple HTML file named `files/index.html` in your project directory, with the following contents:
+
+{lang="html"}
+```
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HTTPS Let's Encrypt Test</title>
+  <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+</head>
+<body>
+  <h1>HTTPS Let's Encrypt Test</h1>
+    <p>If you can see this message, it worked!</p>
+</body>
+</html>
+```
+
+Then add a `copy` task in `main.yml` to copy the file into place after the docroot task:
+
+{lang="yaml",starting-line-number=31}
+```
+    - name: Copy example index.html file in place.
+      copy:
+        src: files/index.html
+        dest: "{{ nginx_docroot }}/index.html"
+        mode: 0755
+```
+
+Finally, we need to configure Nginx with two `server` blocks; one to redirect HTTP requests to HTTPS, and the other to serve HTTPS traffic using the Let's Encrypt certificates. Create a Nginx configuration template in `templates/https-letsencrypt.conf.j2` with the following:
+
+{lang="text"}
+```
+# HTTPS server configuration.
+
+# Redirect HTTP traffic to HTTPS.
+server {
+    listen 80 default_server;
+    server_name _;
+    index index.html;
+    return 301 https://$host$request_uri;
+}
+
+# Serve HTTPS traffic using the Let's Encrypt certificate.
+server {
+    listen 443 ssl default_server;
+    server_name {{ inventory_hostname }};
+    root {{ nginx_docroot }};
+
+    ssl_certificate /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ inventory_hostname }}/privkey.pem;
+}
+```
+
+The first `server` block configures a default port 80 server which redirects _all_ traffic on port 80, for any incoming request, to the same URL, but with `https://`. This is a handy way to force all traffic to SSL by default if you're using Nginx.
+
+The second `server` block configures a default port 443 server which handles all HTTPS traffic.
+
+It uses the `inventory_hostname` to tell Nginx what domain should be used to serve traffic, and it sets the document root to the `nginx_docroot`.
+
+Finally, it tells Nginx to use the certificate and key inside the default Let's Encrypt generated certificate path, which is always `/etc/letsencrypt/live/[domain]/*.pem`.
+
+Add a task templating this Jinja template to a Nginx config file in `main.yml`, making sure to restart Nginx when the template is created or modified:
+
+{lang="yaml",starting-line-number=31}
+```
+    - name: Copy Nginx server configuration in place.
+      template:
+        src: templates/https-letsencrypt.conf.j2
+        dest: /etc/nginx/sites-enabled/https-letsencrypt.conf
+        mode: 0644
+      notify: restart nginx
+```
+
+At this point, we have a complete playbook. It should set up a firewall, create a certificate, and configure Nginx to serve a web page using the certificate. But we don't have a server to run the playbook against!
+
+### Create a server and configure DNS
+
+Let's Encrypt generates certificates for domains only after verifying domain ownership. The Internet would be very insecure if Let's Encrypt allowed any random person to generate valid certificates for a domain like `apple.com` or `google.com`!
+
+The easiest way to verify domain ownership to Let's Encrypt is to ensure your server is accessible over the public Internet. For internal servers, Let's Encrypt might not be the best option (though in some cases it can be made to work).
+
+In Chapter 8, an example was provided for how to provision servers automatically via Ansible. For your own project, you may want to automate the process of initial server provisioning using Ansible, Terraform, or some other automation tool. But for this example, you just need to make sure a server is running which is reachable via the public Internet. You also need to point a domain at it (e.g. subdomain.example.com).
+
+Once you've done that, and can confirm you can SSH into the server at the actual domain name (e.g. `ssh myuser@subdomain.example.com`), then you're ready to point the playbook at the server and configure everything via Ansible.
+
+### Point the playbook inventory at the server
+
+Assuming your server is reachable at `subdomain.example.com`, and your SSH username is `myuser`, create an `inventory` file in the project directory with the following contents:
+
+{lang="text"}
+```
+[letsencrypt]
+subdomain.example.com
+
+[letsencrypt:vars]
+ansible_ssh_user=myuser
+letsencrypt_email=webmaster@example.com
+```
+
+Now that the playbook knows how to connect to your public server, it's time to try it out. First, make sure all the required Galaxy roles are installed:
+
+{lang="text",linenos="off"}
+```
+ansible-galaxy install -r requirements.yml
+```
+
+Then run the playbook:
+
+{lang="text",linenos="off"}
+```
+ansible-playbook -i inventory main.yml
+```
+
+After a couple minutes, assuming Let's Encrypt could reach your server at subdomain.example.com on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
+
+### Access your server over HTTPS!
+
+Visit `https://subdomain.example.com/` and you should see something like:
+
+{width=80%}
+![HTTPS Test site loads with a valid Let's Encrypt certificate](images/13-letsencrypt-valid-certificate.png)
+
+Automating free certificates with Let's Encrypt can be fun, but make sure you're aware of [Let's Encrypt rate limits](https://letsencrypt.org/docs/rate-limits/) before you go ahead and automate certs for 3,000 of your subdomains at once!
+
+## Configuring Nginx to proxy HTTP traffic and serve it over HTTPS
+
+One common problem you may encounter is an old web application or service which is no longer updated but must continue running, and the need for HTTPS encryption (whether for SEO or security compliance).
+
+You could use a third party service like Cloudflare to proxy all traffic through HTTPS, but you'd still have a connection over the public Internet from Cloudflare's network to your backend server that's unencrypted. Even if you're using a CDN, it's best to encrypt the traffic all the way to as close to your application server as possible.
+
+And that's where Nginx comes in! There are other tools which can do the same thing, but Nginx is easy to configure as an HTTPS proxy server for HTTP backends.
+
+### Modify the Nginx configuration to proxy traffic
+
+We're going to use the exact same playbook and configuration from the self-signed certificate example earlier in this chapter, with two small modifications. The adjusted playbook is available in this book's GitHub repository: [HTTPS Nginx Proxy Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-nginx-proxy). There are only two small changes needed to set up and test Nginx proxying HTTPS traffic to an HTTP backend application:
+
+  1. Instead of serving traffic directly from Nginx, let Nginx proxy requests to a backend server running on port 8080.
+  2. Run a backend HTTP server on port 8080 using Python.
+
+First, configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
+
+{lang="text",starting-line-number=11}
+```
+# Proxy HTTPS traffic using a self-signed certificate.
+server {
+    listen 443 ssl default_server;
+    server_name {{ server_hostname }};
+
+    location / {
+        include /etc/nginx/proxy_params;
+        proxy_pass          http://localhost:8080;
+        proxy_read_timeout  90s;
+        proxy_redirect      http://localhost:8080 {{ server_hostname }};
+    }
+
+    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
+    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
+}
+```
+
+All that's been done is the removal of the `root` directive, which was replaced with the `location` directive. This particular `location` directive tells Nginx to proxy _all_ requests to any path (`/` includes everything) to the address `http://localhost:8080`, with a 90 second backend timeout.
+
+This assumes there's a backend HTTP service running on port 8080, though! So, the second step is to run something on port 8080. Luckily, since we already have Python and a web root, we can use Python to run an HTTP server with a very simple CLI command:
+
+{lang="text",linenos="off"}
+```
+python3 -m http.server 8080 --directory /var/www/html
+```
+
+You can run that command interactively, or if you're automating it in the Ansible playbook from earlier, you can add a task after the "Copy example index.html file in place." task:
+
+{lang="yaml",starting-line-number=33}
+```
+    - name: Start simple python webserver on port 8080.
       shell: >
-        apt-get remove --purge -y python &&
-        rm -rf /var/lib/apt/lists/*
-      delegate_to: '{{ container_name }}'
-      args:
-        warn: false
-
-    - name: Commit the container.
-      command: >
-        docker commit
-        -c 'USER hubot'
-        -c 'WORKDIR "/home/hubot"'
-        -c 'CMD ["bin/hubot", "--adapter", "slack"]'
-        -c 'VOLUME ["/home/hubot/scripts"]'
-        {{ container_name }} {{ image_namespace }}/{{ image_name }}:latest
-
-    - name: Remove the container.
-      docker_container:
-        name: '{{ container_name }}'
-        state: absent
+        python3 -m http.server 8080 --directory {{ nginx_docroot }} &
+      changed_when: false
+      async: 45
+      poll: 0
 ```
 
-The post-tasks clean up unnecessary cruft inside the container (trimming down the size of the committed image), commit the Docker container to an image (tagged `a4d/hubot-slack:latest`), and remove the running container.
+Note the use of `&`, `async` and `poll` to fire and forget the command, so it can run in the background forever. It is _not_ a good idea to run applications like this in production, but for demonstration purposes it's adequate to verify Nginx is proxying HTTPS requests correctly.
 
-When building from a `Dockerfile`, you can set things like the `USER` (the user used to run the `CMD` or `ENTRYPOINT` in the container) and `CMD` (the defaults for an executing container) directly. In our case, since we're not building from a `Dockerfile`, we set these options using `docker commit`'s `-c` or `--change` option.
+W> The `--directory` option in this command requires Python 3.7 or later. Make sure your operating system has this version of Python available (e.g. via system packages, like with Debian 10 or later, or via a virtualenv).
 
-Now that we have the main scaffolding in place for building a Docker container, committing an image from that container, and tearing down the container, it's time to add the 'meat' to our playbook---the role that installs Hubot and its Slack adapter.
+Now that a server is running on port 8080, you should see Nginx proxying requests successfully:
 
-#### Building the `hubot-slack` role
+{width=80%}
+![Nginx proxies HTTPS requests to backend HTTP applications](images/13-https-nginx-proxy-test.png)
 
-As with any role, the easiest way to scaffold the necessary files is using the `ansible-galaxy` command. Create a `hubot-slack` role in a `roles` subdirectory with:
+If you log into the server and kill the Python process serving HTTP traffic on port 8080, then Nginx will still attempt to proxy traffic, but will return a 502 Bad Gateway because the backend service is unavailable:
 
-{lang="text",linenos=off}
-```
-ansible-galaxy init hubot-slack
-```
+{width=80%}
+![Nginx returns 502 Bad Gateway if the backend is unavailable](images/13-https-nginx-proxy-502-bad-gateway.png)
 
-You can delete some unneeded role directories, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).
-
-Since Hubot isn't too hard to install, we can do everything we need inside `tasks/main.yml`. The first thing we need to do is ensure all the required dependencies for generating our bot are present:
-
-{lang="text"}
-```
----
-- name: Install dependencies.
-  package:
-    name: sudo
-    state: present
-
-- name: Install required Node.js packages.
-  npm:
-    name: "{{ item }}"
-    state: present
-    global: yes
-  with_items:
-    - yo
-    - generator-hubot
-```
-
-Because we want to be able to run certain commands as a `hubot` user later, we'll need `sudo` present so Ansible can `become` the `hubot` user. Then we'll install some require dependencies---`yo` and `generator-hubot`, which are used to build the bot. Node.js is already present inside the container, since we chose to build the container based off the `node:8` base image.
-
-{lang="text",starting-line-number=16}
-```
-- name: Ensure hubot user exists.
-  user:
-    name: hubot
-    create_home: yes
-    home: "{{ hubot_home }}"
-```
-
-It's best to run Hubot inside an isolated directory, using a dedicated user account, so we set up a `hubot` user account with its own home directory. To make the Hubot role easier to adapt, a variable is used for the `hubot` user's home directory. We'll define that later in `defaults/main.yml`.
-
-{lang="text",starting-line-number=22}
-```
-- name: Generate hubot.
-  command: >
-    yo hubot
-    --owner="{{ hubot_owner }}"
-    --name="{{ hubot_name }}"
-    --description="{{ hubot_description }}"
-    --adapter=slack
-    --defaults
-    chdir={{ hubot_home }}
-  become: yes
-  become_user: hubot
-```
-
-The `yo hubot` command scaffolds all the code necessary to run Hubot, and all the options passed in tell the generator to run non-interactively. We will define the default role `hubot_` vars in this command later in `defaults/main.yml`.
-
-{lang="text",starting-line-number=34}
-```
-- name: Remove certain scripts from external-scripts.json.
-  lineinfile:
-    path: "{{ hubot_home }}/external-scripts.json"
-    regexp: "{{ item }}"
-    state: absent
-  with_items:
-    - 'redis-brain'
-    - 'heroku'
-  become: yes
-  become_user: hubot
-
-- name: Remove the hubot-scripts.json file.
-  file:
-    path: "{{ hubot_home }}/hubot-scripts.json"
-    state: absent
-```
-
-There are a couple cleanup tasks which make sure Hubot runs properly in this isolated container. In the `lineinfile` task, the persistent Redis connection plugin and Heroku support are removed, since they are not needed. Also, the unused `hubot-scripts.json` file is removed to prevent errors during Hubot startup.
-
-The final step in creating the `hubot-slack` role is to add default values for the variables we're using in the role, so put the following inside `defaults/main.yml`:
-
-{lang="text"}
-```
----
-hubot_home: /home/hubot
-hubot_owner: Ansible for DevOps
-hubot_name: a4dbot
-hubot_description: Ansible for DevOps test bot.
-```
-
-#### Building and running the Hubot Slack bot container
-
-You should now have a directory containing the `main.yml` Ansible playbook and a `hubot-slack` role inside the `roles` directory. To build the container image, make sure Docker is running, and run:
-
-{lang="text",linenos=off}
-```
-ansible-playbook main.yml
-```
-
-Once the playbook completes, run `docker images` to verify the `a4d/hubot-slack` image was created:
-
-{lang="text",linenos=off}
-```
-$ docker images
-REPOSITORY          TAG                 IMAGE ID            SIZE
-a4d/hubot-slack     latest              142db74437da        804MB
-node                8                   55791187f71c        673MB
-```
-
-Before you can run an instance of the new container image and have your bot in your Slack channels, you have to get an API token from Slack. Follow the instructions in Slack's guide, [Slack Developer Kit for Hubot](https://slackapi.github.io/hubot-slack/), and get an API token.
-
-Then run the following command to run an instance of Hubot attached to your Slack channel (replace `TOKEN` with your bot's Slack API token):
-
-{lang="text",linenos=off}
-```
-docker run -d --name hubot -e HUBOT_SLACK_TOKEN=TOKEN a4d/hubot-slack
-```
-
-The container should start, and you should see a new active member in your Slack team! In Slack, you can invite the bot to channels, converse directly, etc. (send a message with `help` to the bot to get all available commands).
-
-If something went wrong, use `docker logs hubot` to find out what happened.
-
-Once you're finished playing around with Hubot, you can kill and remove the container with `docker rm -f hubot`.
-
-### Summary
-
-You can use Ansible to build containers many different ways, depending on how you want to architect your container build pipeline. Using Ansible with the `docker` connection plugin allows you to treat a Docker container much like any other server in your fleet.
-
-Some parts of an Ansible-based container build pipeline require a little more verbosity, but in the end, you can do things like use the exact same Ansible roles for VMs and bare metal servers as you do a Docker container, making your overall infrastructure maintenance easier. Instead of maintaining legacy servers using Ansible playbooks, and Docker containers using Dockerfiles, you can do everything with Ansible!
-
-The entire [Docker Hubot Slack bot example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-hubot) is available on GitHub, if you'd like to clone it and try it locally.
+Once you learn to automate HTTPS certificates with Ansible and proxy backend services with Nginx (or another suitable HTTPS-aware proxy), it becomes possible to adopt HTTPS everywhere, no matter what kind of web applications you run.
 
 ## Summary
 
-The examples shown here barely scratch the surface of what makes Docker (and container-based application deployment in general) a fascinating and useful application deployment tool. Docker and other container-based tools are still in their infancy, so there are dozens of ways manage the building, running, and linking of containers. Ansible is a solid contender for managing your entire container-based application lifecycle (_and_ the infrastructure on which it runs).
+HTTPS is now an essential feature of any public-facing website and application, and it's fairly standard to use it on internal services too. Ansible automates the process of encrypting all your HTTP traffic with TLS certificates, no matter the certificate type or use case.
 
 {lang="text",linenos=off}
 ```
- _________________________________________
-/ Any sufficiently advanced technology is \
-| indistinguishable from magic.           |
-\ (Arthur C. Clarke)                      /
- -----------------------------------------
+ ____________________________________________
+/ Fool me once, shame on you. Fool me twice, \
+\ prepare to die. (Klingon Proverb)          /
+ --------------------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\

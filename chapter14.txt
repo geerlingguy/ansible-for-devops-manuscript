@@ -1,55 +1,139 @@
-# Chapter 14 - Kubernetes and Ansible
+# Chapter 14 - Docker and Ansible
 
-Most real-world applications require a lot more than a couple Docker containers running on a host. You may need five, ten, or dozens of containers running. And when you need to scale, you need them distributed across multiple hosts. And then when you have multiple containers on multiple hosts, you need to aggregate logs, monitor resource usage, etc.
+Docker is a highly optimized platform for building and running containers on local machines and servers in a highly efficient manner. You can think of Docker containers as sort-of lightweight virtual machines. This book won't go into the details of how Docker and Linux containers work, but will provide an introduction to how Ansible can integrate with Docker to build, manage, and deploy containers.
 
-Because of this, many different container scheduling platforms have been developed which aid in deploying containers and their supporting services: Kubernetes, Mesos, Docker Swarm, Rancher, OpenShift, etc. Because of its increasing popularity and support across all major cloud providers, this book will focus on usage of Kubernetes as a container scheduler.
+I> Prior to running example Docker commands or building and managing containers using Ansible, you'll need to make sure Docker is installed either on your workstation or a VM or server where you'll be testing everything. Please see the [installation guide for Docker](https://docs.docker.com/installation/) for help installing Docker on whatever platform you're using.
 
-### A bit of Kubernetes history
+## A brief introduction to Docker containers
 
-{width=30%}
-![Kubernetes logo](images/14-kubernetes-logo.png)
+Starting with an extremely simple example, let's build a Docker image from a Dockerfile. In this case, we want to show how Dockerfiles work and how we can use Ansible to build the image in the same way as if we were to use the command line with `docker build`.
 
-In 2013, some Google engineers began working to create an open source representation of the internal tool Google used to run millions of containers in the Google data centers, named Borg. The first version of Kubernetes was known as Seven of Nine (another Star Trek reference), but was finally renamed Kubernetes (a mangled translation of the Greek word for 'helmsman') to avoid potential legal issues.
+Let's start with a Dockerfile:
 
-To keep a little of the original geek culture Trek reference, it was decided the logo would have seven sides, as a nod to the working name 'Seven of Nine'.
+{lang="docker"}
+```
+# Build an example Docker container image.
+FROM busybox
+LABEL maintainer="Jeff Geerling"
 
-In a few short years, Kubernetes went from being one of many up-and-coming container scheduler engines to becoming almost a _de facto_ standard for large scale container deployment. In 2015, at the same time as Kubernetes' 1.0 release, the Cloud Native Computing Foundation (CNCF) was founded, to promote containers and cloud-based infrastructure.
+# Run a command when the container starts.
+CMD ["/bin/true"]
+```
 
-Kubernetes is one of many projects endorsed by the CNCF for 'cloud-native' applications, and has been endorsed by VMware, Google, Twitter, IBM, Microsoft, Amazon, and many other major tech companies.
+This Docker container doesn't do much, but that's okay; we just want to build it and verify that it's present and working---first with Docker, then with Ansible.
 
-By 2018, Kubernetes was available as a service offering from all the major cloud providers, and most other competing software has either begun to rebuild on top of Kubernetes, or become more of a niche player in the container scheduling space.
+Save the above file as `Dockerfile` inside a new directory, and then on the command line, run the following command to build the container:
 
-Kubernetes is often abbreviated 'K8s' (K + eight-letters + s), and the two terms are interchangeable.
+{lang="text",linenos=off}
+```
+$ docker build -t test .
+```
 
-### Evaluating the need for Kubernetes
+After a few seconds, the Docker image should be built, and if you list all local images with `docker image`, you should see your new test image (along with the busybox image, which was used as a base):
 
-If Kubernetes seems to be taking the world of cloud computing by storm, should you start moving all your applications into Kubernetes clusters? Not necessarily.
+{lang="text",linenos=off}
+```
+$ docker images
+REPOSITORY  TAG     IMAGE ID      CREATED             VIRTUAL SIZE
+test        latest  50d6e6479bc7  About a minute ago  2.433 MB
+busybox     latest  4986bf8c1536  2 weeks ago         2.433 MB
+```
 
-Kubernetes is a complex application, and even if you're using a managed Kubernetes offering, you need to learn new terminology and many new paradigms to get applications---especially non-'cloud native' applications---running smoothly.
+If you want to run the container image you just created, enter the following:
 
-If you already have automation around existing infrastructure projects, and it's running smoothly, I would not start moving things into Kubernetes unless the following criteria are met:
+{lang="text",linenos=off}
+```
+$ docker run --name=test test
+```
 
-  1. Your application doesn't require much locally-available stateful data (e.g. most databases, many file system-heavy applications).
-  2. Your application has many parts which can be broken out and run on an ad-hoc basis, like cron jobs or other periodic tasks.
+This creates a Docker container with the name `test`, and starts the container. Since the only thing our container does is calls `/bin/true`, the container will run the command, then exit. You can see the current status of all your containers (whether or not they're actively running) with the `docker ps -a` command:
 
-Kubernetes, like Ansible, is best introduced incrementally into an existing organization. You might start by putting temporary workloads (like report-generating jobs) into a Kubernetes cluster. Then you can work on moving larger and persistent applications into a cluster.
+{lang="text",linenos=off}
+```
+$ docker ps -a
+CONTAINER ID  IMAGE        [...]  CREATED        STATUS
+bae0972c26d4  test:latest  [...]  3 seconds ago  Exited (0) 2s ago
+```
 
-If you're working on a green field project, with enough resources to devote some time up front to learning the ins and outs of Kubernetes, it makes sense to at least give Kubernetes a try for running everything.
+You can control the container using either the container ID (in this case, `bae0972c26d4`) or the name (`test`); start with `docker start [container]`, stop with `docker stop [container]`, delete/remove with `docker rm [container]`.
 
-### Building a Kubernetes cluster with Ansible
+If you delete the container (`docker rm test`) and the image you built (`docker rmi test`), you can experiment with the Dockerfile by changing it and rebuilding the image with `docker build`, then running the resulting image with `docker run`. For example, if you change the command from `/bin/true` to `/bin/false`, then run build and run the container, `docker ps -a` will show the container exited with the status code `1` instead of `0`.
 
-There are a few different ways you can build a Kubernetes cluster:
+For our purposes, this is a good introduction to how Docker works. To summarize:
 
-  - Using [`kubeadm`](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/), a tool included with Kubernetes to set up a minimal but fully functional Kubernetes cluster in any environment.
-  - Using tools like [`kops`](https://github.com/kubernetes/kops) or [`kubespray`](https://github.com/kubernetes-incubator/kubespray) to build a production-ready Kubernetes cluster in almost any environment.
-  - Using tools like Terraform or CloudFormation---or even Ansible modules---to create a managed Kubernetes cluster using a cloud provider like AWS, Google Cloud, or Azure.
+  - Dockerfiles contain the instructions Docker uses to build containers.
+  - `docker build` builds Dockerfiles and generates container images.
+  - `docker images` lists all images present on the system.
+  - `docker run` runs created images.
+  - `docker ps -a` lists all containers, both running and stopped.
 
-There are many excellent guides online for the latter options, so we'll stick to using `kubeadm` in this book's examples. And, lucky for us, there's an Ansible role (`geerlingguy.kubernetes`) which already wraps `kubeadm` in an easy-to-use manner so we can integrate it with our playbooks.
+When developing Dockerfiles to containerize your own applications, you will likely want to get familiar with the Docker CLI and how the process works from a manual perspective. But when building the final images and running them on your servers, Ansible can help ease the process.
 
-{width=80%}
-![Kuberenetes architecture for a simple cluster](images/14-kubernetes-simple-cluster-architecture.png)
+## Using Ansible to build and manage containers
 
-As with other multi-server examples in this book, we can describe a three server setup to Vagrant so we can build a full 'bare metal' Kubernetes cluster. Create a project directory and add the following in a `Vagrantfile`:
+Ansible has built-in Docker modules that integrate nicely with Docker for container management. We're going to use them to automate the building and running of the container (managed by the Dockerfile) we just created.
+
+Move the Dockerfile you had into a subdirectory, and create a new Ansible playbook (call it `main.yml`) in the project root directory. The directory layout should look like:
+
+{lang="text",linenos=off}
+```
+docker/
+  main.yml
+  test/
+    Dockerfile
+```
+
+Inside the new playbook, add the following:
+
+{lang="yaml"}
+```
+---
+- hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Ensure Docker image is built from the test Dockerfile.
+      docker_image:
+        name: test
+        source: build
+        build:
+          path: test
+        state: present
+```
+
+The playbook uses the `docker_image` module to build an image. Provide a name for the image, tell Ansible the source for the image is a `build`, then provide the path to the Dockerfile in the `build` parameters (in this case, inside the `test` directory). Finally, tell Ansible via the `state` parameter the image should be `present`, to ensure it is built and available.
+
+I> Ansible's Docker integration may require you to install an extra Docker python library on the system running the Ansible playbook. For example, on ArchLinux, if you get the error "failed to import Python module", you will need to install the `python2-docker` package. On other distributions, you may need to install the `docker` Python library via Pip (`pip install docker`).
+
+Run the playbook (`$ ansible-playbook main.yml`), and then list all the Docker images (`$ docker images`). If all was successful, you should see a fresh `test` image in the list.
+
+Run `docker ps -a` again, though, and you'll see the new `test` image was never run and is absent from the output. Let's remedy that by adding another task to our Ansible playbook:
+
+{lang="yaml",starting-line-number=12}
+```
+    - name: Ensure the test container is running.
+      docker_container:
+        image: test:latest
+        name: test
+        state: started
+```
+
+If you run the playbook again, Ansible will start the Docker container. Check the list of containers with `docker ps -a`, and you'll note the `test` container is again present.
+
+You can remove the container and the image via ansible by changing the `state` parameter to `absent` for both tasks.
+
+T> This playbook assumes you have both Docker and Ansible installed on whatever host you're using to test Docker containers. If this is not the case, you may need to modify the example so the Ansible playbook is targeting the correct `hosts` and using the right connection settings. Additionally, if the user account under which you run the playbook can't run `docker` commands, you may need to use `become` with this playbook.
+
+I> The code example above can be found in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker).
+
+## Building a Flask app with Ansible and Docker
+
+Let's build a more useful Docker-powered environment, with a container that runs our application (built with Flask, a lightweight Python web framework), and a container that runs a database (MySQL), along with a data container. We need a separate data container to persist the MySQL database, because data changed inside the MySQL container is lost every time the container stops.
+
+{width=60%}
+![Docker stack for Flask App](images/8-flask-docker-stack.png)
+
+We'll create a VM using Vagrant to run our Docker containers so the same Docker configuration can be tested on any machine capable of running Ansible and Vagrant. Create a `docker` folder, and inside it, the following `Vagrantfile`:
 
 {lang="ruby"}
 ```
@@ -59,648 +143,615 @@ As with other multi-server examples in this book, we can describe a three server
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "geerlingguy/debian9"
+  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.network :private_network, ip: "192.168.33.39"
   config.ssh.insert_key = false
-  config.vm.provider "virtualbox"
 
+  config.vm.hostname = "docker.test"
   config.vm.provider :virtualbox do |v|
-    v.memory = 1024
-    v.cpus = 1
-    v.linked_clone = true
+    v.customize ["modifyvm", :id, "--name", "docker.test"]
+    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    v.customize ["modifyvm", :id, "--memory", 1024]
+    v.customize ["modifyvm", :id, "--cpus", 2]
+    v.customize ["modifyvm", :id, "--ioapic", "on"]
   end
 
-  # Define three VMs with static private IP addresses.
-  boxes = [
-    { :name => "master", :ip => "192.168.84.2" },
-    { :name => "node1", :ip => "192.168.84.3" },
-    { :name => "node2", :ip => "192.168.84.4" },
-  ]
-
-  # Provision each of the VMs.
-  boxes.each do |opts|
-    config.vm.define opts[:name] do |config|
-      config.vm.hostname = opts[:name] + ".k8s.test"
-      config.vm.network :private_network, ip: opts[:ip]
-
-      # Provision all the VMs using Ansible after last VM is up.
-      if opts[:name] == "node2"
-        config.vm.provision "ansible" do |ansible|
-          ansible.playbook = "main.yml"
-          ansible.inventory_path = "inventory"
-          ansible.limit = "all"
-        end
-      end
-    end
+  # Enable provisioning with Ansible.
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "provisioning/main.yml"
   end
 
 end
 ```
 
-The Vagrantfile creates three VMs:
+We'll use Ubuntu for this example, and we've specified an Ansible playbook (`provisioning/main.yml`) to set everything up. Inside `provisioning/main.yml`, we need to first install and configure Docker (which we'll do using the Ansible Galaxy role `geerlingguy.docker`), then run some additional setup tasks, and finally build and start the required Docker containers:
 
-  - `master`, which will be configured as the Kubernetes master server, running the scheduling engine.
-  - `node1`, a Kubernetes node to be joined to the master.
-  - `node2`, another Kubernetes node to be joined to the master.
-
-You could technically add as many more `nodeX` VMs as you want, but since most people don't have a terabyte of RAM, it's better to be conservative in a local setup!
-
-Once the `Vagrantfile` is ready, you should add an `inventory` file to tell Ansible about the VMs; note our `ansible` configuration in the Vagrantfile points to a playbook in the same directory, `main.yml` and an inventory file, `inventory`. In the inventory file, put the following contents:
-
-{lang="text"}
+{lang="yaml"}
 ```
-[k8s-master]
-master ansible_host=192.168.84.2 kubernetes_role=master
+---
+- hosts: all
+  become: true
 
-[k8s-nodes]
-node1 ansible_host=192.168.84.3 kubernetes_role=node
-node2 ansible_host=192.168.84.4 kubernetes_role=node
+  roles:
+    - role: geerlingguy.docker
 
-[k8s:children]
-k8s-master
-k8s-nodes
-
-[k8s:vars]
-ansible_ssh_user=vagrant
-ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+  tasks:
+    - import_tasks: setup.yml
+    - import_tasks: docker.yml
 ```
 
-The inventory is broken up into three groups: `k8s-master` (the Kubernetes master), `k8s-nodes` (all the nodes that will join the master), and `k8s` (a group with all the servers, helpful for initializing the cluster or operating on all the servers at once).
+We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo` by setting `become: yes`.
 
-We'll refer to the servers using the `k8s` inventory group in our Kubernetes setup playbook. Let's set up the playbook now:
+The `geerlingguy.docker` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
+
+{lang="yaml"}
+```
+---
+- name: Install Pip.
+  apt: name=python-pip state=present
+
+- name: Install Docker Python library.
+  pip: name=docker state=present
+```
+
+Ansible needs the `docker` Python library in order to control Docker via Python, so we install `pip`, then use it to install `docker`.
+
+Next is the meat of the playbook: `docker.yml` (also in the `provisioning` directory). The first task is to build Docker images for our data, application, and database containers:
+
+{lang="yaml"}
+```
+---
+- name: Build Docker images from Dockerfiles.
+  docker_image:
+    name: "{{ item.name }}"
+    tag: "{{ item.tag }}"
+    source: build
+    build:
+      path: "/vagrant/provisioning/{{ item.directory }}"
+      pull: false
+    state: present
+  with_items:
+    - { name: data, tag: latest, directory: data }
+    - { name: flask, tag: latest, directory: www }
+    - { name: db, tag: latest, directory: db }
+```
+
+Don't worry that we haven't yet created the actual Dockerfiles required to create the Docker images; we'll do that after we finish structuring everything with Ansible.
+
+Like our earlier usage of `docker_image`, we supply a `name`, `build.path`, and `source` for each image. In this example, we're also adding a `tag`, which behaves like a git tag, allowing future Docker commands to use the images we created at a specific version. We'll be building three containers, `data`, `flask`, and `db`, and we're pointing Docker to the path `/vagrant/provisioning/[directory]`, where `[directory]` contains the Dockerfile and any other helpful files to be used to build the Docker image.
+
+After building the images, we will need to start each of them (or at least make sure a container is *present*, in the case of the `data` container---since you can use data volumes from non-running containers). We'll do that in three separate `docker_container` tasks:
+
+{lang="yaml",starting-line-number=16}
+```
+# Data containers don't need to be running to be utilized.
+- name: Run a Data container.
+  docker_container:
+    image: data:latest
+    name: data
+    state: present
+
+- name: Run a Flask container.
+  docker_container:
+    image: www:latest
+    name: www
+    state: started
+    command: python /opt/www/index.py
+    ports: "80:80"
+
+- name: Run a MySQL container.
+  docker_container:
+    image: db:latest
+    name: db
+    state: started
+    volumes_from: data
+    ports: "3306:3306"
+    env:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: flask
+      MYSQL_USER: flask
+      MYSQL_PASSWORD: flask
+```
+
+Each of these containers' configuration is a little more involved than the previous. In the case of the first container, it's just `present`; Ansible will ensure a `data` container is present.
+
+For the Flask container, we need to make sure our app is not only running, but *continues* to run. So, unlike our earlier usage of `/bin/true` to run a container briefly and exit, in this case we will provide an explicit command to run:
+
+{lang="yaml",starting-line-number=25}
+```
+    command: python /opt/www/index.py
+```
+
+Calling the script directly will launch the app in the foreground and log everything to stdout, making it easy to inspect what's going on with `docker logs [container]` if needed.
+
+Additionally, we want to map the container's port 80 to the host's port 80, so external users can load pages over HTTP. This is done using the `ports` option, passing data just as you would using Docker's `--publish` syntax.
+
+The Flask container will have a static web application running on it, and has no need for extra non-transient file storage, but the MySQL container will mount a data volume from the `data` container, so it has a place to store data that won't vanish when the container dies and is restarted.
+
+Thus, for the `db` container, we have two special options: the `volumes_from` option, which mounts volumes from the specified container (in this case, the `data` container), and the `command`, which calls a shell script to start MySQL. We'll get to why we're running a shell script and not launching a MySQL daemon directly in a bit.
+
+Now that we have the playbook structured to build our Docker-based infrastructure, we'll build out each of the three Dockerfiles and related configuration to support the `data`, `www`, and `db` containers.
+
+At this point, we should have a directory structure like:
+
+{lang="text",linenos=off}
+```
+docker/
+  provisioning/
+    data/
+    db/
+    www/
+    docker.yml
+    main.yml
+    setup.yml
+  Vagrantfile
+```
+
+W> It's best to use lightweight base images without any extra frills instead of heavyweight 'VM-like' images. Additionally, lightweight server environments where containers are built and run, like CoreOS, don't need the baggage of a standard Linux distribution. If you need Ansible available for configuration and container management in such an environment, you also need to have Python and other dependencies installed.
+
+### Data storage container
+
+For the data storage container, we don't need much; we just need to create a directory and set it as an exposed mount point using `VOLUME`:
+
+{lang="docker"}
+```
+# Build a simple MySQL data volume Docker container.
+FROM busybox
+MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+
+# Create data volume for MySQL.
+RUN mkdir -p /var/lib/mysql
+VOLUME /var/lib/mysql
+```
+
+We create a directory (line 6), and expose the directory as a volume (line 7) which can be mounted by the host or other containers. Save the above into a new file, `docker/provisioning/data/Dockerfile`.
+
+T> This container builds on top of the official `busybox` base image. Busybox is an extremely simple distribution that is Linux-like but does not contain every option or application generally found in popular distributions like Debian, Ubuntu, or RHEL. Since we only need to create and share a directory, we don't need any additional 'baggage' inside the container. In the Docker world, it's best to use the most minimal base images possible, and to only install and run the bare necessities inside each container to support the container's app.
+
+### Flask container
+
+[Flask](https://palletsprojects.com/p/flask/) is a lightweight Python web framework "based on Werkzeug, Jinja 2 and good intentions". It's a great web framework for small, fast, and robust websites and apps, or even an API. For our purposes, we need to build a Flask app that connects to a MySQL database and displays the status of the connection on a basic web page (very much like our PHP example, in the earlier Highly-Available Infrastructure example).
+
+Here's the code for the Flask app (save it as `docker/provisioning/www/index.py.j2`):
+
+{lang="python"}
+```
+# Infrastructure test page.
+from flask import Flask
+from flask import Markup
+from flask import render_template
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
+
+app = Flask(__name__)
+
+# Configure MySQL connection.
+db_uri = 'mysql://flask:flask@{{ host_ip_address }}/flask'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+db = SQLAlchemy(app)
+
+@app.route("/")
+def test():
+    mysql_result = False
+    try:
+        query = text('SELECT 1')
+        result = db.engine.execute(query)
+        if [row[0] for row in result][0] == 1:
+            mysql_result = True
+    except:
+        pass
+
+    if mysql_result:
+        result = Markup('<span style="color: green;">PASS</span>')
+    else:
+        result = Markup('<span style="color: red;">FAIL</span>')
+
+    # Return the page with the result.
+    return render_template('index.html', result=result)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=80)
+```
+
+This app defines one route (`/`), listens on every interface on port 80, and shows a MySQL connection status page rendered by the template `index.html`. There's nothing particularly complicated in this application, but there is one Jinja variable (`{{ host_ip_address }}`) which an Ansible playbook will replace during deployment, and the app has a few dependencies (like `flask-sqlalchemy`) which will need to be installed via the Dockerfile.
+
+Since we are using a Jinja template to render the page, let's create that template in `docker/provisioning/www/templates/index.html` (Flask automatically picks up any templates inside a `templates` directory):
+
+{lang="html"}
+```
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Flask + MySQL Docker Example</title>
+  <style>* { font-family: Helvetica, Arial, sans-serif }</style>
+</head>
+<body>
+  <h1>Flask + MySQL Docker Example</h1>
+  <p>MySQL Connection: {{ result }}</p>
+</body>
+</html>
+```
+
+In this case, the `.html` template contains a Jinja variable (`{{ result }}`), and Flask will fill in the variable with the status of the MySQL connection.
+
+Now that we have the app defined, we need to build the container to run the app. Here is a Dockerfile that will install all the required dependencies, then copy an Ansible playbook and the app itself into place so we can do the more complicated configuration (like copying a template with variable replacement) through Ansible:
+
+{lang="docker"}
+```
+# A simple Flask app container.
+FROM geerlingguy/docker-ubuntu1804-ansible
+MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+
+# Install Flask app dependencies.
+RUN apt-get install -y libmysqlclient-dev build-essential \
+  python-dev python-pip
+RUN pip install flask flask-sqlalchemy mysql-python
+
+# Install playbook and run it.
+COPY playbook.yml /etc/ansible/playbook.yml
+COPY index.py.j2 /etc/ansible/index.py.j2
+COPY templates /etc/ansible/templates
+RUN mkdir -m 755 /opt/www
+RUN ansible-playbook /etc/ansible/playbook.yml --connection=local
+
+EXPOSE 80
+```
+
+Instead of installing apt and pip packages using Ansible, we'll install them using `RUN` commands in the Dockerfile. This allows those commands to be cached by Docker. Generally, more complicated package installation and configuration is easier and more maintainable inside Ansible, but in the case of package installation, having Docker cache the steps so future `docker build` commands take seconds instead of minutes is worth the verbosity of the Dockerfile.
+
+At the end of the Dockerfile, we run a playbook (which should be located in the same directory as the Dockerfile) and expose port 80 so the app can be accessed via HTTP by the outside world. Next we'll create the app deployment playbook.
+
+W> Purists might cringe at the sight of an Ansible playbook inside a Dockerfile, and for good reason! Commands like the `ansible-playbook` command cover up configuration that might normally be done (and cached) within Docker. Additionally, using the `ansible/ubuntu16.04-ansible` base image (which includes Ansible) requires an initial download that's 50+ MB larger than a comparable Debian or Ubuntu image without Ansible. However, for brevity and ease of maintenance, we're using Ansible to manage all the app configuration inside the container (otherwise we'd need to run a bunch of verbose and incomprehensible shell commands to replace Ansible's `template` functionality).
+W> 
+W> Using a tool like [ansible-bender](https://github.com/ansible-community/ansible-bender), or building containers with Ansible _directly_ (using the `docker` connection plugin, mentioned later in this chapter), are ways you can still automate container image builds without running Ansible inside the image.
+
+In order for the Flask app to function properly, we need to get the `host_ip_address`, then replace the variable in the `index.py.j2` template. Create the Flask deployment playbook at `docker/provisioning/www/playbook.yml`:
+
+{lang="yaml"}
+```
+---
+- hosts: localhost
+  become: true
+
+  tasks:
+    - name: Get host IP address.
+      shell: "/sbin/ip route | awk '/default/ { print $3 }'"
+      register: host_ip
+      changed_when: false
+
+    - name: Set host_ip_address variable.
+      set_fact:
+        host_ip_address: "{{ host_ip.stdout }}"
+
+    - name: Copy Flask app into place.
+      template:
+        src: /etc/ansible/index.py.j2
+        dest: /opt/www/index.py
+        mode: 0755
+
+    - name: Copy Flask templates into place.
+      copy:
+        src: /etc/ansible/templates
+        dest: /opt/www
+        mode: 0755
+```
+
+The shell command that registers the `host_ip` is an easy way to retrieve the IP while still letting Docker do its own virtual network management.
+
+The last two tasks copy the flask app and templates directory into place.
+
+The `docker/provisioning/www` directory should now contain the following:
+
+{lang="text",linenos=off}
+```
+www/
+  templates/
+    index.html
+  Dockerfile
+  index.py.j2
+  playbook.yml
+```
+
+### MySQL container
+
+We've configured MySQL a few times throughout this book, so little time will be spent discussing how MySQL is set up. We'll instead dive into how MySQL works inside a Docker container, with a persistent data volume from the previously-configured `data` container.
+
+For MySQL, there is already a very well-maintained and flexible community MySQL Docker image we can rely on. To use it, we'll wrap it in our own Dockerfile (in case we want to make further customizations in the future).
+
+{lang="docker"}
+```
+# A simple MySQL container.
+FROM mysql:5.7
+MAINTAINER Jeff Geerling <geerlingguy@mac.com>
+
+EXPOSE 3306
+```
+
+This Dockerfile tells Docker to pull from the mysql image on Docker Hub, and then expose port 3306.
+
+The `docker/provisioning/db` directory should now contain the following:
+
+{lang="text",linenos=off}
+```
+db/
+  Dockerfile
+```
+
+### Ship it!
+
+Now that everything's in place, you should be able to cd into the main `docker` directory, and run `vagrant up`. After 10 minutes or so, Vagrant should show Ansible provisioning was successful, and if you visit `http://192.168.33.39/` in your browser, you should see something like the following:
+
+{width=80%}
+![Docker orchestration success!](images/8-docker-success.png)
+
+If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) on GitHub.
+
+The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
+
+## Building containers with Ansible from the outside
+
+In the previous example, an Ansible playbook was run _inside_ a Docker container to build the Flask application image. While this approach works and is maintainable, it also makes for a lot of cruft. One major advantage of container-based app deployment is a nice tidy container image per service.
+
+To use Ansible inside a container requires a lot of dependencies---Python, Ansible's dependencies, and Ansible itself.
+
+One solution to this problem is to use [`ansible-bender`](https://github.com/ansible-community/ansible-bender). One of the key features of `ansible-bender` is a container image build system which applies Ansible tasks to a Docker image. So instead of Ansible running inside the container being built, you use Ansible to build the container.
+
+I> Earlier in Ansible's history, there was a project called [Ansible Container], which used a sidecar container running Ansible to apply Ansible roles to a container image, and stored each role as one container image layer. That project never achived critical mass and was left in a state of disrepair after around 2018.
+
+### Build a Hubot Slack bot container with `ansible_connection: docker`
+
+Most examples in this book use the default `ansible_connection` plugin, `ssh`, which connects to servers using SSH. A few examples also use the `local` plugin, which runs commands locally without SSH.
+
+There are actually a few dozen connection plugins that ship with Ansible, including `kubectl` for interacting with Kubernetes pods, `saltstack` for piggybacking salt minions, `winrm` for connecting over Microsoft's WinRM, and `docker`, which runs tasks in Docker containers.
+
+This last connection plugin is helpful if you want to build Docker container images using Ansible without the overhead of installing Ansible inside the container.
+
+To learn how the `docker` connection plugin works, we'll build a Hubot Slack bot.
+
+#### Hubot and Slack
+
+To give a little background, [Hubot](https://hubot.github.com) is an open-source chat bot from GitHub, written in CoffeeScript, which can be connected to many different chat systems. [Slack](https://slack.com) is an popular chat platform used by many businesses to communicate. Many teams benefit from a bot like Hubot, as they can store data in Hubot for quick retrieval, or even connect Hubot to other services (like CI tools) and kick off deployments, check infrastructure health, and do other helpful things.
+
+#### Building a Docker container with Ansible
+
+The first step in setting up our bot project is to create a new directory (e.g. `docker-hubot`) and an Ansible playbook, we'll call it `main.yml`.
+
+You'll have to have Docker installed and running on the computer where you'll run this playbook, and the first few setup steps will use `connection: local` to get the container build started:
 
 {lang="text"}
 ```
 ---
-- hosts: k8s
-  become: yes
+- hosts: localhost
+  connection: local
+  gather_facts: no
 
-  vars_files:
-    - vars/main.yml
+  vars:
+    base_image: node:8
+    container_name: hubot_slack
+    image_namespace: a4d
+    image_name: hubot-slack
 ```
 
-We'll operate on all the `k8s` servers defined in the `inventory`, and we'll need to operate as the root user to set up Kubernetes and its dependencies, so we add `become: yes`. Also, to keep things organized, all the playbook variables will be placed in the included vars file `vars/main.yml` (you can create that file now).
+There are also a few variables defined which we'll use later in the playbook to define things like the Docker base image to be used, the name for the container we're building, and the namespace and name for the final generated Docker image. We don't need to `gather_facts` since we aren't going to do much on the local connection.
 
-Next, because Vagrant's virtual network interfaces can confuse Kubernetes and Flannel (the Kubernetes networking plugin we're going to use for inter-node communication), we need to copy a custom Flannel manifest file into the VM. Instead of printing the whole file in this book (it's a _lot_ of YAML!), you can grab a copy of the file from the URL: https://github.com/geerlingguy/ansible-for-devops/blob/master/kubernetes/files/manifests/kube-system/kube-flannel-vagrant.yml
-
-Save the file in your project folder in the path:
-
-{lang="text",linenos=off}
-```
-files/manifests/kube-system/kube-flannel-vagrant.yml
-```
-
-Now add a task to copy the manifest file into place using `pre_tasks` (we need to do this before any Ansible roles are run):
-
-{lang="text",starting-line-number=8}
+{lang="text",starting-line-number=12}
 ```
   pre_tasks:
-    - name: Copy Flannel manifest tailored for Vagrant.
-      copy:
-        src: files/manifests/kube-system/kube-flannel-vagrant.yml
-        dest: "~/kube-flannel-vagrant.yml"
+    - name: Make the latest version of the base image available locally.
+      docker_image:
+        name: '{{ base_image }}'
+        source: pull
+        force_source: true
+
+    - name: Create the Docker container.
+      docker_container:
+        image: '{{ base_image }}'
+        name: '{{ container_name }}'
+        command: sleep infinity
+
+    - name: Add the newly created container to the inventory.
+      add_host:
+        hostname: '{{ container_name }}'
+        ansible_connection: docker
 ```
 
-Next we need to prepare the server to be able to run `kubelet` (all Kubernetes nodes run this service, which schedules Kubernetes Pods on individual nodes). `kubelet` has a couple special requirements:
+In a `pre_tasks` area, we'll set up the Docker container so we can get Hubot on it:
 
-  - Swap should be disabled on the server (there are a few valid reasons why you might keep swap enabled, but it's not recommended and requires more work to get `kubelet` running well.)
-  - Docker (or an equivalent container runtime) should be installed on the server.
+  1. The `docker_image` task: Pull the `base_image` (Ansible's equivalent of `docker pull`), and make sure the latest version is always present when the playbook runs.
+  2. The `docker_container` task: Create a Docker container (Ansible's equivalent of `docker run`) from the `base_image`.
+  3. The `add_host` task: Add the just-created container to the Ansible inventory.
 
-Lucky for us, there are Ansible Galaxy roles which configure swap and install Docker, so let's add them in the playbook's `roles` section:
+Now that we have a container running and in the inventory, we can build inside of it, using the `docker` connection plugin. Following the best practices we established earlier in the book, we'll put all the reusable logic inside an Ansible role, which we'll create in a moment. For now, we can call the role about to be created in the playbook's `roles` section:
 
-{lang="text",starting-line-number=14}
+{lang="text",starting-line-number=30}
 ```
   roles:
-    - role: geerlingguy.swap
-      tags: ['swap', 'kubernetes']
-
-    - role: geerlingguy.docker
-      tags: ['docker']
+    - name: hubot-slack
+      delegate_to: '{{ container_name }}'
 ```
 
-We also need to add some configuration to ensure we have swap disabled and Docker installed correctly. Add the following variables in `vars/main.yml`:
+Note the `delegate_to`. Any task, playbook, or role we want Ansible to run inside the Docker container needs to be delegated to the container.
 
-{lang="text"}
+Before building the `hubot-slack` role, let's finish off the container image build process and the rest of the main playbook:
+
+{lang="text",starting-line-number=34}
 ```
----
-swap_file_state: absent
-swap_file_path: /dev/mapper/packer--debian--9--amd64--vg-swap_1
+  post_tasks:
+    - name: Clean up the container.
+      shell: >
+        apt-get remove --purge -y python &&
+        rm -rf /var/lib/apt/lists/*
+      delegate_to: '{{ container_name }}'
+      args:
+        warn: false
 
-docker_package: docker-ce=5:18.09.0~3-0~debian-stretch
-docker_install_compose: False
-```
+    - name: Commit the container.
+      command: >
+        docker commit
+        -c 'USER hubot'
+        -c 'WORKDIR "/home/hubot"'
+        -c 'CMD ["bin/hubot", "--adapter", "slack"]'
+        -c 'VOLUME ["/home/hubot/scripts"]'
+        {{ container_name }} {{ image_namespace }}/{{ image_name }}:latest
 
-The `swap_file_path` is specific to the 64-bit Debian 9 Vagrant box used in the `Vagrantfile`, so if you want to use a different OS or install on a cloud server, the default system swap file may be at a different location.
-
-It's a best practice to specify a Docker version that's been well-tested with a particular version of Kubernetes, and in this case, the latest version of Kubernetes at the time of this writing---1.13---works well with Docker 18.09, so we lock in that package version using the `docker_package` variable.
-
-Back in the `main.yml` playbook, we'll put the last role necessary to get Kubernetes up and running on the cluster:
-
-{lang="text",starting-line-number=21}
-```
-- role: geerlingguy.kubernetes
-      tags: ['kubernetes']
-```
-
-At this point, our playbook uses three Ansible Galaxy roles. To make installation and maintenance easier, add a `requirements.yml` file with the roles listed inside:
-
-{lang="text"}
-```
----
-- src: geerlingguy.swap
-- src: geerlingguy.docker
-- src: geerlingguy.kubernetes
+    - name: Remove the container.
+      docker_container:
+        name: '{{ container_name }}'
+        state: absent
 ```
 
-Then run `ansible-galaxy install -r requirements.yml -p ./roles` to install the roles in the project directory.
+The post-tasks clean up unnecessary cruft inside the container (trimming down the size of the committed image), commit the Docker container to an image (tagged `a4d/hubot-slack:latest`), and remove the running container.
 
-As a final step, before building the cluster with `vagrant up`, we need to set a few configuration options to ensure Kubernetes starts correctly and the inter-node network functions properly. Add the following variables to tell the Kubernetes role a little more about the cluster:
+When building from a `Dockerfile`, you can set things like the `USER` (the user used to run the `CMD` or `ENTRYPOINT` in the container) and `CMD` (the defaults for an executing container) directly. In our case, since we're not building from a `Dockerfile`, we set these options using `docker commit`'s `-c` or `--change` option.
 
-{lang="text",starting-line-number=8}
-```
-kubernetes_version: '1.13'
-kubernetes_allow_pods_on_master: False
-kubernetes_pod_network_cidr: '10.244.0.0/16'
-kubernetes_packages:
-  - name: kubelet=1.13.8-00
-    state: present
-  - name: kubectl=1.13.8-00
-    state: present
-  - name: kubeadm=1.13.8-00
-    state: present
-  - name: kubernetes-cni
-    state: present
+Now that we have the main scaffolding in place for building a Docker container, committing an image from that container, and tearing down the container, it's time to add the 'meat' to our playbook---the role that installs Hubot and its Slack adapter.
 
-kubernetes_apiserver_advertise_address: "192.168.84.2"
-kubernetes_flannel_manifest_file: "~/kube-flannel-vagrant.yml"
-kubernetes_kubelet_extra_args: '--node-ip={{ inventory_hostname }}'
-```
+#### Building the `hubot-slack` role
 
-Let's go through the variables one-by-one:
-
-  - `kubernetes_version`: Kubernetes is a fast-moving target, and it's best practice to specify the version you're targeting---but to update as soon as possible to the latest version!
-  - `kubernetes_allow_pods_on_master`: It's best to dedicate the Kubernetes master server to managing Kubernetes alone. You can run pods other than the Kubernetes system pods on the master if you want, but it's rarely a good idea.
-  - `kubernetes_pod_network_cidr`: Because the default network suggested in the Kubernetes documentation conflicts with many home and private network IP ranges, this custom CIDR is a bit of a safer option.
-  - `kubernetes_packages`: Along with specifying the `kubernetes_version`, if you want to make sure there are no surprises when installing Kubernetes, it's important to also lock in the versions of the packages that make up the Kubernetes cluster.
-  - `kubernetes_apiserver_advertise_address`: To ensure Kubernetes knows the correct interface to use for inter-node API communication, we explicitly set the IP of the master node (this could also be the DNS name for the master, if desired).
-  - `kubernetes_flannel_manifest_file`: Because Vagrant's virtual network interfaces confuse the default Flannel configuration, we specify the custom Flannel manifest we copied earlier in the playbook's `pre_tasks`.
-  - `kubernetes_kubelet_extra_args`: Because Vagrant's virtual network interfaces can also confuse Kubernetes, it's best to explicitly define the `node-ip` to be advertised by `kubelet`.
-
-Whew! We finally have the full project ready to go. It's time to build the cluster! Assuming all the files are in order, you can run `vagrant up`, and after a few minutes, you should have a three-node Kubernetes cluster running locally.
-
-To verify the cluster is operating normally, log into the `master` server and check the node status with `kubectl`:
-
-{lang="text",linenos="off"}
-```
-# Log into the master VM.
-$ vagrant ssh master
-
-# Switch to the root user.
-vagrant@master:~$ sudo su
-
-# Check node status.
-root@master# kubectl get nodes
-NAME      STATUS    ROLES     AGE       VERSION
-master    Ready     master    13m       v1.13.2
-node1     Ready     <none>    12m       v1.13.2
-node2     Ready     <none>    12m       v1.13.2
-```
-
-If any of the nodes aren't reporting `Ready`, then something may be mis-configured. You can check the system logs to see if `kubelet` is having trouble, or read through the Kubernetes documentation to [Troubleshoot Clusters](https://kubernetes.io/docs/tasks/debug-application-cluster/debug-cluster/).
-
-You can also check to ensure all the system pods (which run services like DNS, etcd, Flannel, and the Kubernetes API) are running correctly with the command:
+As with any role, the easiest way to scaffold the necessary files is using the `ansible-galaxy` command. Create a `hubot-slack` role in a `roles` subdirectory with:
 
 {lang="text",linenos=off}
 ```
-root@master# kubectl get pods -n kube-system
+ansible-galaxy init hubot-slack
 ```
 
-This should print a list of all the core Kubernetes service pods (some of which are displayed multiple times---one for each node in the cluster), and the status should be `Running` after all the pods start correctly.
+You can delete some unneeded role directories, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).
 
-I> The Kubernetes cluster example above can be found in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops/tree/master/kubernetes).
-
-### Managing Kubernetes with Ansible
-
-Once you have a Kubernetes cluster---whether bare metal or managed by a cloud provider---you need to deploy applications inside. Ansible has a few modules which make it easy to automate.
-
-#### Ansible's `k8s` module
-
-The `k8s` module (also aliased as `k8s_raw` and `kubernetes`) requires the OpenShift Python client to communicate with the Kubernetes API. So before using the `k8s` role, you need to install the client. Since it's installed with `pip`, we need to install Pip as well.
-
-Create a new `k8s-module.yml` playbook in an `examples` directory in the same project we used to set up the Kubernetes cluster, and put the following inside:
+Since Hubot isn't too hard to install, we can do everything we need inside `tasks/main.yml`. The first thing we need to do is ensure all the required dependencies for generating our bot are present:
 
 {lang="text"}
 ```
 ---
-- hosts: k8s-master
-  become: yes
+- name: Install dependencies.
+  package:
+    name: sudo
+    state: present
 
-  pre_tasks:
-    - name: Ensure Pip is installed.
-      package:
-        name: python-pip
-        state: present
-
-    - name: Ensure OpenShift client is installed.
-      pip:
-        name: openshift
-        state: present
+- name: Install required Node.js packages.
+  npm:
+    name: "{{ item }}"
+    state: present
+    global: yes
+  with_items:
+    - yo
+    - generator-hubot
 ```
 
-We'll soon add a task to create a Kubernetes deployment that runs three Nginx replicas based on the official Nginx Docker image. Before adding the task, we need to create a Kubernetes manifest, or definition file. Create a file in the path `examples/files/nginx.yml`, and put in the following contents:
-
-{lang="text"}
-```
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: a4d-nginx
-  namespace: default
-  labels:
-    app: nginx
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.7.9
-        ports:
-        - containerPort: 80
-```
-
-We won't get into the details of how Kubernetes manifests work, or why it's structured the way it is. If you want more details about this example, please read through the Kubernetes documentation, specifically [Creating a Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#creating-a-deployment).
-
-Going back to the `k8s-module.yml` playbook, add a `tasks` section which uses the `k8s` module to apply the `nginx.yml` manifest to the Kubernetes cluster:
+Because we want to be able to run certain commands as a `hubot` user later, we'll need `sudo` present so Ansible can `become` the `hubot` user. Then we'll install some require dependencies---`yo` and `generator-hubot`, which are used to build the bot. Node.js is already present inside the container, since we chose to build the container based off the `node:8` base image.
 
 {lang="text",starting-line-number=16}
 ```
-  tasks:
-    - name: Apply definition file from Ansible controller file system.
-      k8s:
-        state: present
-        definition: "{{ lookup('file', 'files/nginx.yml') | from_yaml }}"
+- name: Ensure hubot user exists.
+  user:
+    name: hubot
+    create_home: yes
+    home: "{{ hubot_home }}"
 ```
 
-We now have a complete playbook! Run it with the command:
-
-{lang="text",linenos="off"}
-```
-ansible-playbook -i ../inventory k8s-module.yml
-```
-
-If you log back into the master VM (`vagrant ssh master`), change to the root user (`sudo su`), and list all the deployments (`kubectl get deployments`), you should see the new deployment that was just applied:
-
-{lang="text",linenos="off"}
-```
-root@master:/home/vagrant# kubectl get deployments
-NAME        DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-a4d-nginx   3         3         3            3           3m
-```
-
-People can't access the deployment from the outside, though. For that, we need to expose Nginx to the world. And to do that, we could add more to the `nginx.yml` manifest file, _or_ we can also apply it directly with the `k8s` module. Add another task:
+It's best to run Hubot inside an isolated directory, using a dedicated user account, so we set up a `hubot` user account with its own home directory. To make the Hubot role easier to adapt, a variable is used for the `hubot` user's home directory. We'll define that later in `defaults/main.yml`.
 
 {lang="text",starting-line-number=22}
 ```
-- name: Expose the Nginx service with an inline Service definition.
-      k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: Service
-          metadata:
-            labels:
-              app: nginx
-            name: a4d-nginx
-            namespace: default
-          spec:
-            type: NodePort
-            ports:
-            - port: 80
-              protocol: TCP
-              targetPort: 80
-            selector:
-              app: nginx
-```
-
-This definition is defined inline with the Ansible playbook. I generally prefer to keep the Kubernetes manifest definitions in separate files, just to keep my playbooks more concise, but either way works great!
-
-If you run the playbook again, then log back into the master to use `kubectl` like earlier, you should be able to see the new `Service` using `kubectl get services`:
-
-{lang="text",linenos="off"}
-```
-root@master:/home/vagrant# kubectl get services
-NAME         TYPE       CLUSTER-IP     EXTERNAL-IP  PORT(S)       AGE
-a4d-nginx    NodePort   10.101.211.71  <none>       80:30681/TCP  3m
-kubernetes   ClusterIP  10.96.0.1      <none>       443/TCP       5d
-```
-
-The Service exposes a `NodePort` on each of the Kubernetes nodes---in this case, port `30681`, so you can send a request to any node IP or DNS name and the request will be routed by Kubernetes to an Nginx service Pod, no matter what node it's running on.
-
-So in the example above, I visited `http://192.168.84.3:30681/`, and got the default Nginx welcome message:
-
-{width=80%}
-![Welcome to nginx message in browser](images/14-kubernetes-nginx-welcome.png)
-
-For a final example, it might be convenient for the playbook to output a debug message with the NodePort the Service is using. In addition to applying or deleting Kubernetes manifests, the `k8s` module can get cluster and resource information that can be used elsewhere in your playbooks.
-
-Add two final tasks to retrieve the NodePort for the `a4d-nginx` service using `k8s_info`, then display it using `debug`:
-
-{lang="text",starting-line-number=42}
-```
-- name: Get the details of the a4d-nginx Service.
-      k8s_info:
-        api_version: v1
-        kind: Service
-        name: a4d-nginx
-        namespace: default
-      register: a4d_nginx_service
-
-    - name: Print the NodePort of the a4d-nginx Service.
-      debug:
-        var: a4d_nginx_service.resources[0].spec.ports[0].nodePort
-```
-
-When you run the playbook, you should now see the NodePort in the debug output:
-
-{lang="text",linenos="off"}
-```
-TASK [Print the NodePort of the a4d-nginx Service.] ***************
-ok: [master] => {
-    "a4d_nginx_service.result.spec.ports[0].nodePort": "30681"
-}
-```
-
-For bonus points, you can build a separate cleanup playbook to delete the Service and Deployment objects using `state: absent`:
-
-{lang="text"}
-```
----
-- hosts: k8s-master
+- name: Generate hubot.
+  command: >
+    yo hubot
+    --owner="{{ hubot_owner }}"
+    --name="{{ hubot_name }}"
+    --description="{{ hubot_description }}"
+    --adapter=slack
+    --defaults
+    chdir={{ hubot_home }}
   become: yes
-
-  tasks:
-    - name: Remove resources in Nginx Deployment definition.
-      k8s:
-        state: absent
-        definition: "{{ lookup('file', 'files/nginx.yml') | from_yaml }}"
-
-    - name: Remove the Nginx Service.
-      k8s:
-        state: absent
-        api_version: v1
-        kind: Service
-        namespace: default
-        name: a4d-nginx
+  become_user: hubot
 ```
 
-You could build an entire ecosystem of applications using nothing but Ansible's `k8s` module and custom manifests. But there are many times when you might not have the time to tweak a bunch of Deployments, Services, etc. to get a complex application running, especially if it's an application with many components that you're not familiar with.
+The `yo hubot` command scaffolds all the code necessary to run Hubot, and all the options passed in tell the generator to run non-interactively. We will define the default role `hubot_` vars in this command later in `defaults/main.yml`.
 
-Luckily, the Kubernetes community has put together a number of 'charts' describing common Kubernetes applications, and you can install them using [Helm](https://www.helm.sh).
-
-#### Managing Kubernetes Applications with Helm
-
-Helm consists of two components: `helm`, a binary which you install on a control machine to control applications in a Kubernetes cluster, and Tiller, the component which runs inside the Kubernetes cluster and coordinates chart operations triggered by Helm.
-
-To automate Helm and Tiller setup, we'll create a playbook that installs the `helm` binary, configures Kubernetes to allow Tiller to manage resources, and then runs `helm init` to initialize Tiller in the cluster.
-
-Create a `helm.yml` playbook in the `examples` directory, and put in the following:
-
-{lang="text"}
+{lang="text",starting-line-number=34}
 ```
----
-- hosts: k8s-master
+- name: Remove certain scripts from external-scripts.json.
+  lineinfile:
+    path: "{{ hubot_home }}/external-scripts.json"
+    regexp: "{{ item }}"
+    state: absent
+  with_items:
+    - 'redis-brain'
+    - 'heroku'
   become: yes
+  become_user: hubot
 
-  tasks:
-    - name: Create Tiller ServiceAccount.
-      k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: tiller
-            namespace: kube-system
-
-    - name: Apply Tiller RBAC definition.
-      k8s:
-        state: present
-        definition: "{{ lookup('file', 'files/tiller-rbac.yml') | from_yaml }}"
-
-    - name: Retrieve helm binary archive.
-      unarchive:
-        src: https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz
-        dest: /tmp
-        creates: /usr/local/bin/helm
-        remote_src: yes
-
-    - name: Move helm binary into place.
-      command: >
-        cp /tmp/linux-amd64/helm /usr/local/bin/helm
-        creates=/usr/local/bin/helm
-
-    - name: Set up Helm and Tiller.
-      command: helm init --service-account tiller
-      register: helm_init_result
-      changed_when: "'already installed' not in helm_init_result.stdout"
+- name: Remove the hubot-scripts.json file.
+  file:
+    path: "{{ hubot_home }}/hubot-scripts.json"
+    state: absent
 ```
 
-Tiller needs to be allowed to manage certain resources in the cluster, so the first two tasks in this playbook define a `tiller` namespace which Tiller will operate within, and then apply an RBAC definition which defines a `ClusterRoleBinding` that allows Tiller to operate as a `cluster-admin`. Create the `tiller-rbac.yml` file inside the `examples/files` directory, with the contents:
+There are a couple cleanup tasks which make sure Hubot runs properly in this isolated container. In the `lineinfile` task, the persistent Redis connection plugin and Heroku support are removed, since they are not needed. Also, the unused `hubot-scripts.json` file is removed to prevent errors during Hubot startup.
+
+The final step in creating the `hubot-slack` role is to add default values for the variables we're using in the role, so put the following inside `defaults/main.yml`:
 
 {lang="text"}
 ```
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
+hubot_home: /home/hubot
+hubot_owner: Ansible for DevOps
+hubot_name: a4dbot
+hubot_description: Ansible for DevOps test bot.
 ```
 
-The next tasks in the Helm playbook download `helm`, place it in `/usr/local/bin`, and then initializes `helm` in the local user account, and `tiller` in the Kubernetes cluster (utilizing the `tiller` service account we configured in the `tiller-rbac.yml` manifest).
+#### Building and running the Hubot Slack bot container
 
-At this point, if you run the playbook, then check running services, you should see Tiller running, ready to deploy new Helm charts:
-
-{lang="text",linenos="off"}
-```
-root@master:/home/vagrant# kubectl get services -n kube-system
-NAME            TYPE        CLUSTER-IP      PORT(S)         AGE
-kube-dns        ClusterIP   10.96.0.10      53/UDP,53/TCP   6d
-tiller-deploy   ClusterIP   10.99.161.154   44134/TCP       5m
-```
-
-Let's take it a little further, though, and automate the deployment of a chart maintained in Helm's `stable` chart collection. Add more tasks to the playbook:
-
-{lang="text",starting-line-number=38}
-```
-    - name: Get Tiller's ClusterIP.
-      k8s:
-        api_version: v1
-        kind: Service
-        name: tiller-deploy
-        namespace: kube-system
-      register: tiller_service
-    
-    - name: Set the Helm host and port.
-      set_fact:
-        helm_host: "{{ tiller_service.result.spec.clusterIP }}"
-        helm_port: "{{ tiller_service.result.spec.ports[0].port }}"
-    
-    - name: Wait for Tiller to become responsive.
-      wait_for:
-        host: '{{ helm_host }}'
-        port: '{{ helm_port }}'
-        state: started
-    
-    - name: List installed Helm charts.
-      command: helm list
-      environment:
-        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
-      register: helm_list_results
-      changed_when: False
-    
-    - name: Install phpMyAdmin with Helm.
-      command: >
-        helm install --name phpmyadmin stable/phpmyadmin
-        --set service.type=NodePort
-      environment:
-        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
-      when: "'phpmyadmin' not in helm_list_results.stdout"
-```
-
-After `helm init` is run, the `tiller-deploy` service takes a little time to start up. The first three tasks get the tiller IP address and port, then wait for tiller to be responsive (using `wait_for`) before the rest of the playbook runs.
-
-Then we check all deployed charts using the command `helm list`, and if the chart we are deploying (`phpmyadmin`) is not in the list results, we install it with the command `helm install stable/phpmyadmin`. Note that we explicitly define the `HELM_HOST` environment variable. Without this, the `helm` command may have a hard time finding the right host for Tiller.
-
-Also, because the default for most Helm charts is to use a service type of `LoadBalancer`, and it's a little difficult to set up Load Balancer services in a bare metal Kubernetes cluster, we are overriding the `service.type` for the `stable/phpmyadmin` chart and forcing it to use `NodePort`.
-
-W> Many charts (e.g. `stable/wordpress`, `stable/drupal`, `stable/jenkins`) will install but won't fully run on this Kubernetes cluster, because they require Persistent Volumes (PVs), which require some kind of shared filesystem (e.g. NFS, Ceph, Gluster, or something similar) among all the nodes. If you want to use charts which require PVs, check out the NFS configuration used in the [Raspberry Pi Dramble](https://github.com/geerlingguy/raspberry-pi-dramble) project, which allows applications to use Kubernetes PVs and PVCs.
-
-At this point, you could log into the master, change to the root user (`sudo su`), and run `kubectl get services` to see the `phpmyadmin` service's `NodePort`, but it's better to automate that step at the end of the `helm.yml` playbook:
-
-{lang="text",starting-line-number=72}
-```
-    - name: Get the details of the phpmyadmin Service.
-      k8s:
-        api_version: v1
-        kind: Service
-        name: phpmyadmin
-        namespace: default
-      register: phpmyadmin_service
-    
-    - name: Print the NodePort of the phpmyadmin Service.
-      debug:
-        var: phpmyadmin_service.result.spec.ports[0].nodePort
-```
-
-Run the playbook, grab the debug value, and append the port to the IP address of any of the cluster members. Once the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
-
-{width=80%}
-![phpMyAdmin running in the browser on a NodePort](images/14-kubernetes-helm-phpmyadmin.png)
-
-#### Interacting with Pods using the `kubectl` connection plugin
-
-Ansible ships with a number of Connection Plugins. Last chapter, we used the `docker` connection plugin to interact with Docker containers natively, to avoid having to use SSH with a container or installing Ansible inside the container.
-
-This chapter, we'll use the `kubectl` connection plugin, which allows Ansible to natively interact with running Kubernetes pods.
-
-I> One of the main tenets of 'immutable infrastructure' (which is truly realized when you start using Kubernetes correctly) is _not logging into individual containers and running commands_, so this example may seem contrary to the core purpose of Kubernetes. However, it is sometimes necessary to do so. In cases where your applications are not built in a way that works completely via external APIs and Pod-to-Pod communication, you might need to run a command directly inside a running Pod.
-
-Before using the `kubectl` connection plugin, you should already have the `kubectl` binary installed and available in your `$PATH`. You should also have a running Kubernetes cluster; for this example, I'll assume you're still using the same cluster from the previous examples, with the `phpmyadmin` service running.
-
-Create a new playbook in the `examples` directory, named `kubectl-connection.yml`. The first thing we'll do in the playbook is retrieve the `kubectl` config file from the master server so we can run commands delegated directly to a Pod of our choosing:
-
-{lang="text"}
-```
----
-# This playbook assumes you already have the kubectl binary installed
-# and available in the $PATH.
-- hosts: k8s-master
-  become: yes
-
-  tasks:
-    - name: Retrieve kubectl config file from the master server.
-      fetch:
-        src: /root/.kube/config
-        dest: files/kubectl-config
-        flat: yes
-```
-
-After using `fetch` to grab the config file, we need to find the name of the `phpmyadmin` Pod. This is necessary so we can add the Pod directly to our inventory:
-
-{lang="text",starting-line-number=14}
-```
-    - name: Get the phpmyadmin Pod name.
-      command: >
-        kubectl --no-headers=true get pod -l app=phpmyadmin
-        -o custom-columns=:metadata.name
-      register: phpmyadmin_pod
-```
-
-I've used the `kubectl` command directly here, because there's no simple way using the `k8s` module and Kubernetes' API to directly get the name of a Pod for a given set of conditions---in this case, with the label `app=phpmyadmin`.
-
-We can now add the pod by name name (using `phpmyadmin_pod.stdout`) to the current play's inventory:
-
-{lang="text",starting-line-number=20}
-```
-    - name: Add the phpmyadmin Pod to the inventory.
-      add_host:
-        name: '{{ phpmyadmin_pod.stdout }}'
-        ansible_kubectl_namespace: default
-        ansible_kubectl_config: files/kubectl-config
-        ansible_connection: kubectl
-```
-
-The `ansible_connection: kubectl` is key here; it tells Ansible to use the `kubectl` connection plugin when connecting to this host.
-
-There are a number of options you can pass to the `kubectl` connection plugin to tell it how to connect to your Kubernetes cluster and pod. In this case, the location of the downloaded `kubectl` config file is passed to `ansible_kubectl_config` so Ansible knows where the cluster configuration exists. It's also a good practice to always pass the `namespace` of an object, so we've set that as well.
-
-Now that we have a new host (in this case, the phpmyadmin service's Pod) added to the inventory, let's run a task directly against it:
-
-{lang="text",starting-line-number=28}
-```
-    # Note: Python is required to use other modules.
-        - name: Run a command inside the container.
-          raw: date
-          register: date_output
-          delegate_to: '{{ phpmyadmin_pod.stdout }}'
-    
-        - debug: var=date_output.stdout
-```
-
-The `raw` task passes through the given command directly using `kubectl exec`, and returns the output. The `debug` task should then print the output of the `date` command, run inside the container.
-
-You can do a lot more with the `kubectl` connection plugin, and you could even have a Dynamic inventory which populates a whole set of Pods for you to work with. It's generally not ideal to directly interact with pods, but when it's necessary, it's nice to be able to automate it with Ansible!
-
-W> The `raw` module was used to run the `date` command in this example because all other Ansible modules require Python to be present on the container running in the Pod. For many use cases, running a `raw` command should be adequate. But if you want to be able to use any other modules, you'll need to make sure Python is present in the container _before_ you try using the `kubectl` connection plugin with it.
-
-## Summary
-
-There are many ways you can build a Kubernetes cluster, whether on a managed cloud platform or bare metal. There are also many ways to deploy and manage applications within a Kubernetes cluster.
-
-Ansible's robust variable management, Jinja templating, and YAML support makes it a strong contender for managing Kubernetes resources. At the time of this writing, Ansible has a stable `k8s` module, an experimental `helm` module, and a `kubectl` connection plugin, and the interaction between Ansible and Kubernetes is still being refined every release.
+You should now have a directory containing the `main.yml` Ansible playbook and a `hubot-slack` role inside the `roles` directory. To build the container image, make sure Docker is running, and run:
 
 {lang="text",linenos=off}
 ```
- ______________________________________
-/ Never try to teach a pig to sing. It \
-| wastes your time and annoys the pig. |
-\ (Proverb)                            /
- --------------------------------------
+ansible-playbook main.yml
+```
+
+Once the playbook completes, run `docker images` to verify the `a4d/hubot-slack` image was created:
+
+{lang="text",linenos=off}
+```
+$ docker images
+REPOSITORY          TAG                 IMAGE ID            SIZE
+a4d/hubot-slack     latest              142db74437da        804MB
+node                8                   55791187f71c        673MB
+```
+
+Before you can run an instance of the new container image and have your bot in your Slack channels, you have to get an API token from Slack. Follow the instructions in Slack's guide, [Slack Developer Kit for Hubot](https://slackapi.github.io/hubot-slack/), and get an API token.
+
+Then run the following command to run an instance of Hubot attached to your Slack channel (replace `TOKEN` with your bot's Slack API token):
+
+{lang="text",linenos=off}
+```
+docker run -d --name hubot -e HUBOT_SLACK_TOKEN=TOKEN a4d/hubot-slack
+```
+
+The container should start, and you should see a new active member in your Slack team! In Slack, you can invite the bot to channels, converse directly, etc. (send a message with `help` to the bot to get all available commands).
+
+If something went wrong, use `docker logs hubot` to find out what happened.
+
+Once you're finished playing around with Hubot, you can kill and remove the container with `docker rm -f hubot`.
+
+### Summary
+
+You can use Ansible to build containers many different ways, depending on how you want to architect your container build pipeline. Using Ansible with the `docker` connection plugin allows you to treat a Docker container much like any other server in your fleet.
+
+Some parts of an Ansible-based container build pipeline require a little more verbosity, but in the end, you can do things like use the exact same Ansible roles for VMs and bare metal servers as you do a Docker container, making your overall infrastructure maintenance easier. Instead of maintaining legacy servers using Ansible playbooks, and Docker containers using Dockerfiles, you can do everything with Ansible!
+
+The entire [Docker Hubot Slack bot example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-hubot) is available on GitHub, if you'd like to clone it and try it locally.
+
+## Summary
+
+The examples shown here barely scratch the surface of what makes Docker (and container-based application deployment in general) a fascinating and useful application deployment tool. Docker and other container-based tools are still in their infancy, so there are dozens of ways manage the building, running, and linking of containers. Ansible is a solid contender for managing your entire container-based application lifecycle (_and_ the infrastructure on which it runs).
+
+{lang="text",linenos=off}
+```
+ _________________________________________
+/ Any sufficiently advanced technology is \
+| indistinguishable from magic.           |
+\ (Arthur C. Clarke)                      /
+ -----------------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\

@@ -1,634 +1,716 @@
-# Chapter 12 - Automating HTTPS and TLS Certificates
+# Chapter 12 - Testing and CI for Ansible Content
 
-Today's application environment almost always requires the use of HTTP (and HTTPS) for certain traffic---end users interacting with a website, microservices communicating with each other internally or via the public Internet, or external APIs interacting with your apps.
+Before deploying any infrastructure changes, you should test the changes in a non-production environment (just like you would with application releases). At a minimum, you should have the ability to run a playbook in a local or development environment to make sure it does what you expect.
 
-HTTPS was originally used only for sensitive transactions, like banking transactions or secure web forms. It also used to require extra server CPU to encrypt data. But today, when Google boosts search results for HTTPS-only sites, and when processors barely show a difference with encrypted or unencrypted traffic, it's almost universally understood that all HTTP services should be served via `https://`.
+Since all your infrastructure is defined in code, you can automating unit, functional, and integration tests on your infrastructure, just like you do for your applications.
 
-Traditionally, one blocker to using HTTPS _everywhere_ was certificates were difficult to acquire, manage, and renew. And they were also expensive!
+This chapter covers different levels of infrastructure testing, and highlights tools and techniques that help you test and develop Ansible content.
 
-Now, between Let's Encrypt's free certificates, more affordable wildcard certs, and universal Server Name Indication (SNI) support, there is almost never an excuse _not_ to use HTTPS...
+## Unit, Integration, and Functional Testing
 
-Except, that is, for the fact certificate management has been tricky to automate. This chapter will show how Ansible solves this last problem by managing certificates and securing all your HTTP traffic!
+When determining how you should test your infrastructure, you need to understand the different kinds of testing, and then determine the kinds of testing on which you should focus more effort.
 
-## Generating Self-Signed Certificates with Ansible
+*Unit* testing, when applied to applications, is testing of the smallest units of code (usually functions or class methods). In Ansible, unit testing would typically apply to individual playbooks. You could run individual playbooks in an isolated environment, but it's often not worth the effort. What *is* worth your effort is at least checking the playbook syntax, to make sure you didn't just commit a YAML file that will break an entire deployment because of a missing quotation mark or whitespace issue!
 
-Whenever I'm building and testing a new server configuration that requires TLS connections (typically HTTPS traffic over port 443), I need to use one or more valid certificates which can be accepted by a browser user, or by something like `curl`, so I can verify my TLS configuration is correct.
+*Integration* testing, which is definitely more valuable when it comes to Ansible, is the testing of small groupings of individual units of code, to make sure they work correctly together. Breaking your infrastructure definition into many task-specific roles and playbooks allows you to do this; if you've structured your playbooks so they have no or limited dependencies, you could test each role individually in a fresh virtual machine, before you use the role as part of a full infrastructure deployment.
 
-Ansible makes generating self-signed certificates easy. There are four `openssl_*` crypto-related modules useful in generating certificates:
+*Functional* testing involves the whole shebang. Basically, you set up a complete infrastructure environment, and then run tests against it to make sure *everything* was successfully installed, deployed, and configured. Ansible's own reporting is helpful in this kind of testing, and there are external tools available to test infrastructure even more deeply.
 
-  - `openssl_certificate` - Generate and/or check OpenSSL certificates
-  - `openssl_csr` - Generate OpenSSL Certificate Signing Request (CSR)
-  - `openssl_privatekey` - Generate OpenSSL private keys
-  - `openssl_publickey` - Generate an OpenSSL public key from its private key
+T> In this chapter's discussion of testing, I'm considering only _Ansible_ content, such as the YAML that defines playbooks, roles, or collections. Unit, integration, and functional testing for the Python code in Ansible plugins and modules can require additional tools, like `ansible-test`.
 
-In order to use these modules, you need OpenSSL installed, and also one extra Python dependency used by Ansible to interact with OpenSSL, the `pyOpenSSL` library.
+It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's inexpensive and just as fast to test directly on cloud instances mirroring your production infrastructure!
 
-Here's a quick example of the tasks required to generate a self-signed cert:
+I like to think of testing as a spectrum—just like most things in life, your project is unique, and might not need to integrate all the techniques discussed in this chapter. The following graphic is from a presentation I gave at AnsibleFest in 2018:
 
-{lang="yaml",linenos=off}
+{width=90%}
+![My 'Ansible Testing Spectrum'](images/12-testing-spectrum.png)
+
+Each technique discussed in this chapter provides more value than the previous one, but is also more complex and might not be worth the additional setup and maintenance burden, depending on your playbook.
+
+We'll begin with the easiest and most basic tests, and progress to full-fledged functional testing methods and test automation.
+
+## Debugging and Asserting
+
+For most playbooks, testing configuration changes and the result of commands being run as you go is all the testing you need. And having tests run *during your playbook runs* using some of Ansible's built-in utility modules means you have immediate assurance the system is in the correct state.
+
+If at all possible, you should try to bake all simple test cases (e.g. comparison and state checks) into your playbooks. Ansible has three modules that simplify this process.
+
+#### The `debug` module
+
+When actively developing an Ansible playbook, or even for historical logging purposes (e.g. if you're running Ansible playbooks using Tower or another CI system), it's often handy to print values of variables or output of certain commands during the playbook run.
+
+For this purpose, Ansible has a `debug` module, which prints variables or messages during playbook execution.
+
+As an extremely basic example, here are two of the ways I normally use debug while building a playbook:
+
+{lang="yaml"}
 ```
-- name: Ensure directory exists for local self-signed TLS certs.
-  file:
-    path: /etc/ssl/certs/example
-    state: directory
+---
+- hosts: 127.0.0.1
+  gather_facts: no
+  connection: local
 
-- name: Generate an OpenSSL private key.
-  openssl_privatekey:
-    path: /etc/ssl/certs/example/privkey.pem
+  tasks:
+    - name: Register the output of the 'uptime' command.
+      command: uptime
+      register: system_uptime
 
-- name: Generate an OpenSSL CSR.
-  openssl_csr:
-    path: /etc/ssl/certs/example/example.csr
-    privatekey_path: /etc/ssl/certs/example/privkey.pem
-    common_name: "example.com"
+    - name: Print the registered output of the 'uptime' command.
+      debug:
+        var: system_uptime.stdout
 
-- name: Generate a Self Signed OpenSSL certificate.
-  openssl_certificate:
-    path: /etc/ssl/certs/example/fullchain.pem
-    privatekey_path: /etc/ssl/certs/example/privkey.pem
-    csr_path: /etc/ssl/private/example/example.csr
-    provider: selfsigned
+    - name: Print a message if a command resulted in a change.
+      debug:
+        msg: "Command resulted in a change!"
+      when: system_uptime is changed
 ```
 
-These tasks ensure there's a directory inside which the certificate will live, create a private key and Certificate Signing Request (CSR) in that directory, and use them to generate the final cert.
-
-You can then use this certificate to serve HTTPS requests using a web server; for example, in an Nginx `server` configuration:
+Running this playbook gives the following output:
 
 {lang="text",linenos=off}
 ```
-server {
-    listen 443 ssl default_server;
-    server_name example.com;
+$ ansible-playbook debug.yml
 
-    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
-    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
-    ...
+PLAY [127.0.0.1] ****************************************************
+
+TASK: [Register the output of the 'uptime' command.] ****************
+changed: [127.0.0.1]
+
+TASK [Print the registered output of the 'uptime' command.] *********
+ok: [127.0.0.1] => {
+    "system_uptime.stdout":
+      "20:55  up  7:33, 4 users, load averages: 0.95 1.36 1.43"
 }
+
+TASK [Print a message if a command resulted in a change.] ***********
+ok: [127.0.0.1] => {
+    "msg": "Command resulted in a change!"
+}
+nge!"
+}
+
+PLAY RECAP **********************************************************
+127.0.0.1            : ok=3    changed=1    unreachable=0    failed=0
 ```
 
-Let's put together a full playbook using the `openssl_*` modules and Nginx, to build a server complete with a self-signed certificate and a secure Nginx TLS configuration.
+Debug messages are helpful when actively debugging a playbook or when you need extra verbosity in the playbook's output, but if you need to perform an explicit test on some variable, or bail out of a playbook for some reason, Ansible provides the `fail` module, and its more terse cousin, `assert`.
 
-### Idempotent Nginx HTTPS playbook with a self-signed cert
+### The `fail` and `assert` modules
 
-For the sake of convenience, this example will target a Debian 9 server (though it would be mostly unchanged for any other distribution), and there's a fully tested example included in this book's GitHub repository: [HTTPS Self-Signed Certificate Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-self-signed).
+Both `fail` and `assert`, when triggered, will abort the playbook run, and the only difference is in the simplicity of their usage. To illustrate, let's look at an example:
 
-Create a new folder for the Self-Signed Certificate web server playbook, and add a `main.yml` playbook:
+{lang="yaml"}
+```
+---
+- hosts: 127.0.0.1
+  gather_facts: no
+  connection: local
+
+  vars:
+    should_fail_via_fail: true
+    should_fail_via_assert: false
+    should_fail_via_complex_assert: false
+
+  tasks:
+    - name: Fail if conditions warrant a failure.
+      fail:
+        msg: "There was an epic failure."
+      when: should_fail_via_fail
+
+    - name: Stop playbook if an assertion isn't validated.
+      assert:
+        that: "should_fail_via_assert != true"
+
+    - name: Assertions can have contain conditions.
+      assert:
+        that:
+          - should_fail_via_fail != true
+          - should_fail_via_assert != true
+          - should_fail_via_complex_assert != true
+```
+
+Switch the boolean values of `should_fail_via_fail`, `should_fail_via_assert`, and `should_fail_via_complex_assert` to trigger each of the three `fail`/`assert` tasks, to see how they work.
+
+For most test cases, `debug`, `fail`, and `assert` are all you need to ensure your infrastructure is in the correct state during a playbook run.
+
+## Linting YAML with `yamllint`
+
+Once you have a playbook written, it's a good idea to make sure the basic YAML syntax is correct. YAML parsers can be forgiving, but many of the most common errors in Ansible playbooks, especially for beginners, is whitespace issues.
+
+[`yamllint`](https://yamllint.readthedocs.io/en/stable/) is a simple YAML lint tool which can be installed via Pip:
+
+{lang="text",linenos=off}
+```
+pip3 install yamllint
+```
+
+Let's build an example playbook, and lint it to see if there are any errors:
+
+{lang="yaml"}
+```
+- hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Register the output of the 'uptime' command.
+      command: uptime 
+      register: system_uptime # comment
+
+    - name: Print the registered output of the 'uptime' command.
+      debug:
+       var: system_uptime.stdout
+
+```
+
+If you have `yamllint` installed, you can run it on any YAML files in the current directory (and subdirectories, recursively), by passing the path `.` to the command. Let's do that and see the output:
+
+{lang="text",linenos=off}
+```
+$ yamllint .
+./lint-example.yml
+  1:1  warning missing document start "---"  (document-start)
+  2:17 warning truthy value should be one of [false, true]  (truthy)
+  7:22 error   trailing spaces  (trailing-spaces)
+  8:31 warning too few spaces before comment  (comments)
+  12:8 error   wrong indentation: expected 8 but found 7 (indentation)
+```
+
+While it might seem nitpicky at first, over time you realize how important it is to use a specific style and stick with it. It looks better, and can help prevent mistakes from creeping in due to indentation, whitespace, or structural issues.
+
+In this particular case, we can fix some of the errors quickly:
+
+  - Add a yaml document start indicator (`---`) at the top of the playbook.
+  - Delete the extra space on the `command` line.
+  - Add an extra space before the `# comment`.
+  - Make sure the `var` line is indented one more space.
+
+But what about the 'truthy value' warning? In many Ansible examples, `yes` or `no` are used instead of `true` and `false`. We can allow that by customizing `yamllint` with a configuration file.
+
+Create a file in the same directory named `.yamllint`, with the following contents:
+
+{lang="yaml"}
+```
+---
+extends: default
+
+rules:
+  truthy:
+    allowed-values:
+      - 'true'
+      - 'false'
+      - 'yes'
+      - 'no'
+```
+
+Assuming you fixed the other errors in the playbook, and left `gather_facts: no`, running `yamllint .` again should yield no errors.
+
+## Performing a `--syntax-check`
+
+Syntax checking is similarly straightforward, and only requires a few seconds for even larger, more complex playbooks with dozens or hundreds of includes.
+
+When you run a playbook with `--syntax-check`, the plays are not run; instead, Ansible loads the entire playbook statically and ensures everything can be loaded without a fatal error. If you are missing an imported task file, misspelled a module name, or are supplying a module with invalid parameters, `--syntax-check` will quickly identify the problem.
+
+Along with `yamllint`, it's common to include an `ansible-playbook my-playbook.yml --syntax-check` in your basic CI tests, and it's also good to add a syntax check in a [pre-commit hook](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) if your playbook is in a Git repository.
+
+W> Because syntax checking only statically loads a playbook, dynamic includes (like those loaded with `include_tasks`) and variables can't be validated. Because of this, more integration testing is required to guarantee an entire playbook can be run.
+
+## Linting Ansible content with `ansible-lint`
+
+In addition to linting structural YAML issues with `yamllint`, Ansible tasks and playbooks can be linted using [`ansible-lint`](https://github.com/ansible/ansible-lint). Many Ansible best practices and a preferred task style can be enforced via linting.
+
+Let's take the following playbook, for example (called `main.yml`):
+
+{lang="yaml"}
+```
+---
+- hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - shell: uptime
+      register: system_uptime
+
+    - name: Print the registered output of the 'uptime' command.
+      debug:
+        var: system_uptime.stdout
+```
+
+It looks straightforward, and the YAML syntax passes `yamllint` without a problem.
+
+But there are some aspects to this playbook which could be improved. Let's see if `ansible-lint` can highlight them. Install it via Pip with:
+
+{lang="text",linenos=off}
+```
+pip3 install ansible-lint
+```
+
+Then run it on the playbook, and observe the output:
+
+{lang="text",linenos=off}
+```
+$ ansible-lint main.yml
+[301] Commands should not change things if nothing needs doing
+main.yml:6
+Task/Handler: shell uptime
+
+[305] Use shell only when shell functionality is required
+main.yml:6
+Task/Handler: shell uptime
+
+[502] All tasks should be named
+main.yml:6
+Task/Handler: shell uptime
+```
+
+Each of the suggestions corresponds to a 'rule'; [all the default rules](https://docs.ansible.com/ansible-lint/rules/default_rules.html) are listed in Ansible Lint's documentation.
+
+To fix these issues you would need to do the following:
+
+  - Add a `name` to the `uptime` task, to resolve the `502` rule violation.
+  - Use the `command` module instead of `shell` for the `uptime` task, to resolve the `305` rule violation. You should only use the `shell` module when you need advanced capabilities like pipes or redirection.
+  - Add `changed_when: false` to the `uptime` task, to resolve the `301` rule violation. Since the task doesn't change anything on the system, it should be marked as such, to avoid breaking idempotency.
+
+Most of the rules are straightforward, but you might choose to ignore some, if you have good reason to do something in opposition to the default rules.
+
+As with `yamllint`, you can add a file named `.ansible-lint`, providing configuration specific to your project. See the [`ansible-lint` Configuration File documentation](https://docs.ansible.com/ansible-lint/configuring/configuring.html#configuration-file) for available options.
+
+## Automated testing and development with Molecule
+
+Everything to this point covers _static_ testing. But _the proof is in the pudding_---that is, you can't really verify a playbook works until you actually _run_ it.
+
+But it would be dangerous to run your playbook against your production infrastructure, especially when modifying it or adding new functionality.
+
+I started out running one-off Virtual Machines running in VirtualBox or Amazon EC2 to test my playbooks, but this is tiresome. I would have to do the following every time I wanted to test a playbook:
+
+  1. Build a new VM.
+  2. Configure SSH so I can connect to it.
+  3. Set up an inventory so the playbook connects to the VM (and _not_ production!).
+  4. Run my Ansible playbook against the VM.
+  5. Test and validate my playbook does what it's supposed to.
+  6. Delete the VM.
+
+Vagrant can help with this process somewhat, and it is well-suited to the task, but Vagrant can be a little slow, and it doesn't work well in CI or lightweight environments.
+
+So I started maintaining a shell script which did many of the above steps automatically, using Docker containers, and I could run playbooks and tests in CI or locally. But this was fragile, required a lot of work to maintain in different CI environments. I also realized I was maintaining complex shell scripts to test my simple Ansible automation playbooks---there had to be a simpler way!
+
+And there was: [Molecule](https://molecule.readthedocs.io/en/latest/).
+
+{width=40%}
+![Molecule's logo](images/12-molecule-logo.png)
+
+Molecule is a lightweight, Ansible-based tool to help in the development and testing of Ansible playbooks, roles, and collections.
+
+At its most basic level, Molecule does all the six steps identified above, and adds on extra functionality like multiple scenarios, multiple backends, and configurable verification methods.
+
+And the best part? Everything in Molecule is controlled by Ansible playbooks!
+
+Molecule is easy to install:
+
+{lang="text",linenos=off}
+```
+pip3 install molecule
+```
+
+### Testing a role with Molecule
+
+Originally, Molecule was purpose-built for testing Ansible roles. As such, it has built-in role scaffold functionality, which sets up a role just like the `ansible-galaxy role init` command does, but with a Molecule configuration built-in.
+
+Inside any directory, run the following command to create a new role:
+
+{lang="text",linenos=off}
+```
+molecule init role myrole
+```
+
+If you `cd` into the new `myrole` directory, you'll see the standard role structure generated by `ansible-galaxy`, but with one notable addition: the `molecule` directory.
+
+This directory's presence indicates there are one or more Molecule scenarios available for testing and development purposes. Let's take a look at what's inside the `default` scenario:
+
+{lang="text",linenos=off}
+```
+molecule/
+  default/
+    INSTALL.rst
+    converge.yml
+    molecule.yml
+    verify.yml
+```
+
+TODO: Describe each file.
+
+Assuming you have Docker installed on your computer, you can run Molecule's built-in tests on the barebones role immediately:
+
+{lang="text",linenos=off}
+```
+molecule test
+```
+
+The `test` command runs through the full gamut of Molecule's capabilities, including setting up a test environment, running any configured linters, installing any Ansible Galaxy requirements, running the `converge` playbook, running the `verify` playbook, and then tearing down the test environment (regardless of tests passing or failing).
+
+You can perform a subset of Molecule's tasks using other options, for example:
+
+{lang="text",linenos=off}
+```
+molecule converge
+```
+
+This will run through all the same steps as the `test` command, but will stop execution after the `converge` playbook runs, and leave the test environment running.
+
+This is _extremely_ useful for role development and debugging.
+
+TODO: Note about using `fail:` module as a breakpoint.
+
+When you're finished with your development session, tell Molecule to tear down the environment using:
+
+{lang="text",linenos=off}
+```
+molecule destroy
+```
+
+### Testing a playbook with Molecule
+
+Molecule's useful for testing more than just roles. I regularly use Molecule to test playbooks, collections, and even Kubernetes Operators!
+
+TODO.
+
+## Running your playbook in check mode
+
+Running your playbook with `--check` will run your entire playbook in `check` mode.
+
+Ansible runs the entire playbook on your live infrastructure, but without performing any changes. Instead, Ansible highlights tasks that _would've_ resulted in a change to show what will happen when you _actually_ run the playbook later.
+
+This is helpful for two purposes:
+
+  1. To prevent 'configuration drift', where a server configuration may have drifted away from your coded configuration. This could happen due to human intervention or other factors. But it's good to discover configuration drift without forcefully changing it.
+  2. To make sure changes you make to a playbook that shouldn't break idempotency _don't_, in fact, break idempotency. For example, if you're changing a configuration file's structure, but with the goal of maintaining the same resulting file, running the playbook with `--check` alerts you when you might accidentally change the live file as a result of the playbook changes. Time to fix your playbook!
+
+When using `--check` mode, certain tasks may need to be forced to run to ensure the playbook completes successfully: (e.g. a `command` task that registers variables used in later tasks). You can set `check_mode: no` to do this:
+
+{lang="yaml",linenos=off}
+```
+- name: A task that runs all the time, even in check mode.
+  command: mytask --option1 --option2
+  register: my_var
+  check_mode: no
+```
+
+For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
+
+T> You can add conditionals with `check_mode` just like you can with `when` clauses, though most of the time you will probably just use `yes` or `no`.
+
+## Automated testing on GitHub using Travis CI
+
+Automated testing using a continuous integration tool like Travis CI (which is free for public projects and integrated very well with GitHub) allows you to run tests against Ansible playbooks or roles you have hosted on GitHub with every commit.
+
+There are four main things to test when building and maintaining Ansible playbooks or roles:
+
+  1. The playbook or role's syntax (are all the .yml files formatted correctly?).
+  2. Whether the playbook or role will run through all the included tasks without failing.
+  3. The playbook or role's idempotence (if run again, it should not make any changes!).
+  4. The playbook or role's success (does the role do what it should be doing?).
+
+The most important part is #4---the _functional_ test---because what's the point of a playbook or role if it doesn't do what you want it to do (e.g. start a web server, configure a database, deploy an app, etc.)?
+
+For the purposes of this example, we're going to make the following assumptions:
+
+  - You are testing an Ansible role (though this process applies just as well to testing an entire playbook).
+  - Your role's repository is hosted on GitHub.
+  - You are using Travis CI and it's enabled for your role's repository.
+
+Note that you can apply the test setup detailed here to almost any SCM and CI tool (e.g. GitLab, Jenkins, Circle, etc.), with minor variations.
+
+### Testing on multiple OSes with Docker
+
+Travis CI provides a VM in which you can run your tests. You can choose between a few flavors of Linux or macOS, but there's not a lot of flexibility in terms of _infrastructure_ testing, and Travis bakes in a lot of software by default (e.g. Ruby, Python, etc.).
+
+Because we want to test our Ansible roles in as clean an environment as possible, we have two options:
+
+  1. Choose from one of the few Travis default OS environments and try to clean out all the existing software installs before running our tests.
+  2. Build our own clean test environments inside Travis using Docker containers and run tests in containers.
+
+Historically, the first solution was easier to implement, but recent improvements in Travis's Docker support makes the second solution a better choice.
+
+Because multi-OS, clean-slate tests are important to us, we will do the following for each test:
+
+  1. Start a fresh, minimal OS container for each OS our role supports.
+  2. Run our role inside the container (and then test idempotence and functionality).
+
+For many of my roles and playbooks, I support almost all supported versions of popular distros (including Ubuntu, Debian, CentOS, Red Hat Enterprise Linux (UBI), Amazon Linux, and Fedora, therefore I maintain images on Docker Hub for the explicit purpose of testing Ansible roles and playbooks.
+
+My Ansible content site (ansible.jeffgeerling.com) has a full listing of the [container images I maintain for Ansible Testing](https://ansible.jeffgeerling.com/#container-images-testing).
+
+The rest of this section will demonstrate how to test an example Ansible role against all these OSes with one simple Travis configuration file.
+
+### Setting up the test
+
+Create a new 'tests' directory in your role or project directory, and create a test playbook inside:
+
+{lang="text",linenos=off}
+```
+# Directory structure:
+my_role/
+  tests/
+    test.yml <-- the test playbook
+```
+
+Inside `test.yml`, add:
 
 {lang="yaml"}
 ```
 ---
 - hosts: all
 
-  vars_files:
-    - vars/main.yml
-
-  pre_tasks:
-    - name: Ensure apt cache is updated.
-      apt: update_cache=yes cache_valid_time=600
-
-    - name: Install dependency for pyopenssl.
-      apt: name=libssl-dev state=present
-```
-
-To keep the main playbook tidy, we will store any variables in an included variables file (go ahead and create an empty `main.yml` vars file in a `vars` directory). Next, on most Debian (and Debian-derived) distros, I add in a `pre_task` to make sure the Apt cache is up to date (this prevents errors when installing packages later). Finally, `libssl-dev` is a dependency we'll need to have on the system to make sure `pyopenssl` can be installed by `pip` later, so we'll do that too.
-
-Next, to save some time, we can rely on some Ansible Galaxy roles to install and configure some required software on the server:
-
-{lang="yaml",starting-line-number=14}
-```
   roles:
-    - geerlingguy.firewall
-    - geerlingguy.pip
-    - geerlingguy.nginx
+    - role_under_test
 ```
 
-We use the `firewall` role to configure `iptables` to only allow traffic to the server on certain ports, `pip` to install Python's Pip package manager and the required `pyOpenSSL` library, and `nginx` to install and configure Nginx.
+In this playbook we tell Ansible to run our role on all hosts; since the playbook will run inside a Docker container with the option `--connection=local`, this basically means "run it on localhost". You can add `vars`, `vars_files`, `pre_tasks`, etc. if you need to adjust anything or prep the environment before your role runs, but I try to avoid overriding pre-packaged defaults, since they should ideally work across all environments---including barebones test environments.
 
-To get these roles installed, add a `requirements.yml` file to your playbook directory, with the contents:
+The next step is to add a `.travis.yml` file to your role so Travis CI knows how to run your tests. Add the file to the root level of your role, and add the following scaffolding:
 
-{lang="yaml"}
+{lang="yaml",linenos=off}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.pip
-- src: geerlingguy.nginx
+# We need sudo for some of the Docker commands.
+sudo: required
+
+env:
+  # Provide a list of OSes we want to use for testing.
+
+# Tell Travis to start Docker when it brings up an environment.
+services:
+  - docker
+
+before_install:
+  # Pull the image from Docker Hub for the OS under test.
+
+script:
+  # Start the container from the image and perform tests.
+
+notifications:
+  # Notify Ansible Galaxy when a role builds successfully.
 ```
 
-Then run `ansible-galaxy install -r requirements.yml` to install the roles.
+This is a fairly standard Travis file layout, and if you want to dive deeper into how Travis works, read through the guide [Customizing the Build](https://docs.travis-ci.com/user/customizing-the-build). Next, we need to fill in each section of the file, starting with the parts that control the Docker container lifecycle.
 
-T> In most cases, you should create an `ansible.cfg` in the playbook directory, with at least the following contents:
-T> 
-T> {lang="text",linenos=off}
-T> ~~~
-T> [defaults]
-T> roles_path = ./roles
-T> ~~~
-T> 
-T> This way, role dependencies are installed inside the playbook directory itself instead of in your system-wide roles directory (as long as you run the `ansible-galaxy` command inside the playbook directory).
+### Building Docker containers in Travis
 
-Now let's define a few variables to make the `firewall`, `pip`, and `nginx` roles configure things how we want:
+The first thing we need to do is decide on which OSes we'd like to test. For my [`geerlingguy.java`](https://galaxy.ansible.com/geerlingguy/java/) role, I support CentOS, Fedora, Debian, and Ubuntu, so at a minimum I want to support the latest LTS release of each, and for CentOS and Ubuntu, the previous LTS release as well:
 
-{lang="yaml"}
+{lang="yaml",linenos=off}
 ```
-# Firewall settings.
-firewall_allowed_tcp_ports:
-  - "22"
-  - "80"
-  - "443"
-
-# Python settings.
-pip_package: python3-pip
-pip_install_packages: ['pyopenssl']
-
-# Nginx settings.
-nginx_vhosts: []
-nginx_remove_default_vhost: True
-nginx_ppa_use: True
-nginx_ppa_version: stable
-nginx_docroot: /var/www/html
+env:
+  - distro: centos8
+  - distro: centos7
+  - distro: fedora31
+  - distro: ubuntu2004
+  - distro: ubuntu1804
+  - distro: debian10
 ```
 
-For the firewall, you need port 22 open for remote SSH access, port 80 for HTTP requests (which we'll redirect to HTTPS), and 443 for HTTPS.
+One other thing that needs to be configured per-OS is the init system. Because we're dealing with OSes that have a mixture of `systemd` and `sysv` init systems, we have to specify in Travis' environment the path to the init system to use, and any extra options that we need to pass to the `docker run` command to get the image in the right state for Ansible testing. So we'll add two variables for each distribution, `init` and `run_opts`:
 
-For Pip, we need to make sure the right version of pip is installed (so `python3-pip` for Debian 9, which has Python 3 installed by default), and we tell it to install the latest version of the `pyopenssl` package.
-
-For Nginx, we want the default virtual host (server) which comes with the distro package install to be removed, we want to set the role's vhosts to an empty array (since we'll manage Nginx `server` configuration ourselves), and finally we'll use the docroot `/var/www/html`.
-
-Now that we have all the base packages installed and configured, the next step is to generate the self-signed certificate. To keep our playbook clean, the required tasks can go into an imported task file, imported in the `main.yml` like so:
-
-{lang="yaml",starting-line-number=19}
+{lang="yaml",linenos=off}
 ```
-  tasks:
-    - import_tasks: tasks/self-signed-cert.yml
-```
-
-Create a `tasks` folder, and create a `self-signed-cert.yml` task file inside. We'll place the tasks that create the key, generate the CSR, and generate the cert into this file:
-
-{lang="yaml"}
-```
----
-- name: Ensure directory exists for local self-signed TLS certs.
-  file:
-    path: "{{ certificate_dir }}/{{ server_hostname }}"
-    state: directory
-
-- name: Generate an OpenSSL private key.
-  openssl_privatekey:
-    path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
-
-- name: Generate an OpenSSL CSR.
-  openssl_csr:
-    path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
-    privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
-    common_name: "{{ server_hostname }}"
-
-- name: Generate a Self Signed OpenSSL certificate.
-  openssl_certificate:
-    path: "{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem"
-    privatekey_path: "{{ certificate_dir }}/{{ server_hostname }}/privkey.pem"
-    csr_path: "{{ certificate_dir }}/{{ server_hostname }}.csr"
-    provider: selfsigned
+env:
+  - distro: centos8
+    init: /usr/lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: centos7
+    init: /usr/lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: fedora31
+    init: /usr/lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: ubuntu2004
+    init: /lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: ubuntu1804
+    init: /lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+  - distro: debian10
+    init: /lib/systemd/systemd
+    run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
 ```
 
-We added a two variables which we'll now define in the `vars/main.yml` file (using variables makes it easier to change the site and/or refactor to allow multiple values in the future). Add these variables to the vars file:
+I> Why use an `init` system in Docker? With Docker, it's preferable to either run apps directly (as 'PID 1') inside the container, or use a tool like Yelp's [dumb-init](https://github.com/Yelp/dumb-init) as a wrapper for your app. For our purposes, we're testing an Ansible role or playbook that could be run inside a container, but is also likely used on full VMs or bare-metal servers, where there will be a real init system controlling multiple internal processes. We want to emulate the real servers as closely as possible, therefore we set up a full init system (`systemd` or `sysv`) according to the OS.
 
-{lang="yaml",starting-line-number=19}
+Now that we've defined the OS distributions we want to test, and what init system we want Docker to call, we can manage the Docker container's lifecycle---we need to `pull` the image, `run` the image with our options, `exec` some commands to test our project, then `stop` the container once finished. Here's the basic structure, starting with the `before_install` step:
+
+{lang="yaml",linenos=off}
 ```
-# Self-signed certificate settings.
-certificate_dir: /etc/ssl/private
-server_hostname: https.test
-```
+before_install:
+  # Pull container from Docker Hub.
+  - 'docker pull geerlingguy/docker-${distro}-ansible:latest'
 
-Now that the playbook can generate a certificate (or on future runs, idempotently verify the certificate's existence), we need to configure Nginx to use the cert to deliver traffic using TLS for a particular URL.
+script:
+  # Create a random file to store the container ID.
+  - container_id=$(mktemp)
 
-The `geerlingguy.nginx` role took care of the majority of Nginx configuration, but we disabled that role's management of virtual hosts, in favor of managing a single virtual host (or `server` directive) ourselves. The following tasks copy an example landing page into a defined docroot, then our custom HTTPS `server` configuration to use the generated cert for the docroot:
+  # Run container detached, with our role mounted inside.
+  - 'docker run --detach --volume="${PWD}":/etc/ansible/roles/role_under_test:ro ${run_opts} geerlingguy/docker-${distro}-ansible:latest "${init}" > "${container_id}"'
 
-{lang="yaml",starting-line-number=22}
-```
-    - name: Ensure docroot exists.
-      file:
-        path: "{{ nginx_docroot }}"
-        state: directory
-
-    - name: Copy example index.html file in place.
-      copy:
-        src: files/index.html
-        dest: "{{ nginx_docroot }}/index.html"
-        mode: 0755
-
-    - name: Copy Nginx server configuration in place.
-      template:
-        src: templates/https.test.conf.j2
-        dest: /etc/nginx/sites-enabled/https.test.conf
-        mode: 0644
-      notify: restart nginx
+  # TODO - Test the Ansible role.
 ```
 
-Fairly straightforward, but we need to fill in a couple blanks. First, here's a quick and easy `index.html` just to allow you to test things out:
+Let's run through these initial commands that set up our OS environment:
 
-{lang="html"}
+  - `docker pull` (in `before_install`): This pulls down the appropriate OS image from Docker Hub with Ansible baked in. Note that `docker run` automatically pulls any images that don't already exist, but it's a best practice to always pull images prior to running them, in case the image is cached and there's a newer version.
+  - `container_id=$(mktemp)`: We need a file to store the container ID so we can perform operations on it later; we could also name the container, but we treat containers (like infrastructure) like cattle, not pets. So no names.
+  - `docker run`: This command starts a new container, with the Ansible role mounted inside (as a `--volume`), and uses the `run_opts` and `init` system described earlier in the `env:` section, then saves the container ID (which is output by Docker) into the temporary file we created in the previous step.
+
+At this point, we have a Docker container running, and we can perform actions inside the container using `docker exec` just like we would if we were logged into a VM with the same OS.
+
+For example, if you wanted to check up on disk space inside the container (assuming the `df` utility is present), you could run the command:
+
+{lang="yaml",linenos=off}
 ```
-<!DOCTYPE html>
-<html>
-<head>
-  <title>HTTPS Self-Signed Certificate Test</title>
-  <style>* { font-family: Helvetica, Arial, sans-serif }</style>
-</head>
-<body>
-  <h1>HTTPS Self-Signed Certificate Test</h1>
-    <p>If you can see this message, it worked!</p>
-</body>
-</html>
+script:
+  [...]
+  - 'docker exec "$(cat ${container_id})" df -h'
 ```
 
-Put that HTML into your playbook directory at `files/index.html`, then create another file, `templates/https.test.conf.j2`, with the following contents:
+You can also run the command with `--tty`, which will allocate a pseudo-TTY, allowing things like colors to be passed through to Travis for prettier output.
+
+W> Note: In Docker < 1.13, you have to set the `TERM` environment variable when using `docker exec` with the `--tty` option, like: `docker exec --tty "$(cat ${container_id})" env TERM=xterm df -h` (see: [exec does not set TERM env when -t passed](https://github.com/docker/docker/issues/9299)). Also note that some older sysvinit scripts, when run through Ansible's `service` module, can cause strange issues when run inside a Docker container (see: [service hangs the whole playbook](https://github.com/ansible/ansible-modules-core/issues/2459#issuecomment-246880847)).
+
+Now that we have a Docker container running (one for each of the distributions listed in the `env` configuration), we can start running some tests on our Ansible role or playbook.
+
+### Testing the role's syntax
+
+This is the easiest test; `ansible-playbook` has a built in command to check a playbook's syntax (including all the included files and roles), and return `0` if there are no problems, or an error code and some output if there were any syntax issues.
 
 {lang="text"}
 ```
-# HTTPS Test server configuration.
-
-# Redirect HTTP traffic to HTTPS.
-server {
-    listen 80 default_server;
-    server_name _;
-    index index.html;
-    return 301 https://$host$request_uri;
-}
-
-# Serve HTTPS traffic using the self-signed certificate created by Ansible.
-server {
-    listen 443 ssl default_server;
-    server_name {{ server_hostname }};
-    root {{ nginx_docroot }};
-
-    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
-    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
-}
+ansible-playbook /etc/ansible/roles/role_under_test/test.yml --syntax-check
 ```
 
-The most important parts of this server configuration instruct Nginx to use the SSL certificate we generated (at the path `{{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;`) for requests over port 443 for the domain `{{ server_hostname }}` (in this case, requests to `https://https.test/`).
-
-I> Production-ready TLS configuration will usually have more options defined than the above `server` directive. It's best practice to always configure TLS as secure as possible (later examples meant for production use will do so), but this example does the bare minimum to get SSL working with Nginx defaults.
-
-Notice the `notify: restart nginx` in the `Copy Nginx server configuration in place.` task; this will force Nginx to restart after any configuration changes are made (or during the first provision, when the template is copied).
-
-Once you run this playbook, if there were no errors, you should be able to securely access `https://https.test/` (assuming you have a record for that domain in your hosts file pointing to your server's IP address!). You might receive a security warning since it's self-signed, but all modern browsers and HTTPS-enabled tools should now be able to load the site over an encrypted connection!
-
-{width=80%}
-![HTTPS Test site loads with a security warning](images/12-https-test-chrome.png)
-
-W> If you rebuild the server for `https.test` more than once (thus creating a new self-signed certificate), be sure to delete the certificate you previously added to your list of trusted certificates (e.g. via Keychain Access on Mac OS X for Chrome and Safari, or in FireFox under Preferences > Advanced > Certificates).
-
-## Automating Let's Encrypt with Ansible for free Certs
-
-Self-signed certs are helpful in making sure certain environments can be accessed via HTTPS, but they have a number of downsides, the major one being that every visitor has to confirm a security exception the first time they visit, and similarly command line tools like curl and HTTP libraries usually fail when they encounter a self-signed cert, unless you specifically ignore cert trust settings (which is a security risk).
-
-It's usually best to use a valid certificate from one of the trusted Certificate Authorities (CAs).
-
-Traditionally, you had to give some money to a Certificate Authority (CA) and work through a mostly-manual process to acquire a certificate. You can still do this, and there are use cases where this is still the best option, but [Let's Encrypt](https://letsencrypt.org/) took the world of HTTPS certificates by storm by offering _free_, easy-to-automate certificates to everyone, with the goal of creating "a more secure and privacy-respecting Web."
-
-In this example, we'll acquire a certificate from Let's Encrypt and set up auto-renewal (since Let's Encrypt certs are only valid for 90 days) on an Ubuntu server. There's a fully tested version of this example included in this book's GitHub repository: [HTTPS Let's Encrypt Demo](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-letsencrypt).
-
-### Use Galaxy roles to get things done faster
-
-Instead of writing all the automation ourselves, we can rely on some roles from Ansible Galaxy to do the heavy lifting. Create a `requirements.yml` file in a new project directory, containing:
+Add this as a command in the `script` section of `.travis.yml`:
 
 {lang="yaml"}
 ```
----
-- src: geerlingguy.firewall
-- src: geerlingguy.certbot
-- src: geerlingguy.nginx
+script:
+  # Check the role/playbook's syntax.
+  - >
+    docker exec --tty "$(cat ${container_id})" env TERM=xterm
+    ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
+    --syntax-check
 ```
 
-We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a web server to serve content over HTTPS.
+If there are any syntax errors, Travis will fail the build and output the errors in the log.
 
-The `geerlingguy.certbot` role is the heart of the operation; here's how it works:
+### Role success - first run
 
-  1. First, it either installs Certbot from the system packages or from source, depending on the value of `certbot_install_from_source`. Source installs are usually more usable since Certbot sometimes adds helpful features that will never be backported into system packages.
-  2. Then it creates a certificate if configured via `certbot_create_if_missing` and if the certificate(s) specified in `certbot_certs` do not yet exist. It creates the certificates using the `certbot_create_command` and can also stop and start certain services while the certificates are being created.
-  3. Finally, if `certbot_auto_renew` is `true`, it sets up a cron job for certificate renewal, using the `certbot renew` command along with the options passed in via `certbot_auto_renew_options`. Auto renewal is one of the main benefits of Let's Encrypt, because as long as your renewal process is working, you'll never wake up to an outage due to an expired certificate again!
-
-Once we have the requirements file set up, create an `ansible.cfg` file in the project directory to tell Ansible where to store and use the downloaded roles:
-
-{lang="text"}
-```
-[defaults]
-roles_path = ./roles
-```
-
-Install the required roles with: `ansible-galaxy install -r requirements.yml`.
-
-### Create the playbook
-
-Add a `main.yml` playbook to the project directory. This playbook will target servers running Ubuntu's minimal distribution (which may not include Python), so we need to do a couple special things to make sure Ansible can operate on the server in `pre_tasks`. Then we'll run the three roles we downloaded from Ansible Galaxy, and configure Nginx to serve a simple web page using a Let's Encrypt certificate.
-
-First things first, start the play on all the `letsencrypt` hosts, and since we might have to install Python to gather facts about the server for Ansible to use, disable the initial `gather_facts`:
+The next aspect to check is whether the role runs correctly or fails on its first run. Add this after the `--syntax-check` test:
 
 {lang="yaml"}
 ```
----
-- hosts: letsencrypt
-  gather_facts: false
-  become: true
-
-  vars_files:
-    - vars/main.yml
+# Run the role/playbook with ansible-playbook.
+- >
+  docker exec --tty "$(cat ${container_id})" env TERM=xterm
+  ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
 ```
 
-We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, to add the configuration for certificate generation, firewall configuration, and Nginx, we'll put all the variables in a `vars/main.yml` file.
+Ansible returns a non-zero exit code if the playbook run fails, so Travis will know whether the command succeeded or failed.
 
-In a series of `pre_tasks` in `main.yml`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
+### Role idempotence
 
-{lang="yaml",starting-line-number=9}
-```
-  pre_tasks:
-    - name: Install Python if not already present.
-      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
-      changed_when: false
-
-    - name: Gather facts after Python is definitely present.
-      setup:
-
-    - name: Ensure apt cache is updated.
-      apt: update_cache=true cache_valid_time=600
-```
-
-Now, it's time for the meat of this playbook, the `roles`. Call each one:
-
-{lang="yaml",starting-line-number=9}
-```
-  roles:
-    - geerlingguy.firewall
-    - geerlingguy.nginx
-    - geerlingguy.certbot
-```
-
-Since the roles will be doing the heavy lifting (yay for easy-to-read playbooks!), we tell them what to do via variables in `vars/main.yml`:
+Another important test is the idempotence test---does the role change anything if it runs a second time? It should not, since all tasks you perform via Ansible should be idempotent (ensuring a static/unchanging configuration on subsequent runs with the same settings).
 
 {lang="yaml"}
 ```
----
-# Firewall settings.
-firewall_allowed_tcp_ports:
-  - "22"
-  - "80"
-  - "443"
-
-# Nginx settings.
-nginx_vhosts: []
-nginx_remove_default_vhost: true
-nginx_ppa_use: true
-nginx_ppa_version: stable
-nginx_docroot: /var/www/html
-
-# Let's Encrypt certificate settings.
-certbot_create_if_missing: true
-certbot_admin_email: "{{ letsencrypt_email }}"
-certbot_certs:
-  - domains:
-      - "{{ inventory_hostname }}"
+# Run the role/playbook again, checking to make sure it's idempotent.
+- idempotence=$(mktemp)
+- >
+  docker exec "$(cat ${container_id})"
+  ansible-playbook /etc/ansible/roles/role_under_test/tests/test.yml
+  | tee -a ${idempotence}
+- >
+  tail ${idempotence}
+  | grep -q 'changed=0.*failed=0'
+  && (echo 'Idempotence test: pass' && exit 0)
+  || (echo 'Idempotence test: fail' && exit 1)
 ```
 
-By section:
+This command runs the exact same command as before, but pipes the results into another temporary file (using `tee`, which pipes the output to the console and the file), and then the next command reads the output and checks to make sure 'changed' and 'failed' both report `0`. If there were no changes or failures, the idempotence test passes (and Travis sees the `0` exit and is happy). If there were any changes or failures, the test fails (and Travis sees the `1` exit and reports a build failure).
 
-  - For a typical webserver, we need port `22` for SSH access, port `80` for unencrypted HTTP access (Let's Encrypt needs this to operate using it's default verification mechanism), and port `443` for encrypted HTTPS access.
-  - For Nginx, we will configure our own custom virtual host in a bit, so we make sure the default vhost is removed, and we'll also install the latest version of Nginx from the Nginx Ubuntu PPA. We added an extra variable `nginx_docroot` to tell our own automation code where to put a test web page and serve it via Nginx.
-  - The Certbot role only requires a few variables to ensure a certificate is added:
-    - `certbot_create_if_missing`: The role will check if the certificate exists, and if it doesn't (e.g. on the first playbook run) it will create it. If it does exist, it will be idempotent and make no changes.
-    - `certbot_admin_email`: Let's Encrypt lets you [associate an email address](https://letsencrypt.org/docs/expiration-emails/) with every certificate it generates, and uses this email address to notify the owner of any problems with the certificate, like impending expiration due to a server issue.
-    - `certbot_certs`: You can add one or more certificates using this list; and each certificate can cover one or more domains using Subject Alternative Name (SAN) certificates.
+### Role success - final result
 
-Two of the Jinja variables used in the vars file are not defined in vars---rather, they will come from the inventory. We'll set that up soon.
+The last thing I check is whether the role actually did what it was supposed to do. If it configured a web server, is the server responding on port 80 or 443 without any errors? If it configured a command line application, does the application work when invoked, and do the things it's supposed to do?
 
-Now that we have the playbook configuring an HTTP/S-ready firewall, a Let's Encrypt certificate generated by Certbot, and a barebones Nginx web server, we need to configure Nginx to serve some content, and to serve it over HTTPS using the Let's Encrypt certificate.
-
-So for the last part of the playbook, we need to:
-
-  1. Ensure the `nginx_docroot` directory exists.
-  2. Create and copy over a sample `index.html` file to serve from that document root.
-  3. Create and copy over a Nginx server configuration which directs all traffic to HTTPS and serves the traffic using the generated Let's Encrypt certificate.
-
-To make sure the `nginx_docroot` exists, add a task to the `tasks` section of the playbook:
-
-{lang="yaml",starting-line-number=25}
+{lang="yaml"}
 ```
-  tasks:
-    - name: Ensure docroot exists.
-      file:
-        path: "{{ nginx_docroot }}"
-        state: directory
+# Ensure Java is installed.
+- 'docker exec --tty "$(cat ${container_id})" env TERM=xterm which java'
 ```
 
-I> Since `/var/www` should already exist on an Ubuntu server, this is all we need. If the parent directory heirarchy didn't exist (e.g. we had `nginx_docroot` set to `/var/www/example/html`), this task may also need `recurse: true` to ensure the parent directories exist.
+In this example, a simple test of whether or not `java` is installed is used as a functional test of the role. In other cases, I might run the command `curl http://localhost:3000/` (to check if an app is responding on a particular port), or some other command that verifies an application is installed and running correctly.
 
-Now we need an HTML file inside the docroot so Nginx can serve it, otherwise Nginx will return a 404 Not Found. Create a simple HTML file named `files/index.html` in your project directory, with the following contents:
-
-{lang="html"}
-```
-<!DOCTYPE html>
-<html>
-<head>
-  <title>HTTPS Let's Encrypt Test</title>
-  <style>* { font-family: Helvetica, Arial, sans-serif }</style>
-</head>
-<body>
-  <h1>HTTPS Let's Encrypt Test</h1>
-    <p>If you can see this message, it worked!</p>
-</body>
-</html>
-```
-
-Then add a `copy` task in `main.yml` to copy the file into place after the docroot task:
-
-{lang="yaml",starting-line-number=31}
-```
-    - name: Copy example index.html file in place.
-      copy:
-        src: files/index.html
-        dest: "{{ nginx_docroot }}/index.html"
-        mode: 0755
-```
-
-Finally, we need to configure Nginx with two `server` blocks; one to redirect HTTP requests to HTTPS, and the other to serve HTTPS traffic using the Let's Encrypt certificates. Create a Nginx configuration template in `templates/https-letsencrypt.conf.j2` with the following:
-
-{lang="text"}
-```
-# HTTPS server configuration.
-
-# Redirect HTTP traffic to HTTPS.
-server {
-    listen 80 default_server;
-    server_name _;
-    index index.html;
-    return 301 https://$host$request_uri;
-}
-
-# Serve HTTPS traffic using the Let's Encrypt certificate.
-server {
-    listen 443 ssl default_server;
-    server_name {{ inventory_hostname }};
-    root {{ nginx_docroot }};
-
-    ssl_certificate /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/{{ inventory_hostname }}/privkey.pem;
-}
-```
-
-The first `server` block configures a default port 80 server which redirects _all_ traffic on port 80, for any incoming request, to the same URL, but with `https://`. This is a handy way to force all traffic to SSL by default if you're using Nginx.
-
-The second `server` block configures a default port 443 server which handles all HTTPS traffic.
-
-It uses the `inventory_hostname` to tell Nginx what domain should be used to serve traffic, and it sets the document root to the `nginx_docroot`.
-
-Finally, it tells Nginx to use the certificate and key inside the default Let's Encrypt generated certificate path, which is always `/etc/letsencrypt/live/[domain]/*.pem`.
-
-Add a task templating this Jinja template to a Nginx config file in `main.yml`, making sure to restart Nginx when the template is created or modified:
-
-{lang="yaml",starting-line-number=31}
-```
-    - name: Copy Nginx server configuration in place.
-      template:
-        src: templates/https-letsencrypt.conf.j2
-        dest: /etc/nginx/sites-enabled/https-letsencrypt.conf
-        mode: 0644
-      notify: restart nginx
-```
-
-At this point, we have a complete playbook. It should set up a firewall, create a certificate, and configure Nginx to serve a web page using the certificate. But we don't have a server to run the playbook against!
-
-### Create a server and configure DNS
-
-Let's Encrypt generates certificates for domains only after verifying domain ownership. The Internet would be very insecure if Let's Encrypt allowed any random person to generate valid certificates for a domain like `apple.com` or `google.com`!
-
-The easiest way to verify domain ownership to Let's Encrypt is to ensure your server is accessible over the public Internet. For internal servers, Let's Encrypt might not be the best option (though in some cases it can be made to work).
-
-In Chapter 8, an example was provided for how to provision servers automatically via Ansible. For your own project, you may want to automate the process of initial server provisioning using Ansible, Terraform, or some other automation tool. But for this example, you just need to make sure a server is running which is reachable via the public Internet. You also need to point a domain at it (e.g. subdomain.example.com).
-
-Once you've done that, and can confirm you can SSH into the server at the actual domain name (e.g. `ssh myuser@subdomain.example.com`), then you're ready to point the playbook at the server and configure everything via Ansible.
-
-### Point the playbook inventory at the server
-
-Assuming your server is reachable at `subdomain.example.com`, and your SSH username is `myuser`, create an `inventory` file in the project directory with the following contents:
-
-{lang="text"}
-```
-[letsencrypt]
-subdomain.example.com
-
-[letsencrypt:vars]
-ansible_ssh_user=myuser
-letsencrypt_email=webmaster@example.com
-```
-
-Now that the playbook knows how to connect to your public server, it's time to try it out. First, make sure all the required Galaxy roles are installed:
-
-{lang="text",linenos="off"}
-```
-ansible-galaxy install -r requirements.yml
-```
-
-Then run the playbook:
-
-{lang="text",linenos="off"}
-```
-ansible-playbook -i inventory main.yml
-```
-
-After a couple minutes, assuming Let's Encrypt could reach your server at subdomain.example.com on port 80, you should be able to access the `index.html` webpage created earlier over HTTPS.
-
-### Access your server over HTTPS!
-
-Visit `https://subdomain.example.com/` and you should see something like:
+Here's what the final test result looks like in Travis CI:
 
 {width=80%}
-![HTTPS Test site loads with a valid Let's Encrypt certificate](images/12-letsencrypt-valid-certificate.png)
+![Travis CI test result for the geerlingguy.java role](images/12-travis-ci-ansible-role-java-result.png)
 
-Automating free certificates with Let's Encrypt can be fun, but make sure you're aware of [Let's Encrypt rate limits](https://letsencrypt.org/docs/rate-limits/) before you go ahead and automate certs for 3,000 of your subdomains at once!
+Taking this a step further, you could even run a deployed application or service's own automated tests after Ansible is finished with the deployment, thus testing your infrastructure and application in one go---but we're getting ahead of ourselves here... that's a topic for later!
 
-## Configuring Nginx to proxy HTTP traffic and serve it over HTTPS
+### Some notes about Travis CI
 
-One common problem you may encounter is an old web application or service which is no longer updated but must continue running, and the need for HTTPS encryption (whether for SEO or security compliance).
+There are a few things you need to know about Travis CI, especially if you're testing Ansible, which will rely heavily on the VM environment inside which it is running:
 
-You could use a third party service like Cloudflare to proxy all traffic through HTTPS, but you'd still have a connection over the public Internet from Cloudflare's network to your backend server that's unencrypted. Even if you're using a CDN, it's best to encrypt the traffic all the way to as close to your application server as possible.
+  - **Docker Environment**: The default Docker installation runs on a particular Docker engine version, which may or may not be the latest stable release. Read through Travis' documentation for more: [Using Docker in Builds](https://docs.travis-ci.com/user/docker/).
+  - **Networking/Disk/Memory**: Travis CI continuously shifts the VM specs you're using, so don't assume you'll have X amount of RAM, disk space, or network capacity. Add commands like `cat /proc/cpuinfo`, `cat /proc/meminfo`, `free -m`, etc. in the `.travis.yml` `before_install` section if you need to figure out the resources available in your VM.
 
-And that's where Nginx comes in! There are other tools which can do the same thing, but Nginx is easy to configure as an HTTPS proxy server for HTTP backends.
+See much more information about the VM environment on the [Travis CI Build Environment page](http://docs.travis-ci.com/user/ci-environment/).
 
-### Modify the Nginx configuration to proxy traffic
+### Real-world examples
 
-We're going to use the exact same playbook and configuration from the self-signed certificate example earlier in this chapter, with two small modifications. The adjusted playbook is available in this book's GitHub repository: [HTTPS Nginx Proxy Demo VM](https://github.com/geerlingguy/ansible-for-devops/tree/master/https-nginx-proxy). There are only two small changes needed to set up and test Nginx proxying HTTPS traffic to an HTTP backend application:
+This style of testing is integrated into many of the `geerlingguy.*` roles on Ansible Galaxy; here are a few example roles using Travis CI integration in the way outlined above:
 
-  1. Instead of serving traffic directly from Nginx, let Nginx proxy requests to a backend server running on port 8080.
-  2. Run a backend HTTP server on port 8080 using Python.
+  - https://github.com/geerlingguy/ansible-role-java
+  - https://github.com/geerlingguy/ansible-role-apache
+  - https://github.com/geerlingguy/ansible-role-mysql
 
-First, configure the port 443 `server` block to proxy traffic to another service running locally on port `8080`:
+I'd like to give special thanks to Bert Van Vreckem, who helped me to get the initial versions of this Docker-based test workflow working on GitHub; he wrote a bit about the process on his blog, too: [Testing Ansible roles with Travis-CI: Multi-platform tests](http://bertvv.github.io/notes-to-self/2015/12/13/testing-ansible-roles-with-travis-ci-part-2-multi-platform-tests/).
 
-{lang="text",starting-line-number=11}
-```
-# Proxy HTTPS traffic using a self-signed certificate.
-server {
-    listen 443 ssl default_server;
-    server_name {{ server_hostname }};
+## Functional testing using serverspec
 
-    location / {
-        include /etc/nginx/proxy_params;
-        proxy_pass          http://localhost:8080;
-        proxy_read_timeout  90s;
-        proxy_redirect      http://localhost:8080 {{ server_hostname }};
-    }
+[Serverspec](http://serverspec.org/) is a tool to help automate server tests using RSpec tests, which use a Ruby-like DSL to ensure your server configuration matches your expectations. In a sense, it's another way of building well-tested infrastructure.
 
-    ssl_certificate {{ certificate_dir }}/{{ server_hostname }}/fullchain.pem;
-    ssl_certificate_key {{ certificate_dir }}/{{ server_hostname }}/privkey.pem;
-}
-```
+Serverspec tests can be run locally, via SSH, through Docker's APIs, or through other means, without the need for an agent installed on your servers, so it's a lightweight tool for testing your infrastructure (just like Ansible is a lightweight tool for _managing_ your infrastructure).
 
-All that's been done is the removal of the `root` directive, which was replaced with the `location` directive. This particular `location` directive tells Nginx to proxy _all_ requests to any path (`/` includes everything) to the address `http://localhost:8080`, with a 90 second backend timeout.
+There's a lot of debate over whether well-written Ansible playbooks themselves (especially along with the dry-run `--check` mode) are adequate for well-tested infrastructure, but many teams are more comfortable maintaining infrastructure tests in Serverspec instead (especially if the team is already familiar with how Serverspec and Rspec works!).
 
-This assumes there's a backend HTTP service running on port 8080, though! So, the second step is to run something on port 8080. Luckily, since we already have Python and a web root, we can use Python to run an HTTP server with a very simple CLI command:
+Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for the same task, isn't that a good enough test your server is configured correctly?
 
-{lang="text",linenos="off"}
-```
-python3 -m http.server 8080 --directory /var/www/html
-```
+This book will not provide a detailed guide for using Serverspec with your Ansible-managed servers, but here are a few resources in case you'd like to use it:
 
-You can run that command interactively, or if you're automating it in the Ansible playbook from earlier, you can add a task after the "Copy example index.html file in place." task:
+  - [A brief introduction to server testing with Serverspec](https://www.debian-administration.org/article/703/A_brief_introduction_to_server-testing_with_serverspec)
+  - [Testing Ansible Roles with Test Kitchen, Serverspec and RSpec](http://www.slideshare.net/MartinEtmajer/testing-ansible-roles-with-test-kitchen-serverspec-and-rspec-48185017)
+  - [Testing infrastructure with serverspec](http://vincent.bernat.im/en/blog/2014-serverspec-test-infrastructure.html)
 
-{lang="yaml",starting-line-number=33}
-```
-    - name: Start simple python webserver on port 8080.
-      shell: >
-        python3 -m http.server 8080 --directory {{ nginx_docroot }} &
-      changed_when: false
-      async: 45
-      poll: 0
-```
+### Other server and role testing tools
 
-Note the use of `&`, `async` and `poll` to fire and forget the command, so it can run in the background forever. It is _not_ a good idea to run applications like this in production, but for demonstration purposes it's adequate to verify Nginx is proxying HTTPS requests correctly.
+There are also a number of other projects which abstract the testing process a little further than the above approach; some allowing more control and easier use outside of the Travis CI environment, others focused more on Ansible roles in particular:
 
-W> The `--directory` option in this command requires Python 3.7 or later. Make sure your operating system has this version of Python available (e.g. via system packages, like with Debian 10 or later, or via a virtualenv).
+  - [molecule](https://github.com/ansible-community/molecule) - A generalized solution for testing Ansible roles in any environment.
+  - [goss](https://github.com/aelsabbahy/goss) - A generalized server validation tool.
+  - [rolespec](https://github.com/nickjj/rolespec) - A library for testing Ansible roles on Travis or locally.
 
-Now that a server is running on port 8080, you should see Nginx proxying requests successfully:
-
-{width=80%}
-![Nginx proxies HTTPS requests to backend HTTP applications](images/12-https-nginx-proxy-test.png)
-
-If you log into the server and kill the Python process serving HTTP traffic on port 8080, then Nginx will still attempt to proxy traffic, but will return a 502 Bad Gateway because the backend service is unavailable:
-
-{width=80%}
-![Nginx returns 502 Bad Gateway if the backend is unavailable](images/12-https-nginx-proxy-502-bad-gateway.png)
-
-Once you learn to automate HTTPS certificates with Ansible and proxy backend services with Nginx (or another suitable HTTPS-aware proxy), it becomes possible to adopt HTTPS everywhere, no matter what kind of web applications you run.
+Each of the options has some benefits and drawbacks; you should check them all out and find out which one works best in your workflow and skill-set.
 
 ## Summary
 
-HTTPS is now an essential feature of any public-facing website and application, and it's fairly standard to use it on internal services too. Ansible automates the process of encrypting all your HTTP traffic with TLS certificates, no matter the certificate type or use case.
+Tools like Molecule help develop, test, and run playbooks regularly and easily, both locally and in CI environments. In addition the information contained in this chapter, read through the [Testing Strategies](https://docs.ansible.com/ansible/latest/reference_appendices/test_strategies.html) documentation in Ansible's documentation for a comprehensive overview of infrastructure testing and Ansible.
 
 {lang="text",linenos=off}
 ```
- ____________________________________________
-/ Fool me once, shame on you. Fool me twice, \
-\ prepare to die. (Klingon Proverb)          /
- --------------------------------------------
+ ________________________________________
+/ Never ascribe to malice that which can \
+| adequately be explained by             |
+\ incompetence. (Napoleon Bonaparte)     /
+ ----------------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\

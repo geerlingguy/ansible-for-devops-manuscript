@@ -35,7 +35,7 @@ See README file inside the `ansible-for-devops publicity/Published Editions` dir
 
 ## Cowsay
 
-  - "Never ascribe to malice that which can adequately be explained by incompetence. (Napoleon Bonaparte)"
+  - TODO
 
 ## Improvements/new chapter ideas
 
