@@ -338,16 +338,22 @@ molecule/
     verify.yml
 ```
 
-TODO: Describe each file.
+The `INSTALL` file provides instructions for setting up Molecule to run your tests correctly.
 
-Assuming you have Docker installed on your computer, you can run Molecule's built-in tests on the barebones role immediately:
+The `molecule.yml` file configures Molecule and tells it how to run the entire build and test process. We'll cover the file in more depth later.
+
+The `converge.yml` file is an Ansible playbook, and Molecule runs it on the test environment immediately after setup is complete. For basic role testing, the Converge playbook just includes the role (in this case, `myrole`), nothing more.
+
+The `verify.yml` file is another Ansible playbook, which is run after Molecule runs the `converge.yml` playbook and tests idempotence. It is meant for verification tests, e.g. ensuring a web service your role installs responds properly, or a certain application is configured correctly.
+
+Assuming you have Docker installed on your computer, you can run Molecule's built-in tests on the default role immediately:
 
 {lang="text",linenos=off}
 ```
 molecule test
 ```
 
-The `test` command runs through the full gamut of Molecule's capabilities, including setting up a test environment, running any configured linters, installing any Ansible Galaxy requirements, running the `converge` playbook, running the `verify` playbook, and then tearing down the test environment (regardless of tests passing or failing).
+The `test` command runs through the full gamut of Molecule's capabilities, including setting up a test environment, running any configured lint tools, installing any Ansible Galaxy requirements, running the `converge` playbook, running the `verify` playbook, and then tearing down the test environment (regardless of tests passing or failing).
 
 You can perform a subset of Molecule's tasks using other options, for example:
 
@@ -360,7 +366,19 @@ This will run through all the same steps as the `test` command, but will stop ex
 
 This is _extremely_ useful for role development and debugging.
 
-TODO: Note about using `fail:` module as a breakpoint.
+For automation development, I usually have a workflow like the following:
+
+  1. Create a new role with a Molecule test environment.
+  2. Start working on the tasks in the role.
+  3. Add a `fail:` task where I want to set a 'breakpoint', and run `molecule converge`.
+  4. After the playbook runs and hits my `fail` task, log into the environment with `molecule login`.
+  5. Explore the environment, check my configuration files, do some extra sleuthing if needed.
+  6. Go back to my role, work on the rest of the role's automation tasks.
+  7. Run `molecule converge` again.
+  8. (If there are any issues or I get my environment in a broken state, run `molecule destroy` to wipe away the environment then `molecule converge` to bring it back again.)
+  9. Once I feel satisfied, run `molecule test` to run the full test cycle and make sure my automation works flawlessly and with idempotence.
+
+For debugging, I'll often just run `molecule converge`, see where my automation breaks, log in with `molecule login` to figure out the problem (and then fix it), then run `molecule converge` again until it starts working.
 
 When you're finished with your development session, tell Molecule to tear down the environment using:
 
@@ -373,13 +391,211 @@ molecule destroy
 
 Molecule's useful for testing more than just roles. I regularly use Molecule to test playbooks, collections, and even Kubernetes Operators!
 
-TODO.
+Let's say I have a playbook that sets up an Apache server, with the following contents in `main.yml`:
+
+{lang="yaml",linenos=off}
+```
+---
+- name: Install Apache.
+  hosts: all
+  become: true
+
+  vars:
+    apache_package: apache2
+    apache_service: apache2
+    apache_config_dir: /etc/apache2/sites-enabled
+
+  handlers:
+    - name: restart apache
+      service:
+        name: "{{ apache_service }}"
+        state: restarted
+
+  pre_tasks:
+    - name: Override Apache vars for Red Hat.
+      set_fact:
+        apache_package: httpd
+        apache_service: httpd
+        apache_config_dir: /etc/httpd/conf.d
+      when: ansible_os_family == 'RedHat'
+
+  tasks:
+    - name: Ensure Apache is installed.
+      package:
+        name: "{{ apache_package }}"
+        state: present
+
+    - name: Copy test config file.
+      copy:
+        content: |
+          # An Apache VirtualHost configuration goes here.
+        dest: "{{ apache_config_dir }}/test.conf"
+      notify: restart apache
+
+    - name: Ensure Apache is running and starts at boot.
+      service:
+        name: "{{ apache_service }}"
+        state: started
+        enabled: true
+```
+
+Because I want to make sure this playbook works on both of the platforms I support---Debian and CentOS, in this case---I want to make sure my Molecule tests cover both platforms.
+
+So first, run `molecule init scenario` to initialize a default Molecule scenario in the playbook's folder:
+
+{lang="none",linenos=off}
+```
+$ molecule init scenario
+--> Initializing new scenario default...
+Initialized scenario in ~/playbook/molecule/default successfully.
+```
+
+Since we're going to test a playbook and not a role, we need to clean up some files and make a few changes.
+
+Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, and delete the existing `tasks:` section. Make the playbook prepare the environment, then run the `main.yml` playbook:
+
+{lang="yaml"}
+```
+---
+- name: Converge
+  hosts: all
+
+  tasks:
+    - name: Update apt cache (on Debian).
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+
+- import_playbook: ../../main.yml
+```
+
+At this point, you can try testing the playbook with Molecule. As I mentioned earlier, I like to use `molecule converge` when developing, so I can see where something breaks, then fix it, then run `molecule converge` again to re-run the playbook.
+
+{lang="text",linenos=off}
+```
+$ molecule converge
+--> Test matrix
+    
+└── default
+    ├── dependency
+    ├── create
+    ├── prepare
+    └── converge
+    
+--> Scenario: 'default'
+...
+    TASK [Ensure Apache is running and starts at boot.] ***********
+fatal: [instance]: FAILED! => {"changed": false, "msg": "Could
+not find the requested service httpd: "}
+    
+    RUNNING HANDLER [restart apache] ******************************
+    
+    PLAY RECAP ****************************************************
+    instance  : ok=5  changed=2  unreachable=0  failed=1  skipped=1
+```
+
+This playbook is pretty simple, and it doesn't seem like there are any errors with it. We should debug this problem by logging into the test environment, and checking out what's wrong with the `httpd` service:
+
+{lang="none",linenos=off}
+```
+$ molecule login
+[root@instance /]# systemctl status httpd
+Failed to get D-Bus connection: Operation not permitted
+```
+
+Ah, it looks like systemd is not working properly. And, rather than lead you down a rabbit hole of trying to debug systemd inside a Docker container, and how to get everything working properly so you can test services running inside containers, I'll skip to the end and show you how I test my playbooks without running into systemd issues.
+
+Go ahead and exit the running instance, and destroy it:
+
+{lang="none",linenos=off}
+```
+[root@instance /]# exit
+$ molecule destroy
+```
+
+#### Adjusting Molecule to use more flexible test containers
+
+Molecule allows almost infinite flexibility, when it comes to configuring the test environment. In our case, we need to be able to test services running in Docker containers, meaning the Docker containers need to be able to run an init system (in this case, systemd).
+
+We also want to test Debian in addition to the default `centos` container Molecule uses by default, so open the `molecule.yml` file and edit the `platforms` section to use a slightly different Docker configuration:
+
+{lang="yaml"}
+```
+platforms:
+  - name: instance
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos8}-ansible:latest"
+    command: ""
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+    pre_build_image: true
+```
+
+This configuration makes four changes to the default Molecule file: one change (the `image`), and three additions:
+
+  - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-centos7}` in the image name. This will allow substitution for other distros, like Debian, later.
+  - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured command, which starts the systemd init system and keeps the container running.
+  - Add a necessary volume mount to allow processes to be managed inside the container.
+  - Set the `privileged` flag on the container, so systemd can initialize properly.
+
+W> The `privileged` flag should be used with care; don't run Docker images or software you don't trust using `privileged`, because that mode allows software running inside the Docker image to run as if it were running on the host machine directly, bypassing many of the security benefits to running in containers. It is convenient but potentially dangerous. If necessary, consider maintaining your own testing container images if you need to run with `privileged` and wish to test with Docker.
+
+Now, if you run `molecule converge` or `molecule test`, the entire playbook should succeed, and idempotence should also pass.
+
+The last step is to make sure the playbook also runs correctly on Debian-based systems. Since there exists a `geerlingguy/docker-debian10-ansible` container (see a full list of the Docker Ansible test containers I maintain here), you can run the Molecule tests under that operating system as well:
+
+{lang="none",linenos=off}
+```
+$ MOLECULE_DISTRO=debian10 molecule test
+...
+    RUNNING HANDLER [restart apache] ******************************
+    
+    PLAY RECAP ****************************************************
+    instance  : ok=7  changed=4  unreachable=0  failed=0  skipped=1
+```
+
+#### Verifying a playbook with Molecule
+
+Let's add one final test addition: something to validate Apache is actually serving web traffic correctly! Open the `verify.yml` playbook, and add a task to check that Apache is serving web traffic successfully:
+
+{lang="yaml"}
+```
+---
+- name: Verify
+  hosts: all
+
+  tasks:
+  - name: Verify Apache is serving web requests.
+    uri:
+      url: http://localhost/
+      status_code: 200
+```
+
+Run `molecule test` again, and make sure the validation task succeeds:
+
+{lang="none",linenos=off}
+```
+$ molecule test
+...
+    TASK [Verify Apache is serving web requests.] *****************
+    ok: [instance]
+
+    PLAY RECAP ****************************************************
+    instance  : ok=2  changed=0  unreachable=0  failed=0  skipped=0
+```
+
+When developing or debugging with Molecule, you can run _only_ the verify step using `molecule verify`.
+
+As I've stated earlier, a test like this might be even better to include in the actual Ansible playbook _itself_, so the test is always run as part of your automation. But the structure of your tests may dictate adding extra validation into Molecule's `validate.yml` playbook, like we did here.
+
+### Molecule Summary
+
+Molecule is a simple but flexible tool used for testing Ansible roles, playbooks, and collections. The options presented in these examples are only a small subset of what's possible using Molecule. Later, we will configure Molecule to test a role using Continuous Integration, to display how easy it is to make sure all your infrastructure code is well tested, all the time.
 
 ## Running your playbook in check mode
 
-Running your playbook with `--check` will run your entire playbook in `check` mode.
-
-Ansible runs the entire playbook on your live infrastructure, but without performing any changes. Instead, Ansible highlights tasks that _would've_ resulted in a change to show what will happen when you _actually_ run the playbook later.
+One step beyond local integration testing is running your playbook with `--check`, which runs the entire playbook on your live infrastructure, but without performing any changes. Instead, Ansible highlights tasks that _would've_ resulted in a change to show what will happen when you _actually_ run the playbook later.
 
 This is helpful for two purposes:
 
@@ -399,6 +615,8 @@ When using `--check` mode, certain tasks may need to be forced to run to ensure 
 For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
 
 T> You can add conditionals with `check_mode` just like you can with `when` clauses, though most of the time you will probably just use `yes` or `no`.
+
+W> If you've never run a playbook with `--check` on an existing production instance, it might not be a good idea to blindly try it out. Some modules are not written in a way that works well in check mode, and it can lead to problems. It's best to start using check mode testing early on, and fix small problems as they arise.
 
 ## Automated testing on GitHub using Travis CI
 
