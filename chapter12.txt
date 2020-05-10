@@ -639,7 +639,86 @@ W> If you've never run a playbook with `--check` on an existing production insta
 
 ## Automated testing on GitHub using GitHub Actions
 
-TODO HERE.
+GitHub Actions is one of many Continuous Integration (CI) and Continuous Deployment (CD) tools. Others like it include Travis CI, Circle CI, Drone, Jenkins, and Zuul.
+
+I often choose to use the CI tool with the least amount of friction when integrating with my source repository, and because much of my code is hosted on GitHub, GitHub Actions is the easiest to implement!
+
+Following GitHub Actions' setup guide, the first step in setting up an Actions workflow is to [create a workflow file in your repository](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#creating-a-workflow-file).
+
+In this book's example, we'll work from the same Molecule playbook example we created earlier. This example presumes you have a playbook like the one created earlier in the root directory of a code repository that is on GitHub.
+
+Create a new `.github` directory alongside the playbook, and inside that directory, create a `workflows` directory. Finally, create a workflow file named `ci.yml` inside the `workflows` directory.
+
+You should have a directory structure like the following:
+
+{lang="none",linenos=off}
+```
+myproject/
+  .github/
+    workflows/
+      ci.yml
+  main.yml
+```
+
+As with most other operations tools these days, GitHub Actions uses YAML for its configuration syntax, so we'll create a 'CI' (for 'Continuous Integration') workflow with the following YAML:
+
+{lang="yaml"}
+```
+---
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+
+  test:
+    name: Molecule
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        - distro: centos8
+        - distro: debian10
+
+    steps:
+      - name: Check out the codebase.
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.7.
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install test dependencies.
+        run: pip3 install molecule docker yamllint ansible-lint
+
+      - name: Run Molecule tests.
+        run: molecule test
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+          MOLECULE_DISTRO: ${{ matrix.distro }}
+```
+
+TODO.
+
+You can see more of the workflow syntax and options in GitHub's documentation: [Workflow syntax for GitHub Actions](https://help.github.com/en/articles/workflow-syntax-for-github-actions).
+
+TODO.
+
+{width=80%}
+![GitHub Actions CI workflow results](images/12-github-actions-ci-workflow.png)
+
+You can also put a 'CI status' badge in your project's README file, go to the 'Actions' tab on GitHub, click on the workflow name (in this case, 'CI'), and then click the 'Create status badge' button. It will allow you to choose options for a status badge you can place anywhere to quickly see the workflow's current status.
+
+T> Molecule has extended documentation with examples for integration with many different CI environments; see the [Molecule Continuous Integration](https://molecule.readthedocs.io/en/latest/ci.html) documentation for more examples.
+
+
+
+
+
 
 Automated testing using a continuous integration tool like Travis CI (which is free for public projects and integrated very well with GitHub) allows you to run tests against Ansible playbooks or roles you have hosted on GitHub with every commit.
 
