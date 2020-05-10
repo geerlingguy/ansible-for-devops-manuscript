@@ -403,7 +403,6 @@ Let's say I have a playbook that sets up an Apache server, with the following co
   vars:
     apache_package: apache2
     apache_service: apache2
-    apache_config_dir: /etc/apache2/sites-enabled
 
   handlers:
     - name: restart apache
@@ -416,7 +415,6 @@ Let's say I have a playbook that sets up an Apache server, with the following co
       set_fact:
         apache_package: httpd
         apache_service: httpd
-        apache_config_dir: /etc/httpd/conf.d
       when: ansible_os_family == 'RedHat'
 
   tasks:
@@ -425,11 +423,14 @@ Let's say I have a playbook that sets up an Apache server, with the following co
         name: "{{ apache_package }}"
         state: present
 
-    - name: Copy test config file.
+    - name: Copy a web page.
       copy:
         content: |
-          # An Apache VirtualHost configuration goes here.
-        dest: "{{ apache_config_dir }}/test.conf"
+          <html>
+          <head><title>Hello world!</title></head>
+          <body>Hello world!</body>
+          </html>
+        dest: "/var/www/html/index.html"
       notify: restart apache
 
     - name: Ensure Apache is running and starts at boot.
@@ -476,21 +477,21 @@ At this point, you can try testing the playbook with Molecule. As I mentioned ea
 ```
 $ molecule converge
 --> Test matrix
-    
+
 └── default
     ├── dependency
     ├── create
     ├── prepare
     └── converge
-    
+
 --> Scenario: 'default'
 ...
     TASK [Ensure Apache is running and starts at boot.] ***********
 fatal: [instance]: FAILED! => {"changed": false, "msg": "Could
 not find the requested service httpd: "}
-    
+
     RUNNING HANDLER [restart apache] ******************************
-    
+
     PLAY RECAP ****************************************************
     instance  : ok=5  changed=2  unreachable=0  failed=1  skipped=1
 ```
@@ -524,7 +525,7 @@ We also want to test Debian in addition to the default `centos` container Molecu
 ```
 platforms:
   - name: instance
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos8}-ansible:latest"
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
     command: ""
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
@@ -550,7 +551,7 @@ The last step is to make sure the playbook also runs correctly on Debian-based s
 $ MOLECULE_DISTRO=debian10 molecule test
 ...
     RUNNING HANDLER [restart apache] ******************************
-    
+
     PLAY RECAP ****************************************************
     instance  : ok=7  changed=4  unreachable=0  failed=0  skipped=1
 ```
@@ -589,9 +590,27 @@ When developing or debugging with Molecule, you can run _only_ the verify step u
 
 As I've stated earlier, a test like this might be even better to include in the actual Ansible playbook _itself_, so the test is always run as part of your automation. But the structure of your tests may dictate adding extra validation into Molecule's `validate.yml` playbook, like we did here.
 
+#### Adding lint configuration to Molecule
+
+As a final step, it's good to make sure your code follows a consistent code style, so we can enforce it with Molecule by adding a lint configuration to the `molecule.yml` file:
+
+{lang="yaml",starting-line-number=6}
+```
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+```
+
+You can add the lint configuration to any part of the Molecule configuration; you just need to make sure the `lint` key is one of the top-level keys.
+
+Now you can run all configured lint tools with `molecule lint`, instead of running `yamllint` and `ansible-lint` separately. If you need to override any lint rules, you can add a `.yamllint` or `.ansible-lint` file alongside your playbook in the project's root folder.
+
 ### Molecule Summary
 
 Molecule is a simple but flexible tool used for testing Ansible roles, playbooks, and collections. The options presented in these examples are only a small subset of what's possible using Molecule. Later, we will configure Molecule to test a role using Continuous Integration, to display how easy it is to make sure all your infrastructure code is well tested, all the time.
+
+You can find a complete example of this Molecule playbook configuration in this book's GitHub repository: [Molecule Example](https://github.com/geerlingguy/ansible-for-devops/tree/master/molecule).
 
 ## Running your playbook in check mode
 
@@ -616,9 +635,11 @@ For even more detailed information about what changes would occur, add the `--di
 
 T> You can add conditionals with `check_mode` just like you can with `when` clauses, though most of the time you will probably just use `yes` or `no`.
 
-W> If you've never run a playbook with `--check` on an existing production instance, it might not be a good idea to blindly try it out. Some modules are not written in a way that works well in check mode, and it can lead to problems. It's best to start using check mode testing early on, and fix small problems as they arise.
+W> If you've never run a playbook with `--check` on an existing production instance, it might not be a good idea to blindly try it out. Some modules and playbooks are not written in a way that works well in check mode, and it can lead to problems. It's best to start using check mode testing early on, and fix small problems as they arise.
 
-## Automated testing on GitHub using Travis CI
+## Automated testing on GitHub using GitHub Actions
+
+TODO HERE.
 
 Automated testing using a continuous integration tool like Travis CI (which is free for public projects and integrated very well with GitHub) allows you to run tests against Ansible playbooks or roles you have hosted on GitHub with every commit.
 
