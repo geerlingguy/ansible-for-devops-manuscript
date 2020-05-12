@@ -503,6 +503,7 @@ The first step towards building an application server that depends on the LAMP s
     - name: "Install Apache, MySQL, PHP, and other dependencies."
       apt:
         name:
+          - acl
           - git
           - curl
           - unzip

@@ -6,12 +6,14 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  1. [#246](https://github.com/geerlingguy/ansible-for-devops/issues/246): Update formatting of code examples.
-  2. [#245](https://github.com/geerlingguy/ansible-for-devops/issues/245): Fix dynamic inclusion of variable files based on `ansible_os_family` in chapter 5.
-  3. [#220](https://github.com/geerlingguy/ansible-for-devops/issues/220): Update 'Your first Ansible playbook' example in chapter 2 to use `chrony` instead of `ntp`, and highlight Ansible's syntax possibilities.
-  4. Updated list of tested platforms in Travis CI testing example in chapter 11.
-  5. Mention `ansible-bender` alongside mention of legacy Ansible Container software in Docker example in chapter 13.
-  6. [#101](https://github.com/geerlingguy/ansible-for-devops/issues/101): Describe a modern Ansible testing workflow by move testing content into dedicated chapter, chapter 12, covering `yamllint`, `ansible-lint`, Molecule, and other testing strategies. Also, bump former chapters 12-14 into chapters 13-15.
+  1. [#101](https://github.com/geerlingguy/ansible-for-devops/issues/101): Describe a modern Ansible testing workflow by move testing content into dedicated chapter, chapter 12, covering `yamllint`, `ansible-lint`, Molecule, and other testing strategies. Also, bump former chapters 12-14 into chapters 13-15.
+  2. [#246](https://github.com/geerlingguy/ansible-for-devops/issues/246): Update formatting of code examples.
+  3. [#245](https://github.com/geerlingguy/ansible-for-devops/issues/245): Fix dynamic inclusion of variable files based on `ansible_os_family` in chapter 5.
+  4. [#220](https://github.com/geerlingguy/ansible-for-devops/issues/220): Update 'Your first Ansible playbook' example in chapter 2 to use `chrony` instead of `ntp`, and highlight Ansible's syntax possibilities.
+  5. Updated list of tested platforms in Travis CI testing example in chapter 11.
+  6. Mention `ansible-bender` alongside mention of legacy Ansible Container software in Docker example in chapter 13.
+  7. [#101](https://github.com/geerlingguy/ansible-for-devops/issues/101): Describe a modern Ansible testing workflow by move testing content into dedicated chapter, chapter 12, covering `yamllint`, `ansible-lint`, Molecule, and other testing strategies. Also, bump former chapters 12-14 into chapters 13-15.
+  8. [#238](https://github.com/geerlingguy/ansible-for-devops/pull/238): Add `acl` to list of installed dependencies in Drupal installation example to fix permissions error during Drupal installation Composer tasks (thanks to misse!).
 
 ## Version 1.22 (2020-03-20)
 
