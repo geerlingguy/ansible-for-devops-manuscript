@@ -744,12 +744,15 @@ That's all there is to a GitHub Actions workflow! You can add it to your GitHub 
 
 Here's what it looks like when a build runs successfully:
 
-{width=80%}
+{width=100%}
 ![GitHub Actions CI workflow results](images/12-github-actions-ci-workflow.png)
 
 You can also put a 'CI status' badge in your project's README file (or anywhere else!) to see the current build status at a glance. To do so, go to the 'Actions' tab on GitHub, click on the workflow name (in this case, 'CI'), and then click the 'Create status badge' button. It will allow you to choose options for a status badge you can place anywhere to quickly see the workflow's current status.
 
-This example is actively running in this book's GitHub repository: [Ansible for DevOps GitHub Actions CI workflow](https://github.com/geerlingguy/ansible-for-devops/blob/master/.github/workflows/ci.yml).
+{width=80%}
+![A CI status badge displays project health at a glance](images/12-github-actions-ci-badge.png)
+
+The example in this chapter is actively in use in this book's GitHub repository: [Ansible for DevOps GitHub Actions CI workflow](https://github.com/geerlingguy/ansible-for-devops/blob/master/.github/workflows/ci.yml).
 
 ### Automated testing in other CI environments
 
