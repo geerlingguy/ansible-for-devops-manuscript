@@ -288,7 +288,7 @@ If you create a directory structure like the one shown above, with a `main.yml` 
 
 Your roles can live in a couple different places: the default global Ansible role path (configurable in `/etc/ansible/ansible.cfg`), or a `roles` folder in the same directory as your main playbook file.
 
-I> Another simple way to build the scaffolding for a role is to use the command: `ansible-galaxy init role_name`. Running this command creates an example role in the current working directory, which you can modify to suit your needs. Using the `init` command also ensures the role is structured correctly in case you want to someday contribute the role to Ansible Galaxy.
+I> Another simple way to build the scaffolding for a role is to use the command: `ansible-galaxy role init role_name`. Running this command creates an example role in the current working directory, which you can modify to suit your needs. Using the `init` command also ensures the role is structured correctly in case you want to someday contribute the role to Ansible Galaxy.
 
 ### Building your first role
 
@@ -496,7 +496,7 @@ For simple package installation and configuration roles, you can get by with pla
 
 As a rule of thumb, I keep my playbook and role task files under 100 lines of YAML if at all possible. It's easier to keep the entire set of tasks in my head while making changes or fixing bugs. If I start nearing that limit, I usually split the tasks into logical groupings, and include files from the `main.yml` file.
 
-Let's take a look at the way my `geerlingguy.apache` role is set up (it's [available on Ansible Galaxy](https://galaxy.ansible.com/geerlingguy/apache/) and can be downloaded to your roles directory with the command `ansible-galaxy install geerlingguy.apache`; we'll discuss Ansible Galaxy itself later).
+Let's take a look at the way my `geerlingguy.apache` role is set up (it's [available on Ansible Galaxy](https://galaxy.ansible.com/geerlingguy/apache/) and can be downloaded to your roles directory with the command `ansible-galaxy role install geerlingguy.apache`; we'll discuss Ansible Galaxy itself later).
 
 Initially, the role's main `tasks/main.yml` file looked something like the following:
 
@@ -576,17 +576,17 @@ Remember the basic LAMP (Linux, Apache, MySQL and PHP) server we installed earli
 
 {lang="text",linenos="off"}
 ```
-$ ansible-galaxy install geerlingguy.apache geerlingguy.mysql \
-geerlingguy.php
+$ ansible-galaxy role install geerlingguy.apache \
+geerlingguy.mysql geerlingguy.php
 ```
 
-T> The latest version of a role will be downloaded if no version is specified. To specify a version, add the version after the role name, for example: `$ ansible-galaxy install geerlingguy.apache,1.0.0`.
+T> The latest version of a role will be downloaded if no version is specified. To specify a version, add the version after the role name, for example: `$ ansible-galaxy role install geerlingguy.apache,1.0.0`.
 
 I> Ansible Galaxy is still evolving rapidly, and has seen many improvements. There are a few areas where Galaxy could use some improvement (like browsing for roles by Operating System in the online interface, or automatically downloading roles that are included in playbooks), but most of these little bugs or rough spots will be fixed in time. Please check Ansible Galaxy's [About](https://galaxy.ansible.com/intro) page and stay tuned to Ansible's blog for the latest updates.
 
 #### Using role requirements files to manage dependencies
 
-If your infrastructure configuration requires five, ten, fifteen or more Ansible roles, installing them all via `ansible-galaxy install` commands can be exhausting. Additionally, if you host roles internally (e.g. via an internal Git or Mercurial repository), you can't install the roles through Ansible Galaxy. You can, however, pass the `ansible-galaxy` command a "requirements" file with the `-r` option to automatically download all dependencies.
+If your infrastructure configuration requires five, ten, fifteen or more Ansible roles, installing them all via `ansible-galaxy role install` commands can be exhausting. Additionally, if you host roles internally (e.g. via an internal Git or Mercurial repository), you can't install the roles through Ansible Galaxy. You can, however, pass the `ansible-galaxy` command a "requirements" file with the `-r` option to automatically download all dependencies.
 
 Ansible allows a simple `.txt` format that is very basic (though this format is deprecated and may be removed), but you should use the more standard and expressive YAML format, which allows you to install roles from Ansible Galaxy, GitHub, an HTTP download, BitBucket, or your own repository. It also allows you to specify the path into which the roles should be downloaded. An example `requirements.yml` file looks like this:
 
@@ -614,7 +614,7 @@ To install the roles defined in a requirements file, use the command `ansible-ga
 
 ### A LAMP server in nine lines of YAML
 
-With the Apache, MySQL, and PHP roles installed, we can quickly create a LAMP server. This example assumes you already have an Ubuntu-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy install` command above to download the required roles.
+With the Apache, MySQL, and PHP roles installed, we can quickly create a LAMP server. This example assumes you already have an Ubuntu-based linux VM or server booted and can connect to it or run Ansible as a provisioner via Vagrant on it, and that you've run the `ansible-galaxy role install` command above to download the required roles.
 
 First, create an Ansible playbook named `lamp.yml` with the following contents:
 
@@ -652,7 +652,7 @@ Let's grab a couple more roles and build an Apache Solr search server, which req
 
 {lang="text",linenos="off"}
 ```
-$ ansible-galaxy install geerlingguy.java geerlingguy.solr
+$ ansible-galaxy role install geerlingguy.java geerlingguy.solr
 ```
 
 Then create a playbook named `solr.yml` with the following contents:
@@ -678,15 +678,15 @@ You can build a wide variety of servers with minimal effort with existing contri
 
 Some other helpful `ansible-galaxy` commands you might use from time to time:
 
-  - `ansible-galaxy list` displays a list of installed roles, with version numbers
-  - `ansible-galaxy remove [role]` removes an installed role
-  - `ansible-galaxy init` can be used to create a role template suitable for submission to Ansible Galaxy
+  - `ansible-galaxy role list` displays a list of installed roles, with version numbers
+  - `ansible-galaxy role remove [role]` removes an installed role
+  - `ansible-galaxy role init` can be used to create a role template suitable for submission to Ansible Galaxy
 
 You can configure the default path where Ansible roles will be downloaded by editing your `ansible.cfg` configuration file (normally located in `/etc/ansible/ansible.cfg`), and setting a `roles_path` in the `[defaults]` section.
 
 ### Contributing to Ansible Galaxy
 
-If you've been working on some useful Ansible roles, and you'd like to share them with others, all you need to do is make sure they follow Ansible Galaxy's basic template (especially within the `meta/main.yml` and `README.md` files). To get started, use `ansible-galaxy init` to generate a basic Galaxy template, and make your own role match the Galaxy template's structure.
+If you've been working on some useful Ansible roles, and you'd like to share them with others, all you need to do is make sure they follow Ansible Galaxy's basic template (especially within the `meta/main.yml` and `README.md` files). To get started, use `ansible-galaxy role init` to generate a basic Galaxy template, and make your own role match the Galaxy template's structure.
 
 Then push your role up to a new project on GitHub (I usually name my Galaxy roles like `ansible-role-[rolename]`, so I can easily see them when browsing my repos on GitHub), and add a new role while logged into galaxy.ansible.com, under the 'My Content' tab.
 

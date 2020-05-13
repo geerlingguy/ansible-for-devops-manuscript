@@ -612,7 +612,7 @@ As with any role, the easiest way to scaffold the necessary files is using the `
 
 {lang="text",linenos=off}
 ```
-ansible-galaxy init hubot-slack
+ansible-galaxy role init hubot-slack
 ```
 
 You can delete some unneeded role directories, namely `files`, `handlers`, `templates`, `tests`, and `vars`. If you want, fill in the metadata fields inside `meta/main.yml` (this is only needed if you're publishing the role on Ansible Galaxy or if you need to have other roles defined as dependencies, though).

@@ -230,7 +230,9 @@ If you want, test the playbook while you're logged in: `ansible-playbook main.ym
 
 ### Create a Jenkins job to run an Ansible Playbook
 
-With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.test:8080/`, and once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
+With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.test:8080/` and log in with username `admin` and password `admin` (these are the defaults from the `geerlingguy.jenkins` role---you should override these for anything besides local test environments!).
+
+Once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
 
   - Under 'Build Environment', check the 'Color ANSI Console Output' option. This allows Ansible's helpful colored output to pass through the Jenkins console, so it is easier to read during and after the run.
   - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:
