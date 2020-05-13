@@ -23,6 +23,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   15. [#247](https://github.com/geerlingguy/ansible-for-devops/issues/247): Mention 'The Bullhorn' newsletter as a resource for keeping up with the Ansible community in the introduction.
   16. [#251](https://github.com/geerlingguy/ansible-for-devops/issues/251): Removed a wayward parenthesis in chapter 4 (thanks to rechvs!).
   17. [#254](https://github.com/geerlingguy/ansible-for-devops/issues/254): Fixed path to ELK `main.yml` playbook in example in chapter 8 (thanks to mandrews4!).
+  18. Updated book version to 1.23, set latest Ansible version to 2.9.9.
 
 ## Version 1.22 (2020-03-20)
 

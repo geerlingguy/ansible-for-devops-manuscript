@@ -102,7 +102,7 @@ I> ~~~
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.5
+ansible 2.9.9
 ```
 
 ## Creating a basic inventory file {#basic-inventory}
