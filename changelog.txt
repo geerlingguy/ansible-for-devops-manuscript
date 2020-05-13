@@ -15,6 +15,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   7. [#101](https://github.com/geerlingguy/ansible-for-devops/issues/101): Describe a modern Ansible testing workflow by move testing content into dedicated chapter, chapter 12, covering `yamllint`, `ansible-lint`, Molecule, and other testing strategies. Also, bump former chapters 12-14 into chapters 13-15.
   8. [#238](https://github.com/geerlingguy/ansible-for-devops/pull/238): Add `acl` to list of installed dependencies in Drupal installation example to fix permissions error during Drupal installation Composer tasks (thanks to misse!).
   9. [#222](https://github.com/geerlingguy/ansible-for-devops/issues/222): Fix confusing use of playbook instead of 'play' in chapter 4 (thanks to mkrawczuk!).
+  10. [#223](https://github.com/geerlingguy/ansible-for-devops/issues/223): Remove now-removed `--become-user` CLI shortcut `-U` from example in chapter 4 (thanks to mkrawczuk!).
 
 ## Version 1.22 (2020-03-20)
 
