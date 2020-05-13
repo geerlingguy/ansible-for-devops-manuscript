@@ -47,7 +47,7 @@ www1.servercheck.in
 www2.servercheck.in
 
 [servercheck-web:vars]
-ansible_ssh_user=servercheck_svc
+ansible_user=servercheck_svc
 
 [servercheck-db]
 db1.servercheck.in
@@ -68,7 +68,7 @@ ned1.servercheck.in
 ned2.servercheck.in
 
 [servercheck-nodejs:vars]
-ansible_ssh_user=servercheck_svc
+ansible_user=servercheck_svc
 foo=bar
 
 # Server Check.in distribution-based groups.
@@ -182,7 +182,7 @@ Using inventory variables (which will be explored further), and well-constructed
 
 Chapter 5 introduced basic methods of managing variables for individual hosts or groups of hosts through your inventory in the [inventory variables](#inventory-variables) section, but it's worth exploring the different ways of defining and overriding variables through inventory here.
 
-For extremely simple use cases---usually when you need to define one or two connection-related variables (like `ansible_ssh_user` or `ansible_ssh_port`)---you can place variables directly inside an inventory file.
+For extremely simple use cases---usually when you need to define one or two connection-related variables (like `ansible_user` or `ansible_ssh_port`)---you can place variables directly inside an inventory file.
 
 Assuming we have a standalone inventory file for a basic web application, here are some examples of variable definition inside the file:
 
@@ -190,7 +190,7 @@ Assuming we have a standalone inventory file for a basic web application, here a
 ```
 [www]
 # You can define host-specific variables inline with the host.
-www1.example.com ansible_ssh_user=johndoe
+www1.example.com ansible_user=johndoe
 www2.example.com
 
 [db]
@@ -622,7 +622,7 @@ Let's start working our own custom dynamic inventory script by outlining the bas
             "192.168.28.72"
         ],
         "vars": {
-            "ansible_ssh_user": "johndoe",
+            "ansible_user": "johndoe",
             "ansible_ssh_private_key_file": "~/.ssh/mykey",
             "example_variable": "value"
         }
@@ -686,7 +686,7 @@ Run `vagrant up` to boot two VMs running Ubuntu, with the IP addresses `192.168.
 192.168.28.72 host_specific_var=bar
 
 [group:vars]
-ansible_ssh_user=vagrant
+ansible_user=vagrant
 ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
 example_variable=value
 ```
@@ -735,7 +735,7 @@ class ExampleInventory(object):
             'group': {
                 'hosts': ['192.168.28.71', '192.168.28.72'],
                 'vars': {
-                    'ansible_ssh_user': 'vagrant',
+                    'ansible_user': 'vagrant',
                     'ansible_ssh_private_key_file':
                         '~/.vagrant.d/insecure_private_key',
                     'ansible_python_interpreter':
@@ -778,7 +778,7 @@ Run the inventory script manually to verify it returns the proper JSON response 
 ```
 $ ./inventory.py --list
 {"group": {"hosts": ["192.168.28.71", "192.168.28.72"], "vars":
-{"ansible_ssh_user": "vagrant", "ansible_ssh_private_key_file":
+{"ansible_user": "vagrant", "ansible_ssh_private_key_file":
 "~/.vagrant.d/insecure_private_key", "example_variable": "value
 "}}, "_meta": {"hostvars": {"192.168.28.72": {"host_specific_va
 r": "bar"}, "192.168.28.71": {"host_specific_var": "foo"}}}}
@@ -845,7 +845,7 @@ function example_inventory() {
     'group' => [
       'hosts' => ['192.168.28.71', '192.168.28.72'],
       'vars' => [
-        'ansible_ssh_user' => 'vagrant',
+        'ansible_user' => 'vagrant',
         'ansible_ssh_private_key_file' => '~/.vagrant.d/\
 insecure_private_key',
         'ansible_python_interpreter' => '/usr/bin/python3',

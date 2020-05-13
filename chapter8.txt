@@ -521,7 +521,7 @@ Vagrant.configure("2") do |config|
       ansible.inventory_path = "inventories/vagrant/inventory"
       ansible.limit = "all"
       ansible.extra_vars = {
-        ansible_ssh_user: 'vagrant',
+        ansible_user: 'vagrant',
         ansible_ssh_private_key_file: \
 "~/.vagrant.d/insecure_private_key"
       }
@@ -537,7 +537,7 @@ Most of the Vagrantfile is straightforward, and similar to other examples used i
 ansible.inventory_path = "inventories/vagrant/inventory"
 ansible.limit = "all"
 ansible.extra_vars = {
-  ansible_ssh_user: 'vagrant',
+  ansible_user: 'vagrant',
   ansible_ssh_private_key_file: "~/.vagrant.d/insecure_private_key"
 }
 ```
@@ -647,7 +647,7 @@ We loop through all the defined `droplets` using `with_items: droplets`, and aft
         groups: "do,{{ droplets[item.0].group }},\
     {{ item.1.droplet.name }}"
         # You can dynamically add inventory variables per-host.
-        ansible_ssh_user: root
+        ansible_user: root
         mysql_replication_role: >
           "{{ 'master' if (item.1.droplet.name == 'a4d.lamp.db.1')
           else 'slave' }}"
@@ -870,7 +870,7 @@ Each provisioned instance will have its metadata added to the registered `create
         name: "{{ item.1.tagged_instances.0.public_ip }}"
         groups: "aws,{{ item.1.item.group }},{{ item.1.item.name }}"
         # You can dynamically add inventory variables per-host.
-        ansible_ssh_user: ec2-user
+        ansible_user: ec2-user
         mysql_replication_role: >
           {{ 'master' if (item.1.item.name == 'a4d.lamp.db.1')
           else 'slave' }}
@@ -900,7 +900,7 @@ The final steps in provisioning the EC2 instances are to ensure we can connect t
       become: yes
 ```
 
-Since we defined `ansible_ssh_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs explicitly with `sudo` by adding `become: yes`.
+Since we defined `ansible_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs explicitly with `sudo` by adding `become: yes`.
 
 Now, modify the `provision.yml` file in the root of the project folder and change the provisioners import to look like the following:
 
@@ -1362,7 +1362,7 @@ Create the `inventory` file to help Ansible connect to the two servers:
 192.168.29.3
 
 [gluster:vars]
-ansible_ssh_user=vagrant
+ansible_user=vagrant
 ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
 ```
 
