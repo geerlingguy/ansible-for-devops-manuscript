@@ -967,7 +967,7 @@ Just like our previous example, we're going to let a few roles from Ansible Gala
 
 In this example, I'm going to highlight the important parts rather than walk through each role and variable in detail. Then I'll show how you can use this base server to aggregate logs, then how to point other servers' log files to the central server using Filebeat.
 
-Here's our main playbook, saved as `provisioning/elk/playbook.yml`:
+Here's our main playbook, saved as `provisioning/elk/main.yml`:
 
 {lang="yaml"}
 ```
