@@ -453,7 +453,7 @@ Initialized scenario in ~/playbook/molecule/default successfully.
 
 Since we're going to test a playbook and not a role, we need to clean up some files and make a few changes.
 
-Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, and delete the existing `tasks:` section. Make the playbook prepare the environment, then run the `main.yml` playbook:
+Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, and delete the existing `tasks:` section. Make the Converge play prepare the environment in its `tasks:` section, then run the `main.yml` playbook by importing it:
 
 {lang="yaml"}
 ```
@@ -496,7 +496,9 @@ not find the requested service httpd: "}
     instance  : ok=5  changed=2  unreachable=0  failed=1  skipped=1
 ```
 
-This playbook is pretty simple, and it doesn't seem like there are any errors with it. We should debug this problem by logging into the test environment, and checking out what's wrong with the `httpd` service:
+Uh oh, something definitely went wrong if the Apache service can't be found!
+
+This playbook is pretty simple, though, and it doesn't seem like there are any errors with it. We should debug this problem by logging into the test environment, and checking out what's wrong with the `httpd` service:
 
 {lang="none",linenos=off}
 ```
@@ -505,9 +507,9 @@ $ molecule login
 Failed to get D-Bus connection: Operation not permitted
 ```
 
-Ah, it looks like systemd is not working properly. And, rather than lead you down a rabbit hole of trying to debug systemd inside a Docker container, and how to get everything working properly so you can test services running inside containers, I'll skip to the end and show you how I test my playbooks without running into systemd issues.
+Ah, it looks like systemd is not working properly. And, rather than lead you down a rabbit hole of trying to debug systemd inside a Docker container, and how to get everything working properly so you can test services running inside containers, I'll skip to the end and show you how I test my playbooks correctly when they manage services like `httpd`.
 
-Go ahead and exit the running instance, and destroy it:
+First, clean up the existing environment by exiting the running instance and destroying it:
 
 {lang="none",linenos=off}
 ```
@@ -525,7 +527,7 @@ We also want to test Debian in addition to the default `centos` container Molecu
 ```
 platforms:
   - name: instance
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos8}-ansible:latest"
     command: ""
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
@@ -535,16 +537,16 @@ platforms:
 
 This configuration makes four changes to the default Molecule file: one change (the `image`), and three additions:
 
-  - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-centos7}` in the image name. This will allow substitution for other distros, like Debian, later.
-  - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured command, which starts the systemd init system and keeps the container running.
+  - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-centos8}` in the image name. This will allow substitution for other distros, like Debian, later.
+  - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured `COMMAND`, which in this case starts the systemd init system and keeps the container running.
   - Add a necessary volume mount to allow processes to be managed inside the container.
   - Set the `privileged` flag on the container, so systemd can initialize properly.
 
-W> The `privileged` flag should be used with care; don't run Docker images or software you don't trust using `privileged`, because that mode allows software running inside the Docker image to run as if it were running on the host machine directly, bypassing many of the security benefits to running in containers. It is convenient but potentially dangerous. If necessary, consider maintaining your own testing container images if you need to run with `privileged` and wish to test with Docker.
+W> The `privileged` flag should be used with care; don't run Docker images or software you don't trust using `privileged`, because that mode allows software running inside the Docker image to run as if it were running on the host machine directly, bypassing many of the security benefits of using containers. It is convenient but potentially dangerous. If necessary, consider maintaining your own testing container images if you need to run with `privileged` and wish to test with Docker.
 
 Now, if you run `molecule converge` or `molecule test`, the entire playbook should succeed, and idempotence should also pass.
 
-The last step is to make sure the playbook also runs correctly on Debian-based systems. Since there exists a `geerlingguy/docker-debian10-ansible` container (see a full list of the Docker Ansible test containers I maintain here), you can run the Molecule tests under that operating system as well:
+The last step is to make sure the playbook also runs correctly on Debian-based systems. Since there exists a `geerlingguy/docker-debian10-ansible` container (see a full list of the [Docker Ansible test containers I maintain](https://ansible.jeffgeerling.com/#container-images-testing)), you can run the Molecule tests under that operating system as well:
 
 {lang="none",linenos=off}
 ```
@@ -558,7 +560,7 @@ $ MOLECULE_DISTRO=debian10 molecule test
 
 #### Verifying a playbook with Molecule
 
-Let's add one final test addition: something to validate Apache is actually serving web traffic correctly! Open the `verify.yml` playbook, and add a task to check that Apache is serving web traffic successfully:
+Let's add one more thing: validation that Apache is actually serving web traffic! Open the `verify.yml` playbook, and add a task to check whether Apache serves web traffic:
 
 {lang="yaml"}
 ```
@@ -588,7 +590,7 @@ $ molecule test
 
 When developing or debugging with Molecule, you can run _only_ the verify step using `molecule verify`.
 
-As I've stated earlier, a test like this might be even better to include in the actual Ansible playbook _itself_, so the test is always run as part of your automation. But the structure of your tests may dictate adding extra validation into Molecule's `validate.yml` playbook, like we did here.
+As I've stated earlier, you could put this test in the Ansible playbook _itself_, so the test is always run as part of your automation. But the structure of your tests may dictate adding extra validation into Molecule's `validate.yml` playbook, like we did here.
 
 #### Adding lint configuration to Molecule
 
@@ -608,7 +610,7 @@ Now you can run all configured lint tools with `molecule lint`, instead of runni
 
 ### Molecule Summary
 
-Molecule is a simple but flexible tool used for testing Ansible roles, playbooks, and collections. The options presented in these examples are only a small subset of what's possible using Molecule. Later, we will configure Molecule to test a role using Continuous Integration, to display how easy it is to make sure all your infrastructure code is well tested, all the time.
+Molecule is a simple but flexible tool used for testing Ansible roles, playbooks, and collections. The options presented in these examples are only a small subset of what's possible using Molecule. Later, we'll configure Molecule to test a role using Continuous Integration, to help your playbooks always be tested and working.
 
 You can find a complete example of this Molecule playbook configuration in this book's GitHub repository: [Molecule Example](https://github.com/geerlingguy/ansible-for-devops/tree/master/molecule).
 
@@ -641,7 +643,7 @@ W> If you've never run a playbook with `--check` on an existing production insta
 
 GitHub Actions is one of many Continuous Integration (CI) and Continuous Deployment (CD) tools. Others like it include Travis CI, Circle CI, Drone, Jenkins, and Zuul.
 
-I often choose to use the CI tool with the least amount of friction when integrating with my source repository, and because much of my code is hosted on GitHub, GitHub Actions is the easiest to implement! But if you use a platform like GitLab, you might find it easier to use GitLab CI.
+I often choose to use the CI tool with the least amount of friction when integrating with my source repository, and because much of my code is hosted on GitHub, GitHub Actions is the easiest to implement! But if, for example, you use GitLab, it would be easier to use GitLab CI.
 
 Following GitHub Actions' setup guide, the first step in setting up an Actions workflow is to [create a workflow file in your repository](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#creating-a-workflow-file).
 
@@ -681,7 +683,7 @@ The first thing you should do in a GitHub Actions workflow is define when the wo
 
 I> The syntax options for the `on` property and everything else you can put in a workflow are available in GitHub's documentation: [Workflow syntax for GitHub Actions](https://help.github.com/en/articles/workflow-syntax-for-github-actions).
 
-Next, you define a list of `jobs` to run in the workflow. There are a lot of similarities between GitHub Actions and Ansible playbooks, which means I often have to refer back to GitHub's documentation to make sure I'm not mixing up my syntaxes!
+Next, you define a list of `jobs` to run in the workflow.
 
 {lang="yaml",starting-line-number=9}
 ```
@@ -749,7 +751,7 @@ Here's what it looks like when a build runs successfully:
 
 You can also put a 'CI status' badge in your project's README file (or anywhere else!) to see the current build status at a glance. To do so, go to the 'Actions' tab on GitHub, click on the workflow name (in this case, 'CI'), and then click the 'Create status badge' button. It will allow you to choose options for a status badge you can place anywhere to quickly see the workflow's current status.
 
-{width=80%}
+{width=60%}
 ![A CI status badge displays project health at a glance](images/12-github-actions-ci-badge.png)
 
 The example in this chapter is actively in use in this book's GitHub repository: [Ansible for DevOps GitHub Actions CI workflow](https://github.com/geerlingguy/ansible-for-devops/blob/master/.github/workflows/ci.yml).
@@ -766,21 +768,23 @@ This style of testing is integrated into many of my Ansible projects; here are a
   - https://github.com/geerlingguy/ansible-collection-k8s
   - https://github.com/ansible-collections/community.kubernetes
 
-## Functional testing using serverspec
+## Functional testing using serverspec or testinfra
 
 [Serverspec](http://serverspec.org/) is a tool to help automate server tests using RSpec tests, which use a Ruby-like DSL to ensure your server configuration matches your expectations. In a sense, it's another way of building well-tested infrastructure.
 
-Serverspec tests can be run locally, via SSH, through Docker's APIs, or through other means, without the need for an agent installed on your servers, so it's a lightweight tool for testing your infrastructure (just like Ansible is a lightweight tool for _managing_ your infrastructure).
+[Testinfra](https://testinfra.readthedocs.io/en/latest/) is a very similar tool, written in Python with a Python-based DSL.
 
-There's a lot of debate over whether well-written Ansible playbooks themselves (especially along with the dry-run `--check` mode, and Molecule for CI) are adequate for well-tested infrastructure, but many teams are more comfortable maintaining infrastructure tests in Serverspec instead (especially if the team is already familiar with how Serverspec and Rspec works!).
+Serverspec and Testinfra tests can be run locally, via SSH, through Docker's APIs, or through other means, without the need for an agent installed on your servers, so they're lightweight tools for testing your infrastructure (just like Ansible is a lightweight tool for _managing_ your infrastructure).
+
+There's a lot of debate over whether well-written Ansible playbooks themselves (especially along with the dry-run `--check` mode, and Molecule for CI) are adequate for well-tested infrastructure, but many teams are more comfortable maintaining infrastructure tests separately (especially if the team is already familiar with another tool!).
 
 Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for the same task, isn't that a good enough test your server is configured correctly?
 
-This book will not provide a detailed guide for using Serverspec with your Ansible-managed servers, but here are a few resources in case you'd like to use it:
+This book will not provide a detailed guide for using Serverspec or Testinfra, but here are a few resources in case you'd like to use one of them:
 
   - [A brief introduction to server testing with Serverspec](https://www.debian-administration.org/article/703/A_brief_introduction_to_server-testing_with_serverspec)
-  - [Testing Ansible Roles with Test Kitchen, Serverspec and RSpec](https://www.slideshare.net/MartinEtmajer/testing-ansible-roles-with-test-kitchen-serverspec-and-rspec-48185017)
   - [Testing infrastructure with serverspec](https://vincent.bernat.ch/en/blog/2014-serverspec-test-infrastructure)
+  - [Molecule's testinfra verifier configuration](https://molecule.readthedocs.io/en/latest/configuration.html#testinfra)
 
 ## Summary
 
