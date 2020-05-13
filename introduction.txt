@@ -46,6 +46,7 @@ We'll explore all aspects of using Ansible to provision and manage your infrastr
 
   - [Ansible Documentation](https://docs.ansible.com/ansible/) - Covers all Ansible options in depth. There are few open source projects with documentation as clear and thorough.
   - [Ansible Glossary](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html) - If there's ever a term in this book you don't seem to fully understand, check the glossary.
+  - [The Bullhorn](https://us19.campaign-archive.com/home/?u=56d874e027110e35dea0e03c1&id=d6635f5420) - Ansible's official newsletter.
   - [Ansible Mailing List](https://groups.google.com/forum/#!forum/ansible-project) - Discuss Ansible and submit questions with Ansible's community via this Google group.
   - [Ansible on GitHub](https://github.com/ansible/ansible) - The official Ansible code repository, where the magic happens.
   - [Ansible Example Playbooks on GitHub](https://github.com/ansible/ansible-examples) - Many examples for common server configurations.

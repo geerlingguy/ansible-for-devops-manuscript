@@ -20,6 +20,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   12. [#226](https://github.com/geerlingguy/ansible-for-devops/issues/226): Mention the default login credentials in chapter 11's Jenkins example (thanks to lustoerk!).
   13. [#227](https://github.com/geerlingguy/ansible-for-devops/issues/227): Start using `ansible-galaxy role` instead of bare `ansible-galaxy` when running role-related commands in chapter 6, in preparation for Ansible 2.10 and beyond (thanks to thescouser89!).
   14. [#230](https://github.com/geerlingguy/ansible-for-devops/issues/230): Replace instances of `ansible_ssh_user` with `ansible_user`.
+  15. [#247](https://github.com/geerlingguy/ansible-for-devops/issues/247): Mention 'The Bullhorn' newsletter as a resource for keeping up with the Ansible community in the introduction.
 
 ## Version 1.22 (2020-03-20)
 
