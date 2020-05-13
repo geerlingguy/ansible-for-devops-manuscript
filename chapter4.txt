@@ -111,7 +111,7 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
   1. The first line, `---`, is how we mark this document as using YAML syntax (like using `<html>` at the top of an HTML document, or `<?php` at the top of a block of PHP code).
   2. The second line, `- hosts: all` defines the first (and in this case, only) _play_, and tells Ansible to run the play on `all` hosts that it knows about.
   3. The third line, `become: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
-  4. The fifth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this playbook.
+  4. The fifth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this play.
   5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the task that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=present"... but if you drop the name line completely, that won't cause any problem.
 
      - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the list of packages we provide. We tell yum to make sure the packages are installed with `state: present`, but we could also use `state: latest` to ensure the latest version is installed, or `state: absent` to make sure the packages are *not* installed.
