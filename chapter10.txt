@@ -146,7 +146,7 @@ Linux's `sudo` allows you (or other users) to run certain commands with root pri
 
 Using sudo also forces you to be more explicit when performing certain actions with security implications, which is always a good thing. You don't want to accidentally delete a necessary file, or turn off a required service, which is easy to do if you're root.
 
-In Ansible, it's preferred you log into the remote server with a normal or admin-level system account, and use the `sudo` parameter with a value of `yes` with any play or playbook include requiring elevated privileges. For example, if restarting Apache requires elevated privileges, you would write the play like so:
+In Ansible, it's preferred you log into the remote server with a normal or admin-level system account, and use the `become` parameter with a value of `yes` with any task, role, include, or playbook requiring elevated privileges. For example, if restarting Apache requires elevated privileges, you would write the task like so:
 
 {lang="yaml",linenos=off}
 ```
