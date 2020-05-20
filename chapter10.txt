@@ -201,13 +201,12 @@ If you're not actively using a piece of software, or there's an obsolete cron ta
 ```
 - name: Remove unused packages.
   apt:
-    name: "{{ item }}"
+    name:
+      - apache2
+      - nano
+      - mailutils
     state: absent
     purge: yes
-  with_items:
-    - apache2
-    - nano
-    - mailutils
 ```
 
 With modules like `yum`, `apt`, `file`, and `mysql_db`, a `state=absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
