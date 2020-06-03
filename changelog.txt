@@ -8,6 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   1. Adjust apt `name` parameter to take list of packages to ensure are removed in example in chapter 10.
   2. Fix some confusing language around plays and tasks in 'use `sudo`' section in chapter 10.
+  3. [#280](https://github.com/geerlingguy/ansible-for-devops/issues/280) Adjust json line in Python dynamic inventory file in chapter 7 to be compatible with Python 3.
 
 ## Version 1.23 (2020-05-13)
 
