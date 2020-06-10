@@ -910,7 +910,9 @@ Create another playbook alongside `provision.yml` called `deploy.yml`, with the 
       with_items: "{{ groups.balancer }}"
 
   tasks:
-    - debug: msg="Deployment would be done here."
+    - name: Wait a short time to simulate a deployment.
+      pause:
+        seconds: 20
 
   post_tasks:
     - name: Wait for backend to come back up.
@@ -942,7 +944,7 @@ Run the playbook on the local infrastructure with the following command:
 $ ansible-playbook -i inventory playbooks/deploy.yml
 ```
 
-It should only take a few seconds to run, and once it's finished, all the servers should be back in the mix for the load balancer. If you want to quickly confirm the deployment playbook is working as it should, add a task which always fails, immediately following the `debug` task:
+It take a minute or so to run, and once it's finished, all the servers should be back in the mix for the load balancer. If you want to quickly confirm the deployment playbook is working as it should, add a task which always fails, immediately following the `debug` task:
 
 {lang="yaml",starting-line-number=15}
 ```
