@@ -151,6 +151,10 @@ TODO.
 10/1/18 - https://www.jeffgeerling.com/blog/2018/things-i-learned-ansiblefest-austin-2018-contributors-summit
 9/11/19 - https://groups.google.com/forum/#!searchin/ansible-project/collections|sort:date/ansible-project/iUthSqwDnAk/OD26q-tuAQAJ
 
+## The Anatomy of a Collection
+
+TODO.
+
 ## Putting our Plugin into a Collection
 
 TODO.
@@ -165,10 +169,10 @@ TODO.
 
 {lang="text",linenos=off}
 ```
- ___________________________________
-/ A pint of sweat saves a gallon of \
-\ blood. (General Patton)           /
- -----------------------------------
+ ____________________________________
+/ Clarity is better than cleverness. \
+\ (Eric S. Raymond)                  /
+ ------------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\
