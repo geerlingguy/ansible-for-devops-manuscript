@@ -1,275 +1,595 @@
-# Chapter 11 - Automating Your Automation with Ansible Tower and CI/CD
+# Chapter 11 - Server Security and Ansible {#chapter-10}
 
-At this point, you should be able to convert almost any bit of your infrastructure's configuration into Ansible playbooks, roles, and inventories.
+The first configuration to be performed on any new server---especially any server with any exposure (direct or indirect) to the public Internet)---is security configuration.
 
-All the examples in this book use Ansible's CLI to run playbooks and report back the results. For smaller teams, especially when everyone on the team is well-versed in how to use Ansible, YAML syntax, and security best practices, using the CLI is a sustainable approach.
+There are nine basic measures to ensure servers are secure from unauthorized access or intercepted communications:
 
-But for many organizations, basic CLI use is inadequate:
+  1. Use secure and encrypted communication.
+  2. Disable root login and use `sudo`.
+  3. Remove unused software, open only required ports.
+  4. Use the principle of least privilege.
+  5. Update the OS and installed software.
+  6. Use a properly-configured firewall.
+  7. Make sure log files are populated and rotated.
+  8. Monitor logins and block suspect IP addresses.
+  9. Use SELinux (Security-Enhanced Linux).
 
-  - The business needs detailed reporting of infrastructure deployments and failures, especially for audit purposes.
-  - Team-based infrastructure management requires varying levels of involvement in playbook management, inventory management, and key and password access.
-  - A thorough visual overview of the current and historical playbook runs and server health helps identify potential issues before they affect the bottom line.
-  - Playbook scheduling ensures infrastructure remains in a known state.
+Your infrastructure is as weak as the weakest server; in many high-profile security breaches, one poorly-secured server acts as a gateway into the rest of the network. Don't let your servers be *those* servers! Good security also helps you achieve the holy grail of system administration---100% uptime.
 
-[Ansible Tower](https://www.ansible.com/products/tower) fulfills these requirements---and many more---and provides a great mechanism for team-based Ansible usage.
+In this chapter, you'll learn about Linux security and how Ansible helps secure your servers, following the basic topics above.
 
-Ansible Tower is part of Red Hat's Ansible Automation Platform, but it is built from an open source upstream project, [AWX](https://github.com/ansible/awx). AWX was open-sourced in 2017, shortly after Red Hat acquired Ansible.
+## A brief history of SSH and remote access
 
-W> While AWX and Tower are quite similar, AWX is updated much more frequently, with fewer guarantees about upgrade compatibility. If you are able and willing to keep up with AWX's releases, and support its deployment on your own, it is perfectly adequate for many use cases. Ansible Tower is part of Red Hat's broader subscription-based Ansible Automation Platform, and has better support.
+In the beginning, computers were the size of large conference rooms. A punch card reader would merrily accept pieces of paper with instructions the computer would run, and then a printer would etch the results into another piece of paper. Thousands of mechanical parts worked harmoniously (when they *did* work) to compute relatively simple commands.
 
-While this book includes a brief overview of Tower, it is highly recommended you read through the extensive [Tower User Guide](https://docs.ansible.com/ansible-tower/latest/html/userguide/index.html), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
+As time progressed, computers became somewhat smaller, and interactive terminals became more user-friendly, but they were still wired directly into the computer being used. Mainframes came to the fore in the 1960s, originally used via typewriter and teletype interfaces, then via keyboards and small text displays. As networked computing became more mainstream in the 1970s and 1980s, remote terminal access was used to interact with the large central computers.
 
-### Getting and Installing Ansible Tower
+The first remote terminal interfaces assumed a high level of trust between the central computer and all those on the network, because the small, centralized networks used were physically isolated from one another.
 
-W> The information in this chapter is a bit outdated as of 2020, and is being rewritten to use a more recent version of Tower. Please follow [this issue in the book's repository](https://github.com/geerlingguy/ansible-for-devops/issues/212) for progress.
+### Telnet
 
-Ansible has a very thorough [Ansible Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which details the installation and configuration of Ansible Tower. For the purposes of this chapter, since we just want to download and try out Tower locally, we are going to use Ansible's official Vagrant box to quickly build an Ansible Tower VM.
+In the late 1960s, the Telnet protocol was defined and started being used over TCP networks (normally on port 23) for remote control over larger private networks, and eventually the public Internet.
 
-Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then create a directory (e.g. `tower`) and do the following within the directory:
+Telnet's underlying technology (a text-based protocol to transfer data between different systems) was the basis for many foundational communications protocols in use today, including HTTP, FTP, and POP3. However, plain text streams are not secure, and even with the addition of TLS and SASL, Telnet was never very secure by default. With the advent of SSH (which we'll get to in a bit), the protocol has declined in popularity for most remote administration purposes.
+
+Telnet still has uses like configuring devices over local serial connections, or checking if a particular service is operating correctly on a remote server (like an HTTP server on port 80, mysql on port 3306, or munin on port 4949), but it is not installed by default on modern Linux distributions.
+
+W> Plain text communications over a network are only as secure as the network's weakest link. In the early days of computer networking, networks were usually isolated to a specific company or educational institution, so transmitting things like passwords or secrets in plain text using the TCP protocol wasn't such a bad idea. Every part of the network (cabling, switches, and routers) was contained inside a secured physical perimeter. When connections started moving to the public Internet, this changed.
+W>
+W> TCP packets can be intercepted over the Internet, at any point between the client and server, and these packets can easily be read if not encrypted. Therefore, plain text protocols are highly insecure, and should never be used to transmit sensitive information or system control data. Even on highly secure networks with properly-configured firewalls, it's a bad idea to use insecure communication methods like plain text rlogin and telnet connections for authentication and remote control.
+W>
+W> Try running `traceroute google.com` in your terminal. Look at each of the hops between you and Google's CDN. Do you know who controls each of the devices between your computer and Google? Do you trust these operators with all of your personal or corporate secrets? Probably not. Each of these connection points---and each network device and cable connecting them---is a weak point exposing you to a man-in-the-middle attack. Strong encryption is needed between your computer and the destination if you want to ensure data security.
+
+### rlogin, rsh and rcp
+
+`rlogin` was introduced in BSD 4.2 in 1983, and has been distributed with many UNIX-like systems alongside Telnet until recently. rlogin was used widely during the 80s and much of the 90s.
+
+Just like Telnet, a user could log into the remote system with a password, but rlogin additionally allowed automatic (passwordless) logins for users on trusted remote computers. rlogin also worked better than telnet for remote administration, as it worked correctly with certain characters and commands where telnet required extra translation.
+
+However, like Telnet, rlogin still used plain text communications over TCP port 513 by default. rlogin also didn't have many safeguards against clients spoofing their true identities. Some of rlogin's intrinsic flaws were highlighted in a 1998 report by Carnegie Mellon, [rlogin: The Untold Story](http://resources.sei.cmu.edu/asset_files/TechnicalReport/1998_005_001_16670.pdf).
+
+`rsh` ("remote shell") is a command line program used alongside rlogin to execute individual shell commands remotely, and `rcp` ("remote copy") is used for remote file copies. `rsh` and `rcp` inherited the same security problems as rlogin, since they use the same connection method (over different ports).
+
+### SSH
+
+Secure Shell was created in 1995 by Finland native Tatu Ylönen, in response to a [password-sniffing attack](http://en.wikipedia.org/wiki/Secure_Shell#Version_1.x) at his university. Seeing the flaws in plain text communication for secure information, Tatu created Secure Shell/SSH with a strong emphasis on encryption and security.
+
+His version of SSH was developed for a few years as freeware with liberal licensing, but as his [SSH Communications Security Corporation](http://www.ssh.com/) began limiting the license and commercializing SSH, alternative forks began to gain in popularity. The most popular fork, OSSH, by Swedish programmer Bjoern Groenvall, was chosen as a starting point by some developers from the OpenBSD project.
+
+OpenBSD was (and still is!) a highly secure, free version of BSD UNIX, and the project's developers needed a secure remote communication protocol, so a few project members worked to [clean up and improve OSSH](http://www.openbsd.org/openssh/history.html) so it could be included in OpenBSD's 2.6 release in December 1999. From there, it was quickly ported and adopted for all major versions of Linux, and is now ubiquitous in the world of POSIX-compliant operating systems.
+
+How does SSH work, and what makes it better than telnet or rlogin? It starts with the basic connection. SSH connection encryption works similarly to SSL for secure HTTP connections, but its authentication layer adds more security:
+
+  1. When you enter `ssh user@example.host` to connect to the `example.host` server as `user`, your client and the host exchange keys.
+  2. If you're connecting to a host the first time, or if the host's key has changed since last time you connected (this happens often when connecting via DNS rather than directly by IP), SSH will prompt you for your approval of the host key.
+  3. If you have a private key in your `~/.ssh` folder matching one of the keys in `~/.ssh/authorized_keys` on the remote system, the connection continues to step 4. Otherwise, if password authentication is allowed, SSH prompts you for your password. There are other authentication methods as well, such as Kerberos, but they are less common and not covered in this book.
+  4. The transferred key is used to create a session key used for the remainder of the connection, encrypting all communication with a cipher such as AES, 3DES, Blowfish or RC4 ('arcfour').
+  5. The connection remains encrypted and persists until you exit out of the remote connection (in the case of an interactive session), or until the operation being performed (an `scp` or `sftp` file transfer, for example) is complete.
+
+SSH uses encrypted keys to identify the client and host (which adds a layer of security over `telnet` and `rlogin`'s defaults), and then sets up a per-session encrypted channel for further communication. This same connection method is used for interactive `ssh` sessions, as well as for services like:
+
+  - `scp` (secure copy), SSH's counterpart to rlogin's `rcp`.
+  - `sftp` (secure FTP), SSH's client/server file transfer protocol.
+  - SSH port forwarding (so you can run services securely over remote servers).
+  - SSH X11 forwarding (so you can use X windows securely).
+
+(A full list of features is available on OpenBSD's site: [OpenSSH Features](http://www.openbsd.org/openssh/features.html)).
+
+The full suite of SSH packages also includes helpful utilities like `ssh-keygen`, which generates public/private key pairs suitable for use when connecting via SSH. You can also install the utility `ssh-copy-id`, which speeds up the process of manually adding your identity file to a remote server.
+
+SSH is fairly secure by default---certainly more so than telnet or rlogin's default configuration---but for even greater security, there are a few extra settings you should use (all of these settings are configured in `/etc/ssh/sshd_config`, and require a restart of the `sshd` service to take effect):
+
+  1. **Disable password-based SSH authentication.** Even though passwords are not sent in the clear, disabling password-based authentication makes it impossible for brute-force password attacks to even be *attempted*, even if you have the additional (and recommended) layer of something like Fail2Ban running. Set `PasswordAuthentication no` in the configuration.
+  2. **Disable root account remote login.** You shouldn't log in as the root user regardless (use `sudo` instead), but to reinforce this good habit, disable remote root user account login by setting `PermitRootLogin no` in the configuration. If you need to perform actions as root, either use `sudo` (preferred), or if it's absolutely necessary to work interactively as root, login with a normal account, then `su` to the root account.
+  3. **Explicitly allow/deny SSH for users.** Enable or disable SSH access for particular users on your system with `AllowUsers` and `DenyUsers`. To allow only 'John' to log in, the rule would be `AllowUsers John`. To allow any user *except* John to log in, the rule would be `DenyUsers John`.
+  4. **Use a non-standard port.** Change the default SSH port from 22 to something more obscure, like 2849, and prevent thousands of 'script kiddie' attacks that look for servers responding on port 22. While security through obscurity is no substitute for actually securing SSH overall, it provides a slight extra layer of protection. To change the port, set `Port [new-port-number]` in the configuration.
+
+We'll cover how to configure some of these particular options in SSH in the next section.
+
+### The evolution of SSH and the future of remote access
+
+It has been over a decade since OpenSSH became the *de facto* standard of remote access protocols, and since then Internet connectivity has changed dramatically. For reliable, low-latency LAN and Internet connections, SSH is still the king due to its simplicity, speed, and security. But in high-latency environments (think 3G or 4G mobile network connections, or satellite uplinks), using SSH is often a painful experience.
+
+In some circumstances, just *establishing a connection* takes time. Additionally, once connected, the delay inherent in SSH's TCP interface (where every packet must reach its destination and be acknowledged before further input will be accepted) means entering commands or viewing progress over a high-latency connection is an exercise in frustration.
+
+[Mosh](https://www.usenix.org/system/files/conference/atc12/atc12-final32.pdf), "the mobile shell", a new alternative to SSH, uses SSH to establish an initial connection, then synchronizes the following local session with a remote session on the server via UDP.
+
+Using UDP instead of TCP requires Mosh to do a little extra behind-the-scenes work to synchronize the local and remote sessions (instead of sending all local keystrokes over the wire serially via TCP, then waiting for stdout and stderr to be returned, like SSH).
+
+Mosh also promises better UTF-8 support than SSH, and is well supported by all the major POSIX-like operating systems (it even runs inside Google Chrome!).
+
+It will be interesting to see where the future leads with regard to remote terminal access, but one thing is for sure: Ansible will continue to support the most secure, fast, and reliable connection methods to help you build and manage your infrastructure!
+
+## Use secure and encrypted communication
+
+We spent a lot of time discussing SSH's heritage and the way it works because it is, in many ways, the foundation of a secure infrastructure---in almost every circumstance, you will allow SSH remote access for your servers, so it's important you know how it works, and how to configure it to ensure you always administer the server securely, over an encrypted connection.
+
+Let's look at the security settings configured in `/etc/ssh/sshd_config` (mentioned earlier), and how to control them with Ansible.
+
+For our secure server, we want to disable password-based SSH authentication (make sure you can already log in via your SSH key before you do this!), disable remote root login, and change the port over which SSH operates. Let's do it!
+
+{lang="yaml"}
+```
+---
+- hosts: example
+  tasks:
+    - name: Update SSH configuration to be more secure.
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      with_items:
+        - regexp: "^PasswordAuthentication"
+          line: "PasswordAuthentication no"
+        - regexp: "^PermitRootLogin"
+          line: "PermitRootLogin no"
+        - regexp: "^Port"
+          line: "Port 2849"
+      notify: restart ssh
+
+  handlers:
+    # Note: Use 'sshd' for Red Hat and its derivatives.
+    - name: restart ssh
+      service: name=ssh state=restarted
+```
+
+In this extremely simple playbook, we set three options in SSH configuration (`PasswordAuthentication no`, `PermitRootLogin no`, and `Port 2849`) using Ansible's `lineinfile` module, then use a handler we define in the `handlers` section to restart the ssh service.
+
+W> If you change certain SSH settings, like the port for SSH, you need to make sure Ansible's inventory is updated. You can explicitly define the SSH port for a host with the option `ansible_ssh_port`, and the local path to a private key file (identity file) with `ansible_ssh_private_key_file`, though Ansible uses keys defined by your `ssh-agent` setup, so typically a manual definition of the key file is not required.
+
+## Disable root login and use `sudo`
+
+We've already disabled root login with Ansible's `lineinfile` module in the previous section, but we'll cover a general Linux best practice here: don't use the root account if you don't absolutely need to use it.
+
+Linux's `sudo` allows you (or other users) to run certain commands with root privileges (by default---you can also run commands as another user), ensuring you can perform actions needing elevated privileges without requiring you to be logged in as root (or another user).
+
+Using sudo also forces you to be more explicit when performing certain actions with security implications, which is always a good thing. You don't want to accidentally delete a necessary file, or turn off a required service, which is easy to do if you're root.
+
+In Ansible, it's preferred you log into the remote server with a normal or admin-level system account, and use the `become` parameter with a value of `yes` with any task, role, include, or playbook requiring elevated privileges. For example, if restarting Apache requires elevated privileges, you would write the task like so:
+
+{lang="yaml",linenos=off}
+```
+- name: Restart Apache.
+  service:
+    name: httpd
+    state: restarted
+  become: yes
+```
+
+Add `become_user: [username]` to a task to specify a specific user account to use with `sudo` (this will only apply if `become` is already set on the task or in the playbook).
+
+You can also use Ansible to control sudo's configuration, defining who should have access to what commands and whether the user should be required to enter a password, among other things.
+
+As an example, set up the user `johndoe` with permission to use any command as root via `sudo` by adding a line in the `/etc/sudoers` file with Ansible's `lineinfile` module:
+
+{lang="yaml",linenos=off}
+```
+- name: Add sudo rights for deployment user.
+  lineinfile:
+    dest: /etc/sudoers
+    regexp: '^johndoe'
+    line: 'johndoe ALL=(ALL) NOPASSWD: ALL'
+    state: present
+    validate: 'visudo -cf %s'
+```
+
+If you're ever editing the sudoers file by hand, or with Ansible, you should use `visudo` to validate the changes. This makes sure you don't break sudo when you save the changes. The `%s` is a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination.
+
+Another way of changing the sudoers file is to create a sudoers file locally, and copy it using Ansible's `copy` module, like so:
+
+{lang="yaml",linenos=off}
+```
+- name: Copy validated sudoers file into place.
+  copy:
+    src: sudoers
+    dest: /etc/sudoers
+    validate: 'visudo -cf %s'
+```
+
+You can also use the same option with Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
+
+T> The sudoers file syntax is very powerful and flexible, but also a bit obtuse. Read the entire [Sudoers Manual](http://www.sudo.ws/sudoers.man.html) for all the details, or check out the [sample sudoers file](http://www.sudo.ws/sudo/sample.sudoers) for some practical examples.
+
+## Remove unused software, open only required ports
+
+Before the widespread use of configuration management tools for servers, when snowflake servers were the norm, servers would become bloated with extra software no longer in active use, open ports for old and unnecessary services, and old configuration settings opening up potential attack vectors.
+
+If you're not actively using a piece of software, or there's an obsolete cron task, get rid of it. If you're using Ansible for your entire infrastructure, this shouldn't be an issue, since you could just bring up new servers to replace old ones when you have major configuration and/or package changes. But if not, consider adding in a 'cleanup' role or at least a task to remove packages that shouldn't be installed, like:
+
+{lang="yaml",linenos=off}
+```
+- name: Remove unused packages.
+  apt:
+    name:
+      - apache2
+      - nano
+      - mailutils
+    state: absent
+    purge: yes
+```
+
+With modules like `yum`, `apt`, `file`, and `mysql_db`, a `state=absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
+
+Opening only required ports helps reduce the surface area for attack, requiring only a few firewall rules. This will be covered fully in the "Use a properly-configured firewall" section, but as an example, don't leave port 25 open on your server unless your server will be used as an SMTP relay server. Further, make sure the services you have listening on your open ports are configured to only allow access from trusted clients.
+
+## Use the principle of least privilege
+
+Users, applications, and processes should only be able to access information (files) and resources (memory, network ports, etc) necessary for their operation.
+
+Many of the other basic security measures in this chapter are tangentially related to the principle of least privilege, but user account configuration and file permissions are two main areas directly related to the principle.
+
+### User account configuration
+
+New user accounts, by default, have fairly limited permissions on a Linux server. They usually have a home folder, over which they have complete control, but any other folder or file on the system is only available for reading, writing, or execution if the folder has group permissions set.
+
+Usually, users gain access to other files and services through two methods:
+
+  1. Adding the user to another group with wider access privileges.
+  2. Allowing the user to use the `sudo` command to execute commands and access files as `root` or another user.
+
+For the former method, please read the next section on file permissions to learn how to limit access. For the latter, please make sure you understand the use of sudoers as explained earlier in this chapter.
+
+### File permissions
+
+Every Ansible module that deals with files has file ownership and permission parameters available, including `owner`, `group`, and `mode`. Almost every time you handle files (using `copy`, `template`, `file`, etc.), you should explicitly define the correct permissions and ownership. For example, for a configuration file (in our example, the GitLab configuration file) that should *only* be readable or writeable by the root user, set the following:
+
+{lang="yaml",linenos=off}
+```
+- name: Configure the GitLab global configuration file.
+  file:
+    path: /etc/gitlab/gitlab.rb
+    owner: root
+    group: root
+    mode: 0600
+```
+
+I> File permissions may seem a bit obtuse, and sometimes, they may cause headaches. But in reality, using octal numbers to represent file permissions is a helpful way to encapsulate a lot of configuration in three numbers. The main thing to remember is the following: for each of the file's *user*, *group*, and for *everyone* (each of the three digits), use the following digits to represent permission levels:
+I>
+I> {lang="text",linenos=off}
+I> ~~~
+I> 7: rwx (read/write/execute)
+I> 6: rw- (read/write)
+I> 5: r-x (read/execute)
+I> 4: r-- (read)
+I> 3: -wx (write/execute)
+I> 2: -w- (write)
+I> 1: --x (execute)
+I> 0: --- (no permissions)
+I> ~~~
+I>
+I> Basically, 4 = read, 2 = write and 1 = execute. Therefore read (4) and write (2) is 6 in the octal representation, and read (4) and execute (1) is 5.
+
+Less experienced admins are overly permissive, setting files and directories to `777` to fix issues they have with their applications. To allow one user (for example, your web server user, `httpd` or `nginx`) access to a directory or some files, you should consider setting the directory's or files' *group* to the user's group instead of giving permissions to *every user on the system*!
+
+For example, if you have a directory of web application files, the *user* (or in Ansible's terminology, "owner") might be your personal user account, or a deployment or service account on the server. Set the *group* for the files to a group the web server user is in, and the web server should now be able to access the files (assuming you have the same permissions set for the user and group, like `664`).
+
+## Update the OS and installed software
+
+Every year, hundreds of security updates are released for the packages running on your servers, some of them fixing critical bugs. If you don't keep your server software up to date, you will be extremely vulnerable, especially when large exposures like [Heartbleed](http://heartbleed.com/) are uncovered.
+
+At a minimum, you should schedule regular patch maintenance and package upgrade windows, and make sure you test the upgrades and patches on non-critical servers to make sure your applications work *before* applying the same on your production infrastructure.
+
+With Ansible, since you already have your entire infrastructure described via Ansible inventories, you should be able to use a command like the following to upgrade all installed packages on a RHEL system:
+
+{lang="text",linenos="off"}
+```
+$ ansible webservers -m yum -a "name=* state=latest"
+```
+
+On a Debian-based system, the syntax is similar:
+
+{lang="text",linenos="off"}
+```
+$ ansible webservers -m apt -a "upgrade=dist update_cache=yes"
+```
+
+The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `yum` or `apt` to tell them what to do (edit `/etc/yum.conf` for `yum` on RHEL-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
+
+### Automating updates
+
+Fully automated daily or weekly package and system upgrades provide even greater security. Not every environment or corporation can accommodate frequent automated upgrades (especially if your application has been known to break due to past package updates, or relies on custom builds or specific package versions), but if you do it for your servers, it will increase the depth of your infrastructure's security.
+
+W> As mentioned in an earlier sidebar, GPG package signature checking is enabled by default for all package-related functionality. It's best to leave GPG checks in place, and import keys from trusted sources when necessary, *especially* when using automatic updates, if you want to prevent potentially insecure packages from being installed on your servers!
+
+### Automating updates for RHEL systems
+
+RHEL and CentOS 6 and 7 (and older versions of Fedora) uses a cron-based package, `yum-cron`, for automatic updates. For basic, set-and-forget usage, install `yum-cron` and make sure it's started and set to run on system boot:
+
+{lang="yaml",linenos=off}
+```
+- name: Install yum-cron.
+  yum:
+    name: yum-cron
+    state: present
+
+- name: Ensure yum-cron is running and enabled on boot.
+  service:
+    name: yum-cron
+    state: started
+    enabled: yes
+```
+
+Further configuration (such as packages to exclude from automatic updates) is done in the `yum.conf` file, at `/etc/yum.conf`.
+
+For RHEL and CentOS 8 and later (and the latest versions of Fedora), you would need to install `dnf-automatic` instead of `yum-cron`, and the service name that you need to make sure to start is `dnf-automatic-install.timer` (instead of `yum-cron`).
+
+### Automating updates for Debian-based systems
+
+Debian and its derivatives typically use the `unattended-upgrades` package to configure automatic updates. Like `yum-cron`, it is easy to install, and its configuration is placed in a variety of files within `/etc/apt/apt.conf.d/`:
+
+{lang="yaml",linenos=off}
+```
+- name: Install unattended upgrades package.
+  apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Copy unattended-upgrades configuration files in place.
+  template:
+    src: "../templates/{{ item }}.j2"
+    dest: "/etc/apt/apt.conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items:
+    - 10periodic
+    - 50unattended-upgrades
+```
+
+The template files copied in the second task should look something like the following:
 
 {lang="text",linenos=off}
 ```
-# Create a new Vagrantfile using the Tower base box from Ansible.
-$ vagrant init tower http://vms.ansible.com/ansible-tower-2.3.1-\
-virtualbox.box
-
-# Build the Tower VM.
-$ vagrant up
-
-# Log into the VM (Tower will display connection information).
-$ vagrant ssh
+# File: /etc/apt/apt.conf.d/20auto-upgrades
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
 ```
 
-I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
-
-Visit the URL provided by the login welcome message (e.g. `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
-
-At this point, you will need to register a free trial license of Ansible Tower following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
-
-{width=80%}
-![Ansible Tower's Dashboard](images/11-ansible-tower-dashboard.png)
-
-### Using Ansible Tower
-
-Ansible Tower is centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* are then set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It's a little overwhelming at first, but once the initial structure is configured, you'll see the power and flexibility Tower's Project workflow affords.
-
-Let's get started with our first project!
-
-The first step is to make sure you have a test playbook you can run using Ansible Tower. Generally, your playbooks should be stored in a source code repository (e.g. Git or Subversion), with Tower configured to check out the latest version of the playbook from the repository and run it. For this example, however, we will create a playbook in Tower's default `projects` directory located in `/var/lib/awx/projects`:
-
-  1. Log into the Tower VM: `vagrant ssh`
-  2. Switch to the `awx` user: `sudo su - awx`
-  3. Go to Tower's default `projects` directory: `cd /var/lib/awx/projects`
-  4. Create a new project directory: `mkdir ansible-for-devops && cd ansible-for-devops`
-  5. Create a new playbook file, `main.yml`, within the new directory, with the following contents:
-
-{lang="yaml"}
-```
----
-- hosts: all
-  gather_facts: no
-  connection: local
-
-  tasks:
-    - name: Check the date on the server.
-      command: date
-```
-
-Switch back to your web browser and get everything set up to run the test playbook inside Ansible Tower's web UI:
-
-  1. Create a new *Organization*, called 'Ansible for DevOps'.
-  2. Add a new User to the Organization, named John Doe, with the username `johndoe` and password `johndoe1234`.
-  3. Create a new *Team*, called 'DevOps Engineers', in the 'Ansible for DevOps' Organization.
-  4. Under the Team's Credentials section, add in SSH credentials by selecting 'Machine' for the Credential type, and setting 'Name' to `Vagrant`, 'Type' to `Machine`, 'SSH Username' to `vagrant`, and 'SSH Password' to `vagrant`.
-  5. Under the Team's Projects section, add a new *Project*. Set the 'Name' to `Tower Test`, 'Organization' to `Ansible for DevOps`, 'SCM Type' to `Manual`, and 'Playbook Directory' to `ansible-for-devops` (Tower automatically detects all folders placed inside `/var/lib/awx/projects`, but you could also use an alternate Project Base Path if you want to store projects elsewhere).
-  6. Under the Inventories section, add an *Inventory*. Set the 'Name' to `Tower Local`, and 'Organization' set to `Ansible for DevOps`. Once the inventory is saved:
-    1. Add a 'Group' with the Name `localhost`. Click on the group once it's saved.
-    2. Add a 'Host' with the Host Name `127.0.0.1`.
-
-T> New *Credentials* have a somewhat dizzying array of options, and offer login and API key support for a variety of services, like SSH, AWS, Rackspace, VMWare vCenter, and SCM systems. If you can login to a system, Tower likely supports the login mechanism!
-
-Now that we have all the structure for running playbooks configured, we need only create a *Job Template* to run the playbook on the localhost and see whether we've succeeded. Click on 'Job Templates', and create a new Job Template with the following configuration:
-
-  - Name: `Tower Test`
-  - Inventory: `Tower Local`
-  - Project: `Tower Test`
-  - Playbook: `main.yml`
-  - Machine Credential: `Vagrant`
-
-Save the Job Template, then click the small Rocketship button to start a job using the template. You'll be redirected to a Job status page, which provides live updates of the job status, and then a summary of the playbook run when complete:
-
-{width=80%}
-![Tower Test job completed successfully!](images/11-ansible-tower-job-complete.png)
-
-You can view the playbook run's standard output in real-time (or review it after the fact) with the 'View standard out' button. You can also stop a running job, delete a job's record, or relaunch a job with the same parameters using the respective buttons on the job's page.
-
-The job's dashboard page is very useful for giving an overview of how many hosts were successful, how many tasks resulted in changes, and the timing of the different parts of the playbook run.
-
-### Other Tower Features of Note
-
-In our walkthrough above, we used Tower to run a playbook on the local server; setting up Tower to run playbooks on real-world infastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
-
-This book won't walk through the entirety of Ansible Tower's documentation, but a few other features you should try out include:
-
-  - Setting up scheduled Job runs (especially with the 'Check' option instead of 'Run') for CI/CD.
-  - Integrating user accounts and Teams with LDAP users and groups for automatic team-based project management.
-  - Setting different levels of permissions for Users and Teams so certain users can only edit, run, or view certain jobs within an Organization.
-  - Configuring Ansible Vault credentials to easily and automatically use Vault-protected variables in your playbooks.
-  - Setting up Provisioning Callbacks so newly-provisioned servers can self-provision via a URL per Job Template.
-  - Surveys, which allow users to add extra information based on a 'Survey' of questions per job run.
-  - Inventory Scripts, which allow you to build inventory dynamically.
-  - Built-in Munin monitoring (to monitor the Tower server), available with the same admin credentials at `https://[tower-hostname]/munin`.
-
-Ansible Tower continues to improve rapidly, and is one of the best ways to run Ansible Playbooks from a central CI/CD-style server with team-based access and extremely detailed live and historical status reporting.
-
-### Tower Alternatives
-
-Ansible Tower is purpose-built for use with Ansible playbooks, but there are many other ways to run playbooks on your servers with a solid workflow. If price is a major concern, and you don't need all the bells and whistles Tower provides, you can use other popular tools like [Jenkins](http://jenkins-ci.org/), [Rundeck](http://rundeck.org/), or [Go CI](http://www.go.cd/).
-
-All these tools provide flexibility and security for running Ansible Playbooks, and each one requires a different amount of setup and configuration before it will work well for common usage scenarios. One of the most popular and long-standing CI tools is Jenkins, so we'll explore how to configure a similar Playbook run in Jenkins next.
-
-## Jenkins CI
-
-Jenkins is a Java-based open source continuous integration tool. It was forked from the Hudson project in 2011, but has a long history as a robust build tool for almost any software project.
-
-Jenkins is easy to install and configure, with the Java SDK as its only requirement. Jenkins runs on any modern OS, but for the purposes of this demonstration, we'll build a local VM using Vagrant, install Jenkins inside the VM using Ansible, then use Jenkins to run an Ansible playbook.
-
-### Build a local Jenkins server with Ansible
-
-Create a new directory for the Jenkins VM named `jenkins`. Inside the directory, create a `Vagrantfile` to describe the machine and the Ansible provisioning to Vagrant, with the following contents:
-
-{lang="ruby"}
-```
-VAGRANTFILE_API_VERSION = "2"
-
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "geerlingguy/ubuntu1604"
-  config.vm.hostname = "jenkins.test"
-  config.vm.network :private_network, ip: "192.168.76.76"
-  config.ssh.insert_key = false
-
-  config.vm.provider :virtualbox do |v|
-    v.memory = 512
-  end
-
-  # Ansible provisioning.
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "provision.yml"
-    ansible.become = true
-  end
-end
-```
-
-This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
-
-{lang="yaml"}
-```
----
-- hosts: all
-
-  vars:
-    firewall_allowed_tcp_ports:
-      - "22"
-      - "8080"
-    jenkins_plugins:
-      - ansicolor
-
-  roles:
-    - geerlingguy.firewall
-    - geerlingguy.ansible
-    - geerlingguy.java
-    - geerlingguy.jenkins
-```
-
-This playbook uses a set of roles from Ansible Galaxy to install all the required components for our Jenkins CI server. To make sure you have all the required roles installed on your host machine, add a `requirements.yml` file in the `jenkins` folder, containing all the roles being used in the playbook:
-
-{lang="yaml"}
-```
----
-- src: geerlingguy.firewall
-- src: geerlingguy.ansible
-- src: geerlingguy.java
-- src: geerlingguy.jenkins
-```
-
-The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
-
-Finally, we tell the `geerlingguy.jenkins` role a set of plugins to install through the `jenkins_plugins` variable; in this case, we just want the `ansicolor` plugin, which gives us full color display in Jenkins' console logs (so our Ansible playbook output is easier to read).
-
-T> There is an official [Ansible plugin for Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Ansible+Plugin) which can be used to run Ansible Ad-Hoc tasks and Playbooks, and may help you integrate Ansible and Jenkins more easily.
-
-To build the VM and run the playbook, do the following (inside the `jenkins` folder):
-
-  1. Run `ansible-galaxy install -r requirements.yml` to install the required roles.
-  2. Run `vagrant up` to build the VM and install and configure Jenkins.
-
-After a few minutes, the provisioning should complete, and you should be able to access Jenkins at `http://jenkins.test:8080/` (if you configured the hostname in your hosts file).
-
-### Create an Ansible playbook on the Jenkins server
-
-It's preferred to keep your playbooks and server configuration in a code repository (e.g. Git or SVN), but for simplicity's sake, this example requires a playbook stored locally on the Jenkins server, similar to the earlier Ansible Tower example.
-
-  1. Log into the Jenkins VM: `vagrant ssh`
-  2. Go to the `/opt` directory: `cd /opt`
-  3. Create a new project directory: `sudo mkdir ansible-for-devops && cd ansible-for-devops`
-  4. Create a new playbook file, `main.yml`, within the new directory, with the following contents (use sudo to create the file, e.g. `sudo vi main.yml`):
-
-{lang="yaml"}
-```
----
-- hosts: 127.0.0.1
-  gather_facts: no
-  connection: local
-
-  tasks:
-    - name: Check the date on the server.
-      command: date
-```
-
-If you want, test the playbook while you're logged in: `ansible-playbook main.yml`.
-
-### Create a Jenkins job to run an Ansible Playbook
-
-With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.test:8080/` and log in with username `admin` and password `admin` (these are the defaults from the `geerlingguy.jenkins` role---you should override these for anything besides local test environments!).
-
-Once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
-
-  - Under 'Build Environment', check the 'Color ANSI Console Output' option. This allows Ansible's helpful colored output to pass through the Jenkins console, so it is easier to read during and after the run.
-  - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:
-
-    {lang="text"}
-    ~~~
-    # Force Ansible to output jobs with color.
-    export ANSIBLE_FORCE_COLOR=true
-    
-    # Run the local test playbook.
-    ansible-playbook /opt/ansible-for-devops/main.yml
-    ~~~
-
-Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, click the 'Build Now' link to start a build. After a few seconds, you should see a new item in the 'Build History' block. Click on the (hopefully) blue circle to the left of '#1', and it will take you to the console output of the job. It should look something like this:
-
-{width=80%}
-![Jenkins job completed successfully!](images/11-jenkins-job-console-output.png)
-
-This is a basic example, but hopefully it's enough to show you how easy it is to get at least some of your baseline CI/CD automation done using a free and open source tool. Most of the more difficult aspects of managing infrastructure through Jenkins surrounds the ability to manage SSH keys, certificates, and other credentials through Jenkins, but there is already plenty of documentation surrounding these things elsewhere online and in Jenkins documentation, so this will be left as an exercise for the reader.
-
-## Summary
-
-Tools like Ansible Tower provide a robust, repeatable, and accessible environment in which to run your Ansible playbooks.
-
-In a team-based environment, it's especially important to have reliable ways to run your Ansible playbooks that aren't dependent on individual developers' laptops!
+This file provides configuration for the `apt` script that runs as part of the unattended upgrades package, and tells apt whether to enable unattended upgrades.
 
 {lang="text",linenos=off}
 ```
- ________________________________________
-/ The first rule of any technology used  \
-| in a business is that automation       |
-| applied to an efficient operation will |
-| magnify the efficiency. The second is  |
-| that automation applied to an          |
-| inefficient operation will magnify the |
-\ inefficiency. (Bill Gates)             /
- ----------------------------------------
+# File: /etc/apt/apt.conf.d/50unattended-upgrades
+Unattended-Upgrade::Automatic-Reboot "false";
+
+Unattended-Upgrade::DevRelease "false";
+
+Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}";
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESM:${distro_codename}";
+//      "${distro_id}:${distro_codename}-updates";
+//      "${distro_id}:${distro_codename}-proposed";
+//      "${distro_id}:${distro_codename}-backports";
+};
+```
+
+This file provides further configuration for unattended upgrades, like whether to automatically restart the server for package and kernel upgrades requiring a reboot, or what `apt` sources should be checked for updated packages.
+
+T> Make sure you get notifications or check in on your servers periodically so you know when they'll need a manual reboot if you have `Automatic-Reboot` set to `false`!
+
+## Use a properly-configured firewall
+
+If you were building a secure bank vault, you wouldn't want to have many doors and windows leading into the vault. You'd instead build reinforced concrete walls, and have one or two strong metal doors.
+
+Similarly, you should close any port not explicitly required to remain open on all your servers---whether in a DMZ in your network or open to the entire Internet. There are dozens of different ways to manage firewalls nowadays, from `iptables` and helpful tools like `ufw` and `firewalld` that help make iptables configuration easier, to AWS security groups and other external firewall services.
+
+Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, RHEL, and CentOS distributions).
+
+### Configuring a firewall with `ufw` on Debian or Ubuntu
+
+Below is an entire firewall configuration to lock down most everything on a Debian or Ubuntu server, allowing traffic only through ports 22 (SSH), 80 (HTTP), and 123 (NTP):
+
+{lang="yaml",linenos=off}
+```
+- name: Configure open ports with ufw.
+  ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  with_items:
+    - { rule: 'allow', port: 22, proto: 'tcp' }
+    - { rule: 'allow', port: 80, proto: 'tcp' }
+    - { rule: 'allow', port: 123, proto: 'udp' }
+
+- name: Configure default incoming/outgoing rules with ufw.
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+    state: enabled
+  with_items:
+    - { direction: outgoing, policy: allow }
+    - { direction: incoming, policy: deny }
+```
+
+If you run a playbook with the above rules, the log into the machine (or use the `ansible` command) and run `sudo ufw status verbose`, you should see the configuration has been updated to the following:
+
+{lang="text",linenos=off}
+```
+$ sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+80/tcp                     ALLOW IN    Anywhere
+123/udp                    ALLOW IN    Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+80/tcp (v6)                ALLOW IN    Anywhere (v6)
+123/udp (v6)               ALLOW IN    Anywhere (v6)
+```
+
+### Configuring a firewall with `firewalld` on RHEL, Fedora, or CentOS
+
+The same firewall configuration can be done via `firewalld` for RHEL-based systems with similar ease:
+
+{lang="yaml",linenos=off}
+```
+- name: Configure open ports with firewalld.
+  firewalld:
+    state: "{{ item.state }}"
+    port: "{{ item.port }}"
+    zone: external
+    immediate: yes
+    permanent: yes
+  with_items:
+    - { state: 'enabled', port: '22/tcp' }
+    - { state: 'enabled', port: '80/tcp' }
+    - { state: 'enabled', port: '123/udp' }
+```
+
+W> The `immediate` parameter was added in Ansible 1.9, and is required to make the rules effective immediately when the `permanent` parameter is set to `yes`. If you are running an older version of Ansible, you will need to restart to see your changes, or set `permanent` to `no`.
+
+I> `firewalld` doesn't have an explicit command to allow setting default inbound/outbound policies, but you can still use `iptables` commands or manage the firewall via XML files inside `/etc/firewalld`.
+
+If you run `sudo firewall-cmd --zone=external --list-all`, you should see the open ports:
+
+{lang="text",linenos=off}
+```
+$ sudo firewall-cmd --zone=external --list-all
+external
+  interfaces:
+  sources:
+  services: ssh
+  ports: 123/udp 80/tcp 22/tcp
+  masquerade: yes
+  forward-ports:
+  icmp-blocks:
+  rich rules:
+```
+
+Some still prefer configuring firewalls with `iptables` (which is sometimes obtuse, but is almost infinitely malleable). This approach is used in the `geerlingguy.firewall` role on Ansible Galaxy, which translates variables like `firewall_allowed_tcp_ports` and `firewall_forwarded_tcp_ports` into `iptables` rules, and provides a `firewall` service for loading firewall rules.
+
+It doesn't really matter what method you use to control access to your server, but the *principle of least privilege* applies here, as in most security-related discussions: only allow access on ports absolutely necessary for the functionality of your server, and restrict the use of those ports to only the hosts or subnets needing access to the services listening on the ports.
+
+T> When you're building up a firewall, make sure you don't accidentally lock down ports or IP addresses that will lock you out of the server entirely, otherwise you'll have to connect to the server through a local terminal connection and start over!
+
+## Make sure log files are populated and rotated
+
+Checking server logs is one of the most effective ways to not only see what attacks have taken place on a server, but also to see trends over time and predict high-traffic periods, potential attack vectors, and potential catastrophe.
+
+But logs are completely worthless if they aren't being populated with effective data, aren't being monitored in any way, or are *the cause* of an outage! Many root cause analyses conclude, "the server's disk was full because log file *x* took up all the free space".
+
+{title="I have my eyes on you, 218.78.214.9...",lang="text",linenos=off}
+```
+sshd[19731]: input_userauth_request: invalid user db2admin
+sshd[19731]: Received disconnect from 218.78.214.9: 11: Bye Bye
+sshd[19732]: Invalid user jenkins from 218.78.214.9
+sshd[19733]: input_userauth_request: invalid user jenkins
+sshd[19733]: Received disconnect from 218.78.214.9: 11: Bye Bye
+sshd[19734]: Invalid user jenkins from 218.78.214.9
+sshd[19735]: input_userauth_request: invalid user jenkins
+sshd[19735]: Received disconnect from 218.78.214.9: 11: Bye Bye
+sshd[19736]: Invalid user minecraft from 218.78.214.9
+sshd[19737]: input_userauth_request: invalid user minecraft
+sshd[19737]: Received disconnect from 218.78.214.9: 11: Bye Bye
+```
+
+Only you will know what logs are the most important to monitor on your servers, but some of the most common ones are database slow query logs, web server access and error logs, authorization logs, and cron logs. Use tools like the ELK stack (demonstrated in a cookbook in Chapter 8), Munin, Nagios, or even a hosted service to make sure logs are populated and monitored.
+
+Additionally, you should always make sure log files are rotated and archived (according to your infrastructure's needs) using a tool like `logrotate`, and you should have monitoring enabled on log file sizes so you have an early warning when a particular log file or directory grows a bit too large. There are a number of `logrotate` roles on Ansible Galaxy (e.g. [Nick Hammond's `logrotate` role](https://galaxy.ansible.com/nickhammond/logrotate/)) that make rotation configuration easy.
+
+## Monitor logins and block suspect IP addresses
+
+If you've ever set up a new server on the public internet and enabled SSH on port 22 with password-based login enabled, you know how quickly the deluge of script-based logins begins. Many honeypot servers detect hundreds or thousands of such attempts per hour.
+
+If you allow password-based login (for SSH, for your web app, or for anything else), you need to implement some form of monitoring and rate limiting. At a most basic level, you should install a tool like [Fail2Ban](http://www.fail2ban.org/wiki/index.php/Main_Page), which monitors log files and bans IP addresses when it detects too many unsuccessful login attempts in a given period of time.
+
+Here's a set of tasks you could add to your playbook to install Fail2Ban and make sure it's started on either Debian or RHEL-based distributions:
+
+{lang="yaml",linenos=off}
+```
+- name: Install fail2ban (RedHat).
+  yum:
+    name: fail2ban
+    state: present
+    enablerepo: epel
+  when: ansible_os_family == 'RedHat'
+
+- name: Install fail2ban (Debian).
+  apt:
+    name: fail2ban
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Ensure fail2ban is running and enabled on boot.
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+```
+
+Fail2Ban configuration is managed in a series of `.conf` files inside `/etc/fail2ban`, and most configuration can be done by overriding defaults in a local override file, `/etc/fail2ban/jail.local`. See the [Fail2Ban manual](http://www.fail2ban.org/wiki/index.php/MANUAL_0_8) for more information.
+
+## Use SELinux (Security-Enhanced Linux) or AppArmor
+
+SELinux and AppArmor are two different tools which allow you to construct security sandboxes for memory and filesystem access, so, for example, one application can't easily access another application's resources. It's a little like user and group file permissions, but allowing far finer detail---with far more complexity.
+
+You'd be forgiven if you disabled SELinux or AppArmor in the past; both require extra work to set up and configure for your particular servers, especially if you're using less popular distribution packages (extremely popular packages like Apache and MySQL are extremely well supported out-of-the-box on most distributions).
+
+However, both of these tools are excellent ways to add *defense in depth* to your infrastructure. You should already have decent configurations for firewalls, file permissions, users and groups, OS updates, etc. But if you're running a web-facing application---especially one running on a server with any other applications---it's great to have the extra protection SELinux or AppArmor provides from applications accessing things they shouldn't.
+
+SELinux is usually installed and enabled by default on Fedora, RHEL and CentOS systems, is available and supported on most other Linux platforms, and is widely supported through Ansible modules, so we'll cover SELinux in a bit more depth.
+
+To enable SELinux in `targeted` mode (which is the most secure mode without being almost impossible to work with), make sure the Python SELinux library is installed, then use Ansible's `selinux` module:
+
+{lang="yaml",linenos=off}
+```
+- name: Install Python SELinux library.
+  yum:
+    name: libselinux-python
+    state: present
+
+- Ensure SELinux is enabled in `targeted` mode.
+  selinux:
+    policy: targeted
+    state: enforcing
+```
+
+Ansible also has a `seboolean` module that allows setting SELinux booleans. A very common setting for web servers involves setting the `httpd_can_network_connect` boolean:
+
+{lang="yaml",linenos=off}
+```
+- name: Ensure httpd can connect to the network.
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+```
+
+The Ansible `file` module also integrates well with SELinux, allowing the four security context fields for a file or directory to be set, one per parameter:
+
+  1. `selevel`
+  2. `serole`
+  3. `setype`
+  4. `seuser`
+
+Building custom SELinux policies for more complex scenarios is out of the scope of this chapter, but you should be able to use tools like `setroubleshoot`, `setroubleshoot-server`, `getsebool`, and `aureport` to see what is being blocked, what booleans are available (and/or enabled currently), and even get helpful notifications when SELinux denies access to an application. Read [Getting started with SELinux](https://major.io/2012/01/25/getting-started-with-selinux/) for an excellent and concise introduction.
+
+Next time you're tempted to disable SELinux instead of fixing the underlying problem, spend a little time investigating the correct boolean settings to configuring your system correctly for SELinux.
+
+## Summary and further reading
+
+This chapter contains a broad overview of some Linux security best practices, and how Ansible helps you conform to them. There is a wealth of good information on the Internet to help you secure your servers, including articles and publications like the following:
+
+  - [Linode Library: Linux Security Basics](https://library.linode.com/security/basics)
+  - [My First Five Minutes on a Server](http://plusbryan.com/my-first-5-minutes-on-a-server-or-essential-security-for-linux-servers)
+  - [20 Linux Server Hardening Security Tips](http://www.cyberciti.biz/tips/linux-security.html)
+  - [Unix and Linux System Administration Handbook](http://www.admin.com/)
+
+Much of the security configuration in this chapter is encapsulated in a role on Ansible Galaxy, for use on your own servers: [security role by geerlingguy](https://galaxy.ansible.com/geerlingguy/security/).
+
+{lang="text",linenos=off}
+```
+ _____________________________________
+/ Bad planning on your part does not  \
+| constitute an emergency on my part. |
+\ (Proverb)                           /
+ -------------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\

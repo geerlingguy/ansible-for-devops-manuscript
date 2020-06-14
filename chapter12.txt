@@ -1,47 +1,218 @@
-# Chapter 12 - Testing and CI for Ansible Content
+# Chapter 12 - Automating Your Automation with Ansible Tower and CI/CD
 
-Before deploying any infrastructure changes, you should test the changes in a non-production environment (just like you would with application releases). At a minimum, you should have the ability to run a playbook in a local or development environment to make sure it does what you expect.
+At this point, you should be able to convert almost any bit of your infrastructure's configuration into Ansible playbooks, roles, and inventories.
 
-Since all your infrastructure is defined in code, you can automating unit, functional, and integration tests on your infrastructure, just like you do for your applications.
+All the examples in this book use Ansible's CLI to run playbooks and report back the results. For smaller teams, especially when everyone on the team is well-versed in how to use Ansible, YAML syntax, and security best practices, using the CLI is a sustainable approach.
 
-This chapter covers different levels of infrastructure testing, and highlights tools and techniques that help you test and develop Ansible content.
+But for many organizations, basic CLI use is inadequate:
 
-## Unit, Integration, and Functional Testing
+  - The business needs detailed reporting of infrastructure deployments and failures, especially for audit purposes.
+  - Team-based infrastructure management requires varying levels of involvement in playbook management, inventory management, and key and password access.
+  - A thorough visual overview of the current and historical playbook runs and server health helps identify potential issues before they affect the bottom line.
+  - Playbook scheduling ensures infrastructure remains in a known state.
 
-When determining how you should test your infrastructure, you need to understand the different kinds of testing, and then determine the kinds of testing on which you should focus more effort.
+[Ansible Tower](https://www.ansible.com/products/tower) fulfills these requirements---and many more---and provides a great mechanism for team-based Ansible usage.
 
-*Unit* testing, when applied to applications, is testing of the smallest units of code (usually functions or class methods). In Ansible, unit testing would typically apply to individual playbooks. You could run individual playbooks in an isolated environment, but it's often not worth the effort. What *is* worth your effort is at least checking the playbook syntax, to make sure you didn't just commit a YAML file that will break an entire deployment because of a missing quotation mark or whitespace issue!
+Ansible Tower is part of Red Hat's Ansible Automation Platform, but it is built from an open source upstream project, [AWX](https://github.com/ansible/awx). AWX was open-sourced in 2017, shortly after Red Hat acquired Ansible.
 
-*Integration* testing, which is definitely more valuable when it comes to Ansible, is the testing of small groupings of individual units of code, to make sure they work correctly together. Breaking your infrastructure definition into many task-specific roles and playbooks allows you to do this; if you've structured your playbooks so they have no or limited dependencies, you could test each role individually in a fresh virtual machine, before you use the role as part of a full infrastructure deployment.
+W> While AWX and Tower are quite similar, AWX is updated much more frequently, with fewer guarantees about upgrade compatibility. If you are able and willing to keep up with AWX's releases, and support its deployment on your own, it is perfectly adequate for many use cases. Ansible Tower is part of Red Hat's broader subscription-based Ansible Automation Platform, and has better support.
 
-*Functional* testing involves the whole shebang. Basically, you set up a complete infrastructure environment, and then run tests against it to make sure *everything* was successfully installed, deployed, and configured. Ansible's own reporting is helpful in this kind of testing, and there are external tools available to test infrastructure even more deeply.
+While this book includes a brief overview of Tower, it is highly recommended you read through the extensive [Tower User Guide](https://docs.ansible.com/ansible-tower/latest/html/userguide/index.html), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
 
-T> In this chapter's discussion of testing, I'm considering only _Ansible_ content, such as the YAML that defines playbooks, roles, or collections. Unit, integration, and functional testing for the Python code in Ansible plugins and modules can require additional tools, like `ansible-test`.
+### Getting and Installing Ansible Tower
 
-It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's inexpensive and just as fast to test directly on cloud instances mirroring your production infrastructure!
+W> The information in this chapter is a bit outdated as of 2020, and is being rewritten to use a more recent version of Tower. Please follow [this issue in the book's repository](https://github.com/geerlingguy/ansible-for-devops/issues/212) for progress.
 
-I like to think of testing as a spectrum—just like most things in life, your project is unique, and might not need to integrate all the techniques discussed in this chapter. The following graphic is from a presentation I gave at AnsibleFest in 2018:
+Ansible has a very thorough [Ansible Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which details the installation and configuration of Ansible Tower. For the purposes of this chapter, since we just want to download and try out Tower locally, we are going to use Ansible's official Vagrant box to quickly build an Ansible Tower VM.
 
-{width=90%}
-![My 'Ansible Testing Spectrum'](images/12-testing-spectrum.png)
+Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then create a directory (e.g. `tower`) and do the following within the directory:
 
-Each technique discussed in this chapter provides more value than the previous one, but is also more complex and might not be worth the additional setup and maintenance burden, depending on your playbook.
+{lang="text",linenos=off}
+```
+# Create a new Vagrantfile using the Tower base box from Ansible.
+$ vagrant init tower http://vms.ansible.com/ansible-tower-2.3.1-\
+virtualbox.box
 
-We'll begin with the easiest and most basic tests, and progress to full-fledged functional testing methods and test automation.
+# Build the Tower VM.
+$ vagrant up
 
-## Debugging and Asserting
+# Log into the VM (Tower will display connection information).
+$ vagrant ssh
+```
 
-For most playbooks, testing configuration changes and the result of commands being run as you go is all the testing you need. And having tests run *during your playbook runs* using some of Ansible's built-in utility modules means you have immediate assurance the system is in the correct state.
+I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
 
-If at all possible, you should try to bake all simple test cases (e.g. comparison and state checks) into your playbooks. Ansible has three modules that simplify this process.
+Visit the URL provided by the login welcome message (e.g. `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
 
-#### The `debug` module
+At this point, you will need to register a free trial license of Ansible Tower following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
 
-When actively developing an Ansible playbook, or even for historical logging purposes (e.g. if you're running Ansible playbooks using Tower or another CI system), it's often handy to print values of variables or output of certain commands during the playbook run.
+{width=80%}
+![Ansible Tower's Dashboard](images/11-ansible-tower-dashboard.png)
 
-For this purpose, Ansible has a `debug` module, which prints variables or messages during playbook execution.
+### Using Ansible Tower
 
-As an extremely basic example, here are two of the ways I normally use debug while building a playbook:
+Ansible Tower is centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* are then set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It's a little overwhelming at first, but once the initial structure is configured, you'll see the power and flexibility Tower's Project workflow affords.
+
+Let's get started with our first project!
+
+The first step is to make sure you have a test playbook you can run using Ansible Tower. Generally, your playbooks should be stored in a source code repository (e.g. Git or Subversion), with Tower configured to check out the latest version of the playbook from the repository and run it. For this example, however, we will create a playbook in Tower's default `projects` directory located in `/var/lib/awx/projects`:
+
+  1. Log into the Tower VM: `vagrant ssh`
+  2. Switch to the `awx` user: `sudo su - awx`
+  3. Go to Tower's default `projects` directory: `cd /var/lib/awx/projects`
+  4. Create a new project directory: `mkdir ansible-for-devops && cd ansible-for-devops`
+  5. Create a new playbook file, `main.yml`, within the new directory, with the following contents:
+
+{lang="yaml"}
+```
+---
+- hosts: all
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Check the date on the server.
+      command: date
+```
+
+Switch back to your web browser and get everything set up to run the test playbook inside Ansible Tower's web UI:
+
+  1. Create a new *Organization*, called 'Ansible for DevOps'.
+  2. Add a new User to the Organization, named John Doe, with the username `johndoe` and password `johndoe1234`.
+  3. Create a new *Team*, called 'DevOps Engineers', in the 'Ansible for DevOps' Organization.
+  4. Under the Team's Credentials section, add in SSH credentials by selecting 'Machine' for the Credential type, and setting 'Name' to `Vagrant`, 'Type' to `Machine`, 'SSH Username' to `vagrant`, and 'SSH Password' to `vagrant`.
+  5. Under the Team's Projects section, add a new *Project*. Set the 'Name' to `Tower Test`, 'Organization' to `Ansible for DevOps`, 'SCM Type' to `Manual`, and 'Playbook Directory' to `ansible-for-devops` (Tower automatically detects all folders placed inside `/var/lib/awx/projects`, but you could also use an alternate Project Base Path if you want to store projects elsewhere).
+  6. Under the Inventories section, add an *Inventory*. Set the 'Name' to `Tower Local`, and 'Organization' set to `Ansible for DevOps`. Once the inventory is saved:
+    1. Add a 'Group' with the Name `localhost`. Click on the group once it's saved.
+    2. Add a 'Host' with the Host Name `127.0.0.1`.
+
+T> New *Credentials* have a somewhat dizzying array of options, and offer login and API key support for a variety of services, like SSH, AWS, Rackspace, VMWare vCenter, and SCM systems. If you can login to a system, Tower likely supports the login mechanism!
+
+Now that we have all the structure for running playbooks configured, we need only create a *Job Template* to run the playbook on the localhost and see whether we've succeeded. Click on 'Job Templates', and create a new Job Template with the following configuration:
+
+  - Name: `Tower Test`
+  - Inventory: `Tower Local`
+  - Project: `Tower Test`
+  - Playbook: `main.yml`
+  - Machine Credential: `Vagrant`
+
+Save the Job Template, then click the small Rocketship button to start a job using the template. You'll be redirected to a Job status page, which provides live updates of the job status, and then a summary of the playbook run when complete:
+
+{width=80%}
+![Tower Test job completed successfully!](images/11-ansible-tower-job-complete.png)
+
+You can view the playbook run's standard output in real-time (or review it after the fact) with the 'View standard out' button. You can also stop a running job, delete a job's record, or relaunch a job with the same parameters using the respective buttons on the job's page.
+
+The job's dashboard page is very useful for giving an overview of how many hosts were successful, how many tasks resulted in changes, and the timing of the different parts of the playbook run.
+
+### Other Tower Features of Note
+
+In our walkthrough above, we used Tower to run a playbook on the local server; setting up Tower to run playbooks on real-world infastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
+
+This book won't walk through the entirety of Ansible Tower's documentation, but a few other features you should try out include:
+
+  - Setting up scheduled Job runs (especially with the 'Check' option instead of 'Run') for CI/CD.
+  - Integrating user accounts and Teams with LDAP users and groups for automatic team-based project management.
+  - Setting different levels of permissions for Users and Teams so certain users can only edit, run, or view certain jobs within an Organization.
+  - Configuring Ansible Vault credentials to easily and automatically use Vault-protected variables in your playbooks.
+  - Setting up Provisioning Callbacks so newly-provisioned servers can self-provision via a URL per Job Template.
+  - Surveys, which allow users to add extra information based on a 'Survey' of questions per job run.
+  - Inventory Scripts, which allow you to build inventory dynamically.
+  - Built-in Munin monitoring (to monitor the Tower server), available with the same admin credentials at `https://[tower-hostname]/munin`.
+
+Ansible Tower continues to improve rapidly, and is one of the best ways to run Ansible Playbooks from a central CI/CD-style server with team-based access and extremely detailed live and historical status reporting.
+
+### Tower Alternatives
+
+Ansible Tower is purpose-built for use with Ansible playbooks, but there are many other ways to run playbooks on your servers with a solid workflow. If price is a major concern, and you don't need all the bells and whistles Tower provides, you can use other popular tools like [Jenkins](http://jenkins-ci.org/), [Rundeck](http://rundeck.org/), or [Go CI](http://www.go.cd/).
+
+All these tools provide flexibility and security for running Ansible Playbooks, and each one requires a different amount of setup and configuration before it will work well for common usage scenarios. One of the most popular and long-standing CI tools is Jenkins, so we'll explore how to configure a similar Playbook run in Jenkins next.
+
+## Jenkins CI
+
+Jenkins is a Java-based open source continuous integration tool. It was forked from the Hudson project in 2011, but has a long history as a robust build tool for almost any software project.
+
+Jenkins is easy to install and configure, with the Java SDK as its only requirement. Jenkins runs on any modern OS, but for the purposes of this demonstration, we'll build a local VM using Vagrant, install Jenkins inside the VM using Ansible, then use Jenkins to run an Ansible playbook.
+
+### Build a local Jenkins server with Ansible
+
+Create a new directory for the Jenkins VM named `jenkins`. Inside the directory, create a `Vagrantfile` to describe the machine and the Ansible provisioning to Vagrant, with the following contents:
+
+{lang="ruby"}
+```
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "geerlingguy/ubuntu1604"
+  config.vm.hostname = "jenkins.test"
+  config.vm.network :private_network, ip: "192.168.76.76"
+  config.ssh.insert_key = false
+
+  config.vm.provider :virtualbox do |v|
+    v.memory = 512
+  end
+
+  # Ansible provisioning.
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "provision.yml"
+    ansible.become = true
+  end
+end
+```
+
+This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
+
+{lang="yaml"}
+```
+---
+- hosts: all
+
+  vars:
+    firewall_allowed_tcp_ports:
+      - "22"
+      - "8080"
+    jenkins_plugins:
+      - ansicolor
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.ansible
+    - geerlingguy.java
+    - geerlingguy.jenkins
+```
+
+This playbook uses a set of roles from Ansible Galaxy to install all the required components for our Jenkins CI server. To make sure you have all the required roles installed on your host machine, add a `requirements.yml` file in the `jenkins` folder, containing all the roles being used in the playbook:
+
+{lang="yaml"}
+```
+---
+- src: geerlingguy.firewall
+- src: geerlingguy.ansible
+- src: geerlingguy.java
+- src: geerlingguy.jenkins
+```
+
+The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
+
+Finally, we tell the `geerlingguy.jenkins` role a set of plugins to install through the `jenkins_plugins` variable; in this case, we just want the `ansicolor` plugin, which gives us full color display in Jenkins' console logs (so our Ansible playbook output is easier to read).
+
+T> There is an official [Ansible plugin for Jenkins](https://wiki.jenkins-ci.org/display/JENKINS/Ansible+Plugin) which can be used to run Ansible Ad-Hoc tasks and Playbooks, and may help you integrate Ansible and Jenkins more easily.
+
+To build the VM and run the playbook, do the following (inside the `jenkins` folder):
+
+  1. Run `ansible-galaxy install -r requirements.yml` to install the required roles.
+  2. Run `vagrant up` to build the VM and install and configure Jenkins.
+
+After a few minutes, the provisioning should complete, and you should be able to access Jenkins at `http://jenkins.test:8080/` (if you configured the hostname in your hosts file).
+
+### Create an Ansible playbook on the Jenkins server
+
+It's preferred to keep your playbooks and server configuration in a code repository (e.g. Git or SVN), but for simplicity's sake, this example requires a playbook stored locally on the Jenkins server, similar to the earlier Ansible Tower example.
+
+  1. Log into the Jenkins VM: `vagrant ssh`
+  2. Go to the `/opt` directory: `cd /opt`
+  3. Create a new project directory: `sudo mkdir ansible-for-devops && cd ansible-for-devops`
+  4. Create a new playbook file, `main.yml`, within the new directory, with the following contents (use sudo to create the file, e.g. `sudo vi main.yml`):
 
 {lang="yaml"}
 ```
@@ -51,751 +222,53 @@ As an extremely basic example, here are two of the ways I normally use debug whi
   connection: local
 
   tasks:
-    - name: Register the output of the 'uptime' command.
-      command: uptime
-      register: system_uptime
-
-    - name: Print the registered output of the 'uptime' command.
-      debug:
-        var: system_uptime.stdout
-
-    - name: Print a message if a command resulted in a change.
-      debug:
-        msg: "Command resulted in a change!"
-      when: system_uptime is changed
-```
-
-Running this playbook gives the following output:
-
-{lang="text",linenos=off}
-```
-$ ansible-playbook debug.yml
-
-PLAY [127.0.0.1] ****************************************************
-
-TASK: [Register the output of the 'uptime' command.] ****************
-changed: [127.0.0.1]
-
-TASK [Print the registered output of the 'uptime' command.] *********
-ok: [127.0.0.1] => {
-    "system_uptime.stdout":
-      "20:55  up  7:33, 4 users, load averages: 0.95 1.36 1.43"
-}
-
-TASK [Print a message if a command resulted in a change.] ***********
-ok: [127.0.0.1] => {
-    "msg": "Command resulted in a change!"
-}
-nge!"
-}
-
-PLAY RECAP **********************************************************
-127.0.0.1            : ok=3    changed=1    unreachable=0    failed=0
-```
-
-Debug messages are helpful when actively debugging a playbook or when you need extra verbosity in the playbook's output, but if you need to perform an explicit test on some variable, or bail out of a playbook for some reason, Ansible provides the `fail` module, and its more terse cousin, `assert`.
-
-### The `fail` and `assert` modules
-
-Both `fail` and `assert`, when triggered, will abort the playbook run, and the only difference is in the simplicity of their usage. To illustrate, let's look at an example:
-
-{lang="yaml"}
-```
----
-- hosts: 127.0.0.1
-  gather_facts: no
-  connection: local
-
-  vars:
-    should_fail_via_fail: true
-    should_fail_via_assert: false
-    should_fail_via_complex_assert: false
-
-  tasks:
-    - name: Fail if conditions warrant a failure.
-      fail:
-        msg: "There was an epic failure."
-      when: should_fail_via_fail
-
-    - name: Stop playbook if an assertion isn't validated.
-      assert:
-        that: "should_fail_via_assert != true"
-
-    - name: Assertions can have contain conditions.
-      assert:
-        that:
-          - should_fail_via_fail != true
-          - should_fail_via_assert != true
-          - should_fail_via_complex_assert != true
-```
-
-Switch the boolean values of `should_fail_via_fail`, `should_fail_via_assert`, and `should_fail_via_complex_assert` to trigger each of the three `fail`/`assert` tasks, to see how they work.
-
-For most test cases, `debug`, `fail`, and `assert` are all you need to ensure your infrastructure is in the correct state during a playbook run.
-
-## Linting YAML with `yamllint`
-
-Once you have a playbook written, it's a good idea to make sure the basic YAML syntax is correct. YAML parsers can be forgiving, but many of the most common errors in Ansible playbooks, especially for beginners, is whitespace issues.
-
-[`yamllint`](https://yamllint.readthedocs.io/en/stable/) is a simple YAML lint tool which can be installed via Pip:
-
-{lang="text",linenos=off}
-```
-pip3 install yamllint
-```
-
-Let's build an example playbook, and lint it to see if there are any errors:
-
-{lang="yaml"}
-```
-- hosts: localhost
-  gather_facts: no
-  connection: local
-
-  tasks:
-    - name: Register the output of the 'uptime' command.
-      command: uptime 
-      register: system_uptime # comment
-
-    - name: Print the registered output of the 'uptime' command.
-      debug:
-       var: system_uptime.stdout
-
-```
-
-If you have `yamllint` installed, you can run it on any YAML files in the current directory (and subdirectories, recursively), by passing the path `.` to the command. Let's do that and see the output:
-
-{lang="text",linenos=off}
-```
-$ yamllint .
-./lint-example.yml
-  1:1  warning missing document start "---"  (document-start)
-  2:17 warning truthy value should be one of [false, true]  (truthy)
-  7:22 error   trailing spaces  (trailing-spaces)
-  8:31 warning too few spaces before comment  (comments)
-  12:8 error   wrong indentation: expected 8 but found 7 (indentation)
-```
-
-While it might seem nitpicky at first, over time you realize how important it is to use a specific style and stick with it. It looks better, and can help prevent mistakes from creeping in due to indentation, whitespace, or structural issues.
-
-In this particular case, we can fix some of the errors quickly:
-
-  - Add a yaml document start indicator (`---`) at the top of the playbook.
-  - Delete the extra space on the `command` line.
-  - Add an extra space before the `# comment`.
-  - Make sure the `var` line is indented one more space.
-
-But what about the 'truthy value' warning? In many Ansible examples, `yes` or `no` are used instead of `true` and `false`. We can allow that by customizing `yamllint` with a configuration file.
-
-Create a file in the same directory named `.yamllint`, with the following contents:
-
-{lang="yaml"}
-```
----
-extends: default
-
-rules:
-  truthy:
-    allowed-values:
-      - 'true'
-      - 'false'
-      - 'yes'
-      - 'no'
-```
-
-Assuming you fixed the other errors in the playbook, and left `gather_facts: no`, running `yamllint .` again should yield no errors.
-
-## Performing a `--syntax-check`
-
-Syntax checking is similarly straightforward, and only requires a few seconds for even larger, more complex playbooks with dozens or hundreds of includes.
-
-When you run a playbook with `--syntax-check`, the plays are not run; instead, Ansible loads the entire playbook statically and ensures everything can be loaded without a fatal error. If you are missing an imported task file, misspelled a module name, or are supplying a module with invalid parameters, `--syntax-check` will quickly identify the problem.
-
-Along with `yamllint`, it's common to include an `ansible-playbook my-playbook.yml --syntax-check` in your basic CI tests, and it's also good to add a syntax check in a [pre-commit hook](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) if your playbook is in a Git repository.
-
-W> Because syntax checking only statically loads a playbook, dynamic includes (like those loaded with `include_tasks`) and variables can't be validated. Because of this, more integration testing is required to guarantee an entire playbook can be run.
-
-## Linting Ansible content with `ansible-lint`
-
-In addition to linting structural YAML issues with `yamllint`, Ansible tasks and playbooks can be linted using [`ansible-lint`](https://github.com/ansible/ansible-lint). Many Ansible best practices and a preferred task style can be enforced via linting.
-
-Let's take the following playbook, for example (called `main.yml`):
-
-{lang="yaml"}
-```
----
-- hosts: localhost
-  gather_facts: false
-  connection: local
-
-  tasks:
-    - shell: uptime
-      register: system_uptime
-
-    - name: Print the registered output of the 'uptime' command.
-      debug:
-        var: system_uptime.stdout
-```
-
-It looks straightforward, and the YAML syntax passes `yamllint` without a problem.
-
-But there are some aspects to this playbook which could be improved. Let's see if `ansible-lint` can highlight them. Install it via Pip with:
-
-{lang="text",linenos=off}
-```
-pip3 install ansible-lint
-```
-
-Then run it on the playbook, and observe the output:
-
-{lang="text",linenos=off}
-```
-$ ansible-lint main.yml
-[301] Commands should not change things if nothing needs doing
-main.yml:6
-Task/Handler: shell uptime
-
-[305] Use shell only when shell functionality is required
-main.yml:6
-Task/Handler: shell uptime
-
-[502] All tasks should be named
-main.yml:6
-Task/Handler: shell uptime
-```
-
-Each of the suggestions corresponds to a 'rule'; [all the default rules](https://docs.ansible.com/ansible-lint/rules/default_rules.html) are listed in Ansible Lint's documentation.
-
-To fix these issues you would need to do the following:
-
-  - Add a `name` to the `uptime` task, to resolve the `502` rule violation.
-  - Use the `command` module instead of `shell` for the `uptime` task, to resolve the `305` rule violation. You should only use the `shell` module when you need advanced capabilities like pipes or redirection.
-  - Add `changed_when: false` to the `uptime` task, to resolve the `301` rule violation. Since the task doesn't change anything on the system, it should be marked as such, to avoid breaking idempotency.
-
-Most of the rules are straightforward, but you might choose to ignore some, if you have good reason to do something in opposition to the default rules.
-
-As with `yamllint`, you can add a file named `.ansible-lint`, providing configuration specific to your project. See the [`ansible-lint` Configuration File documentation](https://docs.ansible.com/ansible-lint/configuring/configuring.html#configuration-file) for available options.
-
-## Automated testing and development with Molecule
-
-Everything to this point covers _static_ testing. But _the proof is in the pudding_---that is, you can't really verify a playbook works until you actually _run_ it.
-
-But it would be dangerous to run your playbook against your production infrastructure, especially when modifying it or adding new functionality.
-
-I started out running one-off Virtual Machines running in VirtualBox or Amazon EC2 to test my playbooks, but this is tiresome. I would have to do the following every time I wanted to test a playbook:
-
-  1. Build a new VM.
-  2. Configure SSH so I can connect to it.
-  3. Set up an inventory so the playbook connects to the VM (and _not_ production!).
-  4. Run my Ansible playbook against the VM.
-  5. Test and validate my playbook does what it's supposed to.
-  6. Delete the VM.
-
-Vagrant can help with this process somewhat, and it is well-suited to the task, but Vagrant can be a little slow, and it doesn't work well in CI or lightweight environments.
-
-So I started maintaining a shell script which did many of the above steps automatically, using Docker containers, and I could run playbooks and tests in CI or locally. But this was fragile, required a lot of work to maintain in different CI environments. I also realized I was maintaining complex shell scripts to test my simple Ansible automation playbooks---there had to be a simpler way!
-
-And there was: [Molecule](https://molecule.readthedocs.io/en/latest/).
-
-{width=40%}
-![Molecule's logo](images/12-molecule-logo.png)
-
-Molecule is a lightweight, Ansible-based tool to help in the development and testing of Ansible playbooks, roles, and collections.
-
-At its most basic level, Molecule does all the six steps identified above, and adds on extra functionality like multiple scenarios, multiple backends, and configurable verification methods.
-
-And the best part? Everything in Molecule is controlled by Ansible playbooks!
-
-Molecule is easy to install:
-
-{lang="text",linenos=off}
-```
-pip3 install molecule
-```
-
-### Testing a role with Molecule
-
-Originally, Molecule was purpose-built for testing Ansible roles. As such, it has built-in role scaffold functionality, which sets up a role just like the `ansible-galaxy role init` command does, but with a Molecule configuration built-in.
-
-Inside any directory, run the following command to create a new role:
-
-{lang="text",linenos=off}
-```
-molecule init role myrole
-```
-
-If you `cd` into the new `myrole` directory, you'll see the standard role structure generated by `ansible-galaxy`, but with one notable addition: the `molecule` directory.
-
-This directory's presence indicates there are one or more Molecule scenarios available for testing and development purposes. Let's take a look at what's inside the `default` scenario:
-
-{lang="text",linenos=off}
-```
-molecule/
-  default/
-    INSTALL.rst
-    converge.yml
-    molecule.yml
-    verify.yml
-```
-
-The `INSTALL` file provides instructions for setting up Molecule to run your tests correctly.
-
-The `molecule.yml` file configures Molecule and tells it how to run the entire build and test process. We'll cover the file in more depth later.
-
-The `converge.yml` file is an Ansible playbook, and Molecule runs it on the test environment immediately after setup is complete. For basic role testing, the Converge playbook just includes the role (in this case, `myrole`), nothing more.
-
-The `verify.yml` file is another Ansible playbook, which is run after Molecule runs the `converge.yml` playbook and tests idempotence. It is meant for verification tests, e.g. ensuring a web service your role installs responds properly, or a certain application is configured correctly.
-
-Assuming you have Docker installed on your computer, you can run Molecule's built-in tests on the default role immediately:
-
-{lang="text",linenos=off}
-```
-molecule test
-```
-
-The `test` command runs through the full gamut of Molecule's capabilities, including setting up a test environment, running any configured lint tools, installing any Ansible Galaxy requirements, running the `converge` playbook, running the `verify` playbook, and then tearing down the test environment (regardless of tests passing or failing).
-
-You can perform a subset of Molecule's tasks using other options, for example:
-
-{lang="text",linenos=off}
-```
-molecule converge
-```
-
-This will run through all the same steps as the `test` command, but will stop execution after the `converge` playbook runs, and leave the test environment running.
-
-This is _extremely_ useful for role development and debugging.
-
-For automation development, I usually have a workflow like the following:
-
-  1. Create a new role with a Molecule test environment.
-  2. Start working on the tasks in the role.
-  3. Add a `fail:` task where I want to set a 'breakpoint', and run `molecule converge`.
-  4. After the playbook runs and hits my `fail` task, log into the environment with `molecule login`.
-  5. Explore the environment, check my configuration files, do some extra sleuthing if needed.
-  6. Go back to my role, work on the rest of the role's automation tasks.
-  7. Run `molecule converge` again.
-  8. (If there are any issues or I get my environment in a broken state, run `molecule destroy` to wipe away the environment then `molecule converge` to bring it back again.)
-  9. Once I feel satisfied, run `molecule test` to run the full test cycle and make sure my automation works flawlessly and with idempotence.
-
-For debugging, I'll often just run `molecule converge`, see where my automation breaks, log in with `molecule login` to figure out the problem (and then fix it), then run `molecule converge` again until it starts working.
-
-When you're finished with your development session, tell Molecule to tear down the environment using:
-
-{lang="text",linenos=off}
-```
-molecule destroy
-```
-
-### Testing a playbook with Molecule
-
-Molecule's useful for testing more than just roles. I regularly use Molecule to test playbooks, collections, and even Kubernetes Operators!
-
-Let's say I have a playbook that sets up an Apache server, with the following contents in `main.yml`:
-
-{lang="yaml",linenos=off}
-```
----
-- name: Install Apache.
-  hosts: all
-  become: true
-
-  vars:
-    apache_package: apache2
-    apache_service: apache2
-
-  handlers:
-    - name: restart apache
-      service:
-        name: "{{ apache_service }}"
-        state: restarted
-
-  pre_tasks:
-    - name: Override Apache vars for Red Hat.
-      set_fact:
-        apache_package: httpd
-        apache_service: httpd
-      when: ansible_os_family == 'RedHat'
-
-  tasks:
-    - name: Ensure Apache is installed.
-      package:
-        name: "{{ apache_package }}"
-        state: present
-
-    - name: Copy a web page.
-      copy:
-        content: |
-          <html>
-          <head><title>Hello world!</title></head>
-          <body>Hello world!</body>
-          </html>
-        dest: "/var/www/html/index.html"
-      notify: restart apache
-
-    - name: Ensure Apache is running and starts at boot.
-      service:
-        name: "{{ apache_service }}"
-        state: started
-        enabled: true
-```
-
-Because I want to make sure this playbook works on both of the platforms I support---Debian and CentOS, in this case---I want to make sure my Molecule tests cover both platforms.
-
-So first, run `molecule init scenario` to initialize a default Molecule scenario in the playbook's folder:
-
-{lang="none",linenos=off}
-```
-$ molecule init scenario
---> Initializing new scenario default...
-Initialized scenario in ~/playbook/molecule/default successfully.
-```
-
-Since we're going to test a playbook and not a role, we need to clean up some files and make a few changes.
-
-Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, and delete the existing `tasks:` section. Make the Converge play prepare the environment in its `tasks:` section, then run the `main.yml` playbook by importing it:
-
-{lang="yaml"}
-```
----
-- name: Converge
-  hosts: all
-
-  tasks:
-    - name: Update apt cache (on Debian).
-      apt:
-        update_cache: true
-        cache_valid_time: 3600
-      when: ansible_os_family == 'Debian'
-
-- import_playbook: ../../main.yml
-```
-
-At this point, you can try testing the playbook with Molecule. As I mentioned earlier, I like to use `molecule converge` when developing, so I can see where something breaks, then fix it, then run `molecule converge` again to re-run the playbook.
-
-{lang="text",linenos=off}
-```
-$ molecule converge
---> Test matrix
-
-└── default
-    ├── dependency
-    ├── create
-    ├── prepare
-    └── converge
-
---> Scenario: 'default'
-...
-    TASK [Ensure Apache is running and starts at boot.] ***********
-fatal: [instance]: FAILED! => {"changed": false, "msg": "Could
-not find the requested service httpd: "}
-
-    RUNNING HANDLER [restart apache] ******************************
-
-    PLAY RECAP ****************************************************
-    instance  : ok=5  changed=2  unreachable=0  failed=1  skipped=1
-```
-
-Uh oh, something definitely went wrong if the Apache service can't be found!
-
-This playbook is pretty simple, though, and it doesn't seem like there are any errors with it. We should debug this problem by logging into the test environment, and checking out what's wrong with the `httpd` service:
-
-{lang="none",linenos=off}
-```
-$ molecule login
-[root@instance /]# systemctl status httpd
-Failed to get D-Bus connection: Operation not permitted
-```
-
-Ah, it looks like systemd is not working properly. And, rather than lead you down a rabbit hole of trying to debug systemd inside a Docker container, and how to get everything working properly so you can test services running inside containers, I'll skip to the end and show you how I test my playbooks correctly when they manage services like `httpd`.
-
-First, clean up the existing environment by exiting the running instance and destroying it:
-
-{lang="none",linenos=off}
-```
-[root@instance /]# exit
-$ molecule destroy
-```
-
-#### Adjusting Molecule to use more flexible test containers
-
-Molecule allows almost infinite flexibility, when it comes to configuring the test environment. In our case, we need to be able to test services running in Docker containers, meaning the Docker containers need to be able to run an init system (in this case, systemd).
-
-We also want to test Debian in addition to the default `centos` container Molecule uses by default, so open the `molecule.yml` file and edit the `platforms` section to use a slightly different Docker configuration:
-
-{lang="yaml"}
-```
-platforms:
-  - name: instance
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos8}-ansible:latest"
-    command: ""
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    privileged: true
-    pre_build_image: true
-```
-
-This configuration makes four changes to the default Molecule file: one change (the `image`), and three additions:
-
-  - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-centos8}` in the image name. This will allow substitution for other distros, like Debian, later.
-  - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured `COMMAND`, which in this case starts the systemd init system and keeps the container running.
-  - Add a necessary volume mount to allow processes to be managed inside the container.
-  - Set the `privileged` flag on the container, so systemd can initialize properly.
-
-W> The `privileged` flag should be used with care; don't run Docker images or software you don't trust using `privileged`, because that mode allows software running inside the Docker image to run as if it were running on the host machine directly, bypassing many of the security benefits of using containers. It is convenient but potentially dangerous. If necessary, consider maintaining your own testing container images if you need to run with `privileged` and wish to test with Docker.
-
-Now, if you run `molecule converge` or `molecule test`, the entire playbook should succeed, and idempotence should also pass.
-
-The last step is to make sure the playbook also runs correctly on Debian-based systems. Since there exists a `geerlingguy/docker-debian10-ansible` container (see a full list of the [Docker Ansible test containers I maintain](https://ansible.jeffgeerling.com/#container-images-testing)), you can run the Molecule tests under that operating system as well:
-
-{lang="none",linenos=off}
-```
-$ MOLECULE_DISTRO=debian10 molecule test
-...
-    RUNNING HANDLER [restart apache] ******************************
-
-    PLAY RECAP ****************************************************
-    instance  : ok=7  changed=4  unreachable=0  failed=0  skipped=1
-```
-
-#### Verifying a playbook with Molecule
-
-Let's add one more thing: validation that Apache is actually serving web traffic! Open the `verify.yml` playbook, and add a task to check whether Apache serves web traffic:
-
-{lang="yaml"}
-```
----
-- name: Verify
-  hosts: all
-
-  tasks:
-  - name: Verify Apache is serving web requests.
-    uri:
-      url: http://localhost/
-      status_code: 200
-```
-
-Run `molecule test` again, and make sure the validation task succeeds:
-
-{lang="none",linenos=off}
-```
-$ molecule test
-...
-    TASK [Verify Apache is serving web requests.] *****************
-    ok: [instance]
-
-    PLAY RECAP ****************************************************
-    instance  : ok=2  changed=0  unreachable=0  failed=0  skipped=0
-```
-
-When developing or debugging with Molecule, you can run _only_ the verify step using `molecule verify`.
-
-As I've stated earlier, you could put this test in the Ansible playbook _itself_, so the test is always run as part of your automation. But the structure of your tests may dictate adding extra validation into Molecule's `validate.yml` playbook, like we did here.
-
-#### Adding lint configuration to Molecule
-
-As a final step, it's good to make sure your code follows a consistent code style, so we can enforce it with Molecule by adding a lint configuration to the `molecule.yml` file:
-
-{lang="yaml",starting-line-number=6}
+    - name: Check the date on the server.
+      command: date
 ```
-lint: |
-  set -e
-  yamllint .
-  ansible-lint
-```
-
-You can add the lint configuration to any part of the Molecule configuration; you just need to make sure the `lint` key is one of the top-level keys.
-
-Now you can run all configured lint tools with `molecule lint`, instead of running `yamllint` and `ansible-lint` separately. If you need to override any lint rules, you can add a `.yamllint` or `.ansible-lint` file alongside your playbook in the project's root folder.
-
-### Molecule Summary
-
-Molecule is a simple but flexible tool used for testing Ansible roles, playbooks, and collections. The options presented in these examples are only a small subset of what's possible using Molecule. Later, we'll configure Molecule to test a role using Continuous Integration, to help your playbooks always be tested and working.
-
-You can find a complete example of this Molecule playbook configuration in this book's GitHub repository: [Molecule Example](https://github.com/geerlingguy/ansible-for-devops/tree/master/molecule).
-
-## Running your playbook in check mode
-
-One step beyond local integration testing is running your playbook with `--check`, which runs the entire playbook on your live infrastructure, but without performing any changes. Instead, Ansible highlights tasks that _would've_ resulted in a change to show what will happen when you _actually_ run the playbook later.
-
-This is helpful for two purposes:
-
-  1. To prevent 'configuration drift', where a server configuration may have drifted away from your coded configuration. This could happen due to human intervention or other factors. But it's good to discover configuration drift without forcefully changing it.
-  2. To make sure changes you make to a playbook that shouldn't break idempotency _don't_, in fact, break idempotency. For example, if you're changing a configuration file's structure, but with the goal of maintaining the same resulting file, running the playbook with `--check` alerts you when you might accidentally change the live file as a result of the playbook changes. Time to fix your playbook!
-
-When using `--check` mode, certain tasks may need to be forced to run to ensure the playbook completes successfully: (e.g. a `command` task that registers variables used in later tasks). You can set `check_mode: no` to do this:
-
-{lang="yaml",linenos=off}
-```
-- name: A task that runs all the time, even in check mode.
-  command: mytask --option1 --option2
-  register: my_var
-  check_mode: no
-```
-
-For even more detailed information about what changes would occur, add the `--diff` option, and Ansible will output changes that _would've_ been made to your servers line-by-line. This option produces a lot of output if `check` mode makes a lot of changes, so use it conservatively unless you want to scroll through a lot of text!
-
-T> You can add conditionals with `check_mode` just like you can with `when` clauses, though most of the time you will probably just use `yes` or `no`.
-
-W> If you've never run a playbook with `--check` on an existing production instance, it might not be a good idea to blindly try it out. Some modules and playbooks are not written in a way that works well in check mode, and it can lead to problems. It's best to start using check mode testing early on, and fix small problems as they arise.
-
-## Automated testing on GitHub using GitHub Actions
-
-GitHub Actions is one of many Continuous Integration (CI) and Continuous Deployment (CD) tools. Others like it include Travis CI, Circle CI, Drone, Jenkins, and Zuul.
-
-I often choose to use the CI tool with the least amount of friction when integrating with my source repository, and because much of my code is hosted on GitHub, GitHub Actions is the easiest to implement! But if, for example, you use GitLab, it would be easier to use GitLab CI.
-
-Following GitHub Actions' setup guide, the first step in setting up an Actions workflow is to [create a workflow file in your repository](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#creating-a-workflow-file).
-
-In this book's example, we'll work from the same Molecule playbook example we created earlier. This example presumes you have a playbook like the one created earlier in the root directory of a code repository that is on GitHub.
-
-Create a new `.github` directory alongside the playbook, and inside that directory, create a `workflows` directory. Finally, create a workflow file named `ci.yml` inside the `workflows` directory.
-
-You should have a directory structure like the following:
-
-{lang="none",linenos=off}
-```
-myproject/
-  .github/
-    workflows/
-      ci.yml
-  main.yml
-```
-
-As with most other operations tools these days, GitHub Actions uses YAML for its configuration syntax, so we'll create a 'CI' (for 'Continuous Integration') workflow. Open the `ci.yml` file and add a name for the workflow:
-
-{lang="yaml"}
-```
----
-name: CI
-```
-
-The first thing you should do in a GitHub Actions workflow is define when the workflow should run. By default, it will run on every branch and pull request, but for most of my projects, I like to have it run only on pushes and merges to the `master` branch, as well as on any `pull_request`:
-
-{lang="yaml",starting-line-number=3}
-```
-'on':
-  pull_request:
-  push:
-    branches:
-      - master
-```
-
-I> The syntax options for the `on` property and everything else you can put in a workflow are available in GitHub's documentation: [Workflow syntax for GitHub Actions](https://help.github.com/en/articles/workflow-syntax-for-github-actions).
-
-Next, you define a list of `jobs` to run in the workflow.
-
-{lang="yaml",starting-line-number=9}
-```
-jobs:
-
-  test:
-    name: Molecule
-    runs-on: ubuntu-latest
-```
-
-This is a `job` with the name `Molecule` (that's the label that will show up in GitHub's interface), and it will run on the latest version of GitHub Actions' Ubuntu build environment. You can currently run jobs on [a few different platforms](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on), including Windows, macOS, and Ubuntu Linux.
-
-We also want to define a `matrix` of Linux distributions to test against; earlier, we set up the playbook to be testable with either `centos8` or `debian10`, so we can add a test matrix under the `jobs.test.strategy.matrix` key:
-
-{lang="yaml",starting-line-number=14}
-```
-    strategy:
-      matrix:
-        - distro: centos8
-        - distro: debian10
-```
-
-GitHub Actions will run a job once for each of the defined options in the build matrix---in our case, one time with a `distro` variable set to `centos8`, and one time with `distro` set to `debian10`.
-
-Finally, we come to the meat of the workflow job, the `steps` that run once the environment is ready:
-
-{lang="yaml",starting-line-number=20}
-```
-    steps:
-      - name: Check out the codebase.
-        uses: actions/checkout@v2
-
-      - name: Set up Python 3.
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-
-      - name: Install test dependencies.
-        run: pip3 install molecule docker yamllint ansible-lint
-
-      - name: Run Molecule tests.
-        run: molecule test
-        env:
-          PY_COLORS: '1'
-          ANSIBLE_FORCE_COLOR: '1'
-          MOLECULE_DISTRO: ${{ matrix.distro }}
-```
-
-The first two steps set up the build environment using community-supported GitHub Actions to check out the repository code into the current directory, then set up Python.
-
-The third step (these look a lot like Ansible tasks, don't they?) `run`s a command, which installs all our test dependencies via `pip3`.
-
-The final step runs `molecule test`, and passes in three environment variables:
-
-  - `PY_COLORS: '1'`: This forces Molecule to use colorized output in the CI environment. Without it, all the output would be white text on a black background.
-  - `ANSIBLE_FORCE_COLOR: '1'`: This does the same thing as `PY_COLORS`, but for Ansible's playbook output.
-  - `MOLECULE_DISTRO: ${{ matrix.distro }}`: This sets an environment variable with the current `distro` being run; so once for `centos8` and another time for `debian10`.
-
-That's all there is to a GitHub Actions workflow! You can add it to your GitHub repository, and assuming you have available build minutes, GitHub will run this workflow, once for each of the `distro`s in the `matrix`, every time you create or update a PR, or merge or push to the `master` branch.
-
-Here's what it looks like when a build runs successfully:
-
-{width=100%}
-![GitHub Actions CI workflow results](images/12-github-actions-ci-workflow.png)
-
-You can also put a 'CI status' badge in your project's README file (or anywhere else!) to see the current build status at a glance. To do so, go to the 'Actions' tab on GitHub, click on the workflow name (in this case, 'CI'), and then click the 'Create status badge' button. It will allow you to choose options for a status badge you can place anywhere to quickly see the workflow's current status.
-
-{width=60%}
-![A CI status badge displays project health at a glance](images/12-github-actions-ci-badge.png)
-
-The example in this chapter is actively in use in this book's GitHub repository: [Ansible for DevOps GitHub Actions CI workflow](https://github.com/geerlingguy/ansible-for-devops/blob/master/.github/workflows/ci.yml).
-
-### Automated testing in other CI environments
-
-Molecule has extended documentation with examples for integration with many different CI environments, like Travis CI, GitLab CI, Jenkins, and Tox; see the [Molecule Continuous Integration](https://molecule.readthedocs.io/en/latest/ci.html) documentation for more examples.
-
-### Real-world examples
-
-This style of testing is integrated into many of my Ansible projects; here are a few examples using Molecule in various CI environments:
 
-  - https://github.com/geerlingguy/ansible-role-java
-  - https://github.com/geerlingguy/ansible-collection-k8s
-  - https://github.com/ansible-collections/community.kubernetes
+If you want, test the playbook while you're logged in: `ansible-playbook main.yml`.
 
-## Functional testing using serverspec or testinfra
+### Create a Jenkins job to run an Ansible Playbook
 
-[Serverspec](http://serverspec.org/) is a tool to help automate server tests using RSpec tests, which use a Ruby-like DSL to ensure your server configuration matches your expectations. In a sense, it's another way of building well-tested infrastructure.
+With Jenkins running, configure a Jenkins job to run a playbook on the local server with Ansible. Visit `http://jenkins.test:8080/` and log in with username `admin` and password `admin` (these are the defaults from the `geerlingguy.jenkins` role---you should override these for anything besides local test environments!).
 
-[Testinfra](https://testinfra.readthedocs.io/en/latest/) is a very similar tool, written in Python with a Python-based DSL.
+Once the page loads, click the 'New Item' link to create a new 'Freestyle project' with a title 'ansible-local-test'. Click 'OK' and when configuring the job, and set the following configuration:
 
-Serverspec and Testinfra tests can be run locally, via SSH, through Docker's APIs, or through other means, without the need for an agent installed on your servers, so they're lightweight tools for testing your infrastructure (just like Ansible is a lightweight tool for _managing_ your infrastructure).
+  - Under 'Build Environment', check the 'Color ANSI Console Output' option. This allows Ansible's helpful colored output to pass through the Jenkins console, so it is easier to read during and after the run.
+  - Under 'Build', click 'Add Build Step', then choose 'Execute shell'. In the 'Command' field, add the following code, which will run the local Ansible playbook:
 
-There's a lot of debate over whether well-written Ansible playbooks themselves (especially along with the dry-run `--check` mode, and Molecule for CI) are adequate for well-tested infrastructure, but many teams are more comfortable maintaining infrastructure tests separately (especially if the team is already familiar with another tool!).
+    {lang="text"}
+    ~~~
+    # Force Ansible to output jobs with color.
+    export ANSIBLE_FORCE_COLOR=true
+    
+    # Run the local test playbook.
+    ansible-playbook /opt/ansible-for-devops/main.yml
+    ~~~
 
-Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for the same task, isn't that a good enough test your server is configured correctly?
+Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, click the 'Build Now' link to start a build. After a few seconds, you should see a new item in the 'Build History' block. Click on the (hopefully) blue circle to the left of '#1', and it will take you to the console output of the job. It should look something like this:
 
-This book will not provide a detailed guide for using Serverspec or Testinfra, but here are a few resources in case you'd like to use one of them:
+{width=80%}
+![Jenkins job completed successfully!](images/11-jenkins-job-console-output.png)
 
-  - [A brief introduction to server testing with Serverspec](https://www.debian-administration.org/article/703/A_brief_introduction_to_server-testing_with_serverspec)
-  - [Testing infrastructure with serverspec](https://vincent.bernat.ch/en/blog/2014-serverspec-test-infrastructure)
-  - [Molecule's testinfra verifier configuration](https://molecule.readthedocs.io/en/latest/configuration.html#testinfra)
+This is a basic example, but hopefully it's enough to show you how easy it is to get at least some of your baseline CI/CD automation done using a free and open source tool. Most of the more difficult aspects of managing infrastructure through Jenkins surrounds the ability to manage SSH keys, certificates, and other credentials through Jenkins, but there is already plenty of documentation surrounding these things elsewhere online and in Jenkins documentation, so this will be left as an exercise for the reader.
 
 ## Summary
 
-Tools like Molecule help develop, test, and run playbooks regularly and easily, both locally and in CI environments. In addition the information contained in this chapter, read through the [Testing Strategies](https://docs.ansible.com/ansible/latest/reference_appendices/test_strategies.html) documentation in Ansible's documentation for a comprehensive overview of infrastructure testing and Ansible.
+Tools like Ansible Tower provide a robust, repeatable, and accessible environment in which to run your Ansible playbooks.
+
+In a team-based environment, it's especially important to have reliable ways to run your Ansible playbooks that aren't dependent on individual developers' laptops!
 
 {lang="text",linenos=off}
 ```
  ________________________________________
-/ Never ascribe to malice that which can \
-| adequately be explained by             |
-\ incompetence. (Napoleon Bonaparte)     /
+/ The first rule of any technology used  \
+| in a business is that automation       |
+| applied to an efficient operation will |
+| magnify the efficiency. The second is  |
+| that automation applied to an          |
+| inefficient operation will magnify the |
+\ inefficiency. (Bill Gates)             /
  ----------------------------------------
         \   ^__^
          \  (oo)\_______
