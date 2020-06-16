@@ -47,7 +47,7 @@ Visit the URL provided by the login welcome message (e.g. `https://10.42.0.42/`)
 At this point, you will need to register a free trial license of Ansible Tower following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
 
 {width=80%}
-![Ansible Tower's Dashboard](images/11-ansible-tower-dashboard.png)
+![Ansible Tower's Dashboard](images/12-ansible-tower-dashboard.png)
 
 ### Using Ansible Tower
 
@@ -99,7 +99,7 @@ Now that we have all the structure for running playbooks configured, we need onl
 Save the Job Template, then click the small Rocketship button to start a job using the template. You'll be redirected to a Job status page, which provides live updates of the job status, and then a summary of the playbook run when complete:
 
 {width=80%}
-![Tower Test job completed successfully!](images/11-ansible-tower-job-complete.png)
+![Tower Test job completed successfully!](images/12-ansible-tower-job-complete.png)
 
 You can view the playbook run's standard output in real-time (or review it after the fact) with the 'View standard out' button. You can also stop a running job, delete a job's record, or relaunch a job with the same parameters using the respective buttons on the job's page.
 
@@ -249,7 +249,7 @@ Once the page loads, click the 'New Item' link to create a new 'Freestyle projec
 Click 'Save' to save the 'Ansible Local Test' job, and on the project's page, click the 'Build Now' link to start a build. After a few seconds, you should see a new item in the 'Build History' block. Click on the (hopefully) blue circle to the left of '#1', and it will take you to the console output of the job. It should look something like this:
 
 {width=80%}
-![Jenkins job completed successfully!](images/11-jenkins-job-console-output.png)
+![Jenkins job completed successfully!](images/12-jenkins-job-console-output.png)
 
 This is a basic example, but hopefully it's enough to show you how easy it is to get at least some of your baseline CI/CD automation done using a free and open source tool. Most of the more difficult aspects of managing infrastructure through Jenkins surrounds the ability to manage SSH keys, certificates, and other credentials through Jenkins, but there is already plenty of documentation surrounding these things elsewhere online and in Jenkins documentation, so this will be left as an exercise for the reader.
 

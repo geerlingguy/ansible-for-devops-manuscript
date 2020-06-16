@@ -85,7 +85,7 @@ servercheck-log
 This inventory may look a little overwhelming at first, but if you break it apart into simple groupings (web app servers, database servers, logging server, and node.js app servers), it describes a straightforward architecture.
 
 {width=85%}
-![Server Check.in Infrastructure.](images/7-server-checkin-infrastructure.png)
+![Server Check.in Infrastructure.](images/8-server-checkin-infrastructure.png)
 
 Lines 1-29 describe a few groups of servers (some with only one server), so playbooks and `ansible` commands can refer to the group by name. Lines 6-7 and 27-29 set variables that will apply only to the servers in the group (e.g. variables below `[servercheck-nodejs:vars]` will only apply to the servers in the `servercheck-nodejs` group).
 

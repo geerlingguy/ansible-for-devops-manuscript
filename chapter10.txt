@@ -346,12 +346,12 @@ default              : ok=55   changed=31   unreachable=0    failed=0
 Now, jump over to a web browser and load `http://192.168.33.7/`. You should see something like the following:
 
 {width=80%}
-![Demonstration Rails app running successfully.](images/9-rails-app-fresh.png)
+![Demonstration Rails app running successfully.](images/10-rails-app-fresh.png)
 
 Try creating, updating, and deleting a few articles to make sure the database and all app functionality is working correctly:
 
 {width=80%}
-![A Rails app to perform CRUD operations on Articles.](images/9-rails-app-with-articles.png)
+![A Rails app to perform CRUD operations on Articles.](images/10-rails-app-with-articles.png)
 
 The app seems to function perfectly, but it could use some improvements. After more development work, we have a new version of to deploy. We could update the `app_version` variable in `vars.yml` and run `vagrant provision` to run the entire provisioning and deployment playbook again, but to save time using our flexible playbook layout (with separate provisioning and deployment playbooks), we can run the `deploy.yml` playbook separately.
 
@@ -404,7 +404,7 @@ $ ansible-playbook deploy.yml -i inventory-ansible
 After a minute or so, the deployment should complete. Once complete, you'll see the new-and-improved version of the Demonstration Ruby on Rails Application:
 
 {width=80%}
-![Rails app - version 2.1.0 with a fancy header.](images/9-rails-app-new-version.png)
+![Rails app - version 2.1.0 with a fancy header.](images/10-rails-app-new-version.png)
 
 Application update deployments involve incrementing the `app_version` to the latest git tag, then running the `deploy.yml` playbook again. The `main.yml` playbook can be run to ensure the entire server stack is in the correct state, but it's faster to just deploy the app updates.
 
@@ -421,7 +421,7 @@ The server checking application needs to run on a variety of servers hosted arou
 We'll emulate part of Server Check.in's infrastructure (the check server application) by deploying and updating a small Node.js application to a set of virtual machines. The code repository for this app is located on GitHub in the [demo-nodejs-api repository](https://github.com/geerlingguy/demo-nodejs-api). Here's a diagram of the infrastructure we'll be building:
 
 {width=80%}
-![Four servers connected to the Internet.](images/9-multi-server-deployment-cloud.png)
+![Four servers connected to the Internet.](images/10-multi-server-deployment-cloud.png)
 
 To begin, create four lightweight Vagrant VMs using the following Vagrantfile:
 
@@ -749,7 +749,7 @@ In the case of Server Check.in, there are two separate API layers that manage th
 For many applications, especially those with app servers close together (e.g. in the same data center) the infrastructure layer follows a more traditional layout, with a load balancer to handle the API request distribution:
 
 {width=80%}
-![Four servers behind a load balancer.](images/9-multi-server-deployment-lb.png)
+![Four servers behind a load balancer.](images/10-multi-server-deployment-lb.png)
 
 For a demonstration of zero-downtime deployment with a load balancer, let's build a local infrastructure with one HAProxy load balancer and two Apache webservers.
 
@@ -871,7 +871,7 @@ To install the required roles, run `ansible-galaxy install -r requirements.yml`.
 At this point, if you want to bring up your local load-balanced infrastructure, run `vagrant up` in the `deployments-balancer` directory, and wait a few minutes. Once everything is up and running, visit `http://192.168.4.2/`, and you should see the default Ubuntu Apache2 landing page:
 
 {width=80%}
-![HAProxy is serving requests through the Apache backend servers.](images/9-deploy-haproxy.png)
+![HAProxy is serving requests through the Apache backend servers.](images/10-deploy-haproxy.png)
 
 Verify round-robin load balancing is working by running the following command:
 

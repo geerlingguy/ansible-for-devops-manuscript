@@ -23,7 +23,7 @@ It is often possible to perform all the testing you need on your own local works
 I like to think of testing as a spectrum—just like most things in life, your project is unique, and might not need to integrate all the techniques discussed in this chapter. The following graphic is from a presentation I gave at AnsibleFest in 2018:
 
 {width=90%}
-![My 'Ansible Testing Spectrum'](images/12-testing-spectrum.png)
+![My 'Ansible Testing Spectrum'](images/13-testing-spectrum.png)
 
 Each technique discussed in this chapter provides more value than the previous one, but is also more complex and might not be worth the additional setup and maintenance burden, depending on your playbook.
 
@@ -298,7 +298,7 @@ So I started maintaining a shell script which did many of the above steps automa
 And there was: [Molecule](https://molecule.readthedocs.io/en/latest/).
 
 {width=40%}
-![Molecule's logo](images/12-molecule-logo.png)
+![Molecule's logo](images/13-molecule-logo.png)
 
 Molecule is a lightweight, Ansible-based tool to help in the development and testing of Ansible playbooks, roles, and collections.
 
@@ -747,12 +747,12 @@ That's all there is to a GitHub Actions workflow! You can add it to your GitHub 
 Here's what it looks like when a build runs successfully:
 
 {width=100%}
-![GitHub Actions CI workflow results](images/12-github-actions-ci-workflow.png)
+![GitHub Actions CI workflow results](images/13-github-actions-ci-workflow.png)
 
 You can also put a 'CI status' badge in your project's README file (or anywhere else!) to see the current build status at a glance. To do so, go to the 'Actions' tab on GitHub, click on the workflow name (in this case, 'CI'), and then click the 'Create status badge' button. It will allow you to choose options for a status badge you can place anywhere to quickly see the workflow's current status.
 
 {width=60%}
-![A CI status badge displays project health at a glance](images/12-github-actions-ci-badge.png)
+![A CI status badge displays project health at a glance](images/13-github-actions-ci-badge.png)
 
 The example in this chapter is actively in use in this book's GitHub repository: [Ansible for DevOps GitHub Actions CI workflow](https://github.com/geerlingguy/ansible-for-devops/blob/master/.github/workflows/ci.yml).
 

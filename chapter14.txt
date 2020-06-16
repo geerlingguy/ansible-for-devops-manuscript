@@ -275,7 +275,7 @@ Notice the `notify: restart nginx` in the `Copy Nginx server configuration in pl
 Once you run this playbook, if there were no errors, you should be able to securely access `https://https.test/` (assuming you have a record for that domain in your hosts file pointing to your server's IP address!). You might receive a security warning since it's self-signed, but all modern browsers and HTTPS-enabled tools should now be able to load the site over an encrypted connection!
 
 {width=80%}
-![HTTPS Test site loads with a security warning](images/13-https-test-chrome.png)
+![HTTPS Test site loads with a security warning](images/14-https-test-chrome.png)
 
 W> If you rebuild the server for `https.test` more than once (thus creating a new self-signed certificate), be sure to delete the certificate you previously added to your list of trusted certificates (e.g. via Keychain Access on Mac OS X for Chrome and Safari, or in FireFox under Preferences > Advanced > Certificates).
 
@@ -542,7 +542,7 @@ After a couple minutes, assuming Let's Encrypt could reach your server at subdom
 Visit `https://subdomain.example.com/` and you should see something like:
 
 {width=80%}
-![HTTPS Test site loads with a valid Let's Encrypt certificate](images/13-letsencrypt-valid-certificate.png)
+![HTTPS Test site loads with a valid Let's Encrypt certificate](images/14-letsencrypt-valid-certificate.png)
 
 Automating free certificates with Let's Encrypt can be fun, but make sure you're aware of [Let's Encrypt rate limits](https://letsencrypt.org/docs/rate-limits/) before you go ahead and automate certs for 3,000 of your subdomains at once!
 
@@ -610,12 +610,12 @@ W> The `--directory` option in this command requires Python 3.7 or later. Make s
 Now that a server is running on port 8080, you should see Nginx proxying requests successfully:
 
 {width=80%}
-![Nginx proxies HTTPS requests to backend HTTP applications](images/13-https-nginx-proxy-test.png)
+![Nginx proxies HTTPS requests to backend HTTP applications](images/14-https-nginx-proxy-test.png)
 
 If you log into the server and kill the Python process serving HTTP traffic on port 8080, then Nginx will still attempt to proxy traffic, but will return a 502 Bad Gateway because the backend service is unavailable:
 
 {width=80%}
-![Nginx returns 502 Bad Gateway if the backend is unavailable](images/13-https-nginx-proxy-502-bad-gateway.png)
+![Nginx returns 502 Bad Gateway if the backend is unavailable](images/14-https-nginx-proxy-502-bad-gateway.png)
 
 Once you learn to automate HTTPS certificates with Ansible and proxy backend services with Nginx (or another suitable HTTPS-aware proxy), it becomes possible to adopt HTTPS everywhere, no matter what kind of web applications you run.
 

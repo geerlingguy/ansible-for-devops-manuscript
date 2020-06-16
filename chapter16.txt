@@ -7,7 +7,7 @@ Because of this, many different container scheduling platforms have been develop
 ### A bit of Kubernetes history
 
 {width=30%}
-![Kubernetes logo](images/15-kubernetes-logo.png)
+![Kubernetes logo](images/16-kubernetes-logo.png)
 
 In 2013, some Google engineers began working to create an open source representation of the internal tool Google used to run millions of containers in the Google data centers, named Borg. The first version of Kubernetes was known as Seven of Nine (another Star Trek reference), but was finally renamed Kubernetes (a mangled translation of the Greek word for 'helmsman') to avoid potential legal issues.
 
@@ -47,7 +47,7 @@ There are a few different ways you can build a Kubernetes cluster:
 There are many excellent guides online for the latter options, so we'll stick to using `kubeadm` in this book's examples. And, lucky for us, there's an Ansible role (`geerlingguy.kubernetes`) which already wraps `kubeadm` in an easy-to-use manner so we can integrate it with our playbooks.
 
 {width=80%}
-![Kuberenetes architecture for a simple cluster](images/15-kubernetes-simple-cluster-architecture.png)
+![Kuberenetes architecture for a simple cluster](images/16-kubernetes-simple-cluster-architecture.png)
 
 As with other multi-server examples in this book, we can describe a three server setup to Vagrant so we can build a full 'bare metal' Kubernetes cluster. Create a project directory and add the following in a `Vagrantfile`:
 
@@ -406,7 +406,7 @@ The Service exposes a `NodePort` on each of the Kubernetes nodes---in this case,
 So in the example above, I visited `http://192.168.84.3:30681/`, and got the default Nginx welcome message:
 
 {width=80%}
-![Welcome to nginx message in browser](images/15-kubernetes-nginx-welcome.png)
+![Welcome to nginx message in browser](images/16-kubernetes-nginx-welcome.png)
 
 For a final example, it might be convenient for the playbook to output a debug message with the NodePort the Service is using. In addition to applying or deleting Kubernetes manifests, the `k8s` module can get cluster and resource information that can be used elsewhere in your playbooks.
 
@@ -610,7 +610,7 @@ At this point, you could log into the master, change to the root user (`sudo su`
 Run the playbook, grab the debug value, and append the port to the IP address of any of the cluster members. Once the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
 
 {width=80%}
-![phpMyAdmin running in the browser on a NodePort](images/15-kubernetes-helm-phpmyadmin.png)
+![phpMyAdmin running in the browser on a NodePort](images/16-kubernetes-helm-phpmyadmin.png)
 
 #### Interacting with Pods using the `kubectl` connection plugin
 
