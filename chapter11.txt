@@ -1,4 +1,4 @@
-# Chapter 11 - Server Security and Ansible {#chapter-10}
+# Chapter 11 - Server Security and Ansible {#chapter-11}
 
 The first configuration to be performed on any new server---especially any server with any exposure (direct or indirect) to the public Internet)---is security configuration.
 
@@ -489,7 +489,7 @@ sshd[19737]: input_userauth_request: invalid user minecraft
 sshd[19737]: Received disconnect from 218.78.214.9: 11: Bye Bye
 ```
 
-Only you will know what logs are the most important to monitor on your servers, but some of the most common ones are database slow query logs, web server access and error logs, authorization logs, and cron logs. Use tools like the ELK stack (demonstrated in a cookbook in Chapter 8), Munin, Nagios, or even a hosted service to make sure logs are populated and monitored.
+Only you will know what logs are the most important to monitor on your servers, but some of the most common ones are database slow query logs, web server access and error logs, authorization logs, and cron logs. Use tools like the ELK stack (demonstrated in a cookbook in Chapter 9), Munin, Nagios, or even a hosted service to make sure logs are populated and monitored.
 
 Additionally, you should always make sure log files are rotated and archived (according to your infrastructure's needs) using a tool like `logrotate`, and you should have monitoring enabled on log file sizes so you have an early warning when a particular log file or directory grows a bit too large. There are a number of `logrotate` roles on Ansible Galaxy (e.g. [Nick Hammond's `logrotate` role](https://galaxy.ansible.com/nickhammond/logrotate/)) that make rotation configuration easy.
 
