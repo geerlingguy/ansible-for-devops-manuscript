@@ -145,13 +145,34 @@ So where does that leave us?
 
 ## The history of Ansible Content Collections
 
-TODO.
+Well, in 2014, when Ansible Galaxy was created to allow roles to be shared, Ansible had less than 300 modules in Ansible's core repository, and the decision was made to [split the modules off from Ansible core](https://groups.google.com/forum/#!searchin/ansible-project/core$20extras$20split%7Csort:relevance/ansible-project/TUL_Bfmhr-E/rshKe30KdD8J) to make maintenance easier, since issues and PRs were overwhelming the small core development team.
 
-7/2/18 - https://groups.google.com/forum/#!searchin/ansible-devel/mazer|sort:date/ansible-devel/TsqKVLUlpKE/aoahNKauBgAJ
-10/1/18 - https://www.jeffgeerling.com/blog/2018/things-i-learned-ansiblefest-austin-2018-contributors-summit
-9/11/19 - https://groups.google.com/forum/#!searchin/ansible-project/collections|sort:date/ansible-project/iUthSqwDnAk/OD26q-tuAQAJ
+After a couple years, the modules were [merged back in](https://groups.google.com/forum/#!searchin/ansible-project/repository$20merge%7Csort:relevance/ansible-project/9WpXraBSLz8/q6HYIszBBwAJ), because maintaining three separate git repositories using submodules and trying to track three separate issue and PR queues was a worse maintenance nightmare than what they had to begin with!
+
+In 2017, Galaxy started to burst at the seams a little, as more users were contributing roles, and also trying to share module and plugin code by stashing them inside a role's structure.
+
+Also in 2017, as Red Hat expanded Ansible's scope to more broadly embrace networking, security, and Windows automation, the amount of maintenance burden pretty much overwhelmed the core team's ability to cope with the now _thousands_ of modules being maintained in Ansible's core repository:
+
+{width=90%}
+![Ansible core backlog growth](images/7-ansible-repo-backlog-growth.png)
+
+The graph above comes from Greg Sutcliffe's blog, in a post titled [Collections, The Backlog View](https://emeraldreverie.org/2020/03/02/collections-the-backlog-view/). In the post, he explores the data behind a major decision to shift Ansible's plugin and module development burden off the small Ansible core team and into a distributed set of _collections_.
+
+[Mazer](https://github.com/ansible/mazer) was introduced in 2018 to try experiment with new ways of managing groupings of Ansible content—roles, modules, and plugins. And in the Ansible 2.9 release in 2020, most of Mazer's functionality was merged into the already-existing `ansible-galaxy` command line utility that ships with Ansible.
+
+> Mazer was a character in the book _Ender's Game_, from which the name 'Ansible' was derived. A mazer is also a hardwood drinking vessel.
+
+And between the release of Ansible 2.8 and 2.10, the Ansible code was restructured, as explained in the blog post [Thoughts on Restructuring the Ansible Project](https://www.ansible.com/blog/thoughts-on-restructuring-the-ansible-project). The Ansible core repository will still hold a few foundational plugins and modules, vendor-supported and Red Hat-supported modules will be split out into their own collections, and community modules will be in _their_ own collections.
+
+This decision does run against the grain of the 'batteries included' philosophy, but the problem is that Ansible has grown to be one of the largest open source projects in existence, and it's no longer a good idea to have modules for Cisco networking switches that require special expertise in the same repository as modules for developer build tools like PHP's Composer or Node.js' NPM.
+
+But users are still able to get all a 'batteries included' version of Ansible---its what you've used most of this book! The difference is you can also strap on extra batteries, of any type (not just roles), more easily with collections.
 
 ## The Anatomy of a Collection
+
+So what's _in_ a collection?
+
+At the most basic level, you need to put a collection in the right directory, otherwise Ansible's Python-based collection loader will not be able to see it.
 
 TODO.
 
