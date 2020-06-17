@@ -114,7 +114,7 @@ T> For _test_ plugins, you can have more than one defined in the same Python fil
 
 If you run the `main.yml` playbook (even against localhost), it should now be able to verify that 'blue' is indeed _blue_:
 
-{lang=none,linenos=off}
+{lang=text,linenos=off}
 ```
 $ ansible-playbook -i localhost, -c local main.yml
 
@@ -172,15 +172,124 @@ But users are still able to get all a 'batteries included' version of Ansible---
 
 So what's _in_ a collection?
 
-At the most basic level, you need to put a collection in the right directory, otherwise Ansible's Python-based collection loader will not be able to see it.
+At the most basic level, you need to put a collection in the right directory, otherwise Ansible's namespace-based collection loader (based on Python's [PEP 420](https://www.python.org/dev/peps/pep-0420/) standard) will not be able to see it.
 
-TODO.
+Our goal is to move the `blue` test plugin from earlier in this chapter into a new collection, and use the plugin _in that collection_ in our playbook.
 
-## Putting our Plugin into a Collection
+We need to create a collection so we can put the `blue` plugin inside. In this example, since the collection is intended to be used local to this playbook, and since it's meant to hold color-related functionality, we can call the collection `local.colors`, which means the collection _namespace_ will be `local` (denoting a collection that's local to this playbook), and the collection _name_ will be `colors`.
 
-TODO.
+As with Ansible roles, new collections can be scaffolded using the `ansible-galaxy` command, in this case:
+
+{lang=text,linenos=off}
+```
+$ ansible-galaxy collection init local.colors --init-path ./collections/ansible_collections
+```
+
+> You might be wondering why we created an extra directory `ansible_collections` to hold our new namespace and collection---and why the collection has to be in a namespace, since it's just a local collection. It's required so Ansible can use Python's built-in namespace-based loader to load content from the collection.
+
+After running this command, you should see the following contents in your playbook directory:
+
+{lang=text,linenos=off}
+```
+ansible.cfg
+collections/
+  ansible_collections/
+    local/
+      colors/
+        README.md
+        docs/
+        galaxy.yml
+        plugins/
+        roles/
+main.yml
+test_plugins/
+  blue.py
+```
+
+The new collection includes all the necessary structure of a collection, but if you don't need one of the docs, plugins, or roles directories, you could delete them.
+
+The most important thing is the `galaxy.yml` file, which is required so Ansible can read certain metadata about the Collection when it is loaded. For _local_ collections like this one, the defaults are fine, but later, if you want to contribute a collection to Ansible Galaxy and share it with others, you would need to adjust the configuration in this file.
+
+### Putting our Plugin into a Collection
+
+To move our `blue.py` plugin into the collection, we'll need to create a `test` directory inside the collection's `plugins` directory (since `blue` is a test plugin), and then move the `blue.py` plugin into that folder:
+
+{lang=text,linenos=off}
+```
+$ mkdir collections/ansible_collections/local/colors/plugins/test
+$ mv test_plugins/blue.py collections/ansible_collections/local/colors/plugins/test/blue.py
+```
+
+At this point if you were to run the `main.yml` playbook, it would fail, with the message:
+
+{lang=text,linenos=off}
+```
+TASK [Verify blue is a form of blue.] ****************************
+fatal: [localhost]: FAILED! => {"msg": "The conditional check
+'my_color_choice is blue' failed. The error was: template error
+while templating string: no test named 'blue'. String: {% if
+my_color_choice is blue %} True {% else %} False {% endif %}"}
+```
+
+The problem is you need to also modify your Playbook and make sure Ansible knows that you want the `blue` module in the `local.colors` collection.
+
+There are two ways you can do this. For collection modules and roles, you could leave the playbook mostly unmodified, and just add a `collections` section in the play, like:
+
+{lang=yaml}
+```
+---
+- hosts: all
+
+  collections:
+    - local.colors
+
+  vars:
+    my_color_choice: blue
+```
+
+But in this case, we're using a test plugin, not a regular module or role, so we need to refer to the module in a special way, using it's 'Fully Qualified Collection Name' (FQCN), which in this test plugin's case would be `local.colors.blue`.
+
+So the task should be changed to look like this:
+
+{lang=yaml,starting-line-number=7}
+```
+  tasks:
+    - name: "Verify {{ my_color_choice }} is a form of blue."
+      assert:
+        that: my_color_choice is local.colors.blue
+```
+
+Now, if you run the playbook, it will run the same as before, but using the module that's in the `local.colors` collection.
+
+Any content you add to the collection---plugins, modules, or roles---can be called the same way. Whereas for things that are _built into_ Ansible or local to your playbook you can call them with `modulename` or `rolename`, for things that come from _collections_ you should call them by their FQCN.
+
+Unless you plan on sharing your collection code with other projects or with the entire Ansible community, it may be easier to maintain custom playbook-specific content like plugins, modules, and roles individually, inside local playbook directories like we did with the `test_plugins` or with `roles` in previous chapters.
+
+### Going deeper developing collections
+
+This example is rather simple, and doesn't even include useful components like _documentation_ for the `blue` test plugin. There are many more things you can do with collections, including adding roles, modules, and someday maybe even _playbooks_.
+
+It's also important to note that there are some different requirements and limitations to roles when they are part of a collection (vs built separately in a playbook's `roles/` directory, or installed from Galaxy), and those are listed in Ansible's documentation: [Developing collections](https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html).
 
 ## Collections on Automation Hub and Ansible Galaxy
+
+Just like roles, collections can be shared with the entire community on Ansible Galaxy, or in Red Hat's subscription-based Automation Hub.
+
+TODO.
+
+### Where should you install collections?
+
+TODO: So, first we need to tell Ansible where to look for collections. By default, Ansible sets its `COLLECTIONS_PATHS` setting to look in a shared directory in your home folder (`~/.ansible/collections`), or in `usr/share/ansible/collections`. But in this case, at least for now, we want this tiny plugin collection (and any other collections we may use) to be stored in our project.
+
+So create an `ansible.cfg` file alongside the `main.yml` playbook, and put the following configuration inside:
+
+{lang=text}
+```
+[defaults]
+collections_paths = ./collections
+```
+
+T> Ansible automatically loads playbook-local collections from the path `collections/`, just like it loads local roles from `roles/`, test plugins from `test_plugins/`, etc. But I like to explicitly configure `collections_paths` so any collections I install from Ansible Galaxy or Automation Hub are also installed in the playbook's directory.
 
 TODO.
 
