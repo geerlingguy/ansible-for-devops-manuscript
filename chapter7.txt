@@ -273,29 +273,97 @@ It's also important to note that there are some different requirements and limit
 
 ## Collections on Automation Hub and Ansible Galaxy
 
-Just like roles, collections can be shared with the entire community on Ansible Galaxy, or in Red Hat's subscription-based Automation Hub.
+Just like roles, collections can be shared with the entire community on Ansible Galaxy, or in Red Hat's Automation Hub, which is part of Red Hat's Ansible Automation Platform.
 
-TODO.
+If you browse Galaxy or Automation Hub and find a collection you'd like to use, you can use the `ansible-galaxy` CLI to install the collection similar to how you'd install a role:
 
-### Where should you install collections?
-
-TODO: So, first we need to tell Ansible where to look for collections. By default, Ansible sets its `COLLECTIONS_PATHS` setting to look in a shared directory in your home folder (`~/.ansible/collections`), or in `usr/share/ansible/collections`. But in this case, at least for now, we want this tiny plugin collection (and any other collections we may use) to be stored in our project.
-
-So create an `ansible.cfg` file alongside the `main.yml` playbook, and put the following configuration inside:
-
-{lang=text}
+{lang="text",linenos="off"}
 ```
-[defaults]
-collections_paths = ./collections
+$ ansible-galaxy collection install geerlingguy.k8s
 ```
+
+This command would install the `geerlingguy.k8s` collection into Ansible's default collection path. We'll talk a little more about collection paths in a bit, but first, you can also specify collections---just like roles---in a `requirements.yml` file.
+
+For example, if you wanted to install the same collection, but using a `requirements.yml` file, you could specify it like so:
+
+{lang="yaml",linenos="off"}
+```
+---
+collections:
+  - name: geerlingguy.k8s
+```
+
+And then, before running your playbook that _uses_ that collection, install all the required collections with `ansible-galaxy`:
+
+{lang="text",linenos="off"}
+```
+$ ansible-galaxy install -r requirements.yml
+```
+
+W> Ansible 2.9 and earlier required installing role requirements separately from collection requirements, and would not install any collections if you called `ansible-galaxy install` by itself. If you're running Ansible 2.9 or earlier, you need to run the command `ansible-galaxy collection install -r requirements.yml`.
+
+Once the collection is installed, you can call content from that collection in any playbook using the FQCN, like so:
+
+{lang=yaml}
+```
+---
+- hosts: all
+
+  roles:
+    - geerlingguy.k8s.helm
+```
+
+### Collection version constraints
+
+For many of my playbooks, it's important for stability that I install a specific version of a collection. And since contributed collections---unlike roles---require the use of semantic versioning, you can even specify version constraints when installing a collection from Galaxy or Automation Hub, either on the command line or in a `requirements.yml`:
+
+{lang="yaml",linenos="off"}
+```
+---
+collections:
+  - name: geerlingguy.k8s
+    version: >=0.10.0,<0.11.0
+```
+
+This version constraint tells Ansible to install any version in the `0.10.x` series, but not any version in `0.11.x` or newer.
+
+For maximum stability, it is important to set a [version constraint](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-an-older-version-of-a-collection) for any content you rely on. As long as the content maintainers follow the rules of semantic versioning, it should be extremely rare that one of your playbooks breaks due to any updated collection content it uses.
+
+When a newer major version of a collection you use is released, you can bump the version constraint and test it when you're ready, instead of having the latest version always installed.
+
+### Where are collections installed?
+
+When you install a collection from Ansible Galaxy or Automation Hub, Ansible uses the configuration directive `collections_path` to determine where collections should be installed.
+
+By default, they'll be installed in one of the following locations:
+
+  - `~/.ansible/collections`
+  - `/usr/share/ansible/collections`
+
+But you can override the setting in your own projects by setting the `ANSIBLE_COLLECTIONS_PATH` environment variable, or setting `collections_path` in an `ansible.cfg` file alongside your playbook.
+
+There are some cases when I like to install collections into a path local to my playbook (e.g. by setting `collections_path = ./collections`), because if you install collections to one of the more global locations, and you use the same collection with more than one project, you may run into issues if a newer version of a collection changes a behavior another playbook relies on.
+
+One important note about the path, though: All collections in Ansible must be stored in a path that includes folders named after the collection namespace and name inside an `ansible_collections` subdirectory.
+
+That's why earlier in this chapter, when we created the `local.colors` collection, we ultimately created it inside the directory:
+
+{lang=text,linenos=off}
+```
+./collections/ansible_collections/local/colors
+```
+
+Similarly, if you install collections using Galaxy or Automation Hub with `collections_path` set to `./collections`, then they will end up inside the `./collections/ansible_collections` directory as well, inside a namespaced directory.
+
+W> Ansible 2.9 and earlier used the configuration setting `collections_paths` (note the plural `s`). Ansible 2.10 and later uses the singular `collections_path` for consistency with other path-related settings.
 
 T> Ansible automatically loads playbook-local collections from the path `collections/`, just like it loads local roles from `roles/`, test plugins from `test_plugins/`, etc. But I like to explicitly configure `collections_paths` so any collections I install from Ansible Galaxy or Automation Hub are also installed in the playbook's directory.
 
-TODO.
-
 ## Summary
 
-TODO.
+Ansible Collections allow for easier distribution of Ansible content---plugins, modules, and roles---and have also helped to make Ansible's own maintenance more evenly distributed.
+
+You may find yourself using bare roles sometimes, and collections (with or without roles) other times. In either case, Ansible makes consolidating and sharing custom Ansible functionality easy!
 
 {lang="text",linenos=off}
 ```

@@ -564,9 +564,13 @@ It's annoying to have to start from scratch every time, though; wouldn't it be b
 
 Enter [Ansible Galaxy](https://galaxy.ansible.com/).
 
-Ansible Galaxy, or just 'Galaxy', is a repository of community-contributed roles for common Ansible content. There are already hundreds of roles available which can configure and deploy common applications, and they're all available through the `ansible-galaxy` command, introduced in Ansible 1.4.2.
+Ansible Galaxy, or just 'Galaxy', is a repository of community-contributed Ansible content. There are thousands of roles available which can configure and deploy common applications, and they're all available through the `ansible-galaxy` command.
 
 Galaxy offers the ability to add, download, and rate roles. With an account, you can contribute your own roles or rate others' roles (though you don't need an account to use roles).
+
+I> **What about Collections?**
+I>
+I> In 2019, collections were added to Ansible Galaxy. They offer a new way of packaging multiple roles together (along with modules and plugins), and we will cover them in the next chapter. In this chapter, we're discussing _roles_ on Galaxy.
 
 ### Getting roles from Galaxy
 
