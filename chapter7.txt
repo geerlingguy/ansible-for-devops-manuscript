@@ -231,7 +231,7 @@ while templating string: no test named 'blue'. String: {% if
 my_color_choice is blue %} True {% else %} False {% endif %}"}
 ```
 
-The problem is you need to also modify your Playbook and make sure Ansible knows that you want the `blue` module in the `local.colors` collection.
+The problem is you need to also modify your Playbook and make sure Ansible knows you want the `blue` module in the `local.colors` collection.
 
 There are two ways you can do this. For collection modules and roles, you could leave the playbook mostly unmodified, and just add a `collections` section in the play, like:
 
@@ -259,9 +259,9 @@ So the task should be changed to look like this:
         that: my_color_choice is local.colors.blue
 ```
 
-Now, if you run the playbook, it will run the same as before, but using the module that's in the `local.colors` collection.
+Now, if you run the playbook, it will run the same as before, but using the module in the `local.colors` collection.
 
-Any content you add to the collection---plugins, modules, or roles---can be called the same way. Whereas for things that are _built into_ Ansible or local to your playbook you can call them with `modulename` or `rolename`, for things that come from _collections_ you should call them by their FQCN.
+Any content you add to the collection---plugins, modules, or roles---can be called the same way. Whereas for things _built into_ Ansible or local to your playbook you can call them with `modulename` or `rolename`, for things from _collections_ you should call them by their FQCN.
 
 Unless you plan on sharing your collection code with other projects or with the entire Ansible community, it may be easier to maintain custom playbook-specific content like plugins, modules, and roles individually, inside local playbook directories like we did with the `test_plugins` or with `roles` in previous chapters.
 
@@ -269,7 +269,7 @@ Unless you plan on sharing your collection code with other projects or with the 
 
 This example is rather simple, and doesn't even include useful components like _documentation_ for the `blue` test plugin. There are many more things you can do with collections, including adding roles, modules, and someday maybe even _playbooks_.
 
-It's also important to note that there are some different requirements and limitations to roles when they are part of a collection (vs built separately in a playbook's `roles/` directory, or installed from Galaxy), and those are listed in Ansible's documentation: [Developing collections](https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html).
+There are different requirements and limitations to roles when they are part of a collection (vs built separately in a playbook's `roles/` directory, or installed from Galaxy), and those are listed in Ansible's documentation: [Developing collections](https://docs.ansible.com/ansible/latest/dev_guide/developing_collections.html).
 
 ## Collections on Automation Hub and Ansible Galaxy
 
@@ -293,7 +293,7 @@ collections:
   - name: geerlingguy.k8s
 ```
 
-And then, before running your playbook that _uses_ that collection, install all the required collections with `ansible-galaxy`:
+And then, before running your playbook that _uses_ the collection, install all the required collections with `ansible-galaxy`:
 
 {lang="text",linenos="off"}
 ```
@@ -302,7 +302,7 @@ $ ansible-galaxy install -r requirements.yml
 
 W> Ansible 2.9 and earlier required installing role requirements separately from collection requirements, and would not install any collections if you called `ansible-galaxy install` by itself. If you're running Ansible 2.9 or earlier, you need to run the command `ansible-galaxy collection install -r requirements.yml`.
 
-Once the collection is installed, you can call content from that collection in any playbook using the FQCN, like so:
+Once the collection is installed, you can call content from it in any playbook using the FQCN, like so:
 
 {lang=yaml}
 ```
@@ -315,7 +315,7 @@ Once the collection is installed, you can call content from that collection in a
 
 ### Collection version constraints
 
-For many of my playbooks, it's important for stability that I install a specific version of a collection. And since contributed collections---unlike roles---require the use of semantic versioning, you can even specify version constraints when installing a collection from Galaxy or Automation Hub, either on the command line or in a `requirements.yml`:
+For many playbooks, installing a specific version of a collection guarantees better stability. And since contributed collections---unlike roles---require the use of semantic versioning, you can even specify version constraints when installing a collection from Galaxy or Automation Hub, either on the command line or in a `requirements.yml`:
 
 {lang="yaml",linenos="off"}
 ```
@@ -327,7 +327,7 @@ collections:
 
 This version constraint tells Ansible to install any version in the `0.10.x` series, but not any version in `0.11.x` or newer.
 
-For maximum stability, it is important to set a [version constraint](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-an-older-version-of-a-collection) for any content you rely on. As long as the content maintainers follow the rules of semantic versioning, it should be extremely rare that one of your playbooks breaks due to any updated collection content it uses.
+For maximum stability, it is important to set a [version constraint](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html#installing-an-older-version-of-a-collection) for any content you rely on. As long as the content maintainers follow the rules of semantic versioning, it should be extremely rare a playbook breaks due to any updated collection content it uses.
 
 When a newer major version of a collection you use is released, you can bump the version constraint and test it when you're ready, instead of having the latest version always installed.
 
