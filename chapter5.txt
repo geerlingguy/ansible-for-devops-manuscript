@@ -163,9 +163,9 @@ T> You can test remote environment variables using the `ansible` command: `ansib
 
 ## Variables
 
-Variables in Ansible work just like variables in most other systems. Variables always begin with a letter (`[A-Za-z]`), and can include any number of underscores (`_`) or numbers (`[0-9]`).
+Variables in Ansible work just like variables in most other systems. Variables usually begin with a letter (`[A-Za-z]`), but can also start with an underscore (`_`). Variables can include any number of letters, underscores, or numbers.
 
-Valid variable names include `foo`, `foo_bar`, `foo_bar_5`, and `fooBar`, though the standard is to use all lowercase letters, and typically avoid numbers in variable names (no `camelCase` or `UpperCamelCase`).
+Valid variable names include `foo`, `foo_bar`, `foo_bar_5`, `_foo`, and `fooBar`, though the standard is to use all lowercase letters, and typically avoid numbers in variable names (no `camelCase` or `UpperCamelCase`).
 
 Invalid variable names include `foo-bar`, `12`, `foo.bar` and `foo bar`.
 
@@ -182,6 +182,8 @@ In a playbook or variables include file, a variable's value is assigned using a 
 ```
 foo: bar
 ```
+
+T> While it's not explictly stated in Ansible's documentation, _starting_ a variable with an underscore (e.g. `_my_variable`) is uncommon, but sometimes is used as a way of indicating a 'private' or 'internal use only' variable. For example, many of the `geerlingguy` Ansible roles I maintain prefix variables with an underscore if they're meant for internal role use only, and should not be overridden by playbooks using the role.
 
 ### Playbook Variables
 
