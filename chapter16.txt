@@ -206,12 +206,13 @@ At this point, our playbook uses three Ansible Galaxy roles. To make installatio
 {lang="text"}
 ```
 ---
-- src: geerlingguy.swap
-- src: geerlingguy.docker
-- src: geerlingguy.kubernetes
+roles:
+  - name: geerlingguy.swap
+  - name: geerlingguy.docker
+  - name: geerlingguy.kubernetes
 ```
 
-Then run `ansible-galaxy install -r requirements.yml -p ./roles` to install the roles in the project directory.
+Then run `ansible-galaxy role install -r requirements.yml -p ./roles` to install the roles in the project directory.
 
 As a final step, before building the cluster with `vagrant up`, we need to set a few configuration options to ensure Kubernetes starts correctly and the inter-node network functions properly. Add the following variables to tell the Kubernetes role a little more about the cluster:
 
@@ -466,9 +467,9 @@ Luckily, the Kubernetes community has put together a number of 'charts' describi
 
 #### Managing Kubernetes Applications with Helm
 
-Helm consists of two components: `helm`, a binary which you install on a control machine to control applications in a Kubernetes cluster, and Tiller, the component which runs inside the Kubernetes cluster and coordinates chart operations triggered by Helm.
+Helm requires a `helm` binary installed on a control machine to control deployments of apps in a Kubernetes cluster.
 
-To automate Helm and Tiller setup, we'll create a playbook that installs the `helm` binary, configures Kubernetes to allow Tiller to manage resources, and then runs `helm init` to initialize Tiller in the cluster.
+To automate Helm setup, we'll create a playbook that installs the `helm` binary.
 
 Create a `helm.yml` playbook in the `examples` directory, and put in the following:
 
@@ -479,114 +480,67 @@ Create a `helm.yml` playbook in the `examples` directory, and put in the followi
   become: yes
 
   tasks:
-    - name: Create Tiller ServiceAccount.
-      k8s:
-        state: present
-        definition:
-          apiVersion: v1
-          kind: ServiceAccount
-          metadata:
-            name: tiller
-            namespace: kube-system
-
-    - name: Apply Tiller RBAC definition.
-      k8s:
-        state: present
-        definition: "{{ lookup('file', 'files/tiller-rbac.yml') | from_yaml }}"
-
     - name: Retrieve helm binary archive.
       unarchive:
-        src: https://storage.googleapis.com/kubernetes-helm/helm-v2.10.0-linux-amd64.tar.gz
+        src: https://get.helm.sh/helm-v3.2.1-linux-amd64.tar.gz
         dest: /tmp
         creates: /usr/local/bin/helm
         remote_src: yes
 
     - name: Move helm binary into place.
-      command: >
-        cp /tmp/linux-amd64/helm /usr/local/bin/helm
-        creates=/usr/local/bin/helm
-
-    - name: Set up Helm and Tiller.
-      command: helm init --service-account tiller
-      register: helm_init_result
-      changed_when: "'already installed' not in helm_init_result.stdout"
+      command: cp /tmp/linux-amd64/helm /usr/local/bin/helm
+      args:
+        creates: /usr/local/bin/helm
 ```
 
-Tiller needs to be allowed to manage certain resources in the cluster, so the first two tasks in this playbook define a `tiller` namespace which Tiller will operate within, and then apply an RBAC definition which defines a `ClusterRoleBinding` that allows Tiller to operate as a `cluster-admin`. Create the `tiller-rbac.yml` file inside the `examples/files` directory, with the contents:
+This playbook downloads `helm` and places it in `/usr/local/bin`, so Ansible's `helm` module can use it when managing deployments with Helm.
 
-{lang="text"}
+Let's take it a little further, though, and automate the deployment of a chart maintained in Helm's `stable` chart collection.
+
+The easiest way to manage Helm deployments with Ansible is using the `helm` module that's part of the `community.kubernetes` collection on Ansible Galaxy. To install that collection, go back to the main `kubernetes` directory, and open the `requirements.yml` file that included the roles used in the main setup playbook.
+
+Add the following at the top level after the `roles` section:
+
+{lang="yaml",linenos=off}
 ```
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
+collections:
+  - name: community.kubernetes
 ```
 
-The next tasks in the Helm playbook download `helm`, place it in `/usr/local/bin`, and then initializes `helm` in the local user account, and `tiller` in the Kubernetes cluster (utilizing the `tiller` service account we configured in the `tiller-rbac.yml` manifest).
+Then make sure the collection is installed locally by running:
 
-At this point, if you run the playbook, then check running services, you should see Tiller running, ready to deploy new Helm charts:
-
-{lang="text",linenos="off"}
+{lang="text",linenos=off}
 ```
-root@master:/home/vagrant# kubectl get services -n kube-system
-NAME            TYPE        CLUSTER-IP      PORT(S)         AGE
-kube-dns        ClusterIP   10.96.0.10      53/UDP,53/TCP   6d
-tiller-deploy   ClusterIP   10.99.161.154   44134/TCP       5m
+ansible-galaxy collection install -r requirements.yml
 ```
 
-Let's take it a little further, though, and automate the deployment of a chart maintained in Helm's `stable` chart collection. Add more tasks to the playbook:
+Now that we have the Kubernetes collection available, we can use the included Helm modules to do the following:
 
-{lang="text",starting-line-number=38}
+  1. Add the 'chart repository' for a Helm chart we want to manage using the `helm_repository` module.
+  2. Install the chart using the `helm` module.
+
+So, add the following tasks to the `helm.yml` playbook:
+
+{lang="text",starting-line-number=18}
 ```
-    - name: Get Tiller's ClusterIP.
-      k8s:
-        api_version: v1
-        kind: Service
-        name: tiller-deploy
-        namespace: kube-system
-      register: tiller_service
-    
-    - name: Set the Helm host and port.
-      set_fact:
-        helm_host: "{{ tiller_service.result.spec.clusterIP }}"
-        helm_port: "{{ tiller_service.result.spec.ports[0].port }}"
-    
-    - name: Wait for Tiller to become responsive.
-      wait_for:
-        host: '{{ helm_host }}'
-        port: '{{ helm_port }}'
-        state: started
-    
-    - name: List installed Helm charts.
-      command: helm list
-      environment:
-        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
-      register: helm_list_results
-      changed_when: False
-    
+    - name: Add Bitnami's chart repository.
+      community.kubernetes.helm_repository:
+        name: bitnami
+        repo_url: "https://charts.bitnami.com/bitnami"
+
     - name: Install phpMyAdmin with Helm.
-      command: >
-        helm install --name phpmyadmin stable/phpmyadmin
-        --set service.type=NodePort
-      environment:
-        HELM_HOST: '{{ helm_host }}:{{ helm_port }}'
-      when: "'phpmyadmin' not in helm_list_results.stdout"
+      community.kubernetes.helm:
+        name: phpmyadmin
+        chart_ref: bitnami/phpmyadmin
+        release_namespace: default
+        values:
+          service:
+            type: NodePort
 ```
 
-After `helm init` is run, the `tiller-deploy` service takes a little time to start up. The first three tasks get the tiller IP address and port, then wait for tiller to be responsive (using `wait_for`) before the rest of the playbook runs.
+The first task adds the Bitnami chart repository, and the second task installs the `bitnami/phpmyadmin` chart from that repository.
 
-Then we check all deployed charts using the command `helm list`, and if the chart we are deploying (`phpmyadmin`) is not in the list results, we install it with the command `helm install stable/phpmyadmin`. Note that we explicitly define the `HELM_HOST` environment variable. Without this, the `helm` command may have a hard time finding the right host for Tiller.
-
-Also, because the default for most Helm charts is to use a service type of `LoadBalancer`, and it's a little difficult to set up Load Balancer services in a bare metal Kubernetes cluster, we are overriding the `service.type` for the `stable/phpmyadmin` chart and forcing it to use `NodePort`.
+The second task also overrides the `service.type` option in the chart, because the default for most Helm charts is to use a service type of `ClusterIP` or `LoadBalancer`, and it's a little difficult to access services from the outside in a bare metal Kubernetes cluster this way. By forcing the use of `NodePort`, we can easily access phpMyAdmin from outside the cluster.
 
 W> Many charts (e.g. `stable/wordpress`, `stable/drupal`, `stable/jenkins`) will install but won't fully run on this Kubernetes cluster, because they require Persistent Volumes (PVs), which require some kind of shared filesystem (e.g. NFS, Ceph, Gluster, or something similar) among all the nodes. If you want to use charts which require PVs, check out the NFS configuration used in the [Raspberry Pi Dramble](https://github.com/geerlingguy/raspberry-pi-dramble) project, which allows applications to use Kubernetes PVs and PVCs.
 
@@ -594,14 +548,19 @@ At this point, you could log into the master, change to the root user (`sudo su`
 
 {lang="text",starting-line-number=72}
 ```
+    - name: Ensure K8s module dependencies are installed.
+      pip:
+        name: openshift
+        state: present
+
     - name: Get the details of the phpmyadmin Service.
-      k8s:
+      community.kubernetes.k8s:
         api_version: v1
         kind: Service
         name: phpmyadmin
         namespace: default
       register: phpmyadmin_service
-    
+
     - name: Print the NodePort of the phpmyadmin Service.
       debug:
         var: phpmyadmin_service.result.spec.ports[0].nodePort
