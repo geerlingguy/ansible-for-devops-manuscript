@@ -119,6 +119,7 @@ For our secure server, we want to disable password-based SSH authentication (mak
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
         state: present
+        validate: 'sshd -t -f %s'
       with_items:
         - regexp: "^PasswordAuthentication"
           line: "PasswordAuthentication no"
@@ -135,6 +136,10 @@ For our secure server, we want to disable password-based SSH authentication (mak
 ```
 
 In this extremely simple playbook, we set three options in SSH configuration (`PasswordAuthentication no`, `PermitRootLogin no`, and `Port 2849`) using Ansible's `lineinfile` module, then use a handler we define in the `handlers` section to restart the ssh service.
+
+If you're ever editing files that could result in broken behavior after a change, it's important to _validate_ changes using the `validate` option (in this case using `sshd`'s `-t` option and passing a file path). This makes sure you don't break sudo when you save the changes. The `%s` is a placeholder for the file's path, and will be filled in by Ansible when Ansible runs the validation command.
+
+T> You can use `validate` option with Ansible's `copy`, `linefile`, `blockinfile`, and `template` modules.
 
 W> If you change certain SSH settings, like the port for SSH, you need to make sure Ansible's inventory is updated. You can explicitly define the SSH port for a host with the option `ansible_ssh_port`, and the local path to a private key file (identity file) with `ansible_ssh_private_key_file`, though Ansible uses keys defined by your `ssh-agent` setup, so typically a manual definition of the key file is not required.
 
@@ -174,7 +179,7 @@ As an example, set up the user `johndoe` with permission to use any command as r
     validate: 'visudo -cf %s'
 ```
 
-If you're ever editing the sudoers file by hand, or with Ansible, you should use `visudo` to validate the changes. This makes sure you don't break sudo when you save the changes. The `%s` is a placeholder for the file's path, and will be filled in by Ansible before the sudoers file is copied into its final destination.
+As with the earlier SSH configuration, we make sure to `validate` the sudoers file to ensure Ansible's changes don't result in a broken configuration.
 
 Another way of changing the sudoers file is to create a sudoers file locally, and copy it using Ansible's `copy` module, like so:
 
@@ -186,8 +191,6 @@ Another way of changing the sudoers file is to create a sudoers file locally, an
     dest: /etc/sudoers
     validate: 'visudo -cf %s'
 ```
-
-You can also use the same option with Ansible's `template` module, if you need to copy a filled-in template to the server instead of a static file.
 
 T> The sudoers file syntax is very powerful and flexible, but also a bit obtuse. Read the entire [Sudoers Manual](http://www.sudo.ws/sudoers.man.html) for all the details, or check out the [sample sudoers file](http://www.sudo.ws/sudo/sample.sudoers) for some practical examples.
 
