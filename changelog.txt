@@ -12,6 +12,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   4. [#281](https://github.com/geerlingguy/ansible-for-devops/issues/281): Simplify imports in Python dynamic inventory file in chapter 7.
   5. [#202](https://github.com/geerlingguy/ansible-for-devops/issues/202): Add new chapter 7 on 'Collections' and increment existing chapters 7-15 to chapters 8-16.
   6. [#206](https://github.com/geerlingguy/ansible-for-devops/pull/206): Remove Vagrantfile `compatibility_mode` setting in chapter 9 ELK example since it's not as important with Vagrant 2.2.8 and later.
+  7. [#284](https://github.com/geerlingguy/ansible-for-devops/issues/284): Fixed errant 'playback' term in chapter 6, replaced with 'playbook' (thanks to claycooper!).
 
 ## Version 1.23 (2020-05-13)
 

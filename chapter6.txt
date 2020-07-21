@@ -142,7 +142,7 @@ Until Ansible 2.0, `include`s were always processed when your playbook run start
   when: extra_tasks_file.stat.exists
 ```
 
-If the file `tasks/extra-tasks.yml` is not present, Ansible skips the `include_tasks`. You can even use a `with_items` loop (or any other `with_*` loop) with includes. Includes evaluated during playback execution can make your playbooks much more flexible!
+If the file `tasks/extra-tasks.yml` is not present, Ansible skips the `include_tasks`. You can even use a `with_items` loop (or any other `with_*` loop) with includes. Includes evaluated during playbook execution can make your playbooks much more flexible!
 
 ### Handler imports and includes
 
