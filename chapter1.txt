@@ -39,14 +39,11 @@ Ansible's only real dependency is Python. Once Python is installed, the simplest
 **If you're on a Mac**, installing Ansible is a piece of cake:
 
   1. Check if `pip` is installed (`which pip`). If not, install it: `sudo easy_install pip`
-  2. Install Ansible: `sudo pip install ansible`
+  2. Install Ansible: `pip install ansible`
 
 You could also install Ansible via [Homebrew](http://brew.sh/) with `brew install ansible`. Either way (`pip` or `brew`) is fine, but make sure you update Ansible using the same system with which it was installed!
 
-**If you're running Windows** (i.e. you work for a large company that forces you to use Windows), it will take a little extra work to set everything up. There are two ways you can go about using Ansible if you use Windows:
-
-  1. The easiest solution would be to use a Linux virtual machine (with something like VirtualBox) to do your work, or to work within the Windows Subsystem for Linux. For detailed instructions, see [Appendix A - Using Ansible on Windows workstations](#appendix-a).
-  2. Ansible runs (somewhat) within an appropriately-configured [Cygwin](http://cygwin.com/) environment. For setup instructions, please see my blog post [Running Ansible within Windows](https://servercheck.in/blog/running-ansible-within-windows)), and note that *running Ansible directly within Windows is unsupported and prone to breaking*.
+**If you're running Windows**, it will take a little extra work to set everything up. Typically, people run Ansible inside the Windows Subsystem for Linux. For detailed instructions setting up Ansible under the WSL, see [Appendix A - Using Ansible on Windows workstations](#appendix-a).
 
 **If you're running Linux**, chances are you already have Ansible's dependencies installed, but we'll cover the most common installation methods.
 
@@ -54,7 +51,7 @@ If you have `python-pip` and `python-devel` (`python-dev` on Debian/Ubuntu) inst
 
 {lang="text",linenos=off}
 ```
-$ sudo pip install ansible
+$ pip install ansible
 ```
 
 Using pip allows you to upgrade Ansible with `pip install --upgrade ansible`.
@@ -102,8 +99,10 @@ I> ~~~
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.9
+ansible 2.9.10
 ```
+
+I> **What about Python 3?** If you have both Python 2 and Python 3 installed, and `pip` is aliased to an older Python 2 version of `pip`, you should consider installing Python 3 and `pip3`, and using that version instead. Ansible is fully compatible with Python 3, and unless you're running on a very old system that doesn't have Python 3 available for it, you should use Python 3.
 
 ## Creating a basic inventory file {#basic-inventory}
 

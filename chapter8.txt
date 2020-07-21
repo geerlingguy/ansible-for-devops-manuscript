@@ -316,7 +316,7 @@ DigitalOcean's API and developer-friendly philosophy has made it easy for Ansibl
 Before you can follow the rest of the examples in this section, you will need:
 
   1. A DigitalOcean account (sign up at www.digitalocean.com).
-  2. `dopy`, a Python wrapper for DigitalOcean API interaction (you can install it with pip: `sudo pip install dopy`).
+  2. `dopy`, a Python wrapper for DigitalOcean API interaction (you can install it with pip: `pip install dopy`).
   3. A DigitalOcean API Personal Access Token. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2) to generate a Personal Access Token for use with Ansible (grant Read and Write access when you create the token).
   4. An SSH key pair, which will be used to connect to your DigitalOcean servers. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-ssh-keys-with-digitalocean-droplets) to create a key pair and add the public key to your DigitalOcean account.
 
