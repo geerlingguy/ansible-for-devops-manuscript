@@ -302,6 +302,52 @@ Generally, running playbooks from your own computer or a central playbook runner
 
 If you are able to use Ansible Tower to run your playbooks, this is even better, as you'll have a central server running Ansible playbooks, logging output, compiling statistics, and even allowing a team to work together to build servers and deploy applications in one place.
 
+## Install Galaxy dependencies local to your playbook
+
+Over the years, especially as Collections have become a popular way to distribute Ansible plugins and modules, it has become more important to consider _where_ you install Ansible project dependencies, whether installed from Ansible Galaxy or Automation Hub.
+
+This means adding a `requirements.yml` file for every playbook, (usually, but not always) defining each role and collection version constraints, and adding an `ansible.cfg` file in the playbook project's root directory so Ansible would know to only load roles and collections from that playbook's local roles or collections directories.
+
+For any new project I start, I add an `ansible.cfg` with the following (at minimum):
+
+{lang=text}
+```
+[defaults]
+nocows = True
+collections_paths = ./collections
+roles_path = ./roles
+```
+
+Then I add a `requirements.yml` file specifying all the role and collection requirements for my playbook:
+
+{lang=yaml}
+```
+---
+roles:
+  - name: geerlingguy.java
+    version: 1.10.0
+
+collections:
+  - name: community.kubernetes
+    version: 0.11.1
+```
+
+Install the requirements with `ansible-galaxy install -r requirements.yml`, and then you should be able to access them from your playbook without the risk of breaking other playbooks, which may use the same roles and collections but require different versions.
+
+### Discriminate wisely when choosing community dependencies
+
+In 2019, I gave a presentation at AnsibleFest Atlanta on the topic [evaluating community Ansible roles for your playbooks](https://www.jeffgeerling.com/blog/2019/how-evaluate-community-ansible-roles-your-playbooks).
+
+In the presentation, I mentioned a few important considerations when you decide you want to incorporate content maintained by the community into your automation playbooks:
+
+  - Make sure you trust the maintainers of the content---will they fix major bugs, do they have a proven track record, do they take security seriously?
+  - Consider whether the content is maintained too aggressively (many breaking changes in a short time frame) or too passively (no releases in many years) for your project's needs.
+  - Is it easy to understand the content in the role or collection, so you can fix any bugs you might find, or maintain a fork of the content if needed?
+
+Sometimes people blindly adopt a dependency without much consideration for the technical debt or maintenance overhead they are incurring. Many dependencies are helpful in getting your automation goals accomplished faster than writing all the code yourself. But some can make the maintenance of your Ansible projects harder.
+
+Always be careful when incorporating a dependency from Ansible Galaxy or Automation Hub into your project. Consider how well the dependency will help you achieve both short term automation goals and long-term project maintenance.
+
 ## Specify `--forks` for playbooks running on > 5 servers
 
 If you are running a playbook on a large number of servers, consider increasing the number of `forks` Ansible uses to run tasks simultaneously. The default, `5`, means Ansible will only run a given task on 5 servers at a time. Consider increasing this to 10, 15, or however many connections your local workstation and ISP can handle---this will dramatically reduce the amount of time it takes a playbook to run.
@@ -313,6 +359,10 @@ Set `forks=[number]` in Ansible's configuration file to set the default `forks` 
 Ansible's main configuration file, in `/etc/ansible/ansible.cfg`, allows a wealth of optimizations and customizations for running playbooks and ad-hoc tasks.
 
 Read through the official documentation's [Ansible Configuration File](https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html) page for customizable options in `ansible.cfg`.
+
+I generally place a customized `ansible.cfg` file in every Ansible project I maintain, so I can have complete control over how Ansible behaves when I run my playbooks.
+
+Remember that if you use an `ansible.cfg` file in your project, it will not inherit any values from the global configuration file, it will override all settings, and anything you don't explicitly define will be set to Ansible's default.
 
 ## Summary
 

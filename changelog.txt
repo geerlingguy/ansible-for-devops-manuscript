@@ -17,6 +17,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   9. [#271](https://github.com/geerlingguy/ansible-for-devops/issues/271): Add note about `seport` configuration required for SSH example in chapter 11 so SELinux allows SSH to run from alternate port on RHEL or CentOS.
   10. [#219](https://github.com/geerlingguy/ansible-for-devops/issues/219): Don't recommend using `sudo` when installing Ansible or Boto via `pip` in chapters 1 and 8.
   11. [#249](https://github.com/geerlingguy/ansible-for-devops/issues/249): Update Helm section in chapter 16 to use new Helm v3 modules in `community.kubernetes` collection.
+  12. [#250](https://github.com/geerlingguy/ansible-for-devops/issues/250): Incorpoate latest Ansible best practices for choosing dependencies and using project-local dependencies in appendix B.
 
 ## Version 1.23 (2020-05-13)
 
