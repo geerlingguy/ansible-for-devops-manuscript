@@ -20,6 +20,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   12. [#250](https://github.com/geerlingguy/ansible-for-devops/issues/250): Incorpoate latest Ansible best practices for choosing dependencies and using project-local dependencies in appendix B.
   13. [#278](https://github.com/geerlingguy/ansible-for-devops/issues/278): Updated broken links to various Vagrant resources in chapter 2 (thanks to vonDowntown!).
   14. [#293](https://github.com/geerlingguy/ansible-for-devops/issues/293): Update variable information in chapter 5 to incorporate the ability to start variable names with underscores (`_`), and a mention of the convention of using that for private role variables (thanks to kolewu!).
+  15. [#212](https://github.com/geerlingguy/ansible-for-devops/issues/212): Completely rewrite the Tower and AWX section in chapter 12 with new content based on running AWX via Docker Compose.
 
 ## Version 1.23 (2020-05-13)
 

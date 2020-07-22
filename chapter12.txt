@@ -15,53 +15,58 @@ But for many organizations, basic CLI use is inadequate:
 
 Ansible Tower is part of Red Hat's Ansible Automation Platform, but it is built from an open source upstream project, [AWX](https://github.com/ansible/awx). AWX was open-sourced in 2017, shortly after Red Hat acquired Ansible.
 
-W> While AWX and Tower are quite similar, AWX is updated much more frequently, with fewer guarantees about upgrade compatibility. If you are able and willing to keep up with AWX's releases, and support its deployment on your own, it is perfectly adequate for many use cases. Ansible Tower is part of Red Hat's broader subscription-based Ansible Automation Platform, and has better support.
+W> While AWX and Tower are quite similar, AWX is updated much more frequently, with fewer guarantees about upgrade compatibility. If you are able and willing to keep up with AWX's releases and deploy it on your own, it is perfectly adequate for many use cases. Ansible Tower is part of Red Hat's broader subscription-based Ansible Automation Platform, and is fully supported.
 
 While this book includes a brief overview of Tower, it is highly recommended you read through the extensive [Tower User Guide](https://docs.ansible.com/ansible-tower/latest/html/userguide/index.html), which includes details this book won't be covering such as LDAP integration and multiple-team playbook management workflows.
 
-### Getting and Installing Ansible Tower
+### Installing Ansible AWX
 
-W> The information in this chapter is a bit outdated as of 2020, and is being rewritten to use a more recent version of Tower. Please follow [this issue in the book's repository](https://github.com/geerlingguy/ansible-for-devops/issues/212) for progress.
+Because Ansible Tower requires a Red Hat Subscription, and you might want to get a feel for how it works before you fully commit to a subscription, it's best to install a test instance of AWX to get a feel for how Tower works and operates.
 
-Ansible has a very thorough [Ansible Tower User Guide](http://releases.ansible.com/ansible-tower/docs/tower_user_guide-latest.pdf), which details the installation and configuration of Ansible Tower. For the purposes of this chapter, since we just want to download and try out Tower locally, we are going to use Ansible's official Vagrant box to quickly build an Ansible Tower VM.
+The quickest way to get AWX running is to use the [AWX Docker Compose installation method](https://github.com/ansible/awx/blob/devel/INSTALL.md#docker-compose).
 
-Make sure you have [Vagrant](https://www.vagrantup.com/downloads.html) and [VirtualBox](https://www.virtualbox.org/wiki/Downloads) installed, then create a directory (e.g. `tower`) and do the following within the directory:
+Make sure you have Ansible, Git, and Docker installed on your computer.
+
+And to make sure the AWX installer can manage Docker containers, make sure you have both the Docker and Docker Compose python libraries installed:
 
 {lang="text",linenos=off}
 ```
-# Create a new Vagrantfile using the Tower base box from Ansible.
-$ vagrant init tower http://vms.ansible.com/ansible-tower-2.3.1-\
-virtualbox.box
-
-# Build the Tower VM.
-$ vagrant up
-
-# Log into the VM (Tower will display connection information).
-$ vagrant ssh
+pip install docker docker-compose
 ```
 
-I> The above installation instructions and Vagrant box come from a blog post on Ansible's official blog, [Ansible Tower and Vagrant](http://www.ansible.com/blog/ansible-vagrant).
+Then install AWX by cloning the repository and running the install playbook:
 
-Visit the URL provided by the login welcome message (e.g. `https://10.42.0.42/`), and after confirming a security exception for the Ansible Tower certificate, login with the credentials from step 3.
+{lang="text",linenos=off}
+```
+$ git clone https://github.com/ansible/awx.git
+$ cd awx/installer
+$ ansible-playbook -i inventory install.yml
+```
 
-At this point, you will need to register a free trial license of Ansible Tower following the instructions on the screen. The free trial allows you to use all of Tower's features for up to 10 servers, and is great for experimenting and seeing how Tower fits into your workflow. After you get the license (it's a block of JSON which you paste into the license field), you should get to Tower's default dashboard page:
+AWX takes a few minutes to initialize, but should be accessible at the URL `http://localhost/`. Until it's initialized, you'll see an 'AWX is upgrading' message.
+
+Once AWX is initialized, you should be able to log in using the default credentials (username `admin` and password `password`) and get to the default dashboard page:
 
 {width=80%}
-![Ansible Tower's Dashboard](images/12-ansible-tower-dashboard.png)
+![AWX's Dashboard](images/12-awx-dashboard.png)
 
-### Using Ansible Tower
+I> *What's up with the irate potato?* Apparently it's an inside joke. Sometimes when using AWX you'll see the 'AWX with Wings' logo, which as far as I can tell has its roots as one of the original logos of the 'AnsibleWorks' organization that eventually became Ansible, Inc. and is part of Red Hat today. But other times you'll see the Angry Spud. 'Angry Spud,' 'Rage Tater,' and 'The Starchy Miracle' are some internal nicknames for our potato friend.
+I> 
+I> Like Ansible's tendency to wrap output in `cowsay` if you have it installed, some of these strange but fun quirks make using Ansible tools more fun by giving them personality---at least in the author's opinion.
 
-Ansible Tower is centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* are then set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It's a little overwhelming at first, but once the initial structure is configured, you'll see the power and flexibility Tower's Project workflow affords.
+### Using AWX
+
+Tower and AWX are centered around the idea of organizing *Projects* (which run your playbooks via *Jobs*) and *Inventories* (which describe the servers on which your playbooks should be run) inside of *Organizations*. *Organizations* are then set up with different levels of access based on *Users* and *Credentials* grouped in different *Teams*. It's a little overwhelming at first, but once the initial structure is configured, you'll see the power and flexibility the workflow affords.
 
 Let's get started with our first project!
 
-The first step is to make sure you have a test playbook you can run using Ansible Tower. Generally, your playbooks should be stored in a source code repository (e.g. Git or Subversion), with Tower configured to check out the latest version of the playbook from the repository and run it. For this example, however, we will create a playbook in Tower's default `projects` directory located in `/var/lib/awx/projects`:
+The first step is to make sure you have a test playbook you can run using AWX. Generally, your playbooks should be stored in a source code repository, with AWX configured to check out the latest version of the playbook from the repository and run it. For this example, however, we will create a playbook in AWX's default `projects` directory located in `/var/lib/awx/projects`:
 
-  1. Log into the Tower VM: `vagrant ssh`
-  2. Switch to the `awx` user: `sudo su - awx`
-  3. Go to Tower's default `projects` directory: `cd /var/lib/awx/projects`
+  1. Log into the AWX web container: `docker exec -it awx_web /bin/bash`
+  2. Create the `projects` directory: `mkdir /var/lib/awx/projects`
+  3. Go into that directory: `cd /var/lib/awx/projects`
   4. Create a new project directory: `mkdir ansible-for-devops && cd ansible-for-devops`
-  5. Create a new playbook file, `main.yml`, within the new directory, with the following contents:
+  5. Create a new playbook file with `vi` (`vi main.yml`) in the new directory, and put in the following:
 
 {lang="yaml"}
 ```
@@ -75,56 +80,70 @@ The first step is to make sure you have a test playbook you can run using Ansibl
       command: date
 ```
 
+Now, to reinforce my earlier statement about why it's good to use a source repository instead of manually managing playbooks, you have to do _all five of those steps again_ in the `awx_task` container. So go do that, starting by logging into the AWX task container: `docker exec -it awx_web /bin/bash`.
+
+T> If you insist on manually managing playbooks in the default `/var/lib/awx/projects` path, then you can modify the volume configuration in the `docker-compose.yml` file generated by the AWX installer to mounting a local directory into both containers. But this is not a common way to use Ansible and I wouldn't recommend it!
+
 Switch back to your web browser and get everything set up to run the test playbook inside Ansible Tower's web UI:
 
   1. Create a new *Organization*, called 'Ansible for DevOps'.
-  2. Add a new User to the Organization, named John Doe, with the username `johndoe` and password `johndoe1234`.
+  2. Add a new User to the Organization, named John Doe, with the email `johndoe@example.com`, username `johndoe`, and password `johndoe1234`.
   3. Create a new *Team*, called 'DevOps Engineers', in the 'Ansible for DevOps' Organization.
-  4. Under the Team's Credentials section, add in SSH credentials by selecting 'Machine' for the Credential type, and setting 'Name' to `Vagrant`, 'Type' to `Machine`, 'SSH Username' to `vagrant`, and 'SSH Password' to `vagrant`.
-  5. Under the Team's Projects section, add a new *Project*. Set the 'Name' to `Tower Test`, 'Organization' to `Ansible for DevOps`, 'SCM Type' to `Manual`, and 'Playbook Directory' to `ansible-for-devops` (Tower automatically detects all folders placed inside `/var/lib/awx/projects`, but you could also use an alternate Project Base Path if you want to store projects elsewhere).
-  6. Under the Inventories section, add an *Inventory*. Set the 'Name' to `Tower Local`, and 'Organization' set to `Ansible for DevOps`. Once the inventory is saved:
+  4. Add the `johndoe` user to the DevOps Engineers Team.
+  5. Under the Projects section, add a new *Project*. Set the 'Name' to `Ansible for DevOps Project`, 'Organization' to `Ansible for DevOps`, 'SCM Type' to `Manual`, and 'Playbook Directory' to `ansible-for-devops` (AWX automatically detects all folders placed inside `/var/lib/awx/projects`, but you could also use an alternate Project Base Path if you want to store projects elsewhere).
+  6. Under the Inventories section, add an *Inventory*. Set the 'Name' to `AWX Local`, and 'Organization' set to `Ansible for DevOps`. Once the inventory is saved:
     1. Add a 'Group' with the Name `localhost`. Click on the group once it's saved.
     2. Add a 'Host' with the Host Name `127.0.0.1`.
 
-T> New *Credentials* have a somewhat dizzying array of options, and offer login and API key support for a variety of services, like SSH, AWS, Rackspace, VMWare vCenter, and SCM systems. If you can login to a system, Tower likely supports the login mechanism!
+T> New *Credentials* have a somewhat dizzying array of options, and offer login and API key support for a variety of services, like SSH, AWS, Rackspace, VMWare vCenter, and SCM systems. If you can login to a system, AWX likely supports the login mechanism!
 
-Now that we have all the structure for running playbooks configured, we need only create a *Job Template* to run the playbook on the localhost and see whether we've succeeded. Click on 'Job Templates', and create a new Job Template with the following configuration:
+Now that we have all the structure for running playbooks configured, we need only create a *Template* to run the playbook on the localhost and see whether we've succeeded. Click on 'Templates', and create a new Job Template with the following configuration:
 
-  - Name: `Tower Test`
-  - Inventory: `Tower Local`
-  - Project: `Tower Test`
+  - Name: `Ansible for DevOps Job`
+  - Job Type: `Run`
+  - Inventory: `AWX Local`
+  - Project: `Ansible for DevOps Project`
   - Playbook: `main.yml`
-  - Machine Credential: `Vagrant`
 
-Save the Job Template, then click the small Rocketship button to start a job using the template. You'll be redirected to a Job status page, which provides live updates of the job status, and then a summary of the playbook run when complete:
+Save the Job Template, then go back to the main AWX 'Templates' section.
+
+Click the small Rocket ship button for the 'Ansible for DevOps Job' to start a job using the template. You'll be redirected to a Job status page, which provides live updates of the job status, and then a summary of the playbook run when complete:
 
 {width=80%}
-![Tower Test job completed successfully!](images/12-ansible-tower-job-complete.png)
+![AWX job completed successfully!](images/12-awx-job-complete.png)
 
-You can view the playbook run's standard output in real-time (or review it after the fact) with the 'View standard out' button. You can also stop a running job, delete a job's record, or relaunch a job with the same parameters using the respective buttons on the job's page.
+The playbook's output is logged to the web page in real-time. You can also stop a running job, delete a job's record, or relaunch a job with the same parameters using the respective buttons on the job's page.
 
 The job's dashboard page is very useful for giving an overview of how many hosts were successful, how many tasks resulted in changes, and the timing of the different parts of the playbook run.
 
+### Uninstalling AWX
+
+After you're finished trying out AWX, you can uninstall it using the following process:
+
+  1. Go into the directory where the AWX installer created a Docker Compose configuration: `cd ~/.awx/awxcompose`
+  2. Shut down the Docker Compose environment: `docker-compose down -v`
+  3. Delete the entire AWX directory: `rm -rf ~/.awx`
+
 ### Other Tower Features of Note
 
-In our walkthrough above, we used Tower to run a playbook on the local server; setting up Tower to run playbooks on real-world infastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
+In our walkthrough above, we used AWX to run a playbook on the local server; setting up AWX or Tower to run playbooks on real-world infrastructure or other local VMs is just as easy, and the tools Ansible Tower provides are very handy, especially when working in larger team environments.
 
 This book won't walk through the entirety of Ansible Tower's documentation, but a few other features you should try out include:
 
   - Setting up scheduled Job runs (especially with the 'Check' option instead of 'Run') for CI/CD.
+  - Configuring webhooks for Job Templates so you can trigger Job runs from your SCM (e.g. 'GitOps').
   - Integrating user accounts and Teams with LDAP users and groups for automatic team-based project management.
   - Setting different levels of permissions for Users and Teams so certain users can only edit, run, or view certain jobs within an Organization.
   - Configuring Ansible Vault credentials to easily and automatically use Vault-protected variables in your playbooks.
-  - Setting up Provisioning Callbacks so newly-provisioned servers can self-provision via a URL per Job Template.
   - Surveys, which allow users to add extra information based on a 'Survey' of questions per job run.
-  - Inventory Scripts, which allow you to build inventory dynamically.
-  - Built-in Munin monitoring (to monitor the Tower server), available with the same admin credentials at `https://[tower-hostname]/munin`.
+  - Smart Inventories and dynamic inventory integrations.
+  - [Monitoring Tower with Prometheus and Grafana](https://www.ansible.com/blog/red-hat-ansible-tower-monitoring-using-prometheus-node-exporter-grafana).
 
-Ansible Tower continues to improve rapidly, and is one of the best ways to run Ansible Playbooks from a central CI/CD-style server with team-based access and extremely detailed live and historical status reporting.
+Ansible Tower continues to improve rapidly, and is one of the best ways to run Ansible Playbooks from a central instance with team-based access and extremely detailed live and historical status reporting.
 
 ### Tower Alternatives
 
-Ansible Tower is purpose-built for use with Ansible playbooks, but there are many other ways to run playbooks on your servers with a solid workflow. If price is a major concern, and you don't need all the bells and whistles Tower provides, you can use other popular tools like [Jenkins](http://jenkins-ci.org/), [Rundeck](http://rundeck.org/), or [Go CI](http://www.go.cd/).
+Ansible Tower is purpose-built for use with Ansible playbooks, but there are many other ways to run playbooks on your servers with a solid workflow. If price is a major concern, and you don't need all the bells and whistles Tower provides, you can use other popular tools like [Jenkins](https://www.jenkins.io), [Rundeck](https://www.rundeck.com/open-source), or [Go CI](https://www.gocd.org).
 
 All these tools provide flexibility and security for running Ansible Playbooks, and each one requires a different amount of setup and configuration before it will work well for common usage scenarios. One of the most popular and long-standing CI tools is Jenkins, so we'll explore how to configure a similar Playbook run in Jenkins next.
 
