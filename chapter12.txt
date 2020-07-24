@@ -162,7 +162,7 @@ Create a new directory for the Jenkins VM named `jenkins`. Inside the directory,
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "geerlingguy/ubuntu1604"
+  config.vm.box = "geerlingguy/ubuntu2004"
   config.vm.hostname = "jenkins.test"
   config.vm.network :private_network, ip: "192.168.76.76"
   config.ssh.insert_key = false
@@ -179,7 +179,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 end
 ```
 
-This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
+This Vagrantfile will create a new VM running Ubuntu, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
 
 {lang="yaml"}
 ```
@@ -187,6 +187,7 @@ This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address 
 - hosts: all
 
   vars:
+    ansible_install_method: pip
     firewall_allowed_tcp_ports:
       - "22"
       - "8080"
@@ -195,6 +196,7 @@ This Vagrantfile will create a new VM running Ubuntu 16.04, with the IP address 
 
   roles:
     - geerlingguy.firewall
+    - geerlingguy.pip
     - geerlingguy.ansible
     - geerlingguy.java
     - geerlingguy.jenkins
@@ -206,6 +208,7 @@ This playbook uses a set of roles from Ansible Galaxy to install all the require
 ```
 ---
 - src: geerlingguy.firewall
+- src: geerlingguy.pip
 - src: geerlingguy.ansible
 - src: geerlingguy.java
 - src: geerlingguy.jenkins

@@ -436,7 +436,7 @@ T> The entire example Node.js app server playbook is in this book's code reposit
 
 ## Real-world playbook: Ubuntu LAMP server with Drupal
 
-At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu 16.04 to run a Drupal website.
+At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu 20.04 to run a Drupal website.
 
 {width=40%}
 ![Drupal LAMP server.](images/4-playbook-drupal.png)
@@ -509,21 +509,21 @@ The first step towards building an application server that depends on the LAMP s
           - unzip
           - sendmail
           - apache2
-          - php7.1-common
-          - php7.1-cli
-          - php7.1-dev
-          - php7.1-gd
-          - php7.1-curl
-          - php7.1-json
-          - php7.1-opcache
-          - php7.1-xml
-          - php7.1-mbstring
-          - php7.1-pdo
-          - php7.1-mysql
+          - php7.4-common
+          - php7.4-cli
+          - php7.4-dev
+          - php7.4-gd
+          - php7.4-curl
+          - php7.4-json
+          - php7.4-opcache
+          - php7.4-xml
+          - php7.4-mbstring
+          - php7.4-pdo
+          - php7.4-mysql
           - php-apcu
           - libpcre3-dev
-          - libapache2-mod-php7.1
-          - python-mysqldb
+          - libapache2-mod-php7.4
+          - python3-mysqldb
           - mysql-server
         state: present
 
@@ -607,8 +607,8 @@ There are three variables we will need (`drupal_core_version`, `drupal_core_path
 {lang="yaml"}
 ```
 ---
-# The core version you want to use (e.g. 8.8.x, 8.9.x).
-drupal_core_version: "8.8.x"
+# The core version you want to use.
+drupal_core_version: "8.9.x"
 
 # The path where Drupal will be downloaded and installed.
 drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
@@ -631,7 +631,7 @@ We briefly mentioned `lineinfile` earlier in the book, when discussing file mana
 ```
     - name: Adjust OpCache memory setting.
       lineinfile:
-        dest: "/etc/php/7.1/apache2/conf.d/10-opcache.ini"
+        dest: "/etc/php/7.4/apache2/conf.d/10-opcache.ini"
         regexp: "^opcache.memory_consumption"
         line: "opcache.memory_consumption = 96"
         state: present
@@ -805,7 +805,7 @@ T> The entire example Drupal LAMP server playbook is in this book's code reposit
 
 ## Real-world playbook: Ubuntu server with Solr
 
-Apache Solr is a fast and scalable search server optimized for full-text search, word highlighting, faceted search, fast indexing, and more. It's a very popular search server, and it's pretty easy to install and configure using Ansible. In the following example, we're going to set up Apache Solr using Ubuntu 16.04 and Java, on a server or VM with at least 512 MB of RAM.
+Apache Solr is a fast and scalable search server optimized for full-text search, word highlighting, faceted search, fast indexing, and more. It's a very popular search server, and it's pretty easy to install and configure using Ansible. In the following example, we're going to set up Apache Solr using Ubuntu 20.04 and Java, on a server or VM with at least 512 MB of RAM.
 
 {width=40%}
 ![Apache Solr Server.](images/4-playbook-solr.png)
@@ -854,10 +854,10 @@ It's easy enough to install Java 8 on Ubuntu, as it's in the default apt reposit
 ```
   tasks:
     - name: Install Java.
-      apt: name=openjdk-8-jdk state=present
+      apt: name=openjdk-11-jdk state=present
 ```
 
-That was easy enough! We used the `apt` module to install `openjdk-8-jdk`.
+That was easy enough! We used the `apt` module to install `openjdk-11-jdk`.
 
 ### Install Apache Solr
 

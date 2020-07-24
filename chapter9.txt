@@ -998,7 +998,7 @@ This assumes you have a `logs` group in your inventory with at least one server 
 ```
 ---
 java_packages:
-  - openjdk-8-jdk
+  - openjdk-11-jdk
 
 nginx_user: www-data
 nginx_remove_default_vhost: true
@@ -1064,7 +1064,7 @@ If you want to get this ELK server up and running quickly, you can create a loca
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.box = "geerlingguy/ubuntu2004"
   config.ssh.insert_key = false
 
   config.vm.provider :virtualbox do |v|
@@ -1314,7 +1314,7 @@ To build the two-server infrastructure locally, create a folder `gluster` contai
 
 Vagrant.configure("2") do |config|
   # Base VM OS configuration.
-  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.box = "geerlingguy/ubuntu2004"
   config.vm.synced_folder '.', '/vagrant', disabled: true
   config.ssh.insert_key = false
 
@@ -1381,7 +1381,10 @@ Now, create a playbook named `provision.yml` inside a `playbooks` directory:
 
   tasks:
     - name: Ensure Gluster brick and mount directories exist.
-      file: "path={{ item }} state=directory mode=0775"
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0775
       with_items:
         - "{{ gluster_brick_dir }}"
         - "{{ gluster_mount_dir }}"
@@ -1531,7 +1534,7 @@ You should see the `test` file you created in step 2; this means Gluster is work
 
 Deploying distributed file systems like Gluster can seem challenging, but Ansible simplifies the process, and more importantly, does so idempotently; each time you run the playbook again, it will ensure everything stays configured as you've set it.
 
-This example Gluster configuration can be found in its entirety on GitHub, in the [Gluster example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/gluster) in the Ansible Vagrant Examples project.
+This example Gluster configuration can be found in its entirety on GitHub, in the [Gluster example](https://github.com/geerlingguy/ansible-for-devops/tree/master/gluster) directory.
 
 ## Mac Provisioning with Ansible and Homebrew
 

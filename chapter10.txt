@@ -38,7 +38,7 @@ Begin by creating a new Vagrant VM for local testing using the following Vagrant
 # vi: set ft=ruby :
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.box = "geerlingguy/ubuntu2004"
 
   config.vm.provider "virtualbox" do |v|
     v.name = "rails-demo"
@@ -432,12 +432,12 @@ To begin, create four lightweight Vagrant VMs using the following Vagrantfile:
 
 Vagrant.configure("2") do |config|
   # Base VM OS configuration.
-  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.box = "geerlingguy/ubuntu2004"
   config.vm.synced_folder '.', '/vagrant', disabled: true
   config.ssh.insert_key = false
 
   config.vm.provider :virtualbox do |v|
-    v.memory = 256
+    v.memory = 512
     v.cpus = 1
     v.linked_clone = true
   end
@@ -762,12 +762,12 @@ First, create a new project folder `deployments-balancer`, and within it, create
 
 Vagrant.configure("2") do |config|
   # Base VM OS configuration.
-  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.box = "geerlingguy/ubuntu2004"
   config.vm.synced_folder '.', '/vagrant', disabled: true
   config.ssh.insert_key = false
 
   config.vm.provider :virtualbox do |v|
-    v.memory = 256
+    v.memory = 512
     v.cpus = 1
     v.linked_clone = true
   end
