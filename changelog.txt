@@ -22,7 +22,10 @@ Hopefully these notes will help readers figure out what's changed since the last
   14. [#293](https://github.com/geerlingguy/ansible-for-devops/issues/293): Update variable information in chapter 5 to incorporate the ability to start variable names with underscores (`_`), and a mention of the convention of using that for private role variables (thanks to kolewu!).
   15. [#212](https://github.com/geerlingguy/ansible-for-devops/issues/212): Completely rewrite the Tower and AWX section in chapter 12 with new content based on running AWX via Docker Compose.
   16. [#295](https://github.com/geerlingguy/ansible-for-devops/issues/295): Update all examples using Ubuntu 16.04 or 18.04 to Ubuntu 20.04.
-  17. [#299](https://github.com/geerlingguy/ansible-for-devops/issues/299): Move Gluster example code to Ansible for DevOps GitHub repository and update to Ubuntu 20.04.
+  17. [#299](https://github.com/geerlingguy/ansible-for-devops/issues/299): Move Gluster example code in chapter 9 to Ansible for DevOps GitHub repository and update to Ubuntu 20.04.
+  18. [#301](https://github.com/geerlingguy/ansible-for-devops/issues/301): Move Docker Flask app example from chapter 15 into Ansible for DevOps GitHub repository and update everything to Ubuntu 20.04.
+  19. [#298](https://github.com/geerlingguy/ansible-for-devops/issues/298): Update syntax of role requirements files to use `name` instead of `src` and use `roles` keyword for better organization.
+  20. [#93](https://github.com/geerlingguy/ansible-for-devops/issues/93): Assume Python 3 by default and remove extra python raw module install step in Let's Encrypt example.
 
 ## Version 1.23 (2020-05-13)
 

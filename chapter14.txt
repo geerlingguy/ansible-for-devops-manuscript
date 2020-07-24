@@ -109,9 +109,10 @@ To get these roles installed, add a `requirements.yml` file to your playbook dir
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.pip
-- src: geerlingguy.nginx
+roles:
+  - name: geerlingguy.firewall
+  - name: geerlingguy.pip
+  - name: geerlingguy.nginx
 ```
 
 Then run `ansible-galaxy install -r requirements.yml` to install the roles.
@@ -294,9 +295,10 @@ Instead of writing all the automation ourselves, we can rely on some roles from 
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.certbot
-- src: geerlingguy.nginx
+roles:
+  - name: geerlingguy.firewall
+  - name: geerlingguy.certbot
+  - name: geerlingguy.nginx
 ```
 
 We'll use the `geerlingguy.firewall` role to secure unused ports on the server, `geerlingguy.certbot` to acquire and set up autorenewal of Let's Encrypt certs, and `nginx` to configure a web server to serve content over HTTPS.
@@ -327,7 +329,6 @@ First things first, start the play on all the `letsencrypt` hosts, and since we 
 ```
 ---
 - hosts: letsencrypt
-  gather_facts: false
   become: true
 
   vars_files:
@@ -336,25 +337,18 @@ First things first, start the play on all the `letsencrypt` hosts, and since we 
 
 We will also need to perform most tasks using sudo (since we have to modify the system, configure Nginx, etc.), so `become: true` is necessary. Finally, to add the configuration for certificate generation, firewall configuration, and Nginx, we'll put all the variables in a `vars/main.yml` file.
 
-In a series of `pre_tasks` in `main.yml`, install Python (if needed), gather facts (since we disabled the global playbook `gather_facts`), and update Apt's caches since we want the freshest package data available when installing software:
+In `pre_tasks` in `main.yml`, update Apt's caches since we want the freshest package data available when installing software:
 
-{lang="yaml",starting-line-number=9}
+{lang="yaml",starting-line-number=8}
 ```
   pre_tasks:
-    - name: Install Python if not already present.
-      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
-      changed_when: false
-
-    - name: Gather facts after Python is definitely present.
-      setup:
-
     - name: Ensure apt cache is updated.
       apt: update_cache=true cache_valid_time=600
 ```
 
 Now, it's time for the meat of this playbook, the `roles`. Call each one:
 
-{lang="yaml",starting-line-number=9}
+{lang="yaml",starting-line-number=12}
 ```
   roles:
     - geerlingguy.firewall
@@ -408,7 +402,7 @@ So for the last part of the playbook, we need to:
 
 To make sure the `nginx_docroot` exists, add a task to the `tasks` section of the playbook:
 
-{lang="yaml",starting-line-number=25}
+{lang="yaml",starting-line-number=17}
 ```
   tasks:
     - name: Ensure docroot exists.
@@ -438,7 +432,7 @@ Now we need an HTML file inside the docroot so Nginx can serve it, otherwise Ngi
 
 Then add a `copy` task in `main.yml` to copy the file into place after the docroot task:
 
-{lang="yaml",starting-line-number=31}
+{lang="yaml",starting-line-number=23}
 ```
     - name: Copy example index.html file in place.
       copy:
@@ -482,7 +476,7 @@ Finally, it tells Nginx to use the certificate and key inside the default Let's 
 
 Add a task templating this Jinja template to a Nginx config file in `main.yml`, making sure to restart Nginx when the template is created or modified:
 
-{lang="yaml",starting-line-number=31}
+{lang="yaml",starting-line-number=29}
 ```
     - name: Copy Nginx server configuration in place.
       template:

@@ -421,15 +421,16 @@ As mentioned in the Chapter 6, Ansible allows you to define all the required Ans
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.repo-epel
-- src: geerlingguy.varnish
-- src: geerlingguy.apache
-- src: geerlingguy.php
-- src: geerlingguy.php-mysql
-- src: geerlingguy.php-memcached
-- src: geerlingguy.mysql
-- src: geerlingguy.memcached
+roles:
+  - name: geerlingguy.firewall
+  - name: geerlingguy.repo-epel
+  - name: geerlingguy.varnish
+  - name: geerlingguy.apache
+  - name: geerlingguy.php
+  - name: geerlingguy.php-mysql
+  - name: geerlingguy.php-memcached
+  - name: geerlingguy.mysql
+  - name: geerlingguy.memcached
 ```
 
 To make sure all the required dependencies are installed, run `ansible-galaxy install -r requirements.yml` from within the project's root.
@@ -992,7 +993,29 @@ Here's our main playbook, saved as `provisioning/elk/main.yml`:
     - geerlingguy.filebeat
 ```
 
-This assumes you have a `logs` group in your inventory with at least one server listed. The playbook includes a vars file located in `provisioning/elk/vars/main.yml`, so create that file and put the following inside:
+This assumes you have a `logs` group in your inventory with at least one server listed. It also assumes you have all of those roles installed via Galaxy, using the following `requirements.yml`:
+
+{lang="yaml"}
+```
+---
+roles:
+- name: geerlingguy.java
+- name: geerlingguy.nginx
+- name: geerlingguy.elasticsearch
+  version: 4.1.1
+- name: geerlingguy.elasticsearch-curator
+  version: 2.1.0
+- name: geerlingguy.kibana
+  version: 4.0.0
+- name: geerlingguy.logstash
+  version: 5.1.0
+- name: geerlingguy.filebeat
+  version: 3.0.1
+```
+
+T> This example sets specific `version`s for some of the roles, because the ELK stack tools only work together well if you install a specific set of versions. For many projects, I specify a `version` for every dependency so I can choose when to upgrade to a newer role version that might have breaking changes.
+
+The playbook includes a vars file located in `provisioning/elk/vars/main.yml`, so create that file and put the following inside:
 
 {lang="yaml"}
 ```

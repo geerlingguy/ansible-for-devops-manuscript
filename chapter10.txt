@@ -321,10 +321,11 @@ Inside `requirements.yml`:
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.git
-- src: geerlingguy.ruby
-- src: geerlingguy.nodejs
-- src: geerlingguy.passenger
+roles:
+  - name: geerlingguy.git
+  - name: geerlingguy.ruby
+  - name: geerlingguy.nodejs
+  - name: geerlingguy.passenger
 ```
 
 In the same directory as the requirements file, run the command `$ ansible-galaxy install -r requirements.yml`, and after a minute, all the required roles will be downloaded to your default Ansible roles directory, if they're not already present.
@@ -543,9 +544,10 @@ Create a `requirements.yml` file in the root folder and add the following:
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.nodejs
-- src: geerlingguy.git
+roles:
+  - name: geerlingguy.firewall
+  - name: geerlingguy.nodejs
+  - name: geerlingguy.git
 ```
 
 Whenever someone wants to run the playbook, the command `ansible-galaxy install -r requirements.yml` will install all the required roles.
@@ -861,9 +863,10 @@ Now, to make sure we have all these roles installed, create a requirements file 
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.haproxy
-- src: geerlingguy.apache
+roles
+  - name: geerlingguy.firewall
+  - name: geerlingguy.haproxy
+  - name: geerlingguy.apache
 ```
 
 To install the required roles, run `ansible-galaxy install -r requirements.yml`.

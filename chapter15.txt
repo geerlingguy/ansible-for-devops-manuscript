@@ -143,16 +143,16 @@ We'll create a VM using Vagrant to run our Docker containers so the same Docker 
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "geerlingguy/ubuntu1804"
+  config.vm.box = "geerlingguy/ubuntu2004"
   config.vm.network :private_network, ip: "192.168.33.39"
   config.ssh.insert_key = false
 
-  config.vm.hostname = "docker.test"
+  config.vm.hostname = "docker-flask.test"
   config.vm.provider :virtualbox do |v|
-    v.customize ["modifyvm", :id, "--name", "docker.test"]
+    v.name = "docker-flask.test"
+    v.memory = 1024
+    v.cpus = 2
     v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    v.customize ["modifyvm", :id, "--memory", 1024]
-    v.customize ["modifyvm", :id, "--cpus", 2]
     v.customize ["modifyvm", :id, "--ioapic", "on"]
   end
 
@@ -172,6 +172,13 @@ We'll use Ubuntu for this example, and we've specified an Ansible playbook (`pro
 - hosts: all
   become: true
 
+  vars:
+    build_root: /vagrant/provisioning
+
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+
   roles:
     - role: geerlingguy.docker
 
@@ -180,15 +187,32 @@ We'll use Ubuntu for this example, and we've specified an Ansible playbook (`pro
     - import_tasks: docker.yml
 ```
 
-We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo` by setting `become: yes`.
+We're using `sudo` for everything because Docker either requires root privileges, or requires the current user account to be in the `docker` group. It's simplest for our purposes to set everything up with `sudo` by setting `become: true`.
 
-The `geerlingguy.docker` role requires no additional settings or configuration, so we can move on to `setup.yml` (in the same `provisioning` directory alongside `main.yml`):
+We also set a `build_root` variable that we'll use later on to tell Docker to build the containers inside the VM using the default shared Vagrant volume.
+
+The `geerlingguy.docker` role requires no additional settings or configuration, but it does need to be installed with `ansible-galaxy`, so add a `requirements.yml`:
+
+{lang="yaml"}
+```
+roles:
+  - name: geerlingguy.docker
+```
+
+And make sure the role is installed:
+
+{lang="text",linenos=off}
+```
+$ ansible-galaxy install -r requirements.yml
+```
+
+Next, create `setup.yml` in the same `provisioning` directory alongside `main.yml`:
 
 {lang="yaml"}
 ```
 ---
 - name: Install Pip.
-  apt: name=python-pip state=present
+  apt: name=python3-pip state=present
 
 - name: Install Docker Python library.
   pip: name=docker state=present
@@ -207,7 +231,7 @@ Next is the meat of the playbook: `docker.yml` (also in the `provisioning` direc
     tag: "{{ item.tag }}"
     source: build
     build:
-      path: "/vagrant/provisioning/{{ item.directory }}"
+      path: "{{ build_root }}/{{ item.directory }}"
       pull: false
     state: present
   with_items:
@@ -379,13 +403,14 @@ Now that we have the app defined, we need to build the container to run the app.
 {lang="docker"}
 ```
 # A simple Flask app container.
-FROM geerlingguy/docker-ubuntu1804-ansible
+FROM geerlingguy/docker-ubuntu2004-ansible
 MAINTAINER Jeff Geerling <geerlingguy@mac.com>
 
 # Install Flask app dependencies.
+RUN apt-get update
 RUN apt-get install -y libmysqlclient-dev build-essential \
-  python-dev python-pip
-RUN pip install flask flask-sqlalchemy mysql-python
+  python3-dev python3-pip
+RUN pip3 install flask flask-sqlalchemy mysqlclient
 
 # Install playbook and run it.
 COPY playbook.yml /etc/ansible/playbook.yml
@@ -484,9 +509,9 @@ Now that everything's in place, you should be able to cd into the main `docker` 
 {width=80%}
 ![Docker orchestration success!](images/15-docker-success.png)
 
-If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) on GitHub.
+If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-flask) on GitHub.
 
-The entire [Docker Flask example](https://github.com/geerlingguy/ansible-vagrant-examples/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
+The entire [Docker Flask example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 
 ## Building containers with Ansible from the outside
 

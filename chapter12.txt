@@ -207,11 +207,12 @@ This playbook uses a set of roles from Ansible Galaxy to install all the require
 {lang="yaml"}
 ```
 ---
-- src: geerlingguy.firewall
-- src: geerlingguy.pip
-- src: geerlingguy.ansible
-- src: geerlingguy.java
-- src: geerlingguy.jenkins
+roles:
+  - name: geerlingguy.firewall
+  - name: geerlingguy.pip
+  - name: geerlingguy.ansible
+  - name: geerlingguy.java
+  - name: geerlingguy.jenkins
 ```
 
 The `geerlingguy.ansible` role installs Ansible on the VM, so Jenkins can run Ansible playbooks and ad-hoc commands. The `geerlingguy.java` role is a dependency of `geerlingguy.jenkins`, and the `geerlingguy.firewall` role configures a firewall to limit access on ports besides 22 (for SSH) and 8080 (Jenkins' default port).
