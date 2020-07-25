@@ -584,7 +584,7 @@ $ ansible-galaxy role install geerlingguy.apache \
 geerlingguy.mysql geerlingguy.php
 ```
 
-T> The latest version of a role will be downloaded if no version is specified. To specify a version, add the version after the role name, for example: `$ ansible-galaxy role install geerlingguy.apache,1.0.0`.
+T> The latest version of a role will be downloaded if no version is specified. To specify a version, add the version after the role name, for example: `$ ansible-galaxy role install geerlingguy.apache,2.1.2`.
 
 I> Ansible Galaxy is still evolving rapidly, and has seen many improvements. There are a few areas where Galaxy could use some improvement (like browsing for roles by Operating System in the online interface, or automatically downloading roles that are included in playbooks), but most of these little bugs or rough spots will be fixed in time. Please check Ansible Galaxy's [About](https://galaxy.ansible.com/intro) page and stay tuned to Ansible's blog for the latest updates.
 
@@ -603,12 +603,12 @@ roles:
 
   # From Ansible Galaxy, specifying the version.
   - name: geerlingguy.php
-    version: 3.5.1
+    version: 4.3.1
 
   # From GitHub, with a custom name and version.
   - src: https://github.com/geerlingguy/ansible-role-passenger
     name: passenger
-    version: 1.2.0
+    version: 2.0.0
 
   # From a web server, with a custom name.
   - src: https://www.example.com/ansible/roles/my-role-name.tar.gz

@@ -97,7 +97,7 @@ Debug messages are helpful when actively debugging a playbook or when you need e
 
 ### The `fail` and `assert` modules
 
-Both `fail` and `assert`, when triggered, will abort the playbook run, and the only difference is in the simplicity of their usage. To illustrate, let's look at an example:
+Both `fail` and `assert`, when triggered, will abort the playbook run, and the main difference is in the simplicity of their usage and what is output during a playbook run. To illustrate, let's look at an example:
 
 {lang="yaml"}
 ```
@@ -130,6 +130,17 @@ Both `fail` and `assert`, when triggered, will abort the playbook run, and the o
 ```
 
 Switch the boolean values of `should_fail_via_fail`, `should_fail_via_assert`, and `should_fail_via_complex_assert` to trigger each of the three `fail`/`assert` tasks, to see how they work.
+
+A `fail` task will be reported as `skipped` if a failure is not triggered, whereas an `assert` task which passes will show as an `ok` task with an inline message in Ansible's default output:
+
+{lang="text",linenos=off}
+```
+TASK [Assertions can have contain conditions.] ********************
+ok: [default] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+```
 
 For most test cases, `debug`, `fail`, and `assert` are all you need to ensure your infrastructure is in the correct state during a playbook run.
 

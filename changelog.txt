@@ -26,6 +26,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   18. [#301](https://github.com/geerlingguy/ansible-for-devops/issues/301): Move Docker Flask app example from chapter 15 into Ansible for DevOps GitHub repository and update everything to Ubuntu 20.04.
   19. [#298](https://github.com/geerlingguy/ansible-for-devops/issues/298): Update syntax of role requirements files to use `name` instead of `src` and use `roles` keyword for better organization.
   20. [#93](https://github.com/geerlingguy/ansible-for-devops/issues/93): Assume Python 3 by default and remove extra python raw module install step in Let's Encrypt example.
+  21. [#187](https://github.com/geerlingguy/ansible-for-devops/issues/187): Fix php roles to work correctly out of the box in Debian Buster and Ubuntu 20.04.
+  22. [#191](https://github.com/geerlingguy/ansible-for-devops/issues/191): Update section on `fail` vs. `assert` in chapter 13 to note the difference in playbook output between the two.
 
 ## Version 1.23 (2020-05-13)
 
