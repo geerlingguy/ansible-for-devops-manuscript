@@ -193,6 +193,10 @@ As an example, set up the user `johndoe` with permission to use any command as r
 
 As with the earlier SSH configuration, we make sure to `validate` the sudoers file to ensure Ansible's changes don't result in a broken configuration.
 
+W> You might be alarmed at the use of `NOPASSWD` for `sudo` privileges. After all, aren't passwords always more secure? Well, there are many cases (especially in automation, if you don't have interactive logins for service accounts) where the convenience of not requiring a password for `sudo` use outweighs the minimal security benefit of requiring a password for all `sudo` activity.
+W> 
+W> For a good balance of convenience and security, you can also apply `NOPASSWD` to only a specific set of commands an account should be able to run without a password.
+
 Another way of changing the sudoers file is to create a sudoers file locally, and copy it using Ansible's `copy` module, like so:
 
 {lang="yaml",linenos=off}

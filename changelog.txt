@@ -28,6 +28,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   20. [#93](https://github.com/geerlingguy/ansible-for-devops/issues/93): Assume Python 3 by default and remove extra python raw module install step in Let's Encrypt example.
   21. [#187](https://github.com/geerlingguy/ansible-for-devops/issues/187): Fix php roles to work correctly out of the box in Debian Buster and Ubuntu 20.04.
   22. [#191](https://github.com/geerlingguy/ansible-for-devops/issues/191): Update section on `fail` vs. `assert` in chapter 13 to note the difference in playbook output between the two.
+  23. [#195](https://github.com/geerlingguy/ansible-for-devops/issues/195): Add warning about `NOPASSWD` use in sudoers file in chapter 11.
 
 ## Version 1.23 (2020-05-13)
 
