@@ -348,16 +348,16 @@ Create a new playbook named `provision.yml`, with the following contents:
 
   tasks:
     - name: Create new Droplet.
-      digital_ocean:
+      digital_ocean_droplet:
         state: present
-        command: droplet
         name: ansible-test
         private_networking: yes
-        size_id: s-1vcpu-1gb
+        size: 1gb
         image_id: centos-7-x64
-        region_id: nyc3
+        region: nyc3
         # Customize this for your account.
-        ssh_key_ids: 138954
+        ssh_keys:
+          - 138954
         # Required for idempotence/only one droplet creation.
         unique_name: yes
       register: do
@@ -369,7 +369,14 @@ T> You can use DigitalOcean's API, along with your Personal Access Token, to get
 T> 
 T> As an example, to get all the available images, use `curl --silent "https://api.digitalocean.com/v2/images?per_page=999" -H "Authorization: Bearer $DO_API_TOKEN" | python -m json.tool`, and you'll receive a JSON listing of all available values. Browse the [DigitalOcean API](https://developers.digitalocean.com/) for information on how to query SSH key information, size information, etc.
 
-We used `register` as part of the `digital_ocean` task so we could immediately start using and configuring the new host if needed. Running the above playbook returns the following output (using `debug: var=do` in an additional task to dump the contents of our registered variable, `do`):
+We used `register` as part of the `digital_ocean` task so we could immediately start using and configuring the new host if needed. If you want to see what the output of the `do` variable contains, add the following `debug` task:
+
+{lang="yaml",starting-line-number=22}
+```
+    - debug: var=do
+```
+
+Then run the playbook:
 
 {lang="text",linenos=off}
 ```
@@ -381,44 +388,105 @@ TASK [Create new Droplet.] *************************************
 changed: [localhost]
 
 TASK [debug] ***************************************************
-ok: [localhost] => {
+ok: [127.0.0.1] => {
     "do": {
-        "changed": true,
-        "droplet": {
-            "backup_ids": [],
-            "created_at": "2017-07-22T00:58:51Z",
-            "disk": 20,
-            "features": [
-                "private_networking",
-                "virtio"
-            ],
-            "id": 20203631,
-            "image": {
-                ...
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python"
+        },
+        "changed": false,
+        "data": {
+            "droplet": {
+                "backup_ids": [],
+                "created_at": "2024-07-26T22:35:30Z",
+                "disk": 30,
+                "features": [
+                    "private_networking"
+                ],
+                "id": 201562655,
+                "image": {
+                    "created_at": "2019-08-14T17:00:31Z",
+                    "description": "7.6 x64",
+                    "distribution": "CentOS",
+                    "id": 50903182,
+                    "min_disk_size": 20,
+                    "name": "7.6 x64",
+                    "public": true,
+                    "regions": [
+                        "nyc3",
+                        ...
+                    ],
+                    "size_gigabytes": 0.43,
+                    "slug": "centos-7-x64",
+                    "status": "available",
+                    "tags": [],
+                    "type": "base"
+                },
+                "kernel": null,
+                "locked": false,
+                "memory": 1024,
+                "name": "ansible-test",
+                "networks": {
+                    "v4": [
+                        {
+                            "gateway": "<nil>",
+                            "ip_address": "10.132.75.250",
+                            "netmask": "255.255.0.0",
+                            "type": "private"
+                        },
+                        {
+                            "gateway": "167.71.96.1",
+                            "ip_address": "167.71.109.155",
+                            "netmask": "255.255.240.0",
+                            "type": "public"
+                        }
+                    ],
+                    "v6": []
+                },
+                "next_backup_window": null,
+                "region": {
+                    "available": true,
+                    "features": [
+                        "private_networking",
+                        "backups",
+                        "ipv6",
+                        "metadata",
+                        "install_agent",
+                        "storage",
+                        "image_transfer"
+                    ],
+                    "name": "New York 3",
+                    "sizes": [
+                        "s-1vcpu-1gb",
+                        ...
+                    ],
+                    "slug": "nyc3"
+                },
+                "size": {
+                    "available": true,
+                    "disk": 30,
+                    "memory": 1024,
+                    "price_hourly": 0.01488,
+                    "price_monthly": 10.0,
+                    "regions": [
+                        "ams2",
+                        ...
+                    ],
+                    "slug": "1gb",
+                    "transfer": 2.0,
+                    "vcpus": 1
+                },
+                "size_slug": "1gb",
+                "snapshot_ids": [],
+                "status": "active",
+                "tags": [],
+                "vcpus": 1,
+                "volume_ids": [],
+                "vpc_uuid": "9545131e-dc84-11e8-80bc-3cfdfea9fba1"
             },
-            "ip_address": "162.243.20.29",
-            "kernel": null,
-            "locked": false,
-            "memory": 512,
-            "name": "ansible-test",
-            "networks": {
-                ...
-            },
-            "next_backup_window": null,
-            "private_ip_address": "10.1.1.2",
-            "region": {
-                ...
-            },
-            "size": {
-                ...
-            },
-            "size_slug": "512mb",
-            "snapshot_ids": [],
-            "status": "active",
-            "tags": [],
-            "vcpus": 1,
-            "volume_ids": []
-        }
+            "ip_address": "167.71.109.155",
+            "private_ipv4_address": "10.132.75.250"
+        },
+        "failed": false
     }
 }
 
@@ -426,15 +494,18 @@ PLAY RECAP *****************************************************
 localhost          : ok=2   changed=1   unreachable=0   failed=0
 ```
 
+You can remove the `debug` task now that you know the structure of the returned `do` object.
+
 Since `do` contains the new droplet's IP address (alongside other relevant information), you can place your freshly-created droplet in an existing inventory group using Ansible's `add_host` module. Adding to the playbook we started above, you could set up your playbook to provision an instance and immediately configure it (after waiting for port 22 to become available) with something like:
 
 {lang="yaml",starting-line-number=21}
 ```
     - name: Add new host to our inventory.
       add_host:
-        name: "{{ do.droplet.ip_address }}"
+        name: "{{ do.data.ip_address }}"
         groups: do
-      when: do.droplet is defined
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no'
+      when: do.data is defined
       changed_when: False
 
 - hosts: do
@@ -443,7 +514,7 @@ Since `do` contains the new droplet's IP address (alongside other relevant infor
 
   tasks:
     - name: Wait for port 22 to become available.
-      local_action: "wait_for port=22 host={{ inventory_hostname }}"
+      wait_for: port=22
 
     - name: Install tcpdump.
       yum: name=tcpdump state=present
@@ -466,7 +537,7 @@ ok: [localhost]
 PLAY [do] ******************************************************
 
 TASK [Wait for port 22 to become available.] *******************
-ok: [162.243.20.29 -> localhost]
+ok: [162.243.20.29]
 
 TASK: [Install tcpdump.] ***************************************
 changed: [162.243.20.29]
@@ -478,9 +549,9 @@ localhost          : ok=2   changed=1   unreachable=0   failed=0
 
 If you run the same playbook again, it should report no changes---the entire playbook is idempotent! You might be starting to see just how powerful it is to have a tool as flexible as Ansible at your disposal; not only can you configure servers, you can create them (singly, or dozens at a time), and configure them at once. And even if a ham-fisted sysadmin jumps in and deletes an entire server, you can run the playbook again, and rest assured your server will be recreated and reconfigured exactly as it was when it was first set up.
 
-T> If you get an error like "Failed to connect to the host via ssh: Host key verification failed.", then you can temporarily disable host key checking. Run the command `export ANSIBLE_HOST_KEY_CHECKING=False` and then run the `provision.yml` playbook again.
+T> We added the `StrictHostKeyChecking=no` option to the Ansible's SSH arguments for the droplet to avoid getting an interactive prompt to accept the server's host key during the playbook run.
 T> 
-T> You should normally leave `host_key_checking` enabled, but when rapidly building and destroying VMs for testing purposes, it is simplest to disable it temporarily.
+T> Typically, you should leave `host_key_checking` enabled, but when rapidly building and destroying VMs for testing purposes, it's more convenient to turn off host key verification.
 
 #### DigitalOcean dynamic inventory with `digital_ocean.py`
 
@@ -495,12 +566,11 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
      $ pip install dopy
      ~~~
 
-  2. Download the [DigitalOcean dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/digital_ocean.py) from Ansible on GitHub:
+  2. Download the [DigitalOcean dynamic inventory script](https://github.com/ansible-collections/community.digitalocean/blob/main/scripts/inventory/digital_ocean.py) from GitHub:
 
      {lang="text",line-numbers=off}
      ~~~
-     $ curl -O https://raw.githubusercontent.com/ansible/ansible/devel/\
-     contrib/inventory/digital_ocean.py
+     $ curl -O https://raw.githubusercontent.com/ansible-collections/community.digitalocean/main/scripts/inventory/digital_ocean.py
      ~~~
 
   3. Make the inventory script executable:
@@ -525,9 +595,11 @@ There are a few steps to getting DigitalOcean's official dynamic inventory scrip
      $ ansible all -m ping -i digital_ocean.py -u root
      ~~~
 
-Now that you have all your hosts being loaded through the dynamic inventory script, you can use `add_hosts` to build groups of the Droplets for use in your playbooks. Alternatively, if you want to fork the `digital_ocean.py` inventory script, you can modify it to suit your needs; exclude certain servers, build groups based on certain criteria, etc.
+Now that you have all your hosts being loaded through the dynamic inventory script, you can use `add_hosts` to build groups of the Droplets for use in your playbooks. You can also configure a `digital_ocean.ini` file (see an [example](https://github.com/ansible-collections/community.digitalocean/blob/main/scripts/inventory/digital_ocean.ini) on GitHub) to customize the inventory data further.
 
-I> Ansible < 1.9.5 only supported DigitalOcean's legacy v1 API, which is no longer supported. If you need to use Ansible with DigitalOcean, you should use the latest version of Ansible.
+I> The [`community.digitalocean` collection](https://github.com/ansible-collections/community.digitalocean) on Ansible Galaxy will soon include an inventory _plugin_ for DigitalOcean, which will make dynamic inventory with DigitalOcean even easier.
+
+To delete the DigitalOcean droplet you created earlier, update the `state` parameter for the `Create new Droplet` task. Set it to `absent`, then run the playbook again, and the droplet will be deleted from your account.
 
 ### Dynamic inventory with AWS
 

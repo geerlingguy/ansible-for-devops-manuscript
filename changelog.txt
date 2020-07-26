@@ -29,6 +29,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   21. [#187](https://github.com/geerlingguy/ansible-for-devops/issues/187): Fix php roles to work correctly out of the box in Debian Buster and Ubuntu 20.04.
   22. [#191](https://github.com/geerlingguy/ansible-for-devops/issues/191): Update section on `fail` vs. `assert` in chapter 13 to note the difference in playbook output between the two.
   23. [#195](https://github.com/geerlingguy/ansible-for-devops/issues/195): Add warning about `NOPASSWD` use in sudoers file in chapter 11.
+  24. [#229](https://github.com/geerlingguy/ansible-for-devops/issues/229): Update DigitalOcean dynamic inventory example in chapter 8 to use newer DigitalOcean modules.
 
 ## Version 1.23 (2020-05-13)
 
