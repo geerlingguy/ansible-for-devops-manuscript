@@ -50,7 +50,7 @@ Create a `main.yml` file within the `playbooks/varnish` directory, with the foll
 {lang="yaml"}
 ```
 ---
-- hosts: lamp-varnish
+- hosts: lamp_varnish
   become: yes
 
   vars_files:
@@ -69,7 +69,7 @@ Create a `main.yml` file within the `playbooks/varnish` directory, with the foll
       notify: restart varnish
 ```
 
-We're going to run this playbook on all hosts in the `lamp-varnish` inventory group (we'll create this later), and we'll run a few simple roles to configure the server:
+We're going to run this playbook on all hosts in the `lamp_varnish` inventory group (we'll create this later), and we'll run a few simple roles to configure the server:
 
   - `geerlingguy.firewall` configures a simple iptables-based firewall using a couple variables defined in `vars.yml`.
   - `geerlingguy.repo-epel` adds the EPEL repository (a prerequisite for varnish).
@@ -99,7 +99,7 @@ vcl 4.0;
 
 import directors;
 
-{% for host in groups['lamp-www'] %}
+{% for host in groups['lamp_www'] %}
 backend www{{ loop.index }} {
   .host = "{{ host }}";
   .port = "80";
@@ -108,7 +108,7 @@ backend www{{ loop.index }} {
 
 sub vcl_init {
   new vdir = directors.random();
-{% for host in groups['lamp-www'] %}
+{% for host in groups['lamp_www'] %}
   vdir.add_backend(www{{ loop.index }}, 1);
 {% endfor %}
 }
@@ -139,7 +139,7 @@ Create a `main.yml` file within the `playbooks/www` directory, with the followin
 {lang="yaml"}
 ```
 ---
-- hosts: lamp-www
+- hosts: lamp_www
   become: yes
 
   vars_files:
@@ -163,6 +163,21 @@ Create a `main.yml` file within the `playbooks/www` directory, with the followin
       template:
         src: templates/index.php.j2
         dest: /var/www/html/index.php
+
+    - name: Ensure required SELinux dependency is installed.
+      package:
+        name: libsemanage-python
+        state: present
+
+    - name: Configure SELinux to allow HTTPD connections.
+      seboolean:
+        name: "{{ item }}"
+        state: true
+        persistent: true
+      with_items:
+        - httpd_can_network_connect_db
+        - httpd_can_network_memcache
+      when: ansible_selinux.status == 'enabled'
 ```
 
 As with Varnish's configuration, we'll configure a firewall and add the EPEL repository (required for PHP's memcached integration), and we'll also add the following roles:
@@ -172,7 +187,9 @@ As with Varnish's configuration, we'll configure a firewall and add the EPEL rep
   - `geerlingguy.php-mysql` adds MySQL support to PHP.
   - `geerlingguy.php-memcached` adds Memcached support to PHP.
 
-Two final tasks remove the default `index.html` home page included with Apache, and replace it with our PHP app.
+Two first two tasks remove the default `index.html` home page included with Apache, and replace it with our PHP app.
+
+The last two tasks ensure SELinux is configured to allow Apache to communicate with the database and memcached servers over the network. For more discussion on how to configure SELinux, please see chapter 11.
 
 As in the Varnish example, create the two files referenced in the above playbook. First, `vars.yml`, alongside `main.yml`:
 
@@ -197,7 +214,7 @@ Create a `templates` directory inside the `playbooks/www` directory, and inside,
  */
 
 $mysql_servers = array(
-{% for host in groups['lamp-db'] %}
+{% for host in groups['lamp_db'] %}
   '{{ host }}',
 {% endfor %}
 );
@@ -217,7 +234,7 @@ foreach ($mysql_servers as $host) {
 $memcached_result = '<span style="color: red;">FAIL</span>';
 if (class_exists('Memcached')) {
   $memcached = new Memcached;
-  $memcached->addServer('{{ groups['lamp-memcached'][0] }}', 11211);
+  $memcached->addServer('{{ groups['lamp_memcached'][0] }}', 11211);
 
   // Test adding a value to memcached.
   if ($memcached->add('test', 'success', 1)) {
@@ -287,8 +304,8 @@ T> Don't try transcribing this example manually; you can get the code from this 
 
 This application is a bit more complex than most examples in the book, but here's a quick run through:
 
-  - (9-23) Iterate through all the `lamp-db` MySQL hosts defined in the playbook inventory and test the ability to connect to them---as well as whether they are configured as master or slave, using the `mysql_test_connection()` function defined later (40-73).
-  - (25-39) Check the first defined `lamp-memcached` Memcached host defined in the playbook inventory, confirming the ability to connect with the cache and to create, retrieve, or delete a cached value.
+  - (9-23) Iterate through all the `lamp_db` MySQL hosts defined in the playbook inventory and test the ability to connect to them---as well as whether they are configured as master or slave, using the `mysql_test_connection()` function defined later (40-73).
+  - (25-39) Check the first defined `lamp_memcached` Memcached host defined in the playbook inventory, confirming the ability to connect with the cache and to create, retrieve, or delete a cached value.
   - (41-76) Define the `mysql_test_connection()` function, which tests the ability to connect to a MySQL server and also returns its replication status.
   - (78-91) Print the results of all the MySQL and Memcached tests, along with `{{ inventory_hostname }}` as the page title, so we can easily see which web server is serving the viewed page.
 
@@ -301,7 +318,7 @@ Compared to the earlier playbooks, the Memcached playbook is quite simple. Creat
 {lang="yaml"}
 ```
 ---
-- hosts: lamp-memcached
+- hosts: lamp_memcached
   become: yes
 
   vars_files:
@@ -323,14 +340,14 @@ firewall_allowed_tcp_ports:
   - "22"
 firewall_additional_rules:
   - "iptables -A INPUT -p tcp --dport 11211 -s \
-  {{ groups['lamp-www'][0] }} -j ACCEPT"
+  {{ groups['lamp_www'][0] }} -j ACCEPT"
   - "iptables -A INPUT -p tcp --dport 11211 -s \
-  {{ groups['lamp-www'][1] }} -j ACCEPT"
+  {{ groups['lamp_www'][1] }} -j ACCEPT"
 
 memcached_listen_ip: "0.0.0.0"
 ```
 
-We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp-www` server by drilling down into each item in the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to all interfaces so it will accept connections through the server's network interface.
+We need port 22 open for remote access, and for Memcached, we're adding manual iptables rules to allow access on port 11211 for the web servers *only*. We add one rule per `lamp_www` server by drilling down into each item in the generated `groups` variable that Ansible uses to track all inventory groups currently available. We also bind Memcached to all interfaces so it will accept connections through the server's network interface.
 
 W> The **principle of least privilege** "requires that in a particular abstraction layer of a computing environment, every module ... must be able to access only the information and resources that are necessary for its legitimate purpose" (Source: [Wikipedia](http://en.wikipedia.org/wiki/Principle_of_least_privilege)). Always restrict services and ports to only those servers or users that need access!
 
@@ -343,7 +360,7 @@ Let's first create the main playbook, `playbooks/db/main.yml`:
 {lang="yaml"}
 ```
 ---
-- hosts: lamp-db
+- hosts: lamp_db
   become: yes
 
   vars_files:
@@ -354,11 +371,11 @@ Let's first create the main playbook, `playbooks/db/main.yml`:
       set_fact:
         mysql_users:
           - name: mycompany_user
-            host: "{{ groups['lamp-www'][0] }}"
+            host: "{{ groups['lamp_www'][0] }}"
             password: secret
             priv: "*.*:SELECT"
           - name: mycompany_user
-            host: "{{ groups['lamp-www'][1] }}"
+            host: "{{ groups['lamp_www'][1] }}"
             password: secret
             priv: "*.*:SELECT"
         mysql_replication_master: "{{ groups['a4d.lamp.db.1'][0] }}"
@@ -372,7 +389,7 @@ Most of the playbook is straightforward, but in this instance, we're using `set_
 
 `set_fact` allows us to define variables at runtime, so we can have all server IP addresses available, even if the servers were freshly provisioned at the beginning of the playbook's run. We'll create two variables:
 
-  - `mysql_users` is a list of users the `geerlingguy.mysql` role will create when it runs. This variable will be used on all database servers so both of the two `lamp-www` servers get `SELECT` privileges on all databases.
+  - `mysql_users` is a list of users the `geerlingguy.mysql` role will create when it runs. This variable will be used on all database servers so both of the two `lamp_www` servers get `SELECT` privileges on all databases.
   - `mysql_replication_master` is used to indicate to the `geerlingguy.mysql` role which database server is the master; it will perform certain steps differently depending on whether the server being configured is a master or slave, and ensure that all the slaves are configured to replicate data from the master.
 
 We'll need a few other normal variables to configure MySQL, so we'll add them alongside the firewall variable in `playbooks/db/vars.yml`:
@@ -384,7 +401,10 @@ firewall_allowed_tcp_ports:
   - "22"
   - "3306"
 
-mysql_replication_user: {name: 'replication', password: 'secret'}
+mysql_replication_user:
+  name: replication
+  password: secret
+
 mysql_databases:
   - name: mycompany_database
     collation: utf8_general_ci
@@ -410,7 +430,7 @@ A simple playbook including each of the group-specific playbooks is all we need 
 - import_playbook: playbooks/memcached/main.yml
 ```
 
-At this point, if you had some already-booted servers and statically defined inventory groups like `lamp-www`, `lamp-db`, etc., you could run `ansible-playbook configure.yml` and have a full HA infrastructure at the ready!
+At this point, if you had some already-booted servers and statically defined inventory groups like `lamp_www`, `lamp_db`, etc., you could run `ansible-playbook configure.yml` and have a full HA infrastructure at the ready!
 
 But we're going to continue to make our playbooks more flexible and useful.
 
@@ -551,21 +571,21 @@ Before running `vagrant up` to see the fruits of our labor, we need to create an
 
 {lang="text"}
 ```
-[lamp-varnish]
+[lamp_varnish]
 192.168.2.2
 
-[lamp-www]
+[lamp_www]
 192.168.2.3
 192.168.2.4
 
 [a4d.lamp.db.1]
 192.168.2.5
 
-[lamp-db]
+[lamp_db]
 192.168.2.5
 192.168.2.6
 
-[lamp-memcached]
+[lamp_memcached]
 192.168.2.7
 ```
 
@@ -598,12 +618,12 @@ Next we need to define some metadata to describe each of our droplets. For simpl
 ```
   vars:
     droplets:
-      - { name: a4d.lamp.varnish, group: "lamp-varnish" }
-      - { name: a4d.lamp.www.1, group: "lamp-www" }
-      - { name: a4d.lamp.www.2, group: "lamp-www" }
-      - { name: a4d.lamp.db.1, group: "lamp-db" }
-      - { name: a4d.lamp.db.2, group: "lamp-db" }
-      - { name: a4d.lamp.memcached, group: "lamp-memcached" }
+      - { name: a4d.lamp.varnish, group: "lamp_varnish" }
+      - { name: a4d.lamp.www.1, group: "lamp_www" }
+      - { name: a4d.lamp.www.2, group: "lamp_www" }
+      - { name: a4d.lamp.db.1, group: "lamp_db" }
+      - { name: a4d.lamp.db.2, group: "lamp_db" }
+      - { name: a4d.lamp.memcached, group: "lamp_memcached" }
 ```
 
 Each droplet is an object with two keys:
@@ -617,22 +637,22 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
 ```
   tasks:
     - name: Provision DigitalOcean droplets.
-      digital_ocean:
+      digital_ocean_droplet:
         state: "{{ item.state | default('present') }}"
-        command: droplet
         name: "{{ item.name }}"
         private_networking: yes
-        size_id: "{{ item.size | default('s-1vcpu-1gb') }}"
-        image_id: "{{ item.image | default('centos-7-x64') }}"
-        region_id: "{{ item.region | default('nyc3') }}"
+        size: "{{ item.size | default('1gb') }}"
+        image: "{{ item.image | default('centos-7-x64') }}"
+        region: "{{ item.region | default('nyc3') }}"
         # Customize this default for your account.
-        ssh_key_ids: "{{ item.ssh_key | default('138954') }}"
+        ssh_keys:
+          - "{{ item.ssh_key | default('138954') }}"
         unique_name: yes
       register: created_droplets
       with_items: "{{ droplets }}"
 ```
 
-Many of the options (e.g. `size_id`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size_id: 72` (or another valid value), and it would override the default value set in the task.
+Many of the options (e.g. `size`) are defined as `{{ item.property | default('default_value') }}`, which allows us to use optional variables per droplet. For any of the defined droplets, we could add `size: 2gb` (or another valid value), and it would override the default value set in the task.
 
 T> You could specify an SSH public key per droplet, or use the same key for all hosts by providing a default (as I did above). In this example, I added an SSH key to my DigitalOcean account, then used the DigitalOcean API to retrieve the key's numeric ID (as described in the previous chapter).
 T> 
@@ -644,23 +664,22 @@ We loop through all the defined `droplets` using `with_items: droplets`, and aft
 ```
     - name: Add DigitalOcean hosts to inventory groups.
       add_host:
-        name: "{{ item.1.droplet.ip_address }}"
-        groups: "do,{{ droplets[item.0].group }},\
-    {{ item.1.droplet.name }}"
+        name: "{{ item.1.data.ip_address }}"
+        groups: "do,{{ droplets[item.0].group }},{{ item.1.data.droplet.name }}"
         # You can dynamically add inventory variables per-host.
         ansible_user: root
-        mysql_replication_role: >
-          "{{ 'master' if (item.1.droplet.name == 'a4d.lamp.db.1')
-          else 'slave' }}"
+        mysql_replication_role: >-
+          {{ 'master' if (item.1.data.droplet.name == 'a4d.lamp.db.1')
+          else 'slave' }}
         mysql_server_id: "{{ item.0 }}"
-      when: item.1.droplet is defined
+      when: item.1.data is defined
       with_indexed_items: "{{ created_droplets.results }}"
 ```
 
 You'll notice a few interesting things happening in this task:
 
   - This is the first time we've used `with_indexed_items`. Though less common, this is a valuable loop feature because it adds a sequential and unique `mysql_server_id`. Though only the MySQL servers need a server ID set, it's more simple to dynamically create the variable for every server so each is available when needed. `with_indexed_items` sets `item.0` to the key of the item and `item.1` to the value of the item.
-  - In addition to helping us create server IDs, `with_indexed_items` also helps us to reliably set each droplet's group. Because the v1 DigitalOcean API doesn't support features like tags for Droplets, we have to set up the groups on our own. By using the `droplets` variable we manually created earlier, we can set the proper group for a particular droplet.
+  - In addition to helping us create server IDs, `with_indexed_items` also helps us to reliably set each droplet's group. We could also consider using tags for groups, but this example configures groups manually. By using the `droplets` variable we manually created earlier, we can set the proper group for a particular droplet.
   - Finally, we add inventory variables per-host in `add_host`. To do this, we add the variable name as a key and the variable value as that key's value. Simple, but powerful!
 
 T> There are a few different ways you can approach dynamic provisioning and inventory management for your infrastructure. There are ways to avoid using more exotic features of Ansible (e.g. `with_indexed_items`) and complex if/else conditions, especially if you only use one cloud infrastructure provider. This example is slightly more complex because the playbook is being created to be interchangeable with similar provisioning playbooks.
@@ -671,14 +690,14 @@ The final step in our provisioning is to make sure all the droplets are booted a
 ```
 - hosts: do
   remote_user: root
-  gather_facts: no
+  gather_facts: false
 
   tasks:
-    - name: Wait for port 22 to become available.
-      local_action: "wait_for port=22 host={{ inventory_hostname }}"
+    - name: Wait for host to become reachable.
+      wait_for_connection:
 ```
 
-Once we know port 22 is reachable, we know the droplet is up and ready for configuration.
+Once the server can be reached by Ansible (using the `wait_for_connection` module), we know the droplet is up and ready for configuration.
 
 We're now *almost* ready to provision and configure our entire infrastructure on DigitalOcean, but first we need to create one last playbook to tie everything together. Create `provision.yml` in the project root with the following contents:
 
@@ -740,22 +759,22 @@ We will need to define a list of `security_groups` alongside our EC2 `instances`
   vars:
     instances:
       - name: a4d.lamp.varnish
-        group: "lamp-varnish"
+        group: "lamp_varnish"
         security_group: ["default", "a4d_lamp_http"]
       - name: a4d.lamp.www.1
-        group: "lamp-www"
+        group: "lamp_www"
         security_group: ["default", "a4d_lamp_http"]
       - name: a4d.lamp.www.2
-        group: "lamp-www"
+        group: "lamp_www"
         security_group: ["default", "a4d_lamp_http"]
       - name: a4d.lamp.db.1
-        group: "lamp-db"
+        group: "lamp_db"
         security_group: ["default", "a4d_lamp_db"]
       - name: a4d.lamp.db.2
-        group: "lamp-db"
+        group: "lamp_db"
         security_group: ["default", "a4d_lamp_db"]
       - name: a4d.lamp.memcached
-        group: "lamp-memcached"
+        group: "lamp_memcached"
         security_group: ["default", "a4d_lamp_memcached"]
 ```
 
@@ -872,7 +891,7 @@ Each provisioned instance will have its metadata added to the registered `create
         groups: "aws,{{ item.1.item.group }},{{ item.1.item.name }}"
         # You can dynamically add inventory variables per-host.
         ansible_user: ec2-user
-        mysql_replication_role: >
+        mysql_replication_role: >-
           {{ 'master' if (item.1.item.name == 'a4d.lamp.db.1')
           else 'slave' }}
         mysql_server_id: "{{ item.0 }}"
