@@ -316,11 +316,10 @@ DigitalOcean's API and developer-friendly philosophy has made it easy for Ansibl
 Before you can follow the rest of the examples in this section, you will need:
 
   1. A DigitalOcean account (sign up at www.digitalocean.com).
-  2. `dopy`, a Python wrapper for DigitalOcean API interaction (you can install it with pip: `pip install dopy`).
-  3. A DigitalOcean API Personal Access Token. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2) to generate a Personal Access Token for use with Ansible (grant Read and Write access when you create the token).
-  4. An SSH key pair, which will be used to connect to your DigitalOcean servers. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-ssh-keys-with-digitalocean-droplets) to create a key pair and add the public key to your DigitalOcean account.
+  2. A DigitalOcean API Personal Access Token. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2) to generate a Personal Access Token for use with Ansible (grant Read and Write access when you create the token).
+  3. An SSH key pair, which will be used to connect to your DigitalOcean servers. Follow [this guide](https://www.digitalocean.com/community/tutorials/how-to-use-ssh-keys-with-digitalocean-droplets) to create a key pair and add the public key to your DigitalOcean account.
 
-Once you have these four things set up and ready to go, you should be able to communicate with your DigitalOcean account through Ansible.
+Once you have these three things set up and ready to go, you should be able to communicate with your DigitalOcean account through Ansible.
 
 #### Connecting to your DigitalOcean account
 
@@ -559,36 +558,29 @@ Once you have some DigitalOcean droplets, you need a way for Ansible to dynamica
 
 There are a few steps to getting DigitalOcean's official dynamic inventory script working:
 
-  1. Install `dopy` via pip (the DigitalOcean Python library):
-
-     {lang="text",line-numbers=off}
-     ~~~
-     $ pip install dopy
-     ~~~
-
-  2. Download the [DigitalOcean dynamic inventory script](https://github.com/ansible-collections/community.digitalocean/blob/main/scripts/inventory/digital_ocean.py) from GitHub:
+  1. Download the [DigitalOcean dynamic inventory script](https://github.com/ansible-collections/community.digitalocean/blob/main/scripts/inventory/digital_ocean.py) from GitHub:
 
      {lang="text",line-numbers=off}
      ~~~
      $ curl -O https://raw.githubusercontent.com/ansible-collections/community.digitalocean/main/scripts/inventory/digital_ocean.py
      ~~~
 
-  3. Make the inventory script executable:
+  2. Make the inventory script executable:
 
      {lang="text",line-numbers=off}
      ~~~
      $ chmod +x digital_ocean.py
      ~~~
 
-  4. Make sure you have `DO_API_TOKEN` set in your environment.
-  5. Make sure the script is working by running the script directly (with the command below). After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
+  3. Make sure you have `DO_API_TOKEN` set in your environment.
+  4. Make sure the script is working by running the script directly (with the command below). After a second or two, you should see all your droplets (likely just the one you created earlier) listed by IP address and dynamic group as JSON.
 
      {lang="text",line-numbers=off}
      ~~~
      $ ./digital_ocean.py --pretty
      ~~~
 
-  6. Ping all your DigitalOcean droplets:
+  5. Ping all your DigitalOcean droplets:
 
      {lang="text",line-numbers=off}
      ~~~
