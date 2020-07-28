@@ -31,8 +31,10 @@ Hopefully these notes will help readers figure out what's changed since the last
   23. [#195](https://github.com/geerlingguy/ansible-for-devops/issues/195): Add warning about `NOPASSWD` use in sudoers file in chapter 11.
   24. [#229](https://github.com/geerlingguy/ansible-for-devops/issues/229): Update DigitalOcean dynamic inventory example in chapter 8 to use newer DigitalOcean modules. Also update DigitalOcean provisioner example in chapter 9 to use newer DigitalOcean modules.
   25. [#304](https://github.com/geerlingguy/ansible-for-devops/issues/304): Update AWS lamp-infrastructure example in chapter 9 to use newer image and work better with SELinux enabled.
-  26. [#239](https://github.com/geerlingguy/ansible-for-devops/issues/239): Make sure apt caches are updated in HAProxy load balancer deployment example in chapter 10 (thanks to @searsaw and @MacFlurry!).
+  26. [#239](https://github.com/geerlingguy/ansible-for-devops/issues/239): Make sure apt caches are updated in HAProxy load balancer deployment example in chapter 10 (thanks to searsaw and MacFlurry!).
   27. [#256](https://github.com/geerlingguy/ansible-for-devops/issues/256): Update Ansible Vault example in chapter 5 to be able to run locally by default.
+  28. [#258](https://github.com/geerlingguy/ansible-for-devops/issues/258): Add `geerlingguy.pip` role dependency to ELK server example in chapter 9 and increase VirtualBox VM RAM allocation from 2 to 4 GB (thanks to mandrews4!).
+  29. [#259](https://github.com/geerlingguy/ansible-for-devops/issues/259): Update chapter 10 Rails deployment demo Vagrantfile for better WSL compatibility (thanks to mandrews4!).
 
 ## Version 1.23 (2020-05-13)
 
