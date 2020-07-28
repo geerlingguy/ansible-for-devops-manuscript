@@ -352,7 +352,7 @@ Debian and its derivatives typically use the `unattended-upgrades` package to co
     group: root
     mode: 0644
   with_items:
-    - 10periodic
+    - 20auto-upgrades
     - 50unattended-upgrades
 ```
 
