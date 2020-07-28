@@ -776,7 +776,7 @@ Vagrant.configure("2") do |config|
     v.linked_clone = true
   end
 
-  # Define four VMs with static private IP addresses.
+  # Define three VMs with static private IP addresses.
   boxes = [
     { :name => "bal1", :ip => "192.168.4.2" },
     { :name => "app1", :ip => "192.168.4.3" },
