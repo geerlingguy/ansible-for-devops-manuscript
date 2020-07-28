@@ -751,12 +751,20 @@ To begin, create `aws.yml` inside the `provisioners` directory and begin the pla
   gather_facts: false
 ```
 
-EC2 instances use security groups as an AWS-level firewall (which operates outside the individual instance's OS).
-We will need to define a list of `security_groups` alongside our EC2 `instances`. First, the `instances`:
+First, we'll define three variables to describe what AWS resources and region to use for provisioning.
 
 {lang="yaml",starting-line-number=6}
 ```
   vars:
+    aws_profile: default
+    aws_region: us-east-1 # North Virginia
+    aws_ec2_ami: ami-06cf02a98a61f9f5e # CentOS 7
+```
+
+EC2 instances use security groups as an AWS-level firewall (which operates outside the individual instance's OS). We will need to define a list of `security_groups` alongside our EC2 `instances`. First, the `instances`:
+
+{lang="yaml",starting-line-number=11}
+```
     instances:
       - name: a4d.lamp.varnish
         group: "lamp_varnish"
@@ -788,7 +796,7 @@ I> If you use AWS exclusively, it would be best to autoscaling groups and change
 
 With our instances defined, we'll next define a `security_groups` variable containing all the required security group configuration for each server:
 
-{lang="yaml",starting-line-number=27}
+{lang="yaml",starting-line-number=31}
 ```
     security_groups:
       - name: a4d_lamp_http
@@ -834,17 +842,18 @@ We need three security groups: `a4d_lamp_http` to open port 80, `a4d_lamp_db` to
 
 Now that we have all the data we need to set up security groups and instances, our first task is to create or verify the existence of the security groups:
 
-{lang="yaml",starting-line-number=64}
+{lang="yaml",starting-line-number=68}
 ```
   tasks:
     - name: Configure EC2 Security Groups.
       ec2_group:
         name: "{{ item.name }}"
         description: Example EC2 security group for A4D.
-        region: "{{ item.region | default('us-west-2') }}" # Oregon
         state: present
         rules: "{{ item.rules }}"
         rules_egress: "{{ item.rules_egress }}"
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
       with_items: "{{ security_groups }}"
 ```
 
@@ -861,15 +870,16 @@ With the security groups configured, we can provision the defined EC2 instances 
           inventory_group: "{{ item.group | default('') }}"
           inventory_host: "{{ item.name | default('') }}"
         group: "{{ item.security_group | default('') }}"
-        instance_type: "{{ item.type | default('t2.micro')}}" # Free
-        image: "{{ item.image | default('ami-3ecc8f46') }}" # CentOS 7
-        region: "{{ item.region | default('us-west-2') }}" # Oregon
+        instance_type: "{{ item.type | default('t2.micro')}}"
+        image: "{{ aws_ec2_ami }}"
         wait: yes
         wait_timeout: 500
         exact_count: 1
         count_tag:
           inventory_group: "{{ item.group | default('') }}"
           inventory_host: "{{ item.name | default('') }}"
+        profile: "{{ aws_profile }}"
+        region: "{{ aws_region }}"
       register: created_instances
       with_items: "{{ instances }}"
 ```
@@ -883,14 +893,15 @@ This example is slightly more complex than the DigitalOcean example, and a few p
 
 Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we will use to build Ansible inventory groups for the server configuration playbooks.
 
-{lang="yaml",starting-line-number=94}
+{lang="yaml",starting-line-number=100}
 ```
     - name: Add EC2 instances to inventory groups.
       add_host:
         name: "{{ item.1.tagged_instances.0.public_ip }}"
         groups: "aws,{{ item.1.item.group }},{{ item.1.item.name }}"
         # You can dynamically add inventory variables per-host.
-        ansible_user: ec2-user
+        ansible_user: centos
+        host_key_checking: false
         mysql_replication_role: >-
           {{ 'master' if (item.1.item.name == 'a4d.lamp.db.1')
           else 'slave' }}
@@ -903,24 +914,17 @@ This `add_host` example is slightly simpler than the one for DigitalOcean, becau
 
 We still use `with_indexed_items` so we can use the index to generate a unique ID per server for use in building the MySQL master-slave replication.
 
-The final steps in provisioning the EC2 instances are to ensure we can connect to them, and to set `selinux` into permissive mode so the configuration we supply will work correctly.
+The final step in provisioning the EC2 instances is to ensure they are booted and able to accept connections.
 
-{lang="yaml",starting-line-number=107}
+{lang="yaml",starting-line-number=114}
 ```
-# Run some general configuration on all AWS hosts.
 - hosts: aws
   gather_facts: false
 
   tasks:
-    - name: Wait for port 22 to become available.
-      local_action: "wait_for port=22 host={{ inventory_hostname }}"
-
-    - name: Set selinux into 'permissive' mode.
-      selinux: policy=targeted state=permissive
-      become: yes
+    - name: Wait for host to become available.
+      wait_for_connection:
 ```
-
-Since we defined `ansible_user` as `ec2-user` in the dynamically-generated inventory above, we need to ensure the `selinux` task runs explicitly with `sudo` by adding `become: yes`.
 
 Now, modify the `provision.yml` file in the root of the project folder and change the provisioners import to look like the following:
 
