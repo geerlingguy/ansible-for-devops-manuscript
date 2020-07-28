@@ -422,7 +422,7 @@ Below is an entire firewall configuration to lock down most everything on a Debi
     - { direction: incoming, policy: deny }
 ```
 
-If you run a playbook with the above rules, the log into the machine (or use the `ansible` command) and run `sudo ufw status verbose`, you should see the configuration has been updated to the following:
+If you run a playbook with the above rules, then log into the machine (or use the `ansible` command) and run `sudo ufw status verbose`, you should see the configuration has been updated to the following:
 
 {lang="text",linenos=off}
 ```

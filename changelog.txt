@@ -35,6 +35,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   27. [#256](https://github.com/geerlingguy/ansible-for-devops/issues/256): Update Ansible Vault example in chapter 5 to be able to run locally by default.
   28. [#258](https://github.com/geerlingguy/ansible-for-devops/issues/258): Add `geerlingguy.pip` role dependency to ELK server example in chapter 9 and increase VirtualBox VM RAM allocation from 2 to 4 GB (thanks to mandrews4!).
   29. [#259](https://github.com/geerlingguy/ansible-for-devops/issues/259): Update chapter 10 Rails deployment demo Vagrantfile for better WSL compatibility (thanks to mandrews4!).
+  30. [#288](https://github.com/geerlingguy/ansible-for-devops/issues/288): Fixed the word 'the' which should be 'then' in the 'Configuring a firewall' section of chapter 11 (thanks to claycooper!).
 
 ## Version 1.23 (2020-05-13)
 
