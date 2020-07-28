@@ -38,7 +38,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   30. [#288](https://github.com/geerlingguy/ansible-for-devops/issues/288): Fixed the word 'the' which should be 'then' in the 'Configuring a firewall' section of chapter 11 (thanks to claycooper!).
   31. [#283](https://github.com/geerlingguy/ansible-for-devops/issues/283): Adjusted a few things in chapter 11 for compatibility with CentOS 8 security configuration, and added link to new [security examples](https://github.com/geerlingguy/ansible-for-devops/tree/master/security) included in the book's repository (thanks to fama!).
   32. [#286](https://github.com/geerlingguy/ansible-for-devops/issues/286): Fix zero-downtime deployment example Vagrantfile comment in chapter 10 - it said 'four' servers when 'three' were actually defined (thanks to claycooper!).
-  33. [#277](https://github.com/geerlingguy/ansible-for-devops/issues/277): Fix filename in chapter 11 apt autoupdates example; was `10periodic`, now `20auto-upgrades (thanks to glillico!).
+  33. [#277](https://github.com/geerlingguy/ansible-for-devops/issues/277): Fix filename in chapter 11 apt autoupdates example; was `10periodic`, now `20auto-upgrades` (thanks to glillico!).
 
 ## Version 1.23 (2020-05-13)
 
