@@ -826,13 +826,27 @@ With this inventory, we can operate on just the `balancer`, just the `app` serve
 {lang="yaml"}
 ```
 ---
-- hosts: balancer
+- name: Firewall configuration.
+  hosts: all
   become: yes
 
   vars:
     firewall_allowed_tcp_ports:
       - "22"
       - "80"
+
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+
+  roles:
+    - geerlingguy.firewall
+
+- name: HAProxy Load Balancer setup.
+  hosts: balancer
+  become: yes
+
+  vars:
     haproxy_backend_servers:
       - name: 192.168.4.3
         address: 192.168.4.3:80
@@ -840,23 +854,17 @@ With this inventory, we can operate on just the `balancer`, just the `app` serve
         address: 192.168.4.4:80
 
   roles:
-    - geerlingguy.firewall
     - geerlingguy.haproxy
 
-- hosts: app
+- name: Apache webserver setup.
+  hosts: app
   become: yes
 
-  vars:
-    firewall_allowed_tcp_ports:
-      - "22"
-      - "80"
-
   roles:
-    - geerlingguy.firewall
     - geerlingguy.apache
 ```
 
-These two plays set up a firewall on both servers, and configure HAProxy on the load balancer, and Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `haproxy_backend_servers`. We let the `geerlingguy.firewall`, `geerlingguy.haproxy`, and `geerlingguy.apache` roles do all the hard work for us.
+These three plays set up a firewall on all servers, configure HAProxy on the load balancer, and install Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `firewall_allowed_tcp_ports` and `haproxy_backend_servers`. We let the `geerlingguy.firewall`, `geerlingguy.haproxy`, and `geerlingguy.apache` roles do all the hard work for us.
 
 Now, to make sure we have all these roles installed, create a requirements file to install the roles from Ansible Galaxy. Create `requirements.yml` in the same directory as the Vagrantfile, with the following contents:
 
