@@ -582,29 +582,35 @@ Ansible Vault works much like a real-world vault:
   3. You store the key (your vault's password) separately from the playbook in a location only you control or can access.
   4. You use the key to let Ansible decrypt the encrypted vault whenever you run your playbook.
 
-Let's see how it works in practice. Here's a playbook that connects to a service's API, and requires a secure API key to do so:
+Let's see how it works in practice. Here's a playbook in a file named `main.yml` that demonstrates the use of an API key:
 
 {lang="yaml"}
 ```
 ---
-- hosts: appserver
+- hosts: localhost
+  connection: local
+  gather_facts: no
 
   vars_files:
     - vars/api_key.yml
 
   tasks:
-    - name: Connect to service with our API key.
-      command: connect_to_service
+    - name: Echo the API key which was injected into the env.
+      shell: echo $API_KEY
       environment:
-        SERVICE_API_KEY: "{{ myapp_service_api_key }}"
+        API_KEY: "{{ myapp_api_key }}"
+      register: echo_result
+
+    - name: Show the result.
+      debug: var=echo_result.stdout
 ```
 
-The vars_file, which is stored alongside the playbook, in plain text, looks like:
+The `api_key.yml` vars file, which is stored alongside the playbook in a `vars` folder, looks like:
 
 {lang="yaml"}
 ```
 ---
-myapp_service_api_key: "yJJvPqhqgxyPZMispRycaVMBmBWPqYDf3DFanPxAMAm"
+myapp_api_key: "l9bTqfBlbXTQiDaJMqgPJ1VdeFLfId98"
 ```
 
 This is convenient, but it's not safe to store the API key in plain text. Even when running the playbook locally on an access-restricted computer, secrets should be encrypted. If you're running the playbook via a central server (e.g. using Ansible Tower or Jenkins), or if you have this playbook in a shared repository, it's even more important. _You_ may follow best practices for physical and OS security, but can you guarantee _every_ developer and sysadmin who has access to this file does the same?
@@ -615,7 +621,7 @@ To encrypt the file with Vault, run:
 
 {lang="text",linenos=off}
 ```
-$ ansible-vault encrypt api_key.yml
+$ ansible-vault encrypt vars/api_key.yml
 ```
 
 Enter a secure password for the file, and Ansible will encrypt it. If you open the file now, you should see something like:
@@ -638,7 +644,7 @@ Next time you run the playbook, you will need to provide the password you used f
 
 {lang="text",linenos=off}
 ```
-$ ansible-playbook test.yml
+$ ansible-playbook main.yml
 ERROR: A vault password must be specified to decrypt vars/api_key.yml
 ```
 
@@ -647,7 +653,7 @@ There are a number of ways you can provide the password, depending on how you ru
 {lang="text",linenos=off}
 ```
 # Use --ask-vault-pass to supply the vault password at runtime.
-$ ansible-playbook test.yml --ask-vault-pass
+$ ansible-playbook main.yml --ask-vault-pass
 Vault password:
 ```
 
@@ -660,7 +666,7 @@ For convenience, or for automated playbook runs (e.g. on a continuous integratio
 {lang="text",linenos=off}
 ```
 # Use --vault-password-file to supply the password via file/script.
-$ ansible-playbook test.yml --vault-password-file ~/.ansible/\
+$ ansible-playbook main.yml --vault-password-file ~/.ansible/\
 vault_pass.txt
 ```
 
