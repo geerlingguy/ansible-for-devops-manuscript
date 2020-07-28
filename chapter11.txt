@@ -112,6 +112,12 @@ For our secure server, we want to disable password-based SSH authentication (mak
 ```
 ---
 - hosts: example
+
+  handlers:
+    # Note: Use 'sshd' for Red Hat and its derivatives.
+    - name: restart ssh
+      service: name=ssh state=restarted
+
   tasks:
     - name: Update SSH configuration to be more secure.
       lineinfile:
@@ -128,14 +134,9 @@ For our secure server, we want to disable password-based SSH authentication (mak
         - regexp: "^Port"
           line: "Port 2849"
       notify: restart ssh
-
-  handlers:
-    # Note: Use 'sshd' for Red Hat and its derivatives.
-    - name: restart ssh
-      service: name=ssh state=restarted
 ```
 
-In this extremely simple playbook, we set three options in SSH configuration (`PasswordAuthentication no`, `PermitRootLogin no`, and `Port 2849`) using Ansible's `lineinfile` module, then use a handler we define in the `handlers` section to restart the ssh service.
+In this extremely simple playbook, we use a handler we define in the `handlers` section to restart the ssh service, then set three options in SSH configuration (`PasswordAuthentication no`, `PermitRootLogin no`, and `Port 2849`) using Ansible's `lineinfile` module.
 
 If you're ever editing files that could result in broken behavior after a change, it's important to _validate_ changes using the `validate` option (in this case using `sshd`'s `-t` option and passing a file path). This makes sure you don't break sudo when you save the changes. The `%s` is a placeholder for the file's path, and will be filled in by Ansible when Ansible runs the validation command.
 
@@ -148,11 +149,11 @@ I>
 I> {lang="yaml",linenos=off}
 I> ~~~
 I> - name: Allow sshd to listen on tcp port 2849.
-I>     seport:
-I>       ports: 2849
-I>       proto: tcp
-I>       setype: ssh_port_t
-I>       state: present
+I>   seport:
+I>     ports: 2849
+I>     proto: tcp
+I>     setype: ssh_port_t
+I>     state: present
 I> ~~~
 
 ## Disable root login and use `sudo`
@@ -219,16 +220,15 @@ If you're not actively using a piece of software, or there's an obsolete cron ta
 {lang="yaml",linenos=off}
 ```
 - name: Remove unused packages.
-  apt:
+  package:
     name:
-      - apache2
       - nano
-      - mailutils
+      - sendmail
     state: absent
     purge: yes
 ```
 
-With modules like `yum`, `apt`, `file`, and `mysql_db`, a `state=absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
+With modules like `package`, `yum`, `apt`, `file`, and `mysql_db`, a `state: absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
 
 Opening only required ports helps reduce the surface area for attack, requiring only a few firewall rules. This will be covered fully in the "Use a properly-configured firewall" section, but as an example, don't leave port 25 open on your server unless your server will be used as an SMTP relay server. Further, make sure the services you have listening on your open ports are configured to only allow access from trusted clients.
 
@@ -560,10 +560,10 @@ To enable SELinux in `targeted` mode (which is the most secure mode without bein
 ```
 - name: Install Python SELinux library.
   yum:
-    name: libselinux-python
+    name: python3-libselinux
     state: present
 
-- Ensure SELinux is enabled in `targeted` mode.
+- name: Ensure SELinux is enabled in `targeted` mode.
   selinux:
     policy: targeted
     state: enforcing
@@ -600,7 +600,7 @@ This chapter contains a broad overview of some Linux security best practices, an
   - [20 Linux Server Hardening Security Tips](http://www.cyberciti.biz/tips/linux-security.html)
   - [Unix and Linux System Administration Handbook](http://www.admin.com/)
 
-Much of the security configuration in this chapter is encapsulated in a role on Ansible Galaxy, for use on your own servers: [security role by geerlingguy](https://galaxy.ansible.com/geerlingguy/security/).
+Much of the security configuration in this chapter is encapsulated in a role on Ansible Galaxy, for use on your own servers: [security role by geerlingguy](https://galaxy.ansible.com/geerlingguy/security/). The specific examples used in this chapter are also available in the [security example in this book's repository](https://github.com/geerlingguy/ansible-for-devops/tree/master/security).
 
 {lang="text",linenos=off}
 ```
