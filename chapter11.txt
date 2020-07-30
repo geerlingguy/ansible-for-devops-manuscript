@@ -154,6 +154,7 @@ I>     ports: 2849
 I>     proto: tcp
 I>     setype: ssh_port_t
 I>     state: present
+I>   when: ansible_selinux.status == 'enabled'
 I> ~~~
 
 ## Disable root login and use `sudo`
@@ -578,6 +579,7 @@ Ansible also has a `seboolean` module that allows setting SELinux booleans. A ve
     name: httpd_can_network_connect
     state: yes
     persistent: yes
+  when: ansible_selinux.status == 'enabled'
 ```
 
 The Ansible `file` module also integrates well with SELinux, allowing the four security context fields for a file or directory to be set, one per parameter:
