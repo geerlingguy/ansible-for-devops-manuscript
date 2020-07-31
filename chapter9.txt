@@ -693,7 +693,7 @@ The final step in our provisioning is to make sure all the droplets are booted a
   gather_facts: false
 
   tasks:
-    - name: Wait for host to become reachable.
+    - name: Wait for hosts to become reachable.
       wait_for_connection:
 ```
 
@@ -867,6 +867,8 @@ With the security groups configured, we can provision the defined EC2 instances 
       ec2:
         key_name: "{{ item.ssh_key | default('lamp_aws') }}"
         instance_tags:
+          Name: "{{ item.name | default('') }}"
+          Application: lamp_aws
           inventory_group: "{{ item.group | default('') }}"
           inventory_host: "{{ item.name | default('') }}"
         group: "{{ item.security_group | default('') }}"
@@ -876,7 +878,6 @@ With the security groups configured, we can provision the defined EC2 instances 
         wait_timeout: 500
         exact_count: 1
         count_tag:
-          inventory_group: "{{ item.group | default('') }}"
           inventory_host: "{{ item.name | default('') }}"
         profile: "{{ aws_profile }}"
         region: "{{ aws_region }}"
@@ -887,9 +888,9 @@ With the security groups configured, we can provision the defined EC2 instances 
 This example is slightly more complex than the DigitalOcean example, and a few parts warrant a deeper look:
 
   - EC2 allows SSH keys to be defined by name---in my case, I have a key `lamp_aws` in my AWS account. You should set the `key_name` default to a key that you have in your account.
-  - Instance tags are tags that AWS will attach to your instance, for categorization purposes. By giving a list of keys and values, I can then use that list later in the `count_tag` parameter.
+  - Instance tags are tags that AWS will attach to your instance, for categorization purposes. Besides the `Name` tag (which is used for display purposes in the AWS Console), you can add whatever tags you want, to help categorize instances.
   - `t2.micro` was used as the default instance type, since it falls within EC2's free tier usage. If you just set up an account and keep all AWS resource usage within free tier limits, you won't be billed anything.
-  - `exact_count` and `count_tag` work together to ensure AWS provisions only one of each of the instances we defined. The `count_tag` tells the `ec2` module to match the given group + host and then `exact_count` tells the module to only provision `1` instance. If you wanted to *remove* all your instances, you could set `exact_count` to 0 and run the playbook again.
+  - `exact_count` and `count_tag` work together to ensure AWS provisions only one of each of the instances we defined. The `count_tag` tells the `ec2` module to match on the `inventory_host` value, and `exact_count` tells the module to only provision `1` instance. If you wanted to *remove* all your instances, you could set `exact_count` to 0 and run the playbook again.
 
 Each provisioned instance will have its metadata added to the registered `created_instances` variable, which we will use to build Ansible inventory groups for the server configuration playbooks.
 
@@ -922,7 +923,7 @@ The final step in provisioning the EC2 instances is to ensure they are booted an
   gather_facts: false
 
   tasks:
-    - name: Wait for host to become available.
+    - name: Wait for hosts to become available.
       wait_for_connection:
 ```
 
@@ -960,9 +961,67 @@ As with the earlier examples, running `ansible-playbook provision.yml` again sho
 
 To terminate all the provisioned instances, you can change the `exact_count` in the `ec2` task to `0`, and run `$ ansible-playbook provision.yml` again.
 
+#### AWS EC2 Dynamic inventory plugin
+
+If you'd like to connect to the EC2 servers provisioned in AWS in another playbook, you don't need to get the information in a play and use `add_hosts` to build the inventory inside a playbook.
+
+Like the DigitalOcean example in the previous chapter, you can use the `aws_ec2` dynamic inventory plugin to work with the servers in an AWS account.
+
+Create an `aws_ec2.yml` inventory configuration file in an `inventories/aws` directory under the main playbook directory, and add the following:
+
+{lang=yaml}
+```
+---
+plugin: aws_ec2
+
+regions:
+  - us-east-1
+
+hostnames:
+  - ip-address
+
+keyed_groups:
+  - key: tags.inventory_group
+```
+
+To verify the inventory source works correctly, use the `ansible-inventory` command:
+
+{lang=text,linenos=off}
+```
+$ ansible-inventory -i inventories/aws/aws_ec2.yml --graph
+@all:
+  |--@aws_ec2:
+  |  |--54.148.41.134
+  |  |--54.148.100.44
+  |  |--54.69.160.32
+  |  |--54.69.86.187
+  |  |--54.148.120.23
+  |  |--54.148.56.137
+  |--@lamp_aws:
+  |  |--54.148.41.134
+  |  |--54.148.100.44
+  |  |--54.69.160.32
+  |  |--54.69.86.187
+  |  |--54.148.120.23
+  |  |--54.148.56.137
+  |--@lamp_db:
+  |  |--54.148.100.44
+  |  |--54.148.120.23
+  |--@lamp_memcached:
+  |  |--54.148.41.134
+  |--@lamp_varnish:
+  |  |--54.148.56.137
+  |--@lamp_www:
+  |  |--54.69.160.32
+  |  |--54.69.86.187
+  |--@ungrouped:
+```
+
+You can then use these dynamic inventory groups in other playbooks to run tasks on all the LAMP servers (e.g. `lamp_aws`), or just one subset (e.g. `lamp_db` or `lamp_www`).
+
 ### Summary
 
-In the above example, an entire highly-available PHP application infrastructure was defined in a series of short Ansible playbooks, and then provisioning configuration was created to build the infrastructure on either local VMs, DigitalOcean droplets, or AWS EC2 instances.
+We defined an entire highly-available PHP application infrastructure in a series of short Ansible playbooks, and then created provisioning configuration to build the infrastructure on either local VMs, DigitalOcean droplets, or AWS EC2 instances.
 
 Once you start working on building infrastructure this way---by abstracting individual servers, then abstracting cloud provisioning---you'll start to see some of Ansible's true power of being more than just a configuration management tool. Imagine being able to create your own multi-datacenter, multi-provider infrastructure with Ansible and some basic configuration.
 

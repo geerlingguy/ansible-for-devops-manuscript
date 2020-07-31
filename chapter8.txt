@@ -512,7 +512,7 @@ Since `do` contains the new droplet's IP address (alongside other relevant infor
   gather_facts: False
 
   tasks:
-    - name: Wait for host to become reachable.
+    - name: Wait for hosts to become reachable.
       wait_for_connection:
 
     - name: Install tcpdump.
@@ -535,7 +535,7 @@ ok: [localhost]
 
 PLAY [do] ******************************************************
 
-TASK [Wait for host to become available.] *******************
+TASK [Wait for hosts to become available.] *******************
 ok: [162.243.20.29]
 
 TASK: [Install tcpdump.] ***************************************
