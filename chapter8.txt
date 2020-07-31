@@ -595,14 +595,11 @@ To delete the DigitalOcean droplet you created earlier, update the `state` param
 
 ### Dynamic inventory with AWS
 
-Many of this book's readers are familiar with Amazon Web Services (especially EC2, S3, ElastiCache, and Route53), and likely have managed or currently manage an infrastructure within Amazon's cloud. Ansible has very strong support for managing AWS-based infrastructure, and includes a [dynamic inventory script](https://raw.githubusercontent.com/ansible/ansible/devel/contrib/inventory/ec2.py) to help you run playbooks on your hosts in a variety of ways.
+Many of this book's readers are familiar with Amazon Web Services (especially EC2, S3, RDS, and Route53), and likely have managed or currently manage an infrastructure within Amazon's cloud. Ansible has very strong support for managing AWS-based infrastructure, and includes a [EC2 inventory plugin](https://docs.ansible.com/ansible/latest/plugins/inventory/aws_ec2.html) to help you run playbooks on your hosts in a variety of ways.
 
-There are a few excellent guides to using Ansible with AWS, for example:
+Ansible's own documentation includes a thorough [Amazon Web Services Guide](https://docs.ansible.com/ansible/latest/scenario_guides/guide_aws.html) if you'd like to automate your AWS workflows with Ansible.
 
-  - [Ansible - Amazon Web Services Guide](http://docs.ansible.com/guide_aws.html)
-  - [Ansible for AWS](https://leanpub.com/ansible-for-aws)
-
-I won't be covering dynamic inventory in this chapter, but will mention that the `ec2.py` dynamic inventory script, along with Ansible's extensive support for AWS infrastructure through `ec2_*` modules, makes Ansible the best and most simple tool for managing a broad AWS infrastructure.
+I won't be covering AWS dynamic inventory in this chapter, but will mention that the `aws_ec2` inventory plugin, along with Ansible's extensive support for AWS infrastructure through `ec2_*` modules, makes Ansible an excellent choice for managing AWS infrastructure.
 
 In the next chapter, one of the examples will include a guide for provisioning infrastructure on AWS, along with a quick overview of dynamic inventory on AWS.
 
