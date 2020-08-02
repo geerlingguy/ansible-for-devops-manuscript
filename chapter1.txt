@@ -106,15 +106,18 @@ I> **What about Python 3?** If you have both Python 2 and Python 3 installed, an
 
 ## Creating a basic inventory file {#basic-inventory}
 
-Ansible uses an inventory file (basically, a list of servers) to communicate with your servers. Like a hosts file (at `/etc/hosts`) that matches IP addresses to domain names, an Ansible inventory file matches servers (IP addresses or domain names) to groups. Inventory files can do a lot more, but for now, we'll just create a simple file with one server. Create a file at `/etc/ansible/hosts` (the default location for Ansible's inventory file), and add one server to it:
+Ansible uses an inventory file (basically, a list of servers) to communicate with your servers. Like a hosts file (at `/etc/hosts`) that matches IP addresses to domain names, an Ansible inventory file matches servers (IP addresses or domain names) to groups. Inventory files can do a lot more, but for now, we'll just create a simple file with one server. Create a file named `hosts.ini` in a test project folder:
 
 {lang="text",linenos=off}
 ```
-$ sudo mkdir /etc/ansible
-$ sudo touch /etc/ansible/hosts
+$ mkdir test-project
+$ cd test-project
+$ touch hosts.ini
 ```
 
-Edit this hosts file with nano, vim, or whatever editor you'd like, but note you'll need to edit it with sudo as root. Put the following into the file:
+T> Inventory file names do not have to follow any particular naming convention. I often use the file name `hosts.ini` for Ansible's default 'ini-style' syntax, but I also sometimes call the file `inventory` (with no file extension).
+
+Edit this hosts file with nano, vim, or whatever editor you'd like. Put the following into the file:
 
 {lang="text"}
 ```
@@ -128,13 +131,15 @@ I> This first example assumes you have a server set up that you can test with; i
 I>
 I> Replace the `www.example.com` in the above example with the name or IP address of your server.
 
+T> You can also place your inventory in Ansible's global inventory file, `/etc/ansible/hosts`, and any playbook will default to that if no other inventory is specified. However, that file requires `sudo` permissions and it is usually better to maintain inventory alongside your Ansible projects.
+
 ## Running your first Ad-Hoc Ansible command
 
 Now that you've installed Ansible and created an inventory file, it's time to run a command to see if everything works! Enter the following in the terminal (we'll do something safe so it doesn't make any changes on the server):
 
 {lang="text",linenos=off}
 ```
-$ ansible example -m ping -u [username]
+$ ansible -i hosts.ini example -m ping -u [username]
 ```
 
 ...where `[username]` is the user you use to log into the server. If everything worked, you should see a message that shows `www.example.com | SUCCESS >>`, then the result of your ping. If it didn't work, run the command again with `-vvvv` on the end to see verbose output. Chances are you don't have SSH keys configured properly---if you login with `ssh username@www.example.com` and that works, the above Ansible command should work, too.
@@ -147,7 +152,7 @@ Let's run a more useful command:
 
 {lang="text",linenos=off}
 ```
-$ ansible example -a "free -h" -u [username]
+$ ansible -i hosts.ini example -a "free -h" -u [username]
 ```
 
 In this example, we quickly see memory usage (in a human-readable format) on all the servers (for now, just one) in the `example` group. Commands like this are helpful for quickly finding a server that has a value out of a normal range. I often use commands like `free -h` (to see memory statistics), `df -h` (to see disk usage statistics), and the like to make sure none of my servers is behaving erratically. While it's good to track these details in an external tool like [Nagios](http://www.nagios.org/), [Munin](http://munin-monitoring.org/), or [Cacti](http://www.cacti.net/), it's also nice to check these stats on all your servers with one simple command and one terminal window!

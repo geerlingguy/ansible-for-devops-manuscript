@@ -86,9 +86,17 @@ While that's going on, we'll work on telling Ansible about the servers, so we ca
 
 ## Inventory file for multiple servers {#multiple-server-inventory}
 
-There are many ways you can tell Ansible about the servers you manage, but the most standard, and simplest, is to add them to your system's main Ansible inventory file, which is located at `/etc/ansible/hosts`. If you didn't create the file in the previous chapter, go ahead and create the file now; make sure your user account has read permissions for the file.
+There are many ways you can tell Ansible about the servers you manage, but the most standard, and simplest, is to add them to an inventory file you store with your Ansible project.
 
-Add the following to the file:
+In the earlier examples, we specified the path to the inventory file on the command line using `-i hosts.ini`. But we can avoid having to specify this path every time we run `ansible` commands by specifying the path to the inventory file in an `ansible.cfg` file that is also stored in the root directory of your project:
+
+{lang="text"}
+```
+[defaults]
+inventory = hosts.ini
+```
+
+Now, add the following to a `hosts.ini` file, also in the root directory of your project:
 
 {lang="text"}
 ```
@@ -143,7 +151,7 @@ $ ansible multi -a "hostname"
 
 Ansible will run this command against all three of the servers, and return the results (if Ansible can't reach one server, it will show an error for that server, but continue running the command on the others).
 
-T> If Ansible reports `No hosts matched` or returns some other inventory-related error, try setting the `ANSIBLE_INVENTORY` environment variable explicitly: `export ANSIBLE_INVENTORY=/etc/ansible/hosts`. Generally Ansible will read the file in `/etc/ansible/hosts` automatically, but depending on how you installed Ansible, you may need to explicitly set `ANSIBLE_INVENTORY` for the `ansible` command to work correctly.
+T> If Ansible reports `No hosts matched` or returns some other inventory-related error, you might not have your `ansible.cfg` file in the correct directory, or it might not be the correct syntax. You can also try overriding the inventory file path by setting the `ANSIBLE_INVENTORY` environment variable explicitly: `export ANSIBLE_INVENTORY=hosts.ini`.
 
 T> If you get an error like `The authenticity of host '192.168.60.5' can't be established.`, this is because SSH has a security feature which requires you to confirm the server's 'host key' the first time you connect. You can type `yes` on the command line (in this case multiple times) to dismiss the warning and accept the hostkey, or you can also set the environment variable `ANSIBLE_HOST_KEY_CHECKING=False`. The behavior for host key acceptance can also be configured in your SSH configuration file.
 
@@ -231,22 +239,18 @@ Second, let's also make sure there is enough memory on our servers:
 ```
 $ ansible multi -a "free -m"
 192.168.60.4 | CHANGED | rc=0 >>
-             total     used     free   shared   buffers   cached
-Mem:           238      187       50        4         1       69
--/+ buffers/cache:      116      121
-Swap:         1055        0     1055
-
-192.168.60.6 | CHANGED | rc=0 >>
-             total     used     free   shared   buffers   cached
-Mem:           238      190       47        4         1       72
--/+ buffers/cache:      116      121
-Swap:         1055        0     1055
-
+              total   used   free   shared  buff/cache   available
+Mem:            486     98    283        4         104         371
+Swap:          1023      0   1023
 192.168.60.5 | CHANGED | rc=0 >>
-             total     used     free   shared   buffers   cached
-Mem:           238      186       52        4         1       67
--/+ buffers/cache:      116      121
-Swap:         1055        0     1055
+              total   used   free   shared  buff/cache   available
+Mem:            486     96    285        4         104         372
+Swap:          1023      0   1023
+192.168.60.6 | CHANGED | rc=0 >>
+              total   used   free   shared  buff/cache   available
+Mem:            486     97    284        4         104         371
+Swap:          1023      0   1023
+
 ```
 
 Memory is pretty tight, but since we're running three VMs on our localhost, we need to be a little conservative.

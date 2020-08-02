@@ -105,7 +105,7 @@ This first line is a marker showing that the rest of the document will be format
 - hosts: all
 ```
 
-This line tells Ansible to which hosts this playbook applies. `all` works here, since Vagrant is invisibly using its own Ansible inventory file (instead of the one we created earlier in `/etc/ansible/hosts`), which just defines the Vagrant VM.
+This line tells Ansible to which hosts this playbook applies. `all` works here, since Vagrant is invisibly using its own Ansible inventory file (instead of using a manually-created `hosts.ini` file), which just defines the Vagrant VM.
 
 {lang="yaml",starting-line-number=3}
 ```
