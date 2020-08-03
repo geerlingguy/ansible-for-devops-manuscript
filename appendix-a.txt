@@ -6,38 +6,33 @@ To use SSH on Windows, you need additional software. But Ansible also requires o
 
 This appendix will guide Windows users through the author's preferred method of using Ansible on a Windows workstation.
 
-I> Ansible 1.7 and later can manage Windows hosts (see Ansible's [Windows Support](https://docs.ansible.com/ansible/latest/user_guide/intro_windows.html) documentation), but doesn't run within Windows natively. You still need to follow the instructions here to run the Ansible client on a Windows host.
+I> Ansible can manage Windows hosts (see Ansible's [Windows Guides](https://docs.ansible.com/ansible/latest/user_guide/windows.html) documentation), but doesn't run within Windows natively. You still need to follow the instructions here to run the Ansible client on a Windows host.
 
-## Method 1 - Use the Windows Subsystem for Linux / Bash on Ubuntu
+## Method 1 - Use the Windows Subsystem for Linux
 
-If you are running Windows 10, and have installed either the Anniversary Update or any later version, you can install the Windows Subsystem for Linux (WSL), which is the most seamless Bash integration you can currently get for Windows.
+If you are running Windows 10, and have upgraded to the latest version, you can install the Windows Subsystem for Linux (WSL), which is the most seamless Linux integration you can currently get in Windows.
 
-The WSL downloads Ubuntu and places it in a special privileged VM layer that's as transparent as it can be while still existing sandboxed from the general Windows environment. Using WSL, you can open up an Ubuntu command prompt and have access to almost all the same software and functionality you would have if you were running Ubuntu natively!
+The WSL downloads a Linux distribution and places it in a special privileged VM layer that's as transparent as it can be while sandboxed from the general Windows environment. Using WSL, you can open up a Linux prompt and have access to almost all the same software and functionality you would have if you were running Linux natively!
 
-Microsoft has the most up-to-date [installation guide](https://msdn.microsoft.com/en-us/commandline/wsl/install_guide) on their Developer Network site, but the installation process is straightforward:
+Microsoft has the most up-to-date [installation guide](https://docs.microsoft.com/en-us/windows/wsl/install-win10) on their Developer Network site, but the installation process is straightforward:
 
-  1. Turn on Developer mode (inside Settings > Update and Security > For developers).
-  2. Open a PowerShell prompt as an administrator and run the command:
+  1. Open a PowerShell prompt as an administrator and run the command:
 
      {lang="text",linenos=off}
      ~~~
-     Enable-WindowsOptionalFeature -Online -FeatureName \
-     Microsoft-Windows-Subsystem-Linux
+     dism.exe /online /enable-feature \
+     /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
      ~~~
 
-  3. Restart your computer when prompted.
+  2. Restart your computer when prompted.
 
-At this point, the WSL is installed, but Ubuntu has not yet been installed. To do that:
+At this point, the WSL is installed, but you haven't installed a Linux environment. To install Linux, follow Microsoft's guide to [download and install a Linux distribution](https://docs.microsoft.com/en-us/windows/wsl/install-win10#install-your-linux-distribution-of-choice). For our purposes, I recommend the latest Ubuntu LTS release.
 
-  1. Open a Command prompt (`cmd`), and run the command `bash`.
-  2. Accept the license by typing `y` when prompted.
-  3. The first time Ubuntu is installed, you'll also be asked for a username and password to use in the bash environment.
+Once installation completes, there will be a shortcut either on your Desktop or in the Start menu, and you can either use this shortcut to open a Terminal session, or you can type `bash` in a Command prompt.
 
-Once installation completes, there will be a shortcut either on your Desktop or in the Start menu, and you can either use this shortcut to launch a `bash` session, or type `bash` in a Command prompt.
+Now that you have Linux running inside Windows, you can install Ansible inside the WSL environment just like you would if you were running Linux natively!
 
-Now that you have Bash on Ubuntu running inside Windows, you can install Ansible inside the WSL environment just like you would if you were running Ubuntu natively!
-
-### Installing Ansible inside Bash on Ubuntu
+### Installing Ansible inside WSL
 
 Before installing Ansible, make sure your package list is up to date by updating apt-get:
 
@@ -46,18 +41,18 @@ Before installing Ansible, make sure your package list is up to date by updating
 $ sudo apt-get update
 ```
 
-The easiest way to install Ansible is to use `pip`, a package manager for Python. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
+The easiest way to install Ansible is to use `pip3`, a package manager for Python. Python should already be installed on the system, but `pip3` may not be, so let's install it, along with Python's development header files (which are in the `python3-dev` package).
 
 {lang="text",linenos=off}
 ```
-$ sudo apt-get install -y python-pip python-dev
+$ sudo apt-get install -y python3-pip python3-dev
 ```
 
 After the installation is complete, install Ansible:
 
 {lang="text",linenos=off}
 ```
-$ sudo pip install ansible
+$ pip3 install ansible
 ```
 
 After Ansible and all its dependencies are downloaded and installed, make sure Ansible is running and working:
@@ -65,12 +60,14 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.10
+ansible 2.9.11
 ```
 
-T> Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
+T> Upgrading Ansible is also easy with pip: Run `pip3 install --upgrade ansible` to get the latest version.
 
 You can now use Ansible within the Ubuntu Bash environment. You can access files on the Windows filesystem inside the `/mnt` folder (`/mnt/c` corresponds to `C:\`), but be careful when moving things between Windows and the WSL, as strange things can happen because of line ending, permissions, and filesystem differences!
+
+W> Many of the examples in this book use Vagrant, Docker, or Kubernetes command line utilities that sometimes behave differently when run under the Windows Subsystem for Linux. Please follow [issue 291 in this book's repository](https://github.com/geerlingguy/ansible-for-devops/issues/291) for the latest updates, as I am trying to make sure all examples can be run on Windows just as easily as on macOS or Linux.
 
 ## Method 2 - When WSL is not an option
 
@@ -182,18 +179,18 @@ Before installing Ansible, make sure your package list is up to date by updating
 $ sudo apt-get update
 ```
 
-The easiest way to install Ansible is to use `pip`, a package manager for Python. Python should already be installed on the system, but `pip` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
+The easiest way to install Ansible is to use `pip3`, a package manager for Python. Python should already be installed on the system, but `pip3` may not be, so let's install it, along with Python's development header files (which are in the `python-dev` package).
 
 {lang="text",linenos=off}
 ```
-$ sudo apt-get install -y python-pip python-dev
+$ sudo apt-get install -y python3-pip python3-dev
 ```
 
 After the installation is complete, install Ansible:
 
 {lang="text",linenos=off}
 ```
-$ sudo pip install ansible
+$ pip3 install ansible
 ```
 
 After Ansible and all its dependencies are downloaded and installed, make sure Ansible is running and working:
@@ -201,10 +198,10 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.10
+ansible 2.9.11
 ```
 
-T> Upgrading Ansible is also easy with pip: Run `sudo pip install --upgrade ansible` to get the latest version.
+T> Upgrading Ansible is also easy with pip: Run `pip3 install --upgrade ansible` to get the latest version.
 
 You should now have Ansible installed within a virtual machine running on your Windows workstation. You can control the virtual machine with Vagrant (`cd` to the location of the Vagrantfile), using `up` to boot or wake the VM, `halt` to shut down the VM, or `suspend` to sleep the VM. Log into the VM manually using PuTTY or via `vagrant ssh` with Cygwin or Git's Windows shell.
 
@@ -212,4 +209,4 @@ Use Ansible from within the virtual machine just as you would on a Linux or Mac 
 
 ## Summary
 
-There are other ways to 'hack' Ansible into running natively within Windows (without a Linux VM), such as the [ansible-babun-bootstrap](https://github.com/jonathanhle/ansible-babun-bootstrap), but I recommend either using the WSL or running everything within a Linux VM as performance will be optimal and the number of environment-related problems you encounter will be greatly reduced!
+There are ways to 'hack' Ansible into running natively within Windows (without a Linux VM), but I recommend either using the WSL or running everything within a Linux VM as performance will be better and the number of environment-related problems you encounter will be greatly reduced!

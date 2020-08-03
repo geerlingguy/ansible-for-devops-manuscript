@@ -99,7 +99,7 @@ I> ~~~
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.10
+ansible 2.9.11
 ```
 
 I> **What about Python 3?** If you have both Python 2 and Python 3 installed, and `pip` is aliased to an older Python 2 version of `pip`, you should consider installing Python 3 and `pip3`, and using that version instead. Ansible is fully compatible with Python 3, and unless you're running on a very old system that doesn't have Python 3 available for it, you should use Python 3.
