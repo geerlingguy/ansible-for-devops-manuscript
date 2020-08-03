@@ -436,7 +436,7 @@ T> The entire example Node.js app server playbook is in this book's code reposit
 
 ## Real-world playbook: Ubuntu LAMP server with Drupal
 
-At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu 20.04 to run a Drupal website.
+At this point, you should be getting comfortable with Ansible playbooks and the YAML syntax used to define them. Up to this point, most examples have assumed you're working with a CentOS, RHEL, or Fedora server. Ansible plays nicely with other flavors of Linux and BSD-like systems as well. In the following example, we're going to set up a traditional LAMP (Linux, Apache, MySQL, and PHP) server using Ubuntu to run a Drupal website.
 
 {width=40%}
 ![Drupal LAMP server.](images/4-playbook-drupal.png)
@@ -477,7 +477,7 @@ With that out of the way, we'll add another new section to our playbook, `handle
 
 `handlers` are special kinds of tasks you run at the end of a play by adding the `notify` option to any of the tasks in that group. The handler will only be called if one of the tasks notifying the handler makes a change to the server (and doesn't fail), and it will only be notified at the _end_ of the play.
 
-To call this handler, add the option `notify: restart apache` after defining the rest of a play. We've defined this handler so we can restart the `apache2` service after a configuration change, which will be explained below.
+To call this handler from a task, add the option `notify: restart apache` to any task in the play. We've defined this handler so we can restart the `apache2` service after a configuration change, which will be explained below.
 
 I> Just like variables, handlers and tasks may be placed in separate files and included in your playbook to keep things tidy (we'll discuss this in chapter 6). For simplicity's sake, though, the examples in this chapter are shown as in a single playbook file. We'll discuss different playbook organization methods later.
 
@@ -492,16 +492,17 @@ The first step towards building an application server that depends on the LAMP s
   tasks:
     - name: Get software for apt repository management.
       apt:
-        name:
-          - python-apt
-          - python-pycurl
         state: present
+        name:
+          - python3-apt
+          - python3-pycurl
 
     - name: Add ondrej repository for later versions of PHP.
       apt_repository: repo='ppa:ondrej/php' update_cache=yes
 
     - name: "Install Apache, MySQL, PHP, and other dependencies."
       apt:
+        state: present
         name:
           - acl
           - git
@@ -525,7 +526,6 @@ The first step towards building an application server that depends on the LAMP s
           - libapache2-mod-php7.4
           - python3-mysqldb
           - mysql-server
-        state: present
 
     - name: Disable the firewall (since this is for local dev only).
       service: name=ufw state=stopped
@@ -539,7 +539,7 @@ The first step towards building an application server that depends on the LAMP s
 
 In this playbook, we begin with a common LAMP setup:
 
-  1. Install a couple helper libraries which allow Python to manage apt more precisely (`python-apt` and `python-pycurl` are required for the `apt_repository` module to do its work).
+  1. Install a couple helper libraries which allow Python to manage apt more precisely (`python3-apt` and `python3-pycurl` are required for the `apt_repository` module to do its work).
   2. Install an extra `apt` PPA that will allow installation of a later version of PHP than is available in the default system repositories.
   3. Install all the required packages for our LAMP server (including all the PHP extensions Drupal requires).
   4. Disable the firewall entirely, for testing purposes. If on a production server or any server exposed to the Internet, you should instead have a restrictive firewall only allowing access on ports 22, 80, 443, and other necessary ports.
@@ -547,17 +547,17 @@ In this playbook, we begin with a common LAMP setup:
 
 ### Configure Apache
 
-The next step is configuring Apache so it will work correctly with Drupal. Out of the box, Apache doesn't have mod_rewrite enabled on Ubuntu's current release. To remedy that situation, you could use the command `sudo a2enmod rewrite`, but Ansible has a handy `apache2_module` module that will do the same thing with idempotence.
+The next step is configuring Apache so it will work correctly with Drupal. Out of the box, Apache may not have mod_rewrite enabled. To remedy that situation, you could use the command `sudo a2enmod rewrite`, but Ansible has a handy `apache2_module` module that will do the same thing with idempotence.
 
 We also need to add a VirtualHost entry to give Apache the site's document root and provide other options for the site.
 
-{lang="yaml",starting-line-number=62}
+{lang="yaml",starting-line-number=63}
 ```
     - name: Enable Apache rewrite module (required for Drupal).
       apache2_module: name=rewrite state=present
       notify: restart apache
 
-    - name: Add Apache virtualhost for Drupal 8 development.
+    - name: Add Apache virtualhost for Drupal.
       template:
         src: "templates/drupal.test.conf.j2"
         dest: "/etc/apache2/sites-available/{{ domain }}.test.conf"
@@ -566,17 +566,16 @@ We also need to add a VirtualHost entry to give Apache the site's document root 
         mode: 0644
       notify: restart apache
 
-    - name: Symlink Drupal virtualhost to sites-enabled.
-      file:
-        src: "/etc/apache2/sites-available/{{ domain }}.test.conf"
-        dest: "/etc/apache2/sites-enabled/{{ domain }}.test.conf"
-        state: link
+    - name: Enable the Drupal site.
+      command: >
+        a2ensite {{ domain }}.test
+        creates=/etc/apache2/sites-enabled/{{ domain }}.test.conf
       notify: restart apache
 
-    - name: Remove default virtualhost file.
-      file:
-        path: "/etc/apache2/sites-enabled/000-default.conf"
-        state: absent
+    - name: Disable the default site.
+      command: >
+        a2dissite 000-default
+        removes=/etc/apache2/sites-enabled/000-default.conf
       notify: restart apache
 ```
 
@@ -592,36 +591,34 @@ Let's look at our Jinja template (denoted by the extra `.j2` on the end of the f
     ServerAdmin webmaster@localhost
     ServerName {{ domain }}.test
     ServerAlias www.{{ domain }}.test
-    DocumentRoot {{ drupal_core_path }}
-    <Directory "{{ drupal_core_path }}">
+    DocumentRoot {{ drupal_core_path }}/web
+    <Directory "{{ drupal_core_path }}/web">
         Options FollowSymLinks Indexes
         AllowOverride All
     </Directory>
 </VirtualHost>
+
 ```
 
 This is a fairly standard Apache VirtualHost definition, but we have a few Jinja template variables mixed in. The syntax for printing a variable in a Jinja template is the same syntax we use in our Ansible playbooks---two brackets around the variable's name (like so: `{{ variable }}`).
 
-There are three variables we will need (`drupal_core_version`, `drupal_core_path`, and `domain`), so add them to the empty `vars.yml` file we created earlier:
+There are two variables we will need (`drupal_core_path` and `domain`), so add them to the empty `vars.yml` file we created earlier:
 
 {lang="yaml"}
 ```
 ---
-# The core version you want to use.
-drupal_core_version: "8.9.x"
-
 # The path where Drupal will be downloaded and installed.
-drupal_core_path: "/var/www/drupal-{{ drupal_core_version }}-dev"
+drupal_core_path: "/var/www/drupal"
 
 # The resulting domain will be [domain].test (with .test appended).
 domain: "drupal"
 ```
 
-Now, when Ansible reaches the play that copies this template into place, the Jinja template will have the variable names replaced with the values `/var/www/drupal-8.8.x-dev` and `drupal` (or whatever values you'd like!).
+Now, when Ansible reaches the play that copies this template into place, the Jinja template will have the variable names replaced with the values `/var/www/drupal` and `drupal` (or whatever values you'd like!).
 
-The last two tasks (lines 75-86) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
+The last two tasks (lines 76-86) enable the VirtualHost we just added, and remove the default VirtualHost definition, which we no longer need.
 
-At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't exist (there's no directory at `{{ drupal_core_path }}` yet!). This is why using `notify` is important---instead of adding a task after these three steps to restart Apache (which will fail the first time you run the playbook), notify will wait until after we've finished all the other steps in our main group of tasks (giving us time to finish setting up the server), *then* restart Apache.
+At this point, you could start the server, but Apache will likely throw an error since the VirtualHost you've defined doesn't exist (there's no directory at `{{ drupal_core_path }}/web` yet!). This is why using `notify` is important---instead of adding a task after these three steps to restart Apache (which will fail the first time you run the playbook), notify will wait until after we've finished all the other steps in our main group of tasks (giving us time to finish setting up the server), *then* restart Apache.
 
 ### Configure PHP with `lineinfile` {#lineinfile-php}
 
@@ -664,15 +661,15 @@ The next step is to create a database and user (named for the domain we specifie
         state: present
 ```
 
-I> Ansible works with many databases out of the box (MongoDB, MySQL/MariaDB, PostgreSQL, Redis and Riak as of this writing). In MySQL's case, Ansible uses the MySQLdb Python package (`python-mysqldb`) to manage a connection to the database server, and assumes the default root account credentials ('root' as the username with no password). Obviously, leaving this default would be a bad idea! On a production server, one of the first steps should be to change the root account password, limit the root account to localhost, and delete any nonessential database users.
+I> Ansible works with many databases out of the box (MongoDB, MySQL/MariaDB, PostgreSQL, Redis, and more). In MySQL's case, Ansible uses the MySQLdb Python package (`python3-mysqldb`) to manage a connection to the database server, and assumes the default root account credentials ('root' as the username with no password). Obviously, leaving this default would be a bad idea! On a production server, one of the first steps should be to change the root account password, limit the root account to localhost, and delete any nonessential database users.
 I> 
-I> If you use different credentials, you can add a .my.cnf file to your remote user's home directory containing the database credentials to allow Ansible to connect to the MySQL database without leaving passwords in your Ansible playbooks or variable files. Otherwise, you can prompt the user running the Ansible playbook for a MySQL username and password. This option, using prompts, will be discussed later in the book.
+I> If you use different credentials, you can add a `.my.cnf` file to your remote user's home directory containing the database credentials to allow Ansible to connect to the MySQL database without leaving passwords in your Ansible playbooks or variable files. Otherwise, you can prompt the user running the Ansible playbook for a MySQL username and password. This option, using prompts, will be discussed later in the book.
 
-### Install Composer and Drush
+### Install Composer
 
-Drupal has a command-line companion in the form of Drush. Drush is developed independently of Drupal, and provides a full suite of CLI commands to manage Drupal. Drush, like most modern PHP tools, integrates with external dependencies defined in a `composer.json` file which describes the dependencies to Composer.
+If we wanted, we could manually download Drupal from Drupal.org, then run the install wizard using our browser, but that's how you'd do things _before_ you learned to automate with Ansible!
 
-We could just download Drupal and perform some setup in the browser by hand at this point, but the goal of this playbook is to have a fully-automated and idempotent Drupal installation. So, we need to install Composer, then Drush, and use both to install Drupal:
+Instead, we're going to set up the Drupal codebase and install Drupal all via automation. Drupal uses Composer to configure its codebase and manage PHP dependencies, so the first step is installing Composer on the server.
 
 {lang="yaml",starting-line-number=107}
 ```
@@ -702,80 +699,81 @@ T> There are two other modules which assist in executing shell commands remotely
 T> 
 T> It's best to use an Ansible module for every task. If you have to resort to a regular command-line command, try the `command` module first. If you require the options mentioned above, use `shell`. Use of `script` or `raw` should be exceedingly rare, and won't be covered in this book.
 
-Now, we'll install Drush using the latest version from GitHub:
+### Create a Drupal project with Composer
+
+Now that we have composer available, we can create a Drupal project using Composer's `create-project` command. This command downloads Drupal core and all of it's recommended dependencies to a folder on the server:
 
 {lang="yaml",starting-line-number=124}
 ```
-    - name: Check out drush 8.x branch.
-      git:
-        repo: https://github.com/drush-ops/drush.git
-        version: 8.x
-        dest: /opt/drush
-
-    - name: Install Drush dependencies with Composer.
-      command: >
-        /usr/local/bin/composer install
-        chdir=/opt/drush
-        creates=/opt/drush/vendor/autoload.php
-
-    - name: Create drush bin symlink.
-      file:
-        src: /opt/drush/drush
-        dest: /usr/local/bin/drush
-        state: link
-```
-
-Earlier in the book, we cloned a git repository using an ad-hoc command. In this case, we're defining a play that uses the `git` module to clone Drush from its repository URL on GitHub. Since we want the `8.x` branch, pass in the `repo` (repository URL), `version` (the branch, tag, or commit ref), and `dest` (destination path) parameters (the `git` module will check out `master` if you don't provide a `version`).
-
-After Drush is downloaded to `/opt/drush`, we use Composer to install all the required dependencies. In this case, we want Ansible to run `composer install` in the directory `/opt/drush` (this is so Composer finds Drush's `composer.json` file automatically), so we pass along the parameter `chdir=/opt/drush`. Once Composer is finished, the file `/opt/drush/vendor/autoload.php` will be created, so we use the `creates` parameter to tell Ansible to skip this step if the file already exists (for idempotency).
-
-Finally, we create a symlink from `/usr/local/bin/drush` to the executable at `/opt/drush/drush`, so we can call the `drush` command anywhere on the system.
-
-### Install Drupal with Git and Drush
-
-We'll use `git` again to clone Drupal to the Apache document root we defined earlier in our virtual host configuration, install Drupal's dependencies with Composer, run Drupal's installation via Drush, and fix a couple other file permissions issues so Drupal loads correctly within our VM.
-
-{lang="yaml",starting-line-number=142}
-```
-    - name: Check out Drupal Core to the Apache docroot.
-      git:
-        repo: https://git.drupal.org/project/drupal.git
-        version: "{{ drupal_core_version }}"
-        dest: "{{ drupal_core_path }}"
-      register: git_checkout
-
-    - name: Ensure Drupal codebase is owned by www-data.
+    - name: Ensure Drupal directory exists.
       file:
         path: "{{ drupal_core_path }}"
+        state: directory
         owner: www-data
         group: www-data
-        recurse: true
-      when: git_checkout.changed | bool
 
-    - name: Install Drupal dependencies with Composer.
-      command: >
-        /usr/local/bin/composer install
-        chdir={{ drupal_core_path }}
-        creates={{ drupal_core_path }}/vendor/autoload.php
+    - name: Check if Drupal project already exists.
+      stat:
+        path: "{{ drupal_core_path }}/composer.json"
+      register: drupal_composer_json
+
+    - name: Create Drupal project.
+      composer:
+        command: create-project
+        arguments: drupal/recommended-project "{{ drupal_core_path }}"
+        working_dir: "{{ drupal_core_path }}"
+        no_dev: true
       become_user: www-data
+      when: not drupal_composer_json.stat.exists
+```
+
+First, we have to make sure the directory where Drupal will be stored exists, and is owned by the Apache user, `www-data`.
+
+Next, for idempotence, we'll check if the project already exists, by seeing if a `composer.json` file (which Composer creates for any new PHP project) exists in the directory.
+
+Finally, if that file _doesn't_ already exist, we use Ansible's `composer` module to create the Drupal project. The `no_dev` option tells Composer to not install any Drupal development dependencies, like testing tools that may not be helpful on a production server.
+
+The `composer` task would be equivalent to running the following Composer command directly:
+
+{lang="text",linenos=off}
+```
+$ composer create-project drupal/recommended-project /var/www/drupal --no-dev
+```
+
+We used Ansible's `become_user` feature in this task so it runs as the Apache user, `www-data`. Drupal will be accessed through Apache, and if we created the project as the default `root` user, some files would be inaccessible to the Apache web server, causing errors.
+
+### Install Drupal with Drush
+
+Drupal has a command-line companion in the form of Drush. Drush is developed independently of Drupal, and provides a full suite of CLI commands to manage Drupal. Drush, like most modern PHP tools, is able to be installed via Composer, so we can add Drush to our Drupal project via Ansible's `composer` module with the `require` command.
+
+And once Drush is installed, we can use it to install Drupal:
+
+{lang="yaml",starting-line-number=145}
+```
+    - name: Add drush to the Drupal site with Composer.
+      composer:
+        command: require
+        arguments: drush/drush:10.*
+        working_dir: "{{ drupal_core_path }}"
+      become_user: www-data
+      when: not drupal_composer_json.stat.exists
 
     - name: Install Drupal.
       command: >
-        drush si -y --site-name="{{ drupal_site_name }}"
+        vendor/bin/drush si -y --site-name="{{ drupal_site_name }}"
         --account-name=admin
         --account-pass=admin
         --db-url=mysql://{{ domain }}:1234@localhost/{{ domain }}
-        --root={{ drupal_core_path }}
-        creates={{ drupal_core_path }}/sites/default/settings.php
+        --root={{ drupal_core_path }}/web
+        chdir={{ drupal_core_path }}
+        creates={{ drupal_core_path }}/web/sites/default/settings.php
       notify: restart apache
       become_user: www-data
 ```
 
-First, we clone Drupal's git repository, using the `version` defined in our `vars.yml` file as `drupal_core_version`. The `git` module's `version` parameter defines the branch (`master`, `8.2.x`, etc.), tag (`1.0.1`, `8.2.5`, etc.), or individual commit hash (`50a1877`, etc.) to clone.
+Adding the `when` condition to this task also means Drush is only added to the project when the project is initialized. You could remove the `when` and run the task every time, but `composer require` (unlike `composer install`) can take a while to complete, so it's better to not run it after the project is initialized.
 
-Before installing Drupal, we must install Drupal's dependencies using Composer (just like with Drush). For both this and the next task, we only want to run them the first time we install Drupal, so we use the `creates` parameter again to let Ansible know if the dependencies have been installed (just like with Drush earlier).
-
-To install Drupal, we use Drush's `si` command (short for `site-install`) to run Drupal's installation (which configures the database (and creates a `sites/default/settings.php` file we can use for idempotence), runs some maintenance, and sets some default configuration settings for the site). We passed in a few variables, like the `drupal_core_version` and `domain`; we also added a `drupal_site_name`, so add that variable to your `vars.yml` file:
+To install Drupal, we use Drush's `si` command (short for `site-install`) to run Drupal's installation (which configures the database (and creates a `sites/default/settings.php` file we can use for idempotence), runs some maintenance, and configures default settings for the site). We passed in the `domain` variable, and added a `drupal_site_name`, so add that variable to your `vars.yml` file:
 
 {lang="yaml",starting-line-number=10}
 ```
@@ -783,7 +781,7 @@ To install Drupal, we use Drush's `si` command (short for `site-install`) to run
 drupal_site_name: "Drupal Test"
 ```
 
-Once the site is installed, we also restart Apache for good measure (using `notify` again, like we did when updating Apache's configuration).
+Once the site is installed, we also restart Apache for good measure (using `notify` again, like we did when updating Apache's configuration). Finally, we ran both tasks using `become_user` so all created files work correctly with Apache.
 
 ### Drupal LAMP server summary
 
@@ -794,10 +792,10 @@ To run the playbook on a server (either via a local VM for testing or on another
 $ ansible-playbook playbook.yml
 ```
 
-After the playbook completes, if you access the server at http://drupal.test/ (assuming you've pointed drupal.test to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
+After the playbook completes, if you access the server at http://drupal.test/ (assuming you've pointed `drupal.test` to your server or VM's IP address), you'll see Drupal's default home page, and you could login with 'admin'/'admin'. (Obviously, you'd set a secure password on a production server!).
 
 {width=60%}
-![Drupal 8 default home page.](images/4-playbook-drupal-home.png)
+![Drupal's default home page.](images/4-playbook-drupal-home.png)
 
 A similar server configuration, running Apache, MySQL, and PHP, can be used to run many popular web frameworks and CMSes besides Drupal, including Symfony, Wordpress, Joomla, Laravel, etc.
 
@@ -846,9 +844,9 @@ Back in our playbook, after the `vars_files`, we also need to make sure the apt 
       apt: update_cache=true cache_valid_time=3600
 ```
 
-### Install Java 8
+### Install Java
 
-It's easy enough to install Java 8 on Ubuntu, as it's in the default apt repositories. We just need to make sure the right package is installed:
+It's easy enough to install Java on Ubuntu, as it's in the default apt repositories. We just need to make sure the right package is installed:
 
 {lang="yaml",starting-line-number=16}
 ```
@@ -910,7 +908,7 @@ Now that the source is present, run the Apache Solr installation script (provide
         creates={{ solr_dir }}/bin/solr
 ```
 
-In this example, the options passed to the installer are hardcoded (e.g. the `-p 8983` tells Apache Solr to run on port `8983`), and this works fine, but if you're going to reuse this playbook for many different types of Solr servers, you should probably configure many of these options with variables defined in `vars.yml`. This exercise is left to the reader.
+In this example, the options passed to the installer are hard-coded (e.g. the `-p 8983` tells Apache Solr to run on port `8983`), and this works fine, but if you're going to reuse this playbook for many different types of Solr servers, you should probably configure many of these options with variables defined in `vars.yml`. This exercise is left to the reader.
 
 Finally, we need a task that runs at the end of the playbook to make sure Apache Solr is started, and will start at system boot:
 
@@ -935,7 +933,7 @@ T> The entire example Apache Solr server playbook is in this book's code reposit
 
 ## Summary
 
-At this point, you should be getting comfortable with Ansible's *modus operandi*. Playbooks are the heart of Ansible's configuration management and provisioning functionality, and the same modules and similar syntax can be used with ad-hoc commands for deployments and general server management.
+At this point, you should be getting comfortable with Ansible's *modus operandi*, the playbook. Playbooks are the heart of Ansible's configuration management and provisioning functionality, and the same modules and similar syntax can be used with ad-hoc commands for deployments and general server management.
 
 Now that you're familiar with playbooks, we'll explore more advanced concepts in building playbooks, like organization of tasks, conditionals, variables, and more. Later, we'll explore the use of playbooks with roles to make them infinitely more flexible and to save time setting up and configuring your infrastructure.
 
