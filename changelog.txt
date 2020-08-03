@@ -44,6 +44,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   36. [#307](https://github.com/geerlingguy/ansible-for-devops/issues/307): Update Apache Solr version in chapter 4 example to 8.6.0.
   37. [#308](https://github.com/geerlingguy/ansible-for-devops/issues/308): Update Drupal example in chapter 4 to install Drush 10 and Drupal 9, using new Composer-based setup.
   38. [#306](https://github.com/geerlingguy/ansible-for-devops/pull/306): Fix capitalization of 'Chrony'. It should be 'chrony' (thanks to Redmar-van-den-Berg).
+  39. [#221](https://github.com/geerlingguy/ansible-for-devops/issues/221): Update multi-server orchestration example in chapter 3 to use on CentOS 8, Python 3, and Django 3. Also add automated testing of most of the examples in chapter 3 against test Docker containers.
 
 ## Version 1.23 (2020-05-13)
 

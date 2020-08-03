@@ -50,7 +50,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # General Vagrant VM configuration.
-  config.vm.box = "geerlingguy/centos7"
+  config.vm.box = "geerlingguy/centos8"
   config.ssh.insert_key = false
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.provider :virtualbox do |v|
@@ -276,22 +276,22 @@ T> To get an exhaustive list of all the environment details ('facts', in Ansible
 
 ### Make changes using Ansible modules
 
-We want to install the NTP daemon on the server to keep the time in sync. Instead of running the command `yum install -y ntp` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
+We want to install the chrony daemon on the server to keep the time in sync. Instead of running the command `yum install -y chrony` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
 
 {lang="text",linenos=off}
 ```
-$ ansible multi -b -m yum -a "name=ntp state=present"
+$ ansible multi -b -m yum -a "name=chrony state=present"
 ```
 
 You should see three 'CHANGED' messages, and the output from the installation command. If you run the command again, you'll see three 'SUCCESS' messages, since the package is already installed.
 
 I> The `-b` option (alias for `--become`) tells Ansible to run the command with become (basically, run commands with 'sudo'). This will work fine with our Vagrant VMs, but if you're running commands against a server where your user account requires a password for privilege escalation, you should also pass in `-K` (alias for `--ask-become-pass`), so you can enter your password when Ansible needs it.
 
-Now we'll make sure the NTP daemon is started and set to run on boot. We could use two separate commands, `service ntpd start` and `chkconfig ntpd on`, but we'll use Ansible's `service` module instead.
+Now we'll make sure the chrony daemon is started and set to run on boot. We could use two separate commands, `systemctl start chronyd` and `systemctl enable chronyd`, but we'll use Ansible's `service` module instead.
 
 {lang="text",linenos=off}
 ```
-$ ansible multi -b -m service -a "name=ntpd state=started \
+$ ansible multi -b -m service -a "name=chronyd state=started \
 enabled=yes"
 ```
 
@@ -309,18 +309,14 @@ If you run the exact same command again, everything will be the same, but Ansibl
 
 When you use Ansible's modules instead of plain shell commands, you can use the powers of abstraction and idempotency offered by Ansible. Even if you're running shell commands, you could wrap them in Ansible's `shell` or `command` modules (like `ansible multi -m shell -a "date"`), but for these kind of commands, there's usually no need to use an Ansible module when running them ad-hoc.
 
-The last thing we should do is check to make sure our servers are synced closely to the official time on the NTP server:
+The last thing we should do is check to make sure our servers are synced closely to the official time on a time server:
 
 {lang="text",linenos=off}
 ```
-$ ansible multi -b -a "service ntpd stop"
-$ ansible multi -b -a "ntpdate -q 0.rhel.pool.ntp.org"
-$ ansible multi -b -a "service ntpd start"
+$ ansible multi -b -a "chronyc tracking"
 ```
 
-For the `ntpdate` command to work, the `ntpd` service has to be stopped, so we stop the service, run the command to check our jitter, then start the service again.
-
-In my test, I was within three one-hundredths of a second on all three servers---close enough for my purposes.
+In my test, I was within four one-hundredths of a second on all three servers---close enough for my purposes.
 
 ## Configure groups of servers, or individual servers
 
@@ -330,28 +326,24 @@ Since we set up two separate groups in our inventory file, `app` and `db`, we ca
 
 ### Configure the Application servers
 
-Our hypothetical web application uses Django, so we need to make sure Django and its dependencies are installed. Django is not in the official CentOS yum repository, but we can install it using Python's easy_install (which, conveniently, has an Ansible module).
+Our hypothetical web application uses Django, so we need to make sure Django and its dependencies are installed. Django is not in the official CentOS yum repository, but we can install it using Pip:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -b -m yum -a "name=MySQL-python state=present"
-$ ansible app -b -m yum -a "name=python-setuptools state=present"
-$ ansible app -b -m easy_install -a "name=django<2 state=present"
+$ ansible app -b -m yum -a "name=python3-pip state=present"
+$ ansible app -b -m pip -a "name=django<4 state=present"
 ```
 
-You could also install django using `pip`, which can be installed via `easy_install` (since Ansible's `easy_install` module doesn't allow you to uninstall packages like `pip` does), but for simplicity's sake, we've installed it with `easy_install`.
-
-Check to make sure Django is installed and working correctly.
+Check to make sure Django is installed and working correctly:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -a "python -c 'import django; \
-print django.get_version()'"
+$ ansible app -a "python -m django --version"
 192.168.60.5 | SUCCESS | rc=0 >>
-1.11.12
+3.0.9
 
 192.168.60.4 | SUCCESS | rc=0 >>
-1.11.12
+3.0.9
 ```
 
 Things look like they're working correctly on our app servers. We can now move on to our database server.
@@ -362,25 +354,35 @@ T> Almost all of the configuration we've done in this chapter would be much bett
 
 We configured the application servers using the `app` group defined in Ansible's main inventory, and we can configure the database server (currently the only server in the `db` group) using the similarly-defined `db` group.
 
-Let's install MariaDB, start it, and configure the server's firewall to allow access on MariaDB's default port, 3306.
+Let's install MariaDB and start it:
 
 {lang="text",linenos=off}
 ```
 $ ansible db -b -m yum -a "name=mariadb-server state=present"
 $ ansible db -b -m service -a "name=mariadb state=started \
 enabled=yes"
-$ ansible db -b -a "iptables -F"
-$ ansible db -b -a "iptables -A INPUT -s 192.168.60.0/24 -p tcp \
--m tcp --dport 3306 -j ACCEPT"
 ```
 
-If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MariaDB still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MariaDB server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL modules require the `MySQL-python` module to be present on the managed server.
+And then configure the system firewall to ensure only the app servers can access the database:
 
-T> Why MariaDB and not MySQL? RHEL 7 and CentOS 7 have MariaDB as the default supported MySQL-compatible database server. Some of the tooling around MariaDB still uses the old 'MySQL*' naming syntax, but if you're used to MySQL, things work similarly with MariaDB.
+```
+$ ansible db -b -m yum -a "name=firewalld state=present"
+$ ansible db -b -m service -a "name=firewalld state=started \
+enabled=yes"
+$ ansible db -b -m firewalld -a "zone=database state=present permanent=yes"
+$ ansible db -b -m firewalld -a "source=192.168.60.0/24 \
+zone=database state=enabled permanent=yes"
+$ ansible db -b -m firewalld -a "port=3306/tcp zone=database \
+state=enabled permanent=yes"
+```
+
+If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MariaDB still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MariaDB server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL modules require the the PyMySQL module to be present on the managed server.
+
+T> Why MariaDB and not MySQL? RHEL 7 and CentOS 7 have MariaDB as the default supported MySQL-compatible database server. Some of the tooling around MariaDB still uses the old 'MySQL\*' naming syntax, but if you're used to MySQL, things work similarly with MariaDB.
 
 {lang="text",linenos=off}
 ```
-$ ansible db -b -m yum -a "name=MySQL-python state=present"
+$ ansible db -b -m yum -a "name=python3-PyMySQL state=present"
 $ ansible db -b -m mysql_user -a "name=django host=% password=12345 \
 priv=*.*:ALL state=present"
 ```
@@ -393,18 +395,18 @@ I> The MySQL configuration used here is for example/development purposes only! T
 
 Congratulations! You now have a small web application environment running Django and MySQL. It's not much, and there's not even a load balancer in front of the app servers to spread out the requests; but we've configured everything pretty quickly, and without ever having to log into a server. What's even more impressive is that you could run any of the ansible commands again (besides a couple of the simple shell commands), and they wouldn't change anything---they would return `"changed": false`, giving you peace of mind that the original configuration is intact.
 
-Now that your local infrastructure has been running a while, you notice (hypothetically, of course) that the logs indicate one of the two app servers' time has gotten way out of sync with the others, likely because the NTP daemon has crashed or somehow been stopped. Quickly, you enter the following command to check the status of `ntpd`:
+Now that your local infrastructure has been running a while, you notice (hypothetically, of course) that the logs indicate one of the two app servers' time has gotten way out of sync with the others, likely because the chrony time sync daemon has crashed or somehow been stopped. Quickly, you enter the following command to check the status of `chronyd`:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -b -a "service ntpd status"
+$ ansible app -b -a "systemctl status chronyd"
 ```
 
 Then, you restart the service on the affected app server:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -b -a "service ntpd restart" --limit "192.168.60.4"
+$ ansible app -b -a "service chronyd restart" --limit "192.168.60.4"
 ```
 
 In this command, we used the `--limit` argument to limit the command to a specific host in the specified group. `--limit` will match either an exact string or a regular expression (prefixed with `~`). The above command could be stated more simply if you want to apply the command to only the `.4` server (assuming you know there are no other servers with the an IP address ending in .4), the following would work exactly the same:
