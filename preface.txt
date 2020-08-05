@@ -12,6 +12,14 @@ In these pages, I'll share with you all I've learned about Ansible: my favorite 
 
 --- Jeff Geerling, 2015
 
+## Second Edition
+
+I've published 23 major revisions to the book since the original 1.0 release in 2015. After major rewrites (and three new chapters) in 2019 and 2020 to reflect Ansible's changing architecture, I decided to publish the new content as a '2nd edition'.
+
+I will continue to publish revisions in the future, to keep this book relevant for as long as possible! Please visit the book's website, at www.ansiblefordevops.com, for the latest updates, or to subscribe to be notified of Ansible and book news!
+
+--- Jeff Geerling, 2020
+
 ## Who is this book for?
 
 Many of the developers and sysadmins I work with are at least moderately comfortable administering a Linux server via SSH, and manage between 1-100 servers, whether bare metal, virtualized, or using containers.
@@ -56,9 +64,9 @@ All known issues with Ansible for DevOps will be aggregated on the book's online
 
 ### Current Published Book Version Information
 
-  - **Current book version**: 1.23
-  - **Current Ansible version as of last publication**: 2.9
-  - **Current Date as of last publication**: May 13, 2020
+  - **Current book version**: 2.0
+  - **Current Ansible version as of last publication**: 2.10
+  - **Current Date as of last publication**: August 5, 2020
 
 ## About the Author
 
