@@ -43,7 +43,7 @@ $ cd awx/installer
 $ ansible-playbook -i inventory install.yml
 ```
 
-AWX takes a few minutes to initialize, but should be accessible at the URL `http://localhost/`. Until it's initialized, you'll see an 'AWX is upgrading' message.
+AWX takes a few minutes to initialize, but should be accessible at `localhost`. Until it's initialized, you'll see an 'AWX is upgrading' message.
 
 Once AWX is initialized, you should be able to log in using the default credentials (username `admin` and password `password`) and get to the default dashboard page:
 
@@ -87,7 +87,7 @@ T> If you insist on manually managing playbooks in the default `/var/lib/awx/pro
 Switch back to your web browser and get everything set up to run the test playbook inside Ansible Tower's web UI:
 
   1. Create a new *Organization*, called 'Ansible for DevOps'.
-  2. Add a new User to the Organization, named John Doe, with the email `johndoe@example.com`, username `johndoe`, and password `johndoe1234`.
+  2. Add a new User to the Organization, named John Doe, with the email johndoe@example.com, username `johndoe`, and password `johndoe1234`.
   3. Create a new *Team*, called 'DevOps Engineers', in the 'Ansible for DevOps' Organization.
   4. Add the `johndoe` user to the DevOps Engineers Team.
   5. Under the Projects section, add a new *Project*. Set the 'Name' to `Ansible for DevOps Project`, 'Organization' to `Ansible for DevOps`, 'SCM Type' to `Manual`, and 'Playbook Directory' to `ansible-for-devops` (AWX automatically detects all folders placed inside `/var/lib/awx/projects`, but you could also use an alternate Project Base Path if you want to store projects elsewhere).

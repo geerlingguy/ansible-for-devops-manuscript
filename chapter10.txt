@@ -866,7 +866,7 @@ With this inventory, we can operate on just the `balancer`, just the `app` serve
     - geerlingguy.apache
 ```
 
-These three plays set up a firewall on all servers, configure HAProxy on the load balancer, and install Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `firewall_allowed_tcp_ports` and `haproxy_backend_servers`. We let the `geerlingguy.firewall`, `geerlingguy.haproxy`, and `geerlingguy.apache` roles do all the hard work for us.
+These three plays set up a firewall on all servers, configure HAProxy on the load balancer, and install Apache (with its default configuration) on the app servers. The only required configuration to get this infrastructure working is `firewall_allowed_tcp_ports` and `haproxy_backend_servers`. We let the roles do all the hard work for us.
 
 Now, to make sure we have all these roles installed, create a requirements file to install the roles from Ansible Galaxy. Create `requirements.yml` in the same directory as the Vagrantfile, with the following contents:
 

@@ -589,7 +589,7 @@ The Ansible `file` module also integrates well with SELinux, allowing the four s
   3. `setype`
   4. `seuser`
 
-Building custom SELinux policies for more complex scenarios is out of the scope of this chapter, but you should be able to use tools like `setroubleshoot`, `setroubleshoot-server`, `getsebool`, and `aureport` to see what is being blocked, what booleans are available (and/or enabled currently), and even get helpful notifications when SELinux denies access to an application. Read [Getting started with SELinux](https://major.io/2012/01/25/getting-started-with-selinux/) for an excellent and concise introduction.
+Building custom SELinux policies for more complex scenarios is out of the scope of this chapter, but you should be able to use tools like `setroubleshoot`, `getsebool`, and `aureport` to see what is being blocked, what booleans are available (and/or enabled currently), and even get helpful notifications when SELinux denies access to an application. Read [Getting started with SELinux](https://major.io/2012/01/25/getting-started-with-selinux/) for an excellent and concise introduction.
 
 Next time you're tempted to disable SELinux instead of fixing the underlying problem, spend a little time investigating the correct boolean settings to configuring your system correctly for SELinux.
 
