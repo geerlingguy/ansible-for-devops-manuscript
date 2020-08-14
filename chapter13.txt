@@ -442,6 +442,7 @@ Let's say I have a playbook that sets up an Apache server, with the following co
           <body>Hello world!</body>
           </html>
         dest: "/var/www/html/index.html"
+        mode: 0664
       notify: restart apache
 
     - name: Ensure Apache is running and starts at boot.

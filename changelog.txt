@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  TODO.
+  1. [#314](https://github.com/geerlingguy/ansible-for-devops/issues/314): Explicitly define a `mode` in the `copy` task in the molecule example in chapter 13 so the copied web page is readable by the Apache web server.
 
 ## Version 2.0 (2020-07-05)
 
