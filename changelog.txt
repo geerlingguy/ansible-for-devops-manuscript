@@ -8,6 +8,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
   1. [#314](https://github.com/geerlingguy/ansible-for-devops/issues/314): Explicitly define a `mode` in the `copy` task in the molecule example in chapter 13 so the copied web page is readable by the Apache web server.
   2. Install `molecule[docker]` in test dependency installation for GitHub Actions to ensure the Docker plugin is present.
+  3. Bump `geerlingguy.elasticsearch` role version to `5.0.0` in chapter 9 requirements to incorporate an installation fix.
 
 ## Version 2.0 (2020-07-05)
 
