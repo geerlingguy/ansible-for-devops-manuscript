@@ -551,7 +551,7 @@ You'll have to have Docker installed and running on the computer where you'll ru
   gather_facts: no
 
   vars:
-    base_image: node:8
+    base_image: node:14
     container_name: hubot_slack
     image_namespace: a4d
     image_name: hubot-slack
@@ -662,7 +662,7 @@ Since Hubot isn't too hard to install, we can do everything we need inside `task
     - generator-hubot
 ```
 
-Because we want to be able to run certain commands as a `hubot` user later, we'll need `sudo` present so Ansible can `become` the `hubot` user. Then we'll install some require dependencies---`yo` and `generator-hubot`, which are used to build the bot. Node.js is already present inside the container, since we chose to build the container based off the `node:8` base image.
+Because we want to be able to run certain commands as a `hubot` user later, we'll need `sudo` present so Ansible can `become` the `hubot` user. Then we'll install some require dependencies---`yo` and `generator-hubot`, which are used to build the bot. Node.js is already present inside the container, since we chose to build the container based off the `node:14` base image.
 
 {lang="text",starting-line-number=16}
 ```

@@ -10,6 +10,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   2. Install `molecule[docker]` in test dependency installation for GitHub Actions to ensure the Docker plugin is present.
   3. Bump `geerlingguy.elasticsearch` role version to `5.0.0` in chapter 9 requirements to incorporate an installation fix.
   4. [#393](https://github.com/geerlingguy/ansible-for-devops/issues/393): Fix molecule test failing in chapter 13 due to Ansible not being installed.
+  5. [#403](https://github.com/geerlingguy/ansible-for-devops/issues/403): Update Node.js to version 14 in Hubot Docker example to fix `yo` compatibility issue.
 
 ## Version 2.0 (2020-07-05)
 
