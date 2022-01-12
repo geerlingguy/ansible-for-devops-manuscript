@@ -404,12 +404,12 @@ We'll now use `forever` (which we installed earlier) to start the app.
 '/app/app.js') == -1"
 ```
 
-In the first play, we're doing two new things:
+In the first task, we're doing two new things:
 
-  1. `register` creates a new variable, `forever_list`, to be used in the next play to determine when to run the play. `register` stashes the output (stdout, stderr) of the defined command in the variable name passed to it.
-  2. `changed_when` tells Ansible explicitly when this play results in a change to the server. In this case, we know the `forever list` command will never change the server, so we just say `false`---the server will never be changed when the command is run.
+  1. `register` creates a new variable, `forever_list`, to be used in the next task to determine when to run the task. `register` stashes the output (stdout, stderr) of the defined command in the variable name passed to it.
+  2. `changed_when` tells Ansible explicitly when this task results in a change to the server. In this case, we know the `forever list` command will never change the server, so we just say `false`---the server will never be changed when the command is run.
 
-The second play actually starts the app, using Forever. We could also start the app by calling `node {{ node_apps_location }}/app/app.js`, but we would not be able to control the process easily, and we would also need to use `nohup` and `&` to avoid Ansible hanging on this play.
+The second task actually starts the app, using Forever. We could also start the app by calling `node {{ node_apps_location }}/app/app.js`, but we would not be able to control the process easily, and we would also need to use `nohup` and `&` to avoid Ansible hanging on this task.
 
 Forever tracks the Node apps it manages, and we use Forever's `list` option to print a list of running apps. The first time we run this playbook, the list will obviously be empty---but on future runs, if the app is running, we don't want to start another instance of it. To avoid that situation, we tell Ansible when we want to start the app with `when`. Specifically, we tell Ansible to start the app only when the app's path is *not* in the `forever list` output.
 
