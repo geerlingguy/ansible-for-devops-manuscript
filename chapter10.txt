@@ -417,9 +417,9 @@ I> Code for this entire example is available on GitHub in the [Ansible for DevOp
 
 If you need to run an application on multiple servers for horizontal scalability or redundancy, deployments can be cumbersome, resulting in downtime and complicated deployment processes---but not when you use Ansible!
 
-[Server Check.in](https://servercheck.in/) is a server and website monitoring service with a microservices-based architecture; there is a website, an API application, and a server checking application.
+[Server Check.in](https://servercheck.in/) was a server and website monitoring service with a microservices-based architecture I ran for over a decade; there was a website, an API application, and a server checking application.
 
-The server checking application needs to run on a variety of servers hosted around the world by different providers to provide redundancy and reliability. Server Check.in uses Ansible to manage *rolling deployments* for this application, so new code is deployed across all the servers in minutes while maintaining 100% uptime!
+The server checking application had to run on a variety of servers hosted around the world by different providers to provide redundancy and reliability. Server Check.in used Ansible to manage *rolling deployments* for this application, so new code was deployed across all the servers in minutes while maintaining 100% uptime!
 
 We'll emulate part of Server Check.in's infrastructure (the check server application) by deploying and updating a small Node.js application to a set of virtual machines. The code repository for this app is located on GitHub in the [demo-nodejs-api repository](https://github.com/geerlingguy/demo-nodejs-api). Here's a diagram of the infrastructure we'll be building:
 
@@ -748,7 +748,7 @@ I> Code for this entire example is available on GitHub in the [Ansible for DevOp
 
 ### Deploying to app servers behind a load balancer
 
-In the case of Server Check.in, there are two separate API layers that manage the complexity of ensuring all server checks happen, regardless of whether certain servers are up or down. The 'load balancing' occurs on the application layer instead of as a separate infrastructure layer (this is extremely helpful when dealing with global latency and network reliability variation).
+In the case of Server Check.in, there were two separate API layers that managed the complexity of ensuring all server checks happen, regardless of whether certain servers are up or down. The 'load balancing' occurs on the application layer instead of as a separate infrastructure layer (this is extremely helpful when dealing with global latency and network reliability variation).
 
 For many applications, especially those with app servers close together (e.g. in the same data center) the infrastructure layer follows a more traditional layout, with a load balancer to handle the API request distribution:
 

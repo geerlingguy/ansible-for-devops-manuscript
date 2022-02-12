@@ -37,7 +37,7 @@ $ ansible -i hosts.ini myapp -a "free -m"
 
 ## A real-world web application server inventory
 
-The example above might be adequate for single-server services and tiny apps or websites, but most real-world applications require many more servers, and usually separate servers per application concern (database, caching, application, queuing, etc.). Let's take a look at a real-world inventory file for a small web application that monitors server uptime, [Server Check.in](https://servercheck.in/).
+The example above might be adequate for single-server services and tiny apps or websites, but most real-world applications require many more servers, and usually separate servers per application concern (database, caching, application, queuing, etc.). Let's take a look at a real-world inventory file I used for a small web application that monitored server uptime, [Server Check.in](https://servercheck.in/).
 
 {lang="text"}
 ```
