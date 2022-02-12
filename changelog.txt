@@ -13,6 +13,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. [#403](https://github.com/geerlingguy/ansible-for-devops/issues/403): Update Node.js to version 14 in Hubot Docker example to fix `yo` compatibility issue.
   6. [#442](https://github.com/geerlingguy/ansible-for-devops/issues/442): Fix incorrect use of the term 'play' in Node.js app example.
   7. [#447](https://github.com/geerlingguy/ansible-for-devops/issues/447): Adjust `php-apcu` package to `php7.4-apcu` so install succeeds without PHP CLI version going to `8.1`. (thanks to MrPOC!)
+  8. [#461](https://github.com/geerlingguy/ansible-for-devops/issues/461): Add `mysql_replication_role` to `lamp_db` hosts in LAMP server Vagrant inventory file in chapter 9. (thanks to MrPOC!)
 
 ## Version 2.0 (2020-07-05)
 

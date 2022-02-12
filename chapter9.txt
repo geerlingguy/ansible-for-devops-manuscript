@@ -582,8 +582,8 @@ Before running `vagrant up` to see the fruits of our labor, we need to create an
 192.168.2.5
 
 [lamp_db]
-192.168.2.5
-192.168.2.6
+192.168.2.5 mysql_replication_role=master
+192.168.2.6 mysql_replication_role=slave
 
 [lamp_memcached]
 192.168.2.7
