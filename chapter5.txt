@@ -82,7 +82,7 @@ All subsequent tasks will then have access to this environment variable (remembe
     msg: "The variable is {{ foo.stdout }}"
 ```
 
-We use `source ~/.bash_profile` in line 4 because Ansible needs to make sure it's using the latest environment configuration for the remote user. In some situations, the tasks all run over a persistent or quasi-cached SSH session, over which `$ENV_VAR` wouldn't yet be defined.
+We use `source ~/.bash_profile` in line 8 because Ansible needs to make sure it's using the latest environment configuration for the remote user. In some situations, the tasks all run over a persistent or quasi-cached SSH session, over which `$ENV_VAR` wouldn't yet be defined.
 
 (This is also the first time the `debug` module has made an appearance. It will be explored more in-depth along with other debugging techniques later.).
 
