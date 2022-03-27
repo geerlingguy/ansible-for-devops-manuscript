@@ -417,25 +417,25 @@ Let's say I have a playbook that sets up an Apache server, with the following co
 
   handlers:
     - name: restart apache
-      service:
+      ansible.builtin.service:
         name: "{{ apache_service }}"
         state: restarted
 
   pre_tasks:
     - name: Override Apache vars for Red Hat.
-      set_fact:
+      ansible.builtin.set_fact:
         apache_package: httpd
         apache_service: httpd
       when: ansible_os_family == 'RedHat'
 
   tasks:
     - name: Ensure Apache is installed.
-      package:
+      ansible.builtin.package:
         name: "{{ apache_package }}"
         state: present
 
     - name: Copy a web page.
-      copy:
+      ansible.builtin.copy:
         content: |
           <html>
           <head><title>Hello world!</title></head>
@@ -446,7 +446,7 @@ Let's say I have a playbook that sets up an Apache server, with the following co
       notify: restart apache
 
     - name: Ensure Apache is running and starts at boot.
-      service:
+      ansible.builtin.service:
         name: "{{ apache_service }}"
         state: started
         enabled: true
@@ -475,7 +475,7 @@ Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, a
 
   tasks:
     - name: Update apt cache (on Debian).
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == 'Debian'
@@ -582,7 +582,7 @@ Let's add one more thing: validation that Apache is actually serving web traffic
 
   tasks:
   - name: Verify Apache is serving web requests.
-    uri:
+    ansible.builtin.uri:
       url: http://localhost/
       status_code: 200
 ```
