@@ -36,6 +36,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   28. [#330](https://github.com/geerlingguy/ansible-for-devops/issues/330): Fix example path to an `update.sh` script in chapter 3. (thanks to grendelson!)
   29. [#333](https://github.com/geerlingguy/ansible-for-devops/issues/333): Fixed a few lingering `ntpd` references that should be `chronyd` in chapter 3. (thanks to rpappalax!)
   30. [#351](https://github.com/geerlingguy/ansible-for-devops/issues/351): Fixed typo: 'explicitly' and not 'explictly'. (thanks to Octobug!)
+  31. [#380](https://github.com/geerlingguy/ansible-for-devops/issues/380): Use case-insensitive `grep` when searching for 'cookie' string in output in load balancer example in chapter 10. (thanks to typ-ex!)
 
 ## Version 2.0 (2020-07-05)
 

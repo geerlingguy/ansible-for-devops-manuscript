@@ -890,7 +890,7 @@ Verify round-robin load balancing is working by running the following command:
 
 {lang="text"}
 ```
-$ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; \
+$ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep -i cookie; \
 done
 Set-Cookie: SERVERID=192.168.4.4; path=/
 Set-Cookie: SERVERID=192.168.4.3; path=/
@@ -974,7 +974,7 @@ If you run the deployment playbook again, wait for it to fail, then run the `cur
 
 {lang="text"}
 ```
-$ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep Cookie; done
+$ for i in {1..5}; do curl -Is http://192.168.4.2/ | grep -i cookie; done
 Set-Cookie: SERVERID=192.168.4.4; path=/
 Set-Cookie: SERVERID=192.168.4.4; path=/
 Set-Cookie: SERVERID=192.168.4.4; path=/
