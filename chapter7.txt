@@ -1,6 +1,6 @@
 # Chapter 7 - Ansible Plugins and Content Collections
 
-Ansible roles are helpful when you want to organize tasks and related variables and handlers in a maintainable way. And you can technically distribute Ansible _plugins_—Python code to extend Ansible's functionality with new modules, filters, inventory plugins, and more—but adding this kind of content to a role is not ideal, and in a sense, overloads the role by putting both Python code and Ansible YAML into the same entity.
+Ansible roles are helpful when you want to organize tasks and related variables and handlers in a maintainable way. And you can technically distribute Ansible _plugins_---Python code to extend Ansible's functionality with new modules, filters, inventory plugins, and more---but adding this kind of content to a role is not ideal, and in a sense, overloads the role by putting both Python code and Ansible YAML into the same entity.
 
 This is why, in Ansible 2.8, _Collections_, or more formally, _Content Collections_, were introduced.
 
@@ -8,7 +8,7 @@ Collections allow the gathering of Ansible plugins, roles, and even playbooks[^p
 
 [^playbooks]: Note that as of Ansible 2.10, there is no formal specification for how to define playbooks in Collections.
 
-## Creating our first Ansible Plugin — A Jinja Filter
+## Creating our first Ansible Plugin --- A Jinja Filter
 
 In many Ansible tasks, you may find yourself building some relatively complex logic to check for a set of conditions. If your Jinja conditionals start making your YAML files look more like a hybrid of Python and YAML, it's a good time to consider extracting the Python logic out into an Ansible plugin.
 
@@ -46,7 +46,7 @@ This works great... until you have another valid representation of blue. Let's s
           or my_color_choice == '#0000ff'
 ```
 
-Now, someone else might come along with the equally-valid option `#00f`. Time to add more logic to the task—or not.
+Now, someone else might come along with the equally-valid option `#00f`. Time to add more logic to the task---or not.
 
 Instead, we can write a _filter plugin_. Filter plugins allow you to verify data, and are some of the simpler types of plugins you'll find in Ansible.
 
@@ -158,7 +158,7 @@ Also in 2017, as Red Hat expanded Ansible's scope to more broadly embrace networ
 
 The graph above comes from Greg Sutcliffe's blog, in a post titled [Collections, The Backlog View](https://emeraldreverie.org/2020/03/02/collections-the-backlog-view/). In the post, he explores the data behind a major decision to shift Ansible's plugin and module development burden off the small Ansible core team and into a distributed set of _collections_.
 
-[Mazer](https://github.com/ansible/mazer) was introduced in 2018 to try experiment with new ways of managing groupings of Ansible content—roles, modules, and plugins. And in the Ansible 2.9 release in 2020, most of Mazer's functionality was merged into the already-existing `ansible-galaxy` command line utility that ships with Ansible.
+[Mazer](https://github.com/ansible/mazer) was introduced in 2018 to try experiment with new ways of managing groupings of Ansible content---roles, modules, and plugins. And in the Ansible 2.9 release in 2020, most of Mazer's functionality was merged into the already-existing `ansible-galaxy` command line utility that ships with Ansible.
 
 > Mazer was a character in the book _Ender's Game_, from which the name 'Ansible' was derived. A mazer is also a hardwood drinking vessel.
 

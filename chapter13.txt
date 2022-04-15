@@ -20,7 +20,7 @@ T> In this chapter's discussion of testing, I'm considering only _Ansible_ conte
 
 It is often possible to perform all the testing you need on your own local workstation, using Virtual Machines (as demonstrated in earlier chapters), using tools like VirtualBox or VMWare. And with most cloud services providing robust control APIs and hourly billing, it's inexpensive and just as fast to test directly on cloud instances mirroring your production infrastructure!
 
-I like to think of testing as a spectrum—just like most things in life, your project is unique, and might not need to integrate all the techniques discussed in this chapter. The following graphic is from a presentation I gave at AnsibleFest in 2018:
+I like to think of testing as a spectrum---just like most things in life, your project is unique, and might not need to integrate all the techniques discussed in this chapter. The following graphic is from a presentation I gave at AnsibleFest in 2018:
 
 {width=90%}
 ![My 'Ansible Testing Spectrum'](images/13-testing-spectrum.png)

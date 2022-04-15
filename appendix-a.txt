@@ -60,7 +60,11 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.11
+ansible [core 2.12.4]
+  ...
+  python version = 3.9.10
+  jinja version = 3.0.1
+  libyaml = True
 ```
 
 T> Upgrading Ansible is also easy with pip: Run `pip3 install --upgrade ansible` to get the latest version.
@@ -198,7 +202,11 @@ After Ansible and all its dependencies are downloaded and installed, make sure A
 {lang="text",linenos=off}
 ```
 $ ansible --version
-ansible 2.9.11
+ansible [core 2.12.4]
+  ...
+  python version = 3.9.10
+  jinja version = 3.0.1
+  libyaml = True
 ```
 
 T> Upgrading Ansible is also easy with pip: Run `pip3 install --upgrade ansible` to get the latest version.
