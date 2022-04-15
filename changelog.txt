@@ -20,6 +20,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   12. [#225](https://github.com/geerlingguy/ansible-for-devops/pull/225): Move success message to node.js app's `listen` callback in chapter 4. (thanks to mkrawczuk!)
   13. [#466](https://github.com/geerlingguy/ansible-for-devops/issues/466): Fix duplicate 'the' in a line in chapter 3. (thanks to @MrEddX!)
   14. [#453](https://github.com/geerlingguy/ansible-for-devops/issues/453): Fix various references (especially in chapters 1-6, 11, and 13) to CentOS 8 that are now using Rocky Linux 8 because CentOS 8 is no more.
+  15. [#463](https://github.com/geerlingguy/ansible-for-devops/issues/463): Fixed link to Ansible's docs for 'magic variables' in chapter 5. (thanks to HonkinWaffles!)
 
 ## Version 2.0 (2020-07-05)
 

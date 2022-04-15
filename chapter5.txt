@@ -471,7 +471,7 @@ There are a variety of other variables Ansible provides that you may need to use
   - `inventory_hostname_short`: The first part of `inventory_hostname`, up to the first period.
   - `play_hosts`: All hosts on which the current play will be run.
 
-Please see [Magic Variables, and How To Access Information About Other Hosts](http://docs.ansible.com/playbooks_variables.html#magic-variables-and-how-to-access-information-about-other-hosts) in Ansible's official documentation for the latest information and further usage examples.
+Please see [Information about Ansible: magic variables](https://docs.ansible.com/ansible/latest/user_guide/playbooks_vars_facts.html#information-about-ansible-magic-variables) in Ansible's official documentation for the latest information and further usage examples.
 
 ### Facts (Variables derived from system information)
 
