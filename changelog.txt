@@ -26,6 +26,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   18. [#439](https://github.com/geerlingguy/ansible-for-devops/issues/439): Typo fix: s/`linefile`/`lineinfile` in chapter 11. (thanks to clevengr!)
   19. [#438](https://github.com/geerlingguy/ansible-for-devops/issues/438): Fix erroneous reference to `provisioning.yml` playbook (that doesn't exist) in chapter 10. (thanks to clevengr!)
   20. [#437](https://github.com/geerlingguy/ansible-for-devops/issues/437): Grammar fix: missing the word 'use' in a sentence in chapter 9. (thanks to clevengr!)
+  21. [#399](https://github.com/geerlingguy/ansible-for-devops/issues/399): Grammar fix: do you and not to you in chapter 9. (thanks to jlmuir!)
 
 ## Version 2.0 (2020-07-05)
 
