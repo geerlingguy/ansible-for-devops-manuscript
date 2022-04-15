@@ -17,6 +17,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   9. [#445](https://github.com/geerlingguy/ansible-for-devops/issues/445): Update references to now-mothballed service Server Check.in in chapters 3, 5, 8, and 10. (thanks to fosstube!)
   10. [#436](https://github.com/geerlingguy/ansible-for-devops/issues/436): Fix invalid line reference in a note in chapter 5.
   11. Adjusted Molecule example in chapter 13 to use FQCNs to avoid adding extra ansible-lint configuration.
+  12. [#225](https://github.com/geerlingguy/ansible-for-devops/pull/225): Move success message to node.js app's `listen` callback in chapter 4. (thanks to mkrawczuk!)
 
 ## Version 2.0 (2020-07-05)
 

@@ -340,8 +340,7 @@ app.get('/', function(req, res){
 });
 
 // Listen on port 80 (like a true web server).
-app.listen(80);
-console.log('Express server started successfully.');
+app.listen(80, () => console.log('Express server started successfully.'));
 ```
 
 Don't worry about the syntax or the fact that this is Node.js. We just need a quick example to deploy. This example could've been written in Python, Perl, Java, PHP, or another language, but since Node is a simple language (JavaScript) that runs in a lightweight environment, it's an easy language to use when testing things or prodding your server.
