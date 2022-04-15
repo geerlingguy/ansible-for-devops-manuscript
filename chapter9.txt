@@ -792,7 +792,7 @@ Inside the `instances` variable, each instance is an object with three keys:
   - `group`: The Ansible inventory group in which the instance should belong.
   - `security_group`: A list of security groups into which the instance will be placed. The `default` security group is added to your AWS account upon creation, and has one rule to allow outgoing traffic on any port to any IP address.
 
-I> If you use AWS exclusively, it would be best to autoscaling groups and change the design of this infrastructure a bit. For this example, we just need to ensure that the six instances we explicitly define are created, so we're using particular `name`s and an `exact_count` to enforce the 1:1 relationship.
+I> If you use AWS exclusively, it would be best to use autoscaling groups and change the design of this infrastructure. For this example, we just need to ensure that the six instances we explicitly define are created, so we're using particular `name`s and an `exact_count` to enforce the 1:1 relationship.
 
 With our instances defined, we'll next define a `security_groups` variable containing all the required security group configuration for each server:
 
