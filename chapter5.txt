@@ -935,7 +935,7 @@ The above task waits until `webserver_port` is open on `inventory_hostname`, as 
 
   - Using `host` and `port`, wait a maximum of `timeout` seconds for the port to be available (or not).
   - Using `path` (and `search_regex` if desired), wait a maximum of `timeout` seconds for the file to be present (or absent).
-  - Using `host` and `port` and `drained` for the `state` parameter, check if a given port has drained all it's active connections.
+  - Using `host` and `port` and `drained` for the `state` parameter, check if a given port has drained all its active connections.
   - Using `delay`, you can simply pause playbook execution for a given amount of time (in seconds).
 
 ### Running an entire playbook locally

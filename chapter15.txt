@@ -509,7 +509,7 @@ Now that everything's in place, you should be able to cd into the main `docker` 
 {width=80%}
 ![Docker orchestration success!](images/15-docker-success.png)
 
-If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish it's initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-flask) on GitHub.
+If you see "MySQL Connection: PASS", congratulations, everything worked! If it shows 'FAIL', you might need to give the MySQL a little extra time to finish its initialization, since it has to build it's environment on first launch. If the page doesn't show up at all, you might want to compare your code with the [Docker Flask example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker-flask) on GitHub.
 
 The entire [Docker Flask example](https://github.com/geerlingguy/ansible-for-devops/tree/master/docker) is available on GitHub, if you'd like to clone it and try it locally.
 

@@ -247,7 +247,7 @@ There are two ways you can do this. For collection modules and roles, you could 
     my_color_choice: blue
 ```
 
-But in this case, we're using a test plugin, not a regular module or role, so we need to refer to the module in a special way, using it's 'Fully Qualified Collection Name' (FQCN), which in this test plugin's case would be `local.colors.blue`.
+But in this case, we're using a test plugin, not a regular module or role, so we need to refer to the module in a special way, using its 'Fully Qualified Collection Name' (FQCN), which in this test plugin's case would be `local.colors.blue`.
 
 So the task should be changed to look like this:
 

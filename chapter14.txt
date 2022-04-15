@@ -383,7 +383,7 @@ certbot_certs:
 
 By section:
 
-  - For a typical webserver, we need port `22` for SSH access, port `80` for unencrypted HTTP access (Let's Encrypt needs this to operate using it's default verification mechanism), and port `443` for encrypted HTTPS access.
+  - For a typical webserver, we need port `22` for SSH access, port `80` for unencrypted HTTP access (Let's Encrypt needs this to operate using its default verification mechanism), and port `443` for encrypted HTTPS access.
   - For Nginx, we will configure our own custom virtual host in a bit, so we make sure the default vhost is removed, and we'll also install the latest version of Nginx from the Nginx Ubuntu PPA. We added an extra variable `nginx_docroot` to tell our own automation code where to put a test web page and serve it via Nginx.
   - The Certbot role only requires a few variables to ensure a certificate is added:
     - `certbot_create_if_missing`: The role will check if the certificate exists, and if it doesn't (e.g. on the first playbook run) it will create it. If it does exist, it will be idempotent and make no changes.
