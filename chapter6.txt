@@ -518,7 +518,7 @@ Soon after creating the role, though, I wanted to make the role work with both D
 - name: Ensure Apache is installed (via apt).
   when: ansible_os_family == 'Debian'
 
-- name: Ensure Apache is installed (via yum).
+- name: Ensure Apache is installed (via dnf).
   when: ansible_os_family == 'RedHat'
 
 - name: Configure Apache with lineinfile (Debian).
@@ -552,7 +552,7 @@ Two important things to notice about this style of distribution-specific inclusi
   1. When including vars and tasks files (with `include_vars` or `include_tasks`), you can actually *use variables in the name of the file*. This is handy in many situations; here we're including a vars file in the format `distribution_name.yml`. For our purposes, since the role will be used on Debian and RHEL-based hosts, we can create `Debian.yml` and `RedHat.yml` files in our role's `defaults` and `vars` folders, and put distribution-specific variables there.
   2. For the tasks, we include tasks files in the role's `tasks` directory, for example `setup-Debian.yml` or `setup-RedHat.yml`.
 
-After setting things up this way, I put RHEL and CentOS-specific tasks (like `yum` tasks) into `tasks/setup-RedHat.yml`, and Debian and Ubuntu-specific tasks (like `apt` tasks) into `tasks/setup-Debian.yml`. There are other ways of making roles work cross-platform, but using distribution-specific variables files and included task files is one of the simplest.
+After setting things up this way, I put RHEL-specific tasks (like `dnf` tasks) into `tasks/setup-RedHat.yml`, and Debian and Ubuntu-specific tasks (like `apt` tasks) into `tasks/setup-Debian.yml`. There are other ways of making roles work cross-platform, but using distribution-specific variables files and included task files is one of the simplest.
 
 Now this Apache role can be used across different distributions, and with clever usage of variables in tasks and in configuration templates, it can be used in a wide variety of infrastructure that needs Apache installed.
 

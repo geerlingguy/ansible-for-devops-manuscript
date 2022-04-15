@@ -58,21 +58,21 @@ Using pip allows you to upgrade Ansible with `pip install --upgrade ansible`.
 
 *Fedora/Red Hat Enterprise Linux/CentOS:*
 
-The easiest way to install Ansible on a Fedora-like system is to use the official yum package. If you're running Red Hat Enterprise Linux (RHEL) or CentOS, you need to install EPEL's RPM before you install Ansible (see the info section below for instructions):
+The easiest way to install Ansible on a Fedora-like system is to use the official dnf package. If you're running Red Hat Enterprise Linux (RHEL) or CentOS/Rocky/Alma Linux, you need to install EPEL's RPM before you install Ansible (see the info section below for instructions):
 
 {lang="text",linenos=off}
 ```
-$ yum -y install ansible
+$ dnf -y install ansible
 ```
 
-I> On RHEL/CentOS systems, `python-pip` and `ansible` are available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `yum repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following commands:
+I> On RHEL/CentOS systems, `python-pip` and `ansible` are available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `dnf repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following commands:
 I>
 I> {lang="text",linenos=off}
 I> ~~~
 I> # If you're on RHEL/CentOS 6:
 I> $ rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/\
 I> epel-release-6-8.noarch.rpm
-I> # If you're on RHEL/CentOS 7:
+I> # If you're on RHEL/CentOS 7+:
 I> $ yum install epel-release
 I> ~~~
 

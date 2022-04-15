@@ -144,7 +144,7 @@ T> You can use `validate` option with Ansible's `copy`, `linefile`, `blockinfile
 
 W> If you change certain SSH settings, like the port for SSH, you need to make sure Ansible's inventory is updated. You can explicitly define the SSH port for a host with the option `ansible_ssh_port`, and the local path to a private key file (identity file) with `ansible_ssh_private_key_file`, though Ansible uses keys defined by your `ssh-agent` setup, so typically a manual definition of the key file is not required.
 
-I> For newer versions of Red Hat Enterprise Linux or CentOS with SELinux enabled, you also need to modify the default SELinux configuration to allow port `2849` to be used by SSH, using Ansible's `seport` module:
+I> For newer versions of Red Hat Enterprise Linux or its derivatives which have SELinux enabled, you also need to modify the default SELinux configuration to allow port `2849` to be used by SSH, using Ansible's `seport` module:
 I> 
 I> {lang="yaml",linenos=off}
 I> ~~~
@@ -332,7 +332,7 @@ RHEL and CentOS 6 and 7 (and older versions of Fedora) uses a cron-based package
 
 Further configuration (such as packages to exclude from automatic updates) is done in the `yum.conf` file, at `/etc/yum.conf`.
 
-For RHEL and CentOS 8 and later (and the latest versions of Fedora), you would need to install `dnf-automatic` instead of `yum-cron`, and the service name that you need to make sure to start is `dnf-automatic-install.timer` (instead of `yum-cron`).
+For RHEL/Rocky/Alma Linux 8 and later (and the latest versions of Fedora), install `dnf-automatic` instead of `yum-cron`, and the service to start is `dnf-automatic-install.timer` (instead of `yum-cron`).
 
 ### Automating updates for Debian-based systems
 
@@ -395,7 +395,7 @@ If you were building a secure bank vault, you wouldn't want to have many doors a
 
 Similarly, you should close any port not explicitly required to remain open on all your servers---whether in a DMZ in your network or open to the entire Internet. There are dozens of different ways to manage firewalls nowadays, from `iptables` and helpful tools like `ufw` and `firewalld` that help make iptables configuration easier, to AWS security groups and other external firewall services.
 
-Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, RHEL, and CentOS distributions).
+Ansible includes built-in support for configuring server firewalls with `ufw` (common on newer Debian and Ubuntu distributions) and `firewalld` (common on newer Fedora, and RHEL-based distributions).
 
 ### Configuring a firewall with `ufw` on Debian or Ubuntu
 
@@ -443,7 +443,7 @@ To                         Action      From
 123/udp (v6)               ALLOW IN    Anywhere (v6)
 ```
 
-### Configuring a firewall with `firewalld` on RHEL, Fedora, or CentOS
+### Configuring a firewall with `firewalld` on Fedora, RHEL and RHEL-derivatives
 
 The same firewall configuration can be done via `firewalld` for RHEL-based systems with similar ease:
 
@@ -553,7 +553,7 @@ You'd be forgiven if you disabled SELinux or AppArmor in the past; both require 
 
 However, both of these tools are excellent ways to add *defense in depth* to your infrastructure. You should already have decent configurations for firewalls, file permissions, users and groups, OS updates, etc. But if you're running a web-facing application---especially one running on a server with any other applications---it's great to have the extra protection SELinux or AppArmor provides from applications accessing things they shouldn't.
 
-SELinux is usually installed and enabled by default on Fedora, RHEL and CentOS systems, is available and supported on most other Linux platforms, and is widely supported through Ansible modules, so we'll cover SELinux in a bit more depth.
+SELinux is usually installed and enabled by default on Fedora and RHEL systems, is available and supported on most other Linux platforms, and is widely supported through Ansible modules, so we'll cover SELinux in a bit more depth.
 
 To enable SELinux in `targeted` mode (which is the most secure mode without being almost impossible to work with), make sure the Python SELinux library is installed, then use Ansible's `selinux` module:
 

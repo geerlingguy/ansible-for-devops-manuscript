@@ -452,7 +452,7 @@ Let's say I have a playbook that sets up an Apache server, with the following co
         enabled: true
 ```
 
-Because I want to make sure this playbook works on both of the platforms I support---Debian and CentOS, in this case---I want to make sure my Molecule tests cover both platforms.
+Because I want to make sure this playbook works on both of the platforms I support---Debian and Rocky Linux, in this case---I want to make sure my Molecule tests cover both platforms.
 
 So first, run `molecule init scenario` to initialize a default Molecule scenario in the playbook's folder:
 
@@ -533,13 +533,13 @@ $ molecule destroy
 
 Molecule allows almost infinite flexibility, when it comes to configuring the test environment. In our case, we need to be able to test services running in Docker containers, meaning the Docker containers need to be able to run an init system (in this case, systemd).
 
-We also want to test Debian in addition to the default `centos` container Molecule uses by default, so open the `molecule.yml` file and edit the `platforms` section to use a slightly different Docker configuration:
+We also want to test Debian in addition to the default `rockylinux8` container Molecule uses by default, so open the `molecule.yml` file and edit the `platforms` section to use a slightly different Docker configuration:
 
 {lang="yaml"}
 ```
 platforms:
   - name: instance
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos8}-ansible:latest"
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-rockylinux8}-ansible:latest"
     command: ""
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
@@ -549,7 +549,7 @@ platforms:
 
 This configuration makes four changes to the default Molecule file: one change (the `image`), and three additions:
 
-  - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-centos8}` in the image name. This will allow substitution for other distros, like Debian, later.
+  - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-rockylinux8}` in the image name. This will allow substitution for other distros, like Debian, later.
   - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured `COMMAND`, which in this case starts the systemd init system and keeps the container running.
   - Add a necessary volume mount to allow processes to be managed inside the container.
   - Set the `privileged` flag on the container, so systemd can initialize properly.
@@ -708,17 +708,17 @@ jobs:
 
 This is a `job` with the name `Molecule` (that's the label that will show up in GitHub's interface), and it will run on the latest version of GitHub Actions' Ubuntu build environment. You can currently run jobs on [a few different platforms](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on), including Windows, macOS, and Ubuntu Linux.
 
-We also want to define a `matrix` of Linux distributions to test against; earlier, we set up the playbook to be testable with either `centos8` or `debian10`, so we can add a test matrix under the `jobs.test.strategy.matrix` key:
+We also want to define a `matrix` of Linux distributions to test against; earlier, we set up the playbook to be testable with either `rockylinux8` or `debian10`, so we can add a test matrix under the `jobs.test.strategy.matrix` key:
 
 {lang="yaml",starting-line-number=14}
 ```
     strategy:
       matrix:
-        - distro: centos8
+        - distro: rockylinux8
         - distro: debian10
 ```
 
-GitHub Actions will run a job once for each of the defined options in the build matrix---in our case, one time with a `distro` variable set to `centos8`, and one time with `distro` set to `debian10`.
+GitHub Actions will run a job once for each of the defined options in the build matrix---in our case, one time with a `distro` variable set to `rockylinux8`, and one time with `distro` set to `debian10`.
 
 Finally, we come to the meat of the workflow job, the `steps` that run once the environment is ready:
 
@@ -752,7 +752,7 @@ The final step runs `molecule test`, and passes in three environment variables:
 
   - `PY_COLORS: '1'`: This forces Molecule to use colorized output in the CI environment. Without it, all the output would be white text on a black background.
   - `ANSIBLE_FORCE_COLOR: '1'`: This does the same thing as `PY_COLORS`, but for Ansible's playbook output.
-  - `MOLECULE_DISTRO: ${{ matrix.distro }}`: This sets an environment variable with the current `distro` being run; so once for `centos8` and another time for `debian10`.
+  - `MOLECULE_DISTRO: ${{ matrix.distro }}`: This sets an environment variable with the current `distro` being run; so once for `rockylinux8` and another time for `debian10`.
 
 That's all there is to a GitHub Actions workflow! You can add it to your GitHub repository, and assuming you have available build minutes, GitHub will run this workflow, once for each of the `distro`s in the `matrix`, every time you create or update a PR, or merge or push to the `master` branch.
 

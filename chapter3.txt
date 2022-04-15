@@ -10,7 +10,7 @@ The number of servers managed by an individual administrator has risen dramatica
 
 On any given day, a systems administrator has many tasks:
 
-  - Apply patches and updates via `yum`, `apt`, and other package managers.
+  - Apply patches and updates via `dnf`, `apt`, and other package managers.
   - Check resource usage (disk space, memory, CPU, swap space, network).
   - Check log files.
   - Manage system users and groups.
@@ -32,7 +32,7 @@ I> The examples in this chapter are for illustration purposes only, and all migh
 
 For the rest of this chapter, since we want to do a bunch of experimentation without damaging any production servers, we're going to use Vagrant's powerful multi-machine capabilities to configure a few servers which we'll manage with Ansible.
 
-Earlier, we used Vagrant to boot up one virtual machine running CentOS 7. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
+Earlier, we used Vagrant to boot up one virtual machine running Rocky Linux 8. In that example, we used all of Vagrant's default configuration defined in the Vagrantfile. In this example, we'll use Vagrant's powerful multi-machine management features.
 
 {width=60%}
 ![Three servers: two application, one database.](images/1-basic-vagrant-application.png)
@@ -50,7 +50,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # General Vagrant VM configuration.
-  config.vm.box = "geerlingguy/centos8"
+  config.vm.box = "geerlingguy/rockylinux8"
   config.ssh.insert_key = false
   config.vm.synced_folder ".", "/vagrant", disabled: true
   config.vm.provider :virtualbox do |v|
@@ -78,7 +78,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 end
 ```
 
-This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running CentOS 7.
+This Vagrantfile defines the three servers we want to manage, and gives each one a unique hostname, machine name (for VirtualBox), and IP address. For simplicity's sake, all three servers will be running Rocky Linux 8.
 
 Open up a terminal window and change directory to the same folder where the Vagrantfile you just created exists. Enter `vagrant up` to let Vagrant begin building the three VMs. If you already downloaded the box while building the example from Chapter 2, this process shouldn't take too long---maybe 3-5 minutes.
 
@@ -202,7 +202,7 @@ First, let's make sure the servers have disk space available for our application
 $ ansible multi -a "df -h"
 192.168.60.6 | CHANGED | rc=0 >>
 Filesystem               Size  Used Avail Use% Mounted on
-/dev/mapper/centos-root   19G 1014M   18G   6% /
+/dev/mapper/rl-root      19G 1014M   18G   6% /
 devtmpfs                 111M     0  111M   0% /dev
 tmpfs                    120M     0  120M   0% /dev/shm
 tmpfs                    120M  4.3M  115M   4% /run
@@ -212,7 +212,7 @@ none                     233G  217G   17G  94% /vagrant
 
 192.168.60.5 | CHANGED | rc=0 >>
 Filesystem               Size  Used Avail Use% Mounted on
-/dev/mapper/centos-root   19G 1014M   18G   6% /
+/dev/mapper/rl-root      19G 1014M   18G   6% /
 devtmpfs                 111M     0  111M   0% /dev
 tmpfs                    120M     0  120M   0% /dev/shm
 tmpfs                    120M  4.3M  115M   4% /run
@@ -222,7 +222,7 @@ none                     233G  217G   17G  94% /vagrant
 
 192.168.60.4 | CHANGED | rc=0 >>
 Filesystem               Size  Used Avail Use% Mounted on
-/dev/mapper/centos-root   19G 1014M   18G   6% /
+/dev/mapper/rl-root      19G 1014M   18G   6% /
 devtmpfs                 111M     0  111M   0% /dev
 tmpfs                    120M     0  120M   0% /dev/shm
 tmpfs                    120M  4.3M  115M   4% /run
@@ -276,11 +276,11 @@ T> To get an exhaustive list of all the environment details ('facts', in Ansible
 
 ### Make changes using Ansible modules
 
-We want to install the chrony daemon on the server to keep the time in sync. Instead of running the command `yum install -y chrony` on each of the servers, we'll use ansible's `yum` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
+We want to install the chrony daemon on the server to keep the time in sync. Instead of running the command `dnf install -y chrony` on each of the servers, we'll use ansible's `dnf` module to do the same (just like we did in the playbook example earlier, but this time using an ad-hoc command).
 
 {lang="text",linenos=off}
 ```
-$ ansible multi -b -m yum -a "name=chrony state=present"
+$ ansible multi -b -m dnf -a "name=chrony state=present"
 ```
 
 You should see three 'CHANGED' messages, and the output from the installation command. If you run the command again, you'll see three 'SUCCESS' messages, since the package is already installed.
@@ -326,11 +326,11 @@ Since we set up two separate groups in our inventory file, `app` and `db`, we ca
 
 ### Configure the Application servers
 
-Our hypothetical web application uses Django, so we need to make sure Django and its dependencies are installed. Django is not in the official CentOS yum repository, but we can install it using Pip:
+Our hypothetical web application uses Django, so we need to make sure Django and its dependencies are installed. Django is not in the official Rocky Linux dnf repository, but we can install it using Pip:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -b -m yum -a "name=python3-pip state=present"
+$ ansible app -b -m dnf -a "name=python3-pip state=present"
 $ ansible app -b -m pip -a "name=django<4 state=present"
 ```
 
@@ -358,7 +358,7 @@ Let's install MariaDB and start it:
 
 {lang="text",linenos=off}
 ```
-$ ansible db -b -m yum -a "name=mariadb-server state=present"
+$ ansible db -b -m dnf -a "name=mariadb-server state=present"
 $ ansible db -b -m service -a "name=mariadb state=started \
 enabled=yes"
 ```
@@ -366,7 +366,7 @@ enabled=yes"
 And then configure the system firewall to ensure only the app servers can access the database:
 
 ```
-$ ansible db -b -m yum -a "name=firewalld state=present"
+$ ansible db -b -m dnf -a "name=firewalld state=present"
 $ ansible db -b -m service -a "name=firewalld state=started \
 enabled=yes"
 $ ansible db -b -m firewalld -a "zone=database state=present permanent=yes"
@@ -378,11 +378,11 @@ state=enabled permanent=yes"
 
 If you try connecting to the database from the app servers (or your host machine) at this point, you won't be able to connect, since MariaDB still needs to be set up. Typically, you'd do this by logging into the server and running `mysql_secure_installation`. Luckily, though, Ansible can control a MariaDB server with its assorted `mysql_*` modules. For now, we need to allow MySQL access for one user from our app servers. The MySQL modules require the PyMySQL module to be present on the managed server.
 
-T> Why MariaDB and not MySQL? RHEL 7 and CentOS 7 have MariaDB as the default supported MySQL-compatible database server. Some of the tooling around MariaDB still uses the old 'MySQL\*' naming syntax, but if you're used to MySQL, things work similarly with MariaDB.
+T> Why MariaDB and not MySQL? RHEL 8 and Rocky Linux 8 have MariaDB as the default supported MySQL-compatible database server. Some of the tooling around MariaDB still uses the old 'MySQL\*' naming syntax, but if you're used to MySQL, things work similarly with MariaDB.
 
 {lang="text",linenos=off}
 ```
-$ ansible db -b -m yum -a "name=python3-PyMySQL state=present"
+$ ansible db -b -m dnf -a "name=python3-PyMySQL state=present"
 $ ansible db -b -m mysql_user -a "name=django host=% password=12345 \
 priv=*.*:ALL state=present"
 ```
@@ -463,7 +463,7 @@ You can do just about anything you could do with `useradd`, `userdel`, and `user
 
 ## Manage packages
 
-We've already used the `yum` module on our example CentOS infrastructure to ensure certain packages are installed. Ansible has a variety of package management modules for any flavor of Linux, but there's also a generic `package` module that can be used for easier cross-platform Ansible usage.
+We've already used the `dnf` module on our example Rocky Linux infrastructure to ensure certain packages are installed. Ansible has a variety of package management modules for any flavor of Linux, but there's also a generic `package` module that can be used for easier cross-platform Ansible usage.
 
 If you want to install a generic package like `git` on any Debian, RHEL, Fedora, Ubuntu, CentOS, FreeBSD, etc. system, you can use the command:
 
@@ -472,7 +472,7 @@ If you want to install a generic package like `git` on any Debian, RHEL, Fedora,
 $ ansible app -b -m package -a "name=git state=present"
 ```
 
-`package` works much the same as `yum`, `apt`, and other package management modules. Later in the book we'll explore ways of dealing with multi-platform package management where package names differ between OSes.
+`package` works much the same as `dnf`, `apt`, and other package management modules. Later in the book we'll explore ways of dealing with multi-platform package management where package names differ between OSes.
 
 ## Manage files and directories
 
@@ -549,7 +549,7 @@ There are many simple ways to manage files remotely using Ansible. We've briefly
 
 ## Run operations in the background
 
-Some operations take quite a while (minutes or even hours). For example, when you run `yum update` or `apt-get update && apt-get dist-upgrade`, it could be a few minutes before all the packages on your servers are updated.
+Some operations take quite a while (minutes or even hours). For example, when you run `dnf update` or `apt-get update && apt-get dist-upgrade`, it could be a few minutes before all the packages on your servers are updated.
 
 In these situations, you can tell Ansible to run the commands asynchronously, and poll the servers to see when the commands finish. When you're only managing one server, this is not really helpful, but if you have many servers, Ansible starts the command *very* quickly on all your servers (especially if you set a higher `--forks` value), then polls the servers for status until they're all up to date.
 
@@ -562,11 +562,11 @@ W> As of Ansible 2.0, asynchronous polling on the command line (via the `-P` fla
 
 ### Update servers asynchronously with asynchronous jobs
 
-Let's run `yum -y update` on all our servers to get them up to date. If you set `-P 0`, Ansible fires off the command on the servers, then prints the background job information to the screen and exits:
+Let's run `dnf -y update` on all our servers to get them up to date. If you set `-P 0`, Ansible fires off the command on the servers, then prints the background job information to the screen and exits:
 
 {lang="text",linenos=off}
 ```
-$ ansible multi -b -B 3600 -P 0 -a "yum -y update"
+$ ansible multi -b -B 3600 -P 0 -a "dnf -y update"
 192.168.60.4 | CHANGED => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python"
@@ -593,7 +593,7 @@ $ ansible multi -b -m async_status -a "jid=169825235950.3572"
     "ansible_job_id": "761320869373.18496",
     "changed": true,
     "cmd": [
-        "yum",
+        "dnf",
         "-y",
         "update"
     ],
@@ -741,7 +741,7 @@ W> The `pipelining=True` configuration option won't help much unless you have re
 
 W> If you're running a recent version of Mac OS X, Ubuntu, Windows with Cygwin, or most other OS for the host from which you run `ansible` and `ansible-playbook`, you should be running OpenSSH version 5.6 or later, which works perfectly with the `ControlPersist` setting used with all of Ansible's SSH connections settings.
 W>
-W> If the host on which Ansible runs has RHEL or CentOS, however, you might need to update your version of OpenSSH so it supports the faster/persistent connection method. Any OpenSSH version 5.6 or greater should work. To install a later version, either compile from source, or use a different repository (like [CentALT](http://mirror.neu.edu.cn/CentALT/readme.txt) and `yum update openssh`.
+W> If the host on which Ansible runs has RHEL or a derivative, you might need to update your version of OpenSSH so it supports the faster/persistent connection method. Any OpenSSH version 5.6 or greater should work. To install a later version, either compile from source, or use a different repository (like [CentALT](http://mirror.neu.edu.cn/CentALT/readme.txt) and `dnf update openssh`.
 
 ## Summary
 
