@@ -140,7 +140,7 @@ In this extremely simple playbook, we use a handler we define in the `handlers` 
 
 If you're ever editing files that could result in broken behavior after a change, it's important to _validate_ changes using the `validate` option (in this case using `sshd`'s `-t` option and passing a file path). This makes sure you don't break sudo when you save the changes. The `%s` is a placeholder for the file's path, and will be filled in by Ansible when Ansible runs the validation command.
 
-T> You can use `validate` option with Ansible's `copy`, `linefile`, `blockinfile`, and `template` modules.
+T> You can use the `validate` option with Ansible's `copy`, `lineinfile`, `blockinfile`, and `template` modules.
 
 W> If you change certain SSH settings, like the port for SSH, you need to make sure Ansible's inventory is updated. You can explicitly define the SSH port for a host with the option `ansible_ssh_port`, and the local path to a private key file (identity file) with `ansible_ssh_private_key_file`, though Ansible uses keys defined by your `ssh-agent` setup, so typically a manual definition of the key file is not required.
 

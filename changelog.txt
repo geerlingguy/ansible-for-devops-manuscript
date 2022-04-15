@@ -22,7 +22,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   14. [#453](https://github.com/geerlingguy/ansible-for-devops/issues/453): Fix various references (especially in chapters 1-6, 11, and 13) to CentOS 8 that are now using Rocky Linux 8 because CentOS 8 is no more.
   15. [#463](https://github.com/geerlingguy/ansible-for-devops/issues/463): Fixed link to Ansible's docs for 'magic variables' in chapter 5. (thanks to HonkinWaffles!)
   16. [#425](https://github.com/geerlingguy/ansible-for-devops/issues/425): Fixed node.js forever example in chapter 4 to use Rocky Linux 8 and new path plus updated Remi repository URLs. (thanks to varunvats and kenhia!)
-  17. [#408](https://github.com/geerlingguy/ansible-for-devops/issues/408): Fixed broken link to Ansible's built-in user module documentation.
+  17. [#408](https://github.com/geerlingguy/ansible-for-devops/issues/408): Fixed broken link to Ansible's built-in user module documentation. (thanks to CodingIsLove!)
+  18. [#439](https://github.com/geerlingguy/ansible-for-devops/issues/439): Typo fix: s/`linefile`/`lineinfile` in chapter 11. (thanks to clevengr!)
 
 ## Version 2.0 (2020-07-05)
 
