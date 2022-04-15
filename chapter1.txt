@@ -72,8 +72,10 @@ I> ~~~
 I> # If you're on RHEL/CentOS 6:
 I> $ rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/\
 I> epel-release-6-8.noarch.rpm
-I> # If you're on RHEL/CentOS 7+:
+I> # If you're on RHEL/CentOS 7:
 I> $ yum install epel-release
+I> # If you're on RHEL 8+/Fedora:
+I> $ dnf install epel-release
 I> ~~~
 
 *Debian/Ubuntu:*

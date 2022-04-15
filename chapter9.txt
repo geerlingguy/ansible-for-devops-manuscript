@@ -41,7 +41,7 @@ Organizing things this way allows us to focus on each server configuration indiv
 
 ### Individual Server Playbooks
 
-Let's start building our individual server playbooks (in the `playbooks` directory). To make our playbooks more efficient, we'll use some contributed Ansible roles on Ansible Galaxy rather than install and configure everything step-by-step. We're going to target CentOS 7.x servers in these playbooks, but only minimal changes would be required to use the playbooks with Ubuntu, Debian, or later versions of CentOS.
+Let's start building our individual server playbooks (in the `playbooks` directory). To make our playbooks more efficient, we'll use some contributed Ansible roles on Ansible Galaxy rather than install and configure everything step-by-step. We're going to target CentOS 7 servers in these playbooks, but only minimal changes would be required to use the playbooks with Ubuntu, Debian, or later versions of CentOS.
 
 **Varnish**
 
@@ -461,7 +461,7 @@ As with many other examples in this book, we can use Vagrant and VirtualBox to b
 
 Our basic Vagrantfile layout will be something like the following:
 
-  1. Define a base box (in this case, CentOS 7.x) and VM hardware defaults.
+  1. Define a base box (in this case, CentOS 7) and VM hardware defaults.
   2. Define all the VMs to be built, with VM-specific IP addresses and hostname configurations.
   3. Define the Ansible provisioner along with the last VM, so Ansible can run once at the end of Vagrant's build cycle.
 
