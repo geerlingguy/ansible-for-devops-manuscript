@@ -1657,7 +1657,7 @@ Over the past few years, as I've gone through four Macs (one personal, three emp
 
 To restore order to this madness, I wrapped up all the configuration I could into a set of [dotfiles](https://github.com/geerlingguy/dotfiles) and used git to synchronize the dotfiles to all my workstations.
 
-However, even with the assistance of [Homebrew](http://brew.sh/), an excellent package manager for OS X, there was still a lot of manual labor involved in installing and configuring my favorite apps and command line tools.
+However, even with the assistance of [Homebrew](http://brew.sh/), an excellent package manager for macOS, there was still a lot of manual labor involved in installing and configuring my favorite apps and command line tools.
 
 ### Running Ansible playbooks locally
 
@@ -1686,7 +1686,7 @@ T> If certain tasks need to be run with sudo privileges, you can add `become: ye
 
 ### Automating Homebrew package and app management
 
-Since I use Homebrew (billed as "the missing package manager for OS X") for most of my application installation and configuration, I created the role `geerlingguy.homebrew`, which first installs Homebrew and then installs all the applications and packages I configure in a few simple variables.
+Since I use Homebrew (billed as "the missing package manager for macOS") for most of my application installation and configuration, I created the role `geerlingguy.homebrew`, which first installs Homebrew and then installs all the applications and packages I configure in a few simple variables.
 
 The next step, then, is to add the Homebrew role and configure the required variables. Inside `main.yml`, update the `roles` section:
 
@@ -1728,7 +1728,7 @@ Homebrew has a few tricks up its sleeve, like being able to manage general packa
 
 To anyone who's set up a new Mac the old-fashioned way---download 15 .dmg files, mount them, drag the applications to the Applications folder, eject them, delete the .dmg files---Homebrew's simplicity and speed are a true godsend. This Ansible playbook has so far automated that process completely, so you don't even have to run the Homebrew commands manually! The `geerlingguy.homebrew` role uses Ansible's built-in `homebrew` module to manage package installation, along with some custom tasks to manage cask applications.
 
-### Configuring Mac OS X through dotfiles
+### Configuring macOS through dotfiles
 
 Just like there's a `homebrew` role on Ansible Galaxy, made for configuring and installing packages via Homebrew, there's a `dotfiles` role you can use to download and configure your local dotfiles.
 

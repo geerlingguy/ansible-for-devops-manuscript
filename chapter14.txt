@@ -276,7 +276,7 @@ Once you run this playbook, if there were no errors, you should be able to secur
 {width=80%}
 ![HTTPS Test site loads with a security warning](images/14-https-test-chrome.png)
 
-W> If you rebuild the server for `https.test` more than once (thus creating a new self-signed certificate), be sure to delete the certificate you previously added to your list of trusted certificates (e.g. via Keychain Access on Mac OS X for Chrome and Safari, or in FireFox under Preferences > Advanced > Certificates).
+W> If you rebuild the server for `https.test` more than once (thus creating a new self-signed certificate), be sure to delete the certificate you previously added to your list of trusted certificates (e.g. via Keychain Access on macOS for Chrome and Safari, or in FireFox under Preferences > Advanced > Certificates).
 
 ## Automating Let's Encrypt with Ansible for free Certs
 
