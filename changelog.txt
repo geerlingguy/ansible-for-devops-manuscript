@@ -24,6 +24,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   16. [#425](https://github.com/geerlingguy/ansible-for-devops/issues/425): Fixed node.js forever example in chapter 4 to use Rocky Linux 8 and new path plus updated Remi repository URLs. (thanks to varunvats and kenhia!)
   17. [#408](https://github.com/geerlingguy/ansible-for-devops/issues/408): Fixed broken link to Ansible's built-in user module documentation. (thanks to CodingIsLove!)
   18. [#439](https://github.com/geerlingguy/ansible-for-devops/issues/439): Typo fix: s/`linefile`/`lineinfile` in chapter 11. (thanks to clevengr!)
+  19. [#438](https://github.com/geerlingguy/ansible-for-devops/issues/438): Fix erroneous reference to `provisioning.yml` playbook (that doesn't exist) in chapter 10. (thanks to clevengr!)
 
 ## Version 2.0 (2020-07-05)
 
