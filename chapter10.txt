@@ -473,9 +473,9 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-The above `Vagrantfile` defines four VMs with 256MB of RAM and a unique hostname and IP address (defined by the `boxes` variable). Our Node.js app doesn't require much in the way of processing power or memory.
+The above `Vagrantfile` defines four VMs with 512MB of RAM and a unique hostname and IP address (defined by the `boxes` variable). Our Node.js app doesn't require much in the way of processing power or memory.
 
-In the `provision` section of the playbook, we told Vagrant to provision the all the VMs with Ansible, using the inventory file `inventory`, and the playbook `playbooks/main.yml`. Create these two files in the same folder as your Vagrantfile:
+In the `provision` section of the playbook, we told Vagrant to provision all the VMs with Ansible, using the inventory file `inventory`, and the playbook `playbooks/main.yml`. Create these two files in the same folder as your Vagrantfile:
 
 {lang="text",linenos=off}
 ```

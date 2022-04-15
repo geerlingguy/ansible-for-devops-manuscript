@@ -28,7 +28,9 @@ Hopefully these notes will help readers figure out what's changed since the last
   20. [#437](https://github.com/geerlingguy/ansible-for-devops/issues/437): Grammar fix: missing the word 'use' in a sentence in chapter 9. (thanks to clevengr!)
   21. [#399](https://github.com/geerlingguy/ansible-for-devops/issues/399): Grammar fix: do you and not to you in chapter 9. (thanks to jlmuir!)
   22. [#398](https://github.com/geerlingguy/ansible-for-devops/issues/398): Finish updating all references to 'Mac OS X' and 'OS X' to just 'macOS'. (thanks to jlmuir!)
-  23. [#347](https://github.com/geerlingguy/ansible-for-devops/issues/347) I don't think I'll ever use 'it's' correctly. Fixing many instances of it's where it shouldn't be so possessive. (thanks to David-Gil!)
+  23. [#347](https://github.com/geerlingguy/ansible-for-devops/issues/347): I don't think I'll ever use 'it's' correctly. Fixing many instances of it's where it shouldn't be so possessive. (thanks to David-Gil!)
+  24. [#395](https://github.com/geerlingguy/ansible-for-devops/issues/395): Fix an instance of 'the' being used twice in the same sentence in a very improper manner. Grammar gets me again. (thanks to geerew!)
+  25. [#460](https://github.com/geerlingguy/ansible-for-devops/issues/460): 256 MB of RAM was not enough for anybody. Bumped limits for www servers in chapter 10 and node.js servers in chapter 9 to 512 MB of RAM. (thanks to MrPOC!)
 
 ## Version 2.0 (2020-07-05)
 
