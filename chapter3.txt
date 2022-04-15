@@ -459,7 +459,7 @@ What if you want to delete the account?
 $ ansible app -b -m user -a "name=johndoe state=absent remove=yes"
 ```
 
-You can do just about anything you could do with `useradd`, `userdel`, and `usermod` using Ansible's `user` module, except you can do it more easily. The [official documentation of the User module](http://docs.ansible.com/user_module.html) explains all the possibilities in great detail.
+You can do just about anything you could do with `useradd`, `userdel`, and `usermod` using Ansible's `user` module, except you can do it more easily. The [official documentation of the User module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html) explains all the possibilities in great detail.
 
 ## Manage packages
 
