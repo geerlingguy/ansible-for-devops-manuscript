@@ -183,7 +183,7 @@ In a playbook or variables include file, a variable's value is assigned using a 
 foo: bar
 ```
 
-T> While it's not explictly stated in Ansible's documentation, _starting_ a variable with an underscore (e.g. `_my_variable`) is uncommon, but sometimes is used as a way of indicating a 'private' or 'internal use only' variable. For example, many of the `geerlingguy` Ansible roles I maintain prefix variables with an underscore if they're meant for internal role use only, and should not be overridden by playbooks using the role.
+T> While it's not explicitly stated in Ansible's documentation, _starting_ a variable with an underscore (e.g. `_my_variable`) is uncommon, but sometimes is used as a way of indicating a 'private' or 'internal use only' variable. For example, many of the `geerlingguy` Ansible roles I maintain prefix variables with an underscore if they're meant for internal role use only, and should not be overridden by playbooks using the role.
 
 ### Playbook Variables
 

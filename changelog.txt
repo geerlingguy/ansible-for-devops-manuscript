@@ -34,6 +34,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   26. [#319](https://github.com/geerlingguy/ansible-for-devops/issues/319): Fixed an extra dangling double quote in chapter 5. (thanks to gpatkinson!)
   27. [#324](https://github.com/geerlingguy/ansible-for-devops/issues/324): Fixed an extra 'a' in chapter 5. I need to do better there. (thanks to braykov!)
   28. [#330](https://github.com/geerlingguy/ansible-for-devops/issues/330): Fix example path to an `update.sh` script in chapter 3. (thanks to grendelson!)
+  29. [#333](https://github.com/geerlingguy/ansible-for-devops/issues/333): Fixed a few lingering `ntpd` references that should be `chronyd` in chapter 3. (thanks to rpappalax!)
+  30. [#351](https://github.com/geerlingguy/ansible-for-devops/issues/351): Fixed typo: 'explicitly' and not 'explictly'. (thanks to Octobug!)
 
 ## Version 2.0 (2020-07-05)
 

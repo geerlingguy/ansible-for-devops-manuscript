@@ -301,7 +301,7 @@ All three servers should show a success message like:
 ```
 "changed": true,
 "enabled": true,
-"name": "ntpd",
+"name": "chronyd",
 "state": "started"
 ```
 
@@ -414,10 +414,10 @@ In this command, we used the `--limit` argument to limit the command to a specif
 {lang="text",linenos=off}
 ```
 # Limit hosts with a simple pattern (asterisk is a wildcard).
-$ ansible app -b -a "service ntpd restart" --limit "*.4"
+$ ansible app -b -a "service chronyd restart" --limit "*.4"
 
 # Limit hosts with a regular expression (prefix with a tilde).
-$ ansible app -b -a "service ntpd restart" --limit ~".*\.4"
+$ ansible app -b -a "service chronyd restart" --limit ~".*\.4"
 ```
 
 In these examples, we've been using IP addresses instead of hostnames, but in many real-world scenarios, you'll probably be using hostnames like nyc-dev-1.example.com; being able to match on regular expressions is often helpful.
