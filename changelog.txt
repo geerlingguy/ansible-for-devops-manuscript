@@ -18,6 +18,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   10. [#436](https://github.com/geerlingguy/ansible-for-devops/issues/436): Fix invalid line reference in a note in chapter 5.
   11. Adjusted Molecule example in chapter 13 to use FQCNs to avoid adding extra ansible-lint configuration.
   12. [#225](https://github.com/geerlingguy/ansible-for-devops/pull/225): Move success message to node.js app's `listen` callback in chapter 4. (thanks to mkrawczuk!)
+  13. [#466](https://github.com/geerlingguy/ansible-for-devops/issues/466): Fix duplicate 'the' in a line in chapter 3. (thanks to @MrEddX!)
 
 ## Version 2.0 (2020-07-05)
 
