@@ -189,7 +189,7 @@ Create a `tasks` folder, and create a `self-signed-cert.yml` task file inside. W
     provider: selfsigned
 ```
 
-We added a two variables which we'll now define in the `vars/main.yml` file (using variables makes it easier to change the site and/or refactor to allow multiple values in the future). Add these variables to the vars file:
+We added two variables which we'll now define in the `vars/main.yml` file (using variables makes it easier to change the site and/or refactor to allow multiple values in the future). Add these variables to the vars file:
 
 {lang="yaml",starting-line-number=19}
 ```

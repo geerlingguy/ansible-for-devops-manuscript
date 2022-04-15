@@ -326,7 +326,7 @@ Simple variables (gathered by Ansible, defined in inventory files, or defined in
 
 {lang="yaml",linenos=off}
 ```
-- command: "/opt/my-app/rebuild {{ my_environment }}""
+- command: "/opt/my-app/rebuild {{ my_environment }}"
 ```
 
 When the command is run, Ansible will substitute the contents of `my_environment` for `{{ my_environment }}`. So the resulting command would be something like `/opt/my-app/rebuild dev`.

@@ -31,6 +31,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   23. [#347](https://github.com/geerlingguy/ansible-for-devops/issues/347): I don't think I'll ever use 'it's' correctly. Fixing many instances of it's where it shouldn't be so possessive. (thanks to David-Gil!)
   24. [#395](https://github.com/geerlingguy/ansible-for-devops/issues/395): Fix an instance of 'the' being used twice in the same sentence in a very improper manner. Grammar gets me again. (thanks to geerew!)
   25. [#460](https://github.com/geerlingguy/ansible-for-devops/issues/460): 256 MB of RAM was not enough for anybody. Bumped limits for www servers in chapter 10 and node.js servers in chapter 9 to 512 MB of RAM. (thanks to MrPOC!)
+  26. [#319](https://github.com/geerlingguy/ansible-for-devops/issues/319): Fixed an extra dangling double quote in chapter 5. (thanks to gpatkinson!)
+  27. [#324](https://github.com/geerlingguy/ansible-for-devops/issues/324): Fixed an extra 'a' in chapter 5. I need to do better there. (thanks to braykov!)
 
 ## Version 2.0 (2020-07-05)
 
