@@ -37,6 +37,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   29. [#333](https://github.com/geerlingguy/ansible-for-devops/issues/333): Fixed a few lingering `ntpd` references that should be `chronyd` in chapter 3. (thanks to rpappalax!)
   30. [#351](https://github.com/geerlingguy/ansible-for-devops/issues/351): Fixed typo: 'explicitly' and not 'explictly'. (thanks to Octobug!)
   31. [#380](https://github.com/geerlingguy/ansible-for-devops/issues/380): Use case-insensitive `grep` when searching for 'cookie' string in output in load balancer example in chapter 10. (thanks to typ-ex!)
+  32. [#456](https://github.com/geerlingguy/ansible-for-devops/issues/456): Fix 'is blue' assertion for string comparison to use `==` in chapter 7 filter plugin example. (thanks to MrPOC!)
 
 ## Version 2.0 (2020-07-05)
 

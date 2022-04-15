@@ -25,7 +25,7 @@ We're going to use an extremely basic example. Let's say I have a playbook, `mai
   tasks:
     - name: "Verify {{ my_color_choice }} is a form of blue."
       assert:
-        that: my_color_choice is 'blue'
+        that: my_color_choice == 'blue'
 ```
 
 This works great... until you have another valid representation of blue. Let's say a user set `my_color_choice: '#0000ff'`. You could still use the same task, but you'd need to add to the logic:
@@ -42,8 +42,8 @@ This works great... until you have another valid representation of blue. Let's s
     - name: "Verify {{ my_color_choice }} is a form of blue."
       assert:
         that: >
-          my_color_choice is 'blue'
-          or my_color_choice is '#0000ff'
+          my_color_choice == 'blue'
+          or my_color_choice == '#0000ff'
 ```
 
 Now, someone else might come along with the equally-valid option `#00f`. Time to add more logic to the task—or not.
