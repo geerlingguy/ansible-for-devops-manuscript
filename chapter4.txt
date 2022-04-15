@@ -222,14 +222,14 @@ There are some other options and configuration variables that are important to g
 
 I> The rest of this chapter uses more realistic Ansible playbooks. All the examples in this chapter are in the [Ansible for DevOps GitHub repository](https://github.com/geerlingguy/ansible-for-devops), and you can clone that repository to your computer (or browse the code online) to follow along more easily. The GitHub repository includes Vagrantfiles with each example, so you can build the servers on your local host using Vagrant.
 
-## Real-world playbook: CentOS Node.js app server
+## Real-world playbook: Rocky Linux Node.js app server
 
 The first example, while being helpful for someone who might want to post a simple static web page to a clunky old Apache server, is not a good representation of a real-world scenario. I'm going to run through more complex playbooks that do many different things, most of which are actually being used to manage production infrastructure today.
 
-The first playbook will configure a CentOS server with Node.js, and install and start a simple Node.js application. The server will have a very simple architecture:
+The first playbook will configure a Rocky Linux server with Node.js, and install and start a simple Node.js application. The server will have a very simple architecture:
 
 {width=40%}
-![Node.js app on CentOS.](images/4-playbook-nodejs.png)
+![Node.js app on Rocky Linux.](images/4-playbook-nodejs.png)
 
 To start things off, we need to create a YAML file (`playbook.yml` in this example) to contain our playbook. Let's keep things simple:
 
@@ -253,47 +253,47 @@ Finally, the playbook will need to do something on the hosts, so we add a `tasks
 
 ### Add extra repositories
 
-Adding extra package repositories (yum or apt) is one thing many admins will do before any other work on a server to ensure that certain packages are available, or are at a later version than the ones in the base installation.
+Adding extra package repositories (dnf or apt) is one thing many admins will do before any other work on a server to ensure that certain packages are available, or are at a later version than the ones in the base installation.
 
-In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL/CentOS 7.x as the `root` user):
+In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL 8 as the `root` user):
 
 {lang="bash"}
 ```
 # Install EPEL repo.
-yum install -y epel-release
+dnf install -y epel-release
 
 # Import Remi GPG key.
-wget https://rpms.remirepo.net/RPM-GPG-KEY-remi \
-  -O /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
-rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-remi
+wget https://rpms.remirepo.net/RPM-GPG-KEY-remi2018 \
+  -O /etc/pki/rpm-gpg/RPM-GPG-KEY-remi2018
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-remi2018
 
 # Install Remi repo.
 rpm -Uvh --quiet \
-  https://rpms.remirepo.net/enterprise/remi-release-7.rpm
+  https://rpms.remirepo.net/enterprise/remi-release-8.rpm
 
 # Install Node.js (npm plus all its dependencies).
-yum --enablerepo=epel -y install npm
+dnf --enablerepo=epel -y install npm
 ```
 
 This shell script uses the rpm command to install the EPEL repository, import the Remi repository GPG keys, add the Remi repository, and finally install Node.js. It works okay for a simple deployment (or by hand), but it's silly to run all these commands (some of which could take time or stop your script entirely if your connection is flaky or bad) if the result has already been achieved (namely, two repositories and their GPG keys have been added).
 
-I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and just run your commands with `--nogpgcheck` (or, in Ansible, set the `disable_gpg_check` parameter of the yum module to `yes`), but it's a good idea to leave this enabled. GPG stands for *GNU Privacy Guard*, and it's a way that developers and package distributors can sign their packages (so you know it's from the original author, and hasn't been modified or corrupted). Unless you *really* know what you're doing, don't disable security settings like GPG key checks.
+I> If you wanted to skip a couple steps, you could skip adding the GPG keys, and just run your commands with `--nogpgcheck` (or, in Ansible, set the `disable_gpg_check` parameter of the dnf module to `yes`), but it's a good idea to leave this enabled. GPG stands for *GNU Privacy Guard*, and it's a way that developers and package distributors can sign their packages (so you know it's from the original author, and hasn't been modified or corrupted). Unless you *really* know what you're doing, don't disable security settings like GPG key checks.
 
 Ansible makes things a little more robust. Even though the following is slightly more verbose, it performs the same actions in a more structured way, which is simpler to understand, and works with variables and other nifty Ansible features we'll discuss later:
 
 {lang="yaml",starting-line-number=9}
 ```
     - name: Install EPEL repo.
-      yum: name=epel-release state=present
+      dnf: name=epel-release state=present
 
     - name: Import Remi GPG key.
       rpm_key:
-        key: "https://rpms.remirepo.net/RPM-GPG-KEY-remi"
+        key: "https://rpms.remirepo.net/RPM-GPG-KEY-remi2018"
         state: present
 
     - name: Install Remi repo.
       yum:
-        name: "https://rpms.remirepo.net/enterprise/remi-release-7.rpm"
+        name: "https://rpms.remirepo.net/enterprise/remi-release-8.rpm"
         state: present
 
     - name: Ensure firewalld is stopped (since this is for testing).
@@ -356,7 +356,7 @@ Since this little app is dependent on Express (an http framework for Node), we a
   "dependencies": {
     "express": "4.x"
   },
-  "engine": "node >= 0.10.6"
+  "engine": "node >= 10.0.2"
 }
 ```
 
@@ -393,12 +393,12 @@ We'll now use `forever` (which we installed earlier) to start the app.
 {lang="yaml",starting-line-number=41}
 ```
     - name: Check list of running Node.js apps.
-      command: forever list
+      command: /usr/local/bin/forever list
       register: forever_list
       changed_when: false
 
     - name: Start example Node.js app.
-      command: "forever start {{ node_apps_location }}/app/app.js"
+      command: "/usr/local/bin/forever start {{ node_apps_location }}/app/app.js"
       when: "forever_list.stdout.find(node_apps_location + \
 '/app/app.js') == -1"
 ```
