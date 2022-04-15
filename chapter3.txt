@@ -702,7 +702,7 @@ Then, run the application's `update.sh` shell script:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -b -a "/opt/myapp/update.sh"
+$ ansible app -b -a "/opt/myapp/scripts/update.sh"
 ```
 
 Ad-hoc commands are fine for the simple deployments (like our example above), but you should use Ansible's more powerful and flexible application deployment features described later in this book if you have complex application or infrastructure needs. See especially the 'Rolling Updates' section later in this book.
