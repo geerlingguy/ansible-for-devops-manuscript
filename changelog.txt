@@ -38,6 +38,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   30. [#351](https://github.com/geerlingguy/ansible-for-devops/issues/351): Fixed typo: 'explicitly' and not 'explictly'. (thanks to Octobug!)
   31. [#380](https://github.com/geerlingguy/ansible-for-devops/issues/380): Use case-insensitive `grep` when searching for 'cookie' string in output in load balancer example in chapter 10. (thanks to typ-ex!)
   32. [#456](https://github.com/geerlingguy/ansible-for-devops/issues/456): Fix 'is blue' assertion for string comparison to use `==` in chapter 7 filter plugin example. (thanks to MrPOC!)
+  33. [#337](https://github.com/geerlingguy/ansible-for-devops/issues/337): Use `pip3` when installing `django` in chapter 3 example by setting the correct options. (thanks to doug-rosser!)
 
 ## Version 2.0 (2020-07-05)
 
