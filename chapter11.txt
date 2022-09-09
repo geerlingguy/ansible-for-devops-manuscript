@@ -229,7 +229,7 @@ If you're not actively using a piece of software, or there's an obsolete cron ta
     purge: yes
 ```
 
-With modules like `package`, `yum`, `apt`, `file`, and `mysql_db`, a `state: absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
+With modules like `package`, `dnf`, `apt`, `file`, and `mysql_db`, a `state: absent` parameter means Ansible will remove whatever packages, files or databases you want, and will check to make sure this is still the case during future runs of your playbook.
 
 Opening only required ports helps reduce the surface area for attack, requiring only a few firewall rules. This will be covered fully in the "Use a properly-configured firewall" section, but as an example, don't leave port 25 open on your server unless your server will be used as an SMTP relay server. Further, make sure the services you have listening on your open ports are configured to only allow access from trusted clients.
 
@@ -294,7 +294,7 @@ With Ansible, since you already have your entire infrastructure described via An
 
 {lang="text",linenos="off"}
 ```
-$ ansible webservers -m yum -a "name=* state=latest"
+$ ansible webservers -m dnf -a "name=* state=latest"
 ```
 
 On a Debian-based system, the syntax is similar:
@@ -304,7 +304,7 @@ On a Debian-based system, the syntax is similar:
 $ ansible webservers -m apt -a "upgrade=dist update_cache=yes"
 ```
 
-The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `yum` or `apt` to tell them what to do (edit `/etc/yum.conf` for `yum` on RHEL-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
+The above commands will upgrade *everything* installed on your server. Sometimes, you only want to install security-related updates, or exclude certain packages. In those cases, you need to configure `dnf` or `apt` to tell them what to do (edit `/etc/dnf/dnf.conf` for `dnf` on RHEL-based systems, or use `apt-mark hold [package-name]` to keep a certain package at its current version on Debian-based systems).
 
 ### Automating updates
 
@@ -524,7 +524,7 @@ Here's a set of tasks you could add to your playbook to install Fail2Ban and mak
 {lang="yaml",linenos=off}
 ```
 - name: Install fail2ban (RedHat).
-  yum:
+  dnf:
     name: fail2ban
     state: present
     enablerepo: epel
@@ -560,7 +560,7 @@ To enable SELinux in `targeted` mode (which is the most secure mode without bein
 {lang="yaml",linenos=off}
 ```
 - name: Install Python SELinux library.
-  yum:
+  dnf:
     name: python3-libselinux
     state: present
 

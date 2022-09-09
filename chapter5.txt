@@ -711,7 +711,7 @@ See Ansible's [Variable Precedence](http://docs.ansible.com/playbooks_variables.
 
 ## If/then/when - Conditionals
 
-Many tasks need only be run in certain circumstances. Some tasks use modules with built-in idempotence (as is the case when ensuring a yum or apt package is installed), and you usually don't need to define further conditional behaviors for these tasks.
+Many tasks need only be run in certain circumstances. Some tasks use modules with built-in idempotence (as is the case when ensuring a dnf or apt package is installed), and you usually don't need to define further conditional behaviors for these tasks.
 
 However, there are many tasks---especially those using Ansible's `command` or `shell` modules---which require further input as to when they're supposed to run, whether they've changed anything after they've been run, or when they've failed to run.
 
@@ -784,7 +784,7 @@ One of the most helpful extra keys you can add to a play is a `when` statement. 
 
 {lang="yaml",linenos=off}
 ```
-- yum: name=mysql-server state=present
+- dnf: name=mysql-server state=present
   when: is_db_server
 ```
 
@@ -794,7 +794,7 @@ If you only define the `is_db_server` variable on database servers (meaning ther
 
 {lang="yaml",linenos=off}
 ```
-- yum: name=mysql-server state=present
+- dnf: name=mysql-server state=present
   when: (is_db_server is defined) and is_db_server
 ```
 
@@ -836,7 +836,7 @@ These examples are a little contrived, but they illustrate basic uses of `when` 
 # Downgrade PHP version if the current version contains '7.0'.
 - shell: php --version
   register: php_version
-- shell: yum -y downgrade php*
+- shell: dnf -y downgrade php*
   when: "'7.0' in php_version.stdout"
 
 # Copy a file to the remote server if the hosts file doesn't exist.
@@ -1074,7 +1074,7 @@ Here's an example playbook that uses blocks with `when` to run group of tasks sp
   tasks:
     # Install and configure Apache on RHEL/CentOS hosts.
     - block:
-        - yum: name=httpd state=present
+        - dnf: name=httpd state=present
         - template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf
         - service: name=httpd state=started enabled=yes
       when: ansible_os_family == 'RedHat'

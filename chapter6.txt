@@ -312,7 +312,7 @@ Create a `main.yml` file in this folder, and add the following contents (basical
 ```
 ---
 - name: Install Node.js (npm plus all its dependencies).
-  yum: name=npm state=present enablerepo=epel
+  dnf: name=npm state=present enablerepo=epel
 
 - name: Install forever module (to run our Node.js app).
   npm: name=forever global=yes state=present
@@ -369,7 +369,7 @@ Modify the `tasks/main.yml` file to use a list variable and iterate through the 
 ```
 ---
 - name: Install Node.js (npm plus all its dependencies).
-  yum: name=npm state=present enablerepo=epel
+  dnf: name=npm state=present enablerepo=epel
 
 - name: Install npm modules required by our app.
   npm: name={{ item }} global=yes state=present
@@ -406,7 +406,7 @@ Imagine if you had a playbook structure like:
 ---
 - hosts: appservers
   roles:
-    - yum-repo-setup
+    - dnf-repo-setup
     - firewall
     - nodejs
     - app-deploy
@@ -414,7 +414,7 @@ Imagine if you had a playbook structure like:
 
 Each one of the roles lives in its own isolated world, and can be shared with other servers and groups of servers in your infrastructure.
 
-  - A `yum-repo-setup` role could enable certain repositories and import their GPG keys.
+  - A `dnf-repo-setup` role could enable certain repositories and import their GPG keys.
   - A `firewall` role could have per-server or per-inventory-group options for ports and services to allow or deny.
   - An `app-deploy` role could deploy your app to a directory (configurable per-server) and set certain app options per-server or per-group.
 

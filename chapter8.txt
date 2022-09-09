@@ -97,7 +97,7 @@ As an example, when the [Shellshock](https://en.wikipedia.org/wiki/Shellshock_(s
 
 {lang="text",linenos=off}
 ```
-$ ansible centos -m yum -a "name=bash state=latest"
+$ ansible centos -m dnf -a "name=bash state=latest"
 ```
 
 You could even go further and create a small playbook that would patch the vulnerability, then run tests to make sure the vulnerability was no longer present, as illustrated in [this playbook](https://raymii.org/s/articles/Patch_CVE-2014-6271_Shellshock_with_Ansible.html). This would also allow you to run the playbook in check mode or run it through a continuous integration system to verify the fix works in a non-prod environment.
@@ -516,7 +516,7 @@ Since `do` contains the new droplet's IP address (alongside other relevant infor
       wait_for_connection:
 
     - name: Install tcpdump.
-      yum: name=tcpdump state=present
+      dnf: name=tcpdump state=present
 ```
 
 At this point, if you run the playbook (`$ ansible-playbook provision.yml`), it should create a new droplet (if it has not already been created), then add that droplet to the `do` inventory group, and finally, run a new play on all the `do` hosts (including the new droplet). Here are the results:

@@ -190,7 +190,7 @@ Ansible's shorthand syntax uses `key=value` parameters after the name of a modul
 {lang="yaml",linenos=off}
 ```
 - name: Install Nginx.
-  yum: name=nginx state=present
+  dnf: name=nginx state=present
 ```
 
 For any situation where an equivalent shell command would roughly match what I'm writing in the YAML, I prefer this method, since it's immediately obvious what's happening, and it's highly unlikely any of the parameters (like `state=present`) will change frequently during development.

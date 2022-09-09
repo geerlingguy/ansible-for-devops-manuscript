@@ -15,7 +15,7 @@ What attracts most DevOps personnel to Ansible is the fact that it is easy to co
 {lang="bash"}
 ```
 # Install Apache.
-yum install --quiet -y httpd httpd-devel
+dnf install --quiet -y httpd httpd-devel
 # Copy configuration files.
 cp httpd.conf /etc/httpd/conf/httpd.conf
 cp httpd-vhosts.conf /etc/httpd/conf/httpd-vhosts.conf
@@ -41,7 +41,7 @@ $ ./shell-script.sh
 
   tasks:
     - name: Install Apache.
-      command: yum install --quiet -y httpd httpd-devel
+      command: dnf install --quiet -y httpd httpd-devel
     - name: Copy configuration files.
       command: >
         cp httpd.conf /etc/httpd/conf/httpd.conf
@@ -66,7 +66,7 @@ In the above playbook, we use Ansible's `command` module to run standard shell c
 
 T> The greater-than sign (`>`) immediately following the `command:` module directive tells YAML "automatically quote the next set of indented lines as one long string, with each line separated by a space". It helps improve task readability in some cases. There are different ways of describing configuration using valid YAML syntax, and these methods are discussed in-depth in the [YAML Conventions and Best Practices](#yaml-best-practices) section in Appendix B.
 T> 
-T> This book uses three different task-formatting techniques: For tasks which require one or two simple parameters, Ansible's shorthand syntax (e.g. `yum: name=apache2 state=present`) is used. For most uses of `command` or `shell`, where longer commands are entered, the `>` technique mentioned above is used. For tasks which require many parameters, YAML object notation is used---placing each key and variable on its own line. This assists with readability and allows for version control systems to easily distinguish changes line-by-line.
+T> This book uses three different task-formatting techniques: For tasks which require one or two simple parameters, Ansible's shorthand syntax (e.g. `dnf: name=apache2 state=present`) is used. For most uses of `command` or `shell`, where longer commands are entered, the `>` technique mentioned above is used. For tasks which require many parameters, YAML object notation is used---placing each key and variable on its own line. This assists with readability and allows for version control systems to easily distinguish changes line-by-line.
 
 The above playbook will perform *exactly* like the shell script, but you can improve things greatly by using some of Ansible's built-in modules to handle the heavy lifting:
 
@@ -80,7 +80,7 @@ The above playbook will perform *exactly* like the shell script, but you can imp
 
   tasks:
     - name: Install Apache.
-      yum:
+      dnf:
         name:
           - httpd
           - httpd-devel
@@ -112,9 +112,9 @@ Now we're getting somewhere. Let me walk you through this simple playbook:
   2. The second line, `- hosts: all` defines the first (and in this case, only) _play_, and tells Ansible to run the play on `all` hosts that it knows about.
   3. The third line, `become: yes` tells Ansible to run all the commands through `sudo`, so the commands will be run as the root user.
   4. The fifth line, `tasks:`, tells Ansible that what follows is a list of tasks to run as part of this play.
-  5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the task that follows. Seeing "Install Apache" is more relevant than seeing "yum name=httpd state=present"... but if you drop the name line completely, that won't cause any problem.
+  5. The first task begins with `name: Install Apache.`. `name` is not a module that does something to your server; rather, it's a way of giving a human-readable description to the task that follows. Seeing "Install Apache" is more relevant than seeing "dnf name=httpd state=present"... but if you drop the name line completely, that won't cause any problem.
 
-     - We use the `yum` module to install Apache. Instead of the command `yum -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the list of packages we provide. We tell yum to make sure the packages are installed with `state: present`, but we could also use `state: latest` to ensure the latest version is installed, or `state: absent` to make sure the packages are *not* installed.
+     - We use the `dnf` module to install Apache. Instead of the command `dnf -y install httpd httpd-devel`, we can describe to Ansible exactly what we want. Ansible will take the list of packages we provide. We tell dnf to make sure the packages are installed with `state: present`, but we could also use `state: latest` to ensure the latest version is installed, or `state: absent` to make sure the packages are *not* installed.
 
   6. The second task again starts with a human-readable name (which could be left out if you'd like).
 
@@ -138,7 +138,7 @@ With this playbook format, Ansible can keep track of the state of everything on 
 
 Even better, the *second* time you run it (if the server is in the correct state), it won't actually do anything besides tell you nothing has changed. So, with this one short playbook, you're able to provision and ensure the proper configuration for an Apache web server. Additionally, running the playbook with the `--check` option (see the next section below) verifies the configuration matches what's defined in the playbook, without actually running the tasks on the server.
 
-If you ever want to update your configuration, or install another httpd package, either update the configuration file locally or add a package to the `name` list for `yum` and run the playbook again. Whether you have one or a thousand servers, all of their configurations will be updated to match your playbook---and Ansible will tell you if anything ever changes (you're not making ad-hoc changes on individual production servers, *are you*?).
+If you ever want to update your configuration, or install another httpd package, either update the configuration file locally or add a package to the `name` list for `dnf` and run the playbook again. Whether you have one or a thousand servers, all of their configurations will be updated to match your playbook---and Ansible will tell you if anything ever changes (you're not making ad-hoc changes on individual production servers, *are you*?).
 
 ## Running Playbooks with `ansible-playbook`
 
@@ -292,7 +292,7 @@ Ansible makes things a little more robust. Even though the following is slightly
         state: present
 
     - name: Install Remi repo.
-      yum:
+      dnf:
         name: "https://rpms.remirepo.net/enterprise/remi-release-8.rpm"
         state: present
 
@@ -300,7 +300,7 @@ Ansible makes things a little more robust. Even though the following is slightly
       service: name=firewalld state=stopped
 
     - name: Install Node.js and npm.
-      yum: name=npm state=present enablerepo=epel
+      dnf: name=npm state=present enablerepo=epel
 
     - name: Install Forever (to run our Node.js app).
       npm: name=forever global=yes state=present
@@ -308,11 +308,11 @@ Ansible makes things a little more robust. Even though the following is slightly
 
 Let's walk through this playbook step-by-step:
 
-  1. `yum` installs the EPEL repository (and automatically imports its GPG key).
+  1. `dnf` installs the EPEL repository (and automatically imports its GPG key).
   2. `rpm_key` is a very simple Ansible module that takes and imports an RPM key from a URL or file, or the key id of a key that is already present, and ensures the key is either present or absent (the `state` parameter). We're importing one key, for Remi's repository.
-  3. We can install extra yum repositories using the `yum` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
+  3. We can install extra dnf repositories using the `dnf` module. Just pass in the URL to the repo `.rpm` file, and Ansible will take care of the rest.
   4. Since this server is being used only for test purposes, we disable the system firewall so it won't interfere with testing (using the `service` module).
-  5. `yum` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
+  5. `dnf` installs Node.js (along with all the required packages for `npm`, Node's package manager) if it's not present, and allows the EPEL repo to be searched via the `enablerepo` parameter (you could also explicitly *disable* a repository using `disablerepo`).
   6. Since NPM is now installed, we use Ansible's `npm` module to install a Node.js utility, `forever`, to launch our app and keep it running. Setting `global` to `yes` tells NPM to install the `forever` node module in `/usr/lib/node_modules/` so it will be available to all users and Node.js apps on the system.
 
 We're beginning to have a nice little Node.js app server set up. Let's set up a little Node.js app that responds to HTTP requests on port 80.

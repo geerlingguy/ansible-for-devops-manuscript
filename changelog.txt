@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-No changes at this time.
+  1. [#501](https://github.com/geerlingguy/ansible-for-devops/issues/501): Update remaining references to `yum` to use `dnf`, as `yum` is not used on any modern versions of RHEL.
 
 ## Version 2.1 (2022-04-15)
 
