@@ -89,11 +89,11 @@ $ sudo apt-get update
 $ sudo apt-get install -y ansible
 ```
 
-I> If you get an error like "sudo: add-apt-repository: command not found", you're probably missing the `python-software-properties` package. Install it with the command:
+I> If you get an error like "sudo: add-apt-repository: command not found", you're probably missing the `software-properties-common` package. Install it with the command:
 I>
 I> {lang="text",linenos=off}
 I> ~~~
-I> $ sudo apt-get install python-software-properties
+I> $ sudo apt-get install software-properties-common
 I> ~~~
 
 **Once Ansible is installed**, make sure it's working properly by entering `ansible --version` on the command line. You should see the currently-installed version information:

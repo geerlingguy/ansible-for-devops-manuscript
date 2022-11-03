@@ -7,6 +7,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 ## Current Version
 
   1. [#501](https://github.com/geerlingguy/ansible-for-devops/issues/501): Update remaining references to `yum` to use `dnf`, as `yum` is not used on any modern versions of RHEL.
+  2. [#505](https://github.com/geerlingguy/ansible-for-devops/issues/505): Update package name for Debian/Ubuntu python software properties in chapter 1. (thanks to mbart13!)
 
 ## Version 2.1 (2022-04-15)
 
