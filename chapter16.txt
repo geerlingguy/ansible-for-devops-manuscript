@@ -71,9 +71,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Define three VMs with static private IP addresses.
   boxes = [
-    { :name => "master", :ip => "192.168.84.2" },
-    { :name => "node1", :ip => "192.168.84.3" },
-    { :name => "node2", :ip => "192.168.84.4" },
+    { :name => "master", :ip => "192.168.56.2" },
+    { :name => "node1", :ip => "192.168.56.3" },
+    { :name => "node2", :ip => "192.168.56.4" },
   ]
 
   # Provision each of the VMs.
@@ -109,11 +109,11 @@ Once the `Vagrantfile` is ready, you should add an `inventory` file to tell Ansi
 {lang="text"}
 ```
 [k8s-master]
-master ansible_host=192.168.84.2 kubernetes_role=master
+master ansible_host=192.168.56.2 kubernetes_role=master
 
 [k8s-nodes]
-node1 ansible_host=192.168.84.3 kubernetes_role=node
-node2 ansible_host=192.168.84.4 kubernetes_role=node
+node1 ansible_host=192.168.56.3 kubernetes_role=node
+node2 ansible_host=192.168.56.4 kubernetes_role=node
 
 [k8s:children]
 k8s-master
@@ -231,7 +231,7 @@ kubernetes_packages:
   - name: kubernetes-cni
     state: present
 
-kubernetes_apiserver_advertise_address: "192.168.84.2"
+kubernetes_apiserver_advertise_address: "192.168.56.2"
 kubernetes_flannel_manifest_file: "~/kube-flannel-vagrant.yml"
 kubernetes_kubelet_extra_args: '--node-ip={{ inventory_hostname }}'
 ```
@@ -404,7 +404,7 @@ kubernetes   ClusterIP  10.96.0.1      <none>       443/TCP       5d
 
 The Service exposes a `NodePort` on each of the Kubernetes nodes---in this case, port `30681`, so you can send a request to any node IP or DNS name and the request will be routed by Kubernetes to an Nginx service Pod, no matter what node it's running on.
 
-So in the example above, I visited `http://192.168.84.3:30681/`, and got the default Nginx welcome message:
+So in the example above, I visited `http://192.168.56.3:30681/`, and got the default Nginx welcome message:
 
 {width=80%}
 ![Welcome to nginx message in browser](images/16-kubernetes-nginx-welcome.png)
@@ -566,7 +566,7 @@ At this point, you could log into the master, change to the root user (`sudo su`
         var: phpmyadmin_service.result.spec.ports[0].nodePort
 ```
 
-Run the playbook, grab the debug value, and append the port to the IP address of any of the cluster members. Once the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.84.3:31872/ (substituting the `NodePort` from your own cluster):
+Run the playbook, grab the debug value, and append the port to the IP address of any of the cluster members. Once the `phpmyadmin` deployment is running and healthy (this takes about 30 seconds), you can access phpMyAdmin at http://192.168.56.3:31872/ (substituting the `NodePort` from your own cluster):
 
 {width=80%}
 ![phpMyAdmin running in the browser on a NodePort](images/16-kubernetes-helm-phpmyadmin.png)

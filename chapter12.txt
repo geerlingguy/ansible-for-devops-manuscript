@@ -164,7 +164,7 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "geerlingguy/ubuntu2004"
   config.vm.hostname = "jenkins.test"
-  config.vm.network :private_network, ip: "192.168.76.76"
+  config.vm.network :private_network, ip: "192.168.56.76"
   config.ssh.insert_key = false
 
   config.vm.provider :virtualbox do |v|
@@ -179,7 +179,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 end
 ```
 
-This Vagrantfile will create a new VM running Ubuntu, with the IP address `192.168.76.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.76.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
+This Vagrantfile will create a new VM running Ubuntu, with the IP address `192.168.56.76` and the hostname `jenkins.test`. Go ahead and add an entry for `192.168.56.76  jenkins.test` to your hosts file, and then create a new `provision.yml` playbook so Vagrant can run it with Ansible (as described in the `config.vm.provision` block in the Vagrantfile). Put the following in the `provision.yml` file:
 
 {lang="yaml"}
 ```

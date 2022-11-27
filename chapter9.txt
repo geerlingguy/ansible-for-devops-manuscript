@@ -490,13 +490,13 @@ Vagrant.configure("2") do |config|
   # Varnish.
   config.vm.define "varnish" do |varnish|
     varnish.vm.hostname = "varnish.test"
-    varnish.vm.network :private_network, ip: "192.168.2.2"
+    varnish.vm.network :private_network, ip: "192.168.56.2"
   end
 
   # Apache.
   config.vm.define "www1" do |www1|
     www1.vm.hostname = "www1.test"
-    www1.vm.network :private_network, ip: "192.168.2.3"
+    www1.vm.network :private_network, ip: "192.168.56.3"
 
     www1.vm.provision "shell",
       inline: "sudo yum update -y"
@@ -509,7 +509,7 @@ Vagrant.configure("2") do |config|
   # Apache.
   config.vm.define "www2" do |www2|
     www2.vm.hostname = "www2.test"
-    www2.vm.network :private_network, ip: "192.168.2.4"
+    www2.vm.network :private_network, ip: "192.168.56.4"
 
     www2.vm.provision "shell",
       inline: "sudo yum update -y"
@@ -522,19 +522,19 @@ Vagrant.configure("2") do |config|
   # MySQL.
   config.vm.define "db1" do |db1|
     db1.vm.hostname = "db1.test"
-    db1.vm.network :private_network, ip: "192.168.2.5"
+    db1.vm.network :private_network, ip: "192.168.56.5"
   end
 
   # MySQL.
   config.vm.define "db2" do |db2|
     db2.vm.hostname = "db2.test"
-    db2.vm.network :private_network, ip: "192.168.2.6"
+    db2.vm.network :private_network, ip: "192.168.56.6"
   end
 
   # Memcached.
   config.vm.define "memcached" do |memcached|
     memcached.vm.hostname = "memcached.test"
-    memcached.vm.network :private_network, ip: "192.168.2.7"
+    memcached.vm.network :private_network, ip: "192.168.56.7"
 
     # Run Ansible provisioner once for all VMs at the end.
     memcached.vm.provision "ansible" do |ansible|
@@ -572,24 +572,24 @@ Before running `vagrant up` to see the fruits of our labor, we need to create an
 {lang="text"}
 ```
 [lamp_varnish]
-192.168.2.2
+192.168.56.2
 
 [lamp_www]
-192.168.2.3
-192.168.2.4
+192.168.56.3
+192.168.56.4
 
 [a4d.lamp.db.1]
-192.168.2.5
+192.168.56.5
 
 [lamp_db]
-192.168.2.5 mysql_replication_role=master
-192.168.2.6 mysql_replication_role=slave
+192.168.56.5 mysql_replication_role=master
+192.168.56.6 mysql_replication_role=slave
 
 [lamp_memcached]
-192.168.2.7
+192.168.56.7
 ```
 
-Now `cd` into the project's root directory, run `vagrant up`, and after ten or fifteen minutes, load `http://192.168.2.2/` in your browser. Voila!
+Now `cd` into the project's root directory, run `vagrant up`, and after ten or fifteen minutes, load `http://192.168.56.2/` in your browser. Voila!
 
 {width=80%}
 ![Highly Available Infrastructure - Success!](images/9-ha-infrastructure-success.png)
@@ -1185,7 +1185,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # ELK server.
   config.vm.define "logs" do |logs|
     logs.vm.hostname = "logs.test"
-    logs.vm.network :private_network, ip: "192.168.9.90"
+    logs.vm.network :private_network, ip: "192.168.56.90"
 
     logs.vm.provision :ansible do |ansible|
       ansible.playbook = "provisioning/elk/main.yml"
@@ -1202,10 +1202,10 @@ This Vagrant configuration expects an inventory file at `provisioning/elk/invent
 {lang="text"}
 ```
 [logs]
-logs.test ansible_ssh_host=192.168.9.90 ansible_ssh_port=22
+logs.test ansible_ssh_host=192.168.56.90 ansible_ssh_port=22
 ```
 
-Now, run `vagrant up`. The build should take about five minutes, and upon completion, if you add a line like `logs.test  192.168.9.90` to your `/etc/hosts` file, you can visit `http://logs.test/` in your browser and see Kibana's default homepage:
+Now, run `vagrant up`. The build should take about five minutes, and upon completion, if you add a line like `logs.test  192.168.56.90` to your `/etc/hosts` file, you can visit `http://logs.test/` in your browser and see Kibana's default homepage:
 
 {width=80%}
 ![Kibana's default homepage.](images/9-elk-kibana-default.png)
@@ -1242,7 +1242,7 @@ Let's begin by creating a new Nginx web server. It's useful to monitor web serve
   # Web server.
   config.vm.define "web" do |web|
     web.vm.hostname = "web.test"
-    web.vm.network :private_network, ip: "192.168.9.91"
+    web.vm.network :private_network, ip: "192.168.56.91"
 
     web.vm.provider :virtualbox do |v|
       v.memory = 512
@@ -1290,7 +1290,7 @@ We'll next set up the playbook to install and configure both Nginx and Filebeat,
       lineinfile:
         dest: /etc/hosts
         regexp: '.*logs\.test$'
-        line: "192.168.9.90 logs.test"
+        line: "192.168.56.90 logs.test"
         state: present
 ```
 
@@ -1349,12 +1349,12 @@ To allow Vagrant to pass the proper connection details to Ansible, create a file
 {lang="text"}
 ```
 [web]
-web.test ansible_ssh_host=192.168.9.91 ansible_ssh_port=22
+web.test ansible_ssh_host=192.168.56.91 ansible_ssh_port=22
 ```
 
 Run `vagrant up` again. Vagrant should verify that the first server (`logs`) is running, then create and run the Ansible provisioner on the newly-defined `web` Nginx server.
 
-You can load `http://192.168.9.91/` or `http://web.test/` in your browser, and you should see a `Welcome to nginx!` message on the page. You can refresh the page a few times, then switch back over to `http://logs.test/` to view some new log entries on the ELK server:
+You can load `http://192.168.56.91/` or `http://web.test/` in your browser, and you should see a `Welcome to nginx!` message on the page. You can refresh the page a few times, then switch back over to `http://logs.test/` to view some new log entries on the ELK server:
 
 {width=80%}
 ![Entries populating the Logstash Search Kibana dashboard.](images/9-logstash-forwarding-nginx.png)
@@ -1438,8 +1438,8 @@ Vagrant.configure("2") do |config|
 
   # Define two VMs with static private IP addresses.
   boxes = [
-    { :name => "gluster1", :ip => "192.168.29.2" },
-    { :name => "gluster2", :ip => "192.168.29.3" }
+    { :name => "gluster1", :ip => "192.168.56.2" },
+    { :name => "gluster2", :ip => "192.168.56.3" }
   ]
 
   # Provision each of the VMs.
@@ -1469,8 +1469,8 @@ Create the `inventory` file to help Ansible connect to the two servers:
 {lang="text"}
 ```
 [gluster]
-192.168.29.2
-192.168.29.3
+192.168.56.2
+192.168.56.3
 
 [gluster:vars]
 ansible_user=vagrant
@@ -1588,18 +1588,18 @@ Change directory into the `gluster` directory, and run `vagrant up`. After a few
 {lang="text",linenos=off}
 ```
 $ ansible gluster -i inventory -a "gluster peer status" -b
-192.168.29.2 | success | rc=0 >>
+192.168.56.2 | success | rc=0 >>
 Number of Peers: 1
 
-Hostname: 192.168.29.3
+Hostname: 192.168.56.3
 Port: 24007
 Uuid: 1340bcf1-1ae6-4e55-9716-2642268792a4
 State: Peer in Cluster (Connected)
 
-192.168.29.3 | success | rc=0 >>
+192.168.56.3 | success | rc=0 >>
 Number of Peers: 1
 
-Hostname: 192.168.29.2
+Hostname: 192.168.56.2
 Port: 24007
 Uuid: 63d4a5c8-6b27-4747-8cc1-16af466e4e10
 State: Peer in Cluster (Connected)
@@ -1608,7 +1608,7 @@ State: Peer in Cluster (Connected)
 {lang="text",linenos=off}
 ```
 $ ansible gluster -i inventory -a "gluster volume info" -b
-192.168.29.3 | SUCCESS | rc=0 >>
+192.168.56.3 | SUCCESS | rc=0 >>
 
 Volume Name: gluster
 Type: Replicate
@@ -1617,10 +1617,10 @@ Status: Started
 Number of Bricks: 1 x 2 = 2
 Transport-type: tcp
 Bricks:
-Brick1: 192.168.29.2:/srv/gluster/brick
-Brick2: 192.168.29.3:/srv/gluster/brick
+Brick1: 192.168.56.2:/srv/gluster/brick
+Brick2: 192.168.56.3:/srv/gluster/brick
 
-192.168.29.2 | SUCCESS | rc=0 >>
+192.168.56.2 | SUCCESS | rc=0 >>
 
 Volume Name: gluster
 Type: Replicate
@@ -1629,8 +1629,8 @@ Status: Started
 Number of Bricks: 1 x 2 = 2
 Transport-type: tcp
 Bricks:
-Brick1: 192.168.29.2:/srv/gluster/brick
-Brick2: 192.168.29.3:/srv/gluster/brick
+Brick1: 192.168.56.2:/srv/gluster/brick
+Brick2: 192.168.56.3:/srv/gluster/brick
 ```
 
 You can also do the following to confirm that files are being replicated/distributed correctly:

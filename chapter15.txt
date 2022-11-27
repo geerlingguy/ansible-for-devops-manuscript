@@ -144,7 +144,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "geerlingguy/ubuntu2004"
-  config.vm.network :private_network, ip: "192.168.33.39"
+  config.vm.network :private_network, ip: "192.168.56.39"
   config.ssh.insert_key = false
 
   config.vm.hostname = "docker-flask.test"
@@ -504,7 +504,7 @@ db/
 
 ### Ship it!
 
-Now that everything's in place, you should be able to cd into the main `docker` directory, and run `vagrant up`. After 10 minutes or so, Vagrant should show Ansible provisioning was successful, and if you visit `http://192.168.33.39/` in your browser, you should see something like the following:
+Now that everything's in place, you should be able to cd into the main `docker` directory, and run `vagrant up`. After 10 minutes or so, Vagrant should show Ansible provisioning was successful, and if you visit `http://192.168.56.39/` in your browser, you should see something like the following:
 
 {width=80%}
 ![Docker orchestration success!](images/15-docker-success.png)

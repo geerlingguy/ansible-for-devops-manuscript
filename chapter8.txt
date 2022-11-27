@@ -679,8 +679,8 @@ Let's start working our own custom dynamic inventory script by outlining the bas
 {
     "group": {
         "hosts": [
-            "192.168.28.71",
-            "192.168.28.72"
+            "192.168.56.71",
+            "192.168.56.72"
         ],
         "vars": {
             "ansible_user": "johndoe",
@@ -690,10 +690,10 @@ Let's start working our own custom dynamic inventory script by outlining the bas
     },
     "_meta": {
         "hostvars": {
-            "192.168.28.71": {
+            "192.168.56.71": {
                 "host_specific_var": "bar"
             },
-            "192.168.28.72": {
+            "192.168.56.72": {
                 "host_specific_var": "foo"
             }
         }
@@ -726,25 +726,25 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "inventory1" do |inventory|
     inventory.vm.hostname = "inventory1.test"
     inventory.vm.box = "geerlingguy/ubuntu2004"
-    inventory.vm.network :private_network, ip: "192.168.28.71"
+    inventory.vm.network :private_network, ip: "192.168.56.71"
   end
 
   # Application server 2.
   config.vm.define "inventory2" do |inventory|
     inventory.vm.hostname = "inventory2.test"
     inventory.vm.box = "geerlingguy/ubuntu2004"
-    inventory.vm.network :private_network, ip: "192.168.28.72"
+    inventory.vm.network :private_network, ip: "192.168.56.72"
   end
 end
 ```
 
-Run `vagrant up` to boot two VMs running Ubuntu, with the IP addresses `192.168.28.71`, and `192.168.28.72`. A simple inventory file could be used to control the VMs with Ansible:
+Run `vagrant up` to boot two VMs running Ubuntu, with the IP addresses `192.168.56.71`, and `192.168.56.72`. A simple inventory file could be used to control the VMs with Ansible:
 
 {lang="text"}
 ```
 [group]
-192.168.28.71 host_specific_var=foo
-192.168.28.72 host_specific_var=bar
+192.168.56.71 host_specific_var=foo
+192.168.56.72 host_specific_var=bar
 
 [group:vars]
 ansible_user=vagrant
@@ -790,7 +790,7 @@ class ExampleInventory(object):
     def example_inventory(self):
         return {
             'group': {
-                'hosts': ['192.168.28.71', '192.168.28.72'],
+                'hosts': ['192.168.56.71', '192.168.56.72'],
                 'vars': {
                     'ansible_user': 'vagrant',
                     'ansible_ssh_private_key_file':
@@ -802,10 +802,10 @@ class ExampleInventory(object):
             },
             '_meta': {
                 'hostvars': {
-                    '192.168.28.71': {
+                    '192.168.56.71': {
                         'host_specific_var': 'foo'
                     },
-                    '192.168.28.72': {
+                    '192.168.56.72': {
                         'host_specific_var': 'bar'
                     }
                 }
@@ -834,11 +834,11 @@ Run the inventory script manually to verify it returns the proper JSON response 
 {lang="text",linenos=off}
 ```
 $ ./inventory.py --list
-{"group": {"hosts": ["192.168.28.71", "192.168.28.72"], "vars":
+{"group": {"hosts": ["192.168.56.71", "192.168.56.72"], "vars":
 {"ansible_user": "vagrant", "ansible_ssh_private_key_file":
 "~/.vagrant.d/insecure_private_key", "example_variable": "value
-"}}, "_meta": {"hostvars": {"192.168.28.72": {"host_specific_va
-r": "bar"}, "192.168.28.71": {"host_specific_var": "foo"}}}}
+"}}, "_meta": {"hostvars": {"192.168.56.72": {"host_specific_va
+r": "bar"}, "192.168.56.71": {"host_specific_var": "foo"}}}}
 ```
 
 Test Ansible's ability to use the inventory script to contact the two VMs:
@@ -846,12 +846,12 @@ Test Ansible's ability to use the inventory script to contact the two VMs:
 {lang="text",linenos=off}
 ```
 $ ansible all -i inventory.py -m ping
-192.168.28.71 | SUCCESS >> {
+192.168.56.71 | SUCCESS >> {
     "changed": false,
     "ping": "pong"
 }
 
-192.168.28.72 | SUCCESS >> {
+192.168.56.72 | SUCCESS >> {
     "changed": false,
     "ping": "pong"
 }
@@ -862,13 +862,13 @@ Since Ansible can connect, verify the configured host variables (`foo` and `bar`
 {lang="text",linenos=off}
 ```
 $ ansible all -i inventory.py -m debug -a "var=host_specific_var"
-192.168.28.71 | SUCCESS >> {
+192.168.56.71 | SUCCESS >> {
     "var": {
         "host_specific_var": "foo"
     }
 }
 
-192.168.28.72 | SUCCESS >> {
+192.168.56.72 | SUCCESS >> {
     "var": {
         "host_specific_var": "bar"
     }
@@ -900,7 +900,7 @@ You can build an inventory script in whatever language you'd like. For example, 
 function example_inventory() {
   return [
     'group' => [
-      'hosts' => ['192.168.28.71', '192.168.28.72'],
+      'hosts' => ['192.168.56.71', '192.168.56.72'],
       'vars' => [
         'ansible_user' => 'vagrant',
         'ansible_ssh_private_key_file' => '~/.vagrant.d/\
@@ -911,10 +911,10 @@ insecure_private_key',
     ],
     '_meta' => [
       'hostvars' => [
-        '192.168.28.71' => [
+        '192.168.56.71' => [
           'host_specific_var' => 'foo',
         ],
-        '192.168.28.72' => [
+        '192.168.56.72' => [
           'host_specific_var' => 'bar',
         ],
       ],

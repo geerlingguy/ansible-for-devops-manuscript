@@ -61,19 +61,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Application server 1.
   config.vm.define "app1" do |app|
     app.vm.hostname = "orc-app1.test"
-    app.vm.network :private_network, ip: "192.168.60.4"
+    app.vm.network :private_network, ip: "192.168.56.4"
   end
 
   # Application server 2.
   config.vm.define "app2" do |app|
     app.vm.hostname = "orc-app2.test"
-    app.vm.network :private_network, ip: "192.168.60.5"
+    app.vm.network :private_network, ip: "192.168.56.5"
   end
 
   # Database server.
   config.vm.define "db" do |db|
     db.vm.hostname = "orc-db.test"
-    db.vm.network :private_network, ip: "192.168.60.6"
+    db.vm.network :private_network, ip: "192.168.56.6"
   end
 end
 ```
@@ -105,12 +105,12 @@ Now, add the following to a `hosts.ini` file, also in the root directory of your
 
 # Application servers
 [app]
-192.168.60.4
-192.168.60.5
+192.168.56.4
+192.168.56.5
 
 # Database server
 [db]
-192.168.60.6
+192.168.56.6
 
 # Group 'multi' with all servers
 [multi:children]
@@ -153,20 +153,20 @@ Ansible will run this command against all three of the servers, and return the r
 
 T> If Ansible reports `No hosts matched` or returns some other inventory-related error, you might not have your `ansible.cfg` file in the correct directory, or it might not be the correct syntax. You can also try overriding the inventory file path by setting the `ANSIBLE_INVENTORY` environment variable explicitly: `export ANSIBLE_INVENTORY=hosts.ini`.
 
-T> If you get an error like `The authenticity of host '192.168.60.5' can't be established.`, this is because SSH has a security feature which requires you to confirm the server's 'host key' the first time you connect. You can type `yes` on the command line (in this case multiple times) to dismiss the warning and accept the hostkey, or you can also set the environment variable `ANSIBLE_HOST_KEY_CHECKING=False`. The behavior for host key acceptance can also be configured in your SSH configuration file.
+T> If you get an error like `The authenticity of host '192.168.56.5' can't be established.`, this is because SSH has a security feature which requires you to confirm the server's 'host key' the first time you connect. You can type `yes` on the command line (in this case multiple times) to dismiss the warning and accept the hostkey, or you can also set the environment variable `ANSIBLE_HOST_KEY_CHECKING=False`. The behavior for host key acceptance can also be configured in your SSH configuration file.
 
 You may have noticed that the command was not run on each server in the order you'd expect. Go ahead and run the command a few more times, and see the order:
 
 {lang="text",linenos=off}
 ```
 # First run results:                # Second run results:
-192.168.60.5 | CHANGED | rc=0 >>    192.168.60.6 | CHANGED | rc=0 >>
+192.168.56.5 | CHANGED | rc=0 >>    192.168.56.6 | CHANGED | rc=0 >>
 orc-app2.test                       orc-db.test
 
-192.168.60.6 | CHANGED | rc=0 >>    192.168.60.5 | CHANGED | rc=0 >>
+192.168.56.6 | CHANGED | rc=0 >>    192.168.56.5 | CHANGED | rc=0 >>
 orc-db.test                         orc-app2.test
 
-192.168.60.4 | CHANGED | rc=0 >>    192.168.60.4 | CHANGED | rc=0 >>
+192.168.56.4 | CHANGED | rc=0 >>    192.168.56.4 | CHANGED | rc=0 >>
 orc-app1.test                       orc-app1.test
 ```
 
@@ -177,13 +177,13 @@ Run the same command again, but this time, add the argument `-f 1` to tell Ansib
 {lang="text",linenos=off}
 ```
 $ ansible multi -a "hostname" -f 1
-192.168.60.4 | CHANGED | rc=0 >>
+192.168.56.4 | CHANGED | rc=0 >>
 orc-app1.test
 
-192.168.60.5 | CHANGED | rc=0 >>
+192.168.56.5 | CHANGED | rc=0 >>
 orc-app2.test
 
-192.168.60.6 | CHANGED | rc=0 >>
+192.168.56.6 | CHANGED | rc=0 >>
 orc-db.test
 ```
 
@@ -200,7 +200,7 @@ First, let's make sure the servers have disk space available for our application
 {lang="text",linenos=off}
 ```
 $ ansible multi -a "df -h"
-192.168.60.6 | CHANGED | rc=0 >>
+192.168.56.6 | CHANGED | rc=0 >>
 Filesystem               Size  Used Avail Use% Mounted on
 /dev/mapper/rl-root      19G 1014M   18G   6% /
 devtmpfs                 111M     0  111M   0% /dev
@@ -210,7 +210,7 @@ tmpfs                    120M     0  120M   0% /sys/fs/cgroup
 /dev/sda1                497M  124M  374M  25% /boot
 none                     233G  217G   17G  94% /vagrant
 
-192.168.60.5 | CHANGED | rc=0 >>
+192.168.56.5 | CHANGED | rc=0 >>
 Filesystem               Size  Used Avail Use% Mounted on
 /dev/mapper/rl-root      19G 1014M   18G   6% /
 devtmpfs                 111M     0  111M   0% /dev
@@ -220,7 +220,7 @@ tmpfs                    120M     0  120M   0% /sys/fs/cgroup
 /dev/sda1                497M  124M  374M  25% /boot
 none                     233G  217G   17G  94% /vagrant
 
-192.168.60.4 | CHANGED | rc=0 >>
+192.168.56.4 | CHANGED | rc=0 >>
 Filesystem               Size  Used Avail Use% Mounted on
 /dev/mapper/rl-root      19G 1014M   18G   6% /
 devtmpfs                 111M     0  111M   0% /dev
@@ -238,15 +238,15 @@ Second, let's also make sure there is enough memory on our servers:
 {lang="text",linenos=off}
 ```
 $ ansible multi -a "free -m"
-192.168.60.4 | CHANGED | rc=0 >>
+192.168.56.4 | CHANGED | rc=0 >>
               total   used   free   shared  buff/cache   available
 Mem:            486     98    283        4         104         371
 Swap:          1023      0   1023
-192.168.60.5 | CHANGED | rc=0 >>
+192.168.56.5 | CHANGED | rc=0 >>
               total   used   free   shared  buff/cache   available
 Mem:            486     96    285        4         104         372
 Swap:          1023      0   1023
-192.168.60.6 | CHANGED | rc=0 >>
+192.168.56.6 | CHANGED | rc=0 >>
               total   used   free   shared  buff/cache   available
 Mem:            486     97    284        4         104         371
 Swap:          1023      0   1023
@@ -260,13 +260,13 @@ Third, let's make sure the date and time on each server is in sync:
 {lang="text",linenos=off}
 ```
 $ ansible multi -a "date"
-192.168.60.5 | CHANGED | rc=0 >>
+192.168.56.5 | CHANGED | rc=0 >>
 Sat Feb  1 20:23:08 UTC 2021
 
-192.168.60.4 | CHANGED | rc=0 >>
+192.168.56.4 | CHANGED | rc=0 >>
 Sat Feb  1 20:23:08 UTC 2021
 
-192.168.60.6 | CHANGED | rc=0 >>
+192.168.56.6 | CHANGED | rc=0 >>
 Sat Feb  1 20:23:08 UTC 2021
 ```
 
@@ -339,10 +339,10 @@ Check to make sure Django is installed and working correctly:
 {lang="text",linenos=off}
 ```
 $ ansible app -a "python3 -m django --version"
-192.168.60.5 | SUCCESS | rc=0 >>
+192.168.56.5 | SUCCESS | rc=0 >>
 3.1.1
 
-192.168.60.4 | SUCCESS | rc=0 >>
+192.168.56.4 | SUCCESS | rc=0 >>
 3.1.1
 ```
 
@@ -370,7 +370,7 @@ $ ansible db -b -m dnf -a "name=firewalld state=present"
 $ ansible db -b -m service -a "name=firewalld state=started \
 enabled=yes"
 $ ansible db -b -m firewalld -a "zone=database state=present permanent=yes"
-$ ansible db -b -m firewalld -a "source=192.168.60.0/24 \
+$ ansible db -b -m firewalld -a "source=192.168.56.0/24 \
 zone=database state=enabled permanent=yes"
 $ ansible db -b -m firewalld -a "port=3306/tcp zone=database \
 state=enabled permanent=yes"
@@ -406,7 +406,7 @@ Then, you restart the service on the affected app server:
 
 {lang="text",linenos=off}
 ```
-$ ansible app -b -a "service chronyd restart" --limit "192.168.60.4"
+$ ansible app -b -a "service chronyd restart" --limit "192.168.56.4"
 ```
 
 In this command, we used the `--limit` argument to limit the command to a specific host in the specified group. `--limit` will match either an exact string or a regular expression (prefixed with `~`). The above command could be stated more simply if you want to apply the command to only the `.4` server (assuming you know there are no other servers with the an IP address ending in .4), the following would work exactly the same:
@@ -511,7 +511,7 @@ The `fetch` module works almost exactly the same as the `copy` module, except in
 $ ansible multi -b -m fetch -a "src=/etc/hosts dest=/tmp"
 ```
 
-Fetch will, by default, put the `/etc/hosts` file from each server into a folder in the destination with the name of the host (in our case, the three IP addresses), then in the location defined by `src`. So, the db server's hosts file will end up in `/tmp/192.168.60.6/etc/hosts`.
+Fetch will, by default, put the `/etc/hosts` file from each server into a folder in the destination with the name of the host (in our case, the three IP addresses), then in the location defined by `src`. So, the db server's hosts file will end up in `/tmp/192.168.56.6/etc/hosts`.
 
 You can add the parameter `flat=yes`, and set the `dest` to `dest=/tmp/` (add a trailing slash), to make Ansible fetch the files directly into the `/tmp` directory. However, filenames must be unique for this to work, so it's not as useful when copying down files from multiple hosts. Only use `flat=yes` if you're copying files from a single host.
 
@@ -567,7 +567,7 @@ Let's run `dnf -y update` on all our servers to get them up to date. If you set 
 {lang="text",linenos=off}
 ```
 $ ansible multi -b -B 3600 -P 0 -a "dnf -y update"
-192.168.60.4 | CHANGED => {
+192.168.56.4 | CHANGED => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python"
     },
@@ -586,7 +586,7 @@ While the background task is running, you can check on the status elsewhere usin
 {lang="text",linenos=off}
 ```
 $ ansible multi -b -m async_status -a "jid=169825235950.3572"
-192.168.60.6 | CHANGED => {
+192.168.56.6 | CHANGED => {
     "ansible_facts": {
         "discovered_interpreter_python": "/usr/bin/python"
     },
@@ -640,13 +640,13 @@ As stated in the caveats, if you want to filter the messages log with something 
 $ ansible multi -b -m shell -a "tail /var/log/messages | \
 grep ansible-command | wc -l"
 
-192.168.60.5 | success | rc=0 >>
+192.168.56.5 | success | rc=0 >>
 12
 
-192.168.60.4 | success | rc=0 >>
+192.168.56.4 | success | rc=0 >>
 12
 
-192.168.60.6 | success | rc=0 >>
+192.168.56.6 | success | rc=0 >>
 14
 ```
 
