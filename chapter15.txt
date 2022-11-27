@@ -607,8 +607,6 @@ Before building the `hubot-slack` role, let's finish off the container image bui
         apt-get remove --purge -y python &&
         rm -rf /var/lib/apt/lists/*
       delegate_to: '{{ container_name }}'
-      args:
-        warn: false
 
     - name: Commit the container.
       command: >
