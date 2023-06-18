@@ -12,6 +12,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   4. Update all Vagrant VM host-only private network IP ranges to `192.168.56.0/21`.
   5. [#545](https://github.com/geerlingguy/ansible-for-devops/issues/545): Molecule CI installation requires molecule-plugins[docker] install in chapter 13.
   6. [#531](https://github.com/geerlingguy/ansible-for-devops/issues/531): When testing with Molecule, systemd in containers requires cgroupns mode set to host, and a read-write volume.
+  7. [#542](https://github.com/geerlingguy/ansible-for-devops/issues/542): Fix various broken documentation links for Ansible Lint and Molecule (thanks to cristisulighetean!).
 
 ## Version 2.1 (2022-04-15)
 

@@ -275,7 +275,7 @@ main.yml:6
 Task/Handler: shell uptime
 ```
 
-Each of the suggestions corresponds to a 'rule'; [all the default rules](https://docs.ansible.com/ansible-lint/rules/default_rules.html) are listed in Ansible Lint's documentation.
+Each of the suggestions corresponds to a 'rule'; [all the default rules](https://ansible.readthedocs.io/projects/lint/rules/) are listed in Ansible Lint's documentation.
 
 To fix these issues you would need to do the following:
 
@@ -285,7 +285,7 @@ To fix these issues you would need to do the following:
 
 Most of the rules are straightforward, but you might choose to ignore some, if you have good reason to do something in opposition to the default rules.
 
-As with `yamllint`, you can add a file named `.ansible-lint`, providing configuration specific to your project. See the [`ansible-lint` Configuration File documentation](https://docs.ansible.com/ansible-lint/configuring/configuring.html#configuration-file) for available options.
+As with `yamllint`, you can add a file named `.ansible-lint`, providing configuration specific to your project. See the [`ansible-lint` Configuration File documentation](https://ansible.readthedocs.io/projects/lint/configuring/#ansible-lint-configuration) for available options.
 
 ## Automated testing and development with Molecule
 
@@ -306,7 +306,7 @@ Vagrant can help with this process somewhat, and it is well-suited to the task, 
 
 So I started maintaining a shell script which did many of the above steps automatically, using Docker containers, and I could run playbooks and tests in CI or locally. But this was fragile, required a lot of work to maintain in different CI environments. I also realized I was maintaining complex shell scripts to test my simple Ansible automation playbooks---there had to be a simpler way!
 
-And there was: [Molecule](https://molecule.readthedocs.io/en/latest/).
+And there was: [Molecule](https://ansible.readthedocs.io/projects/molecule/).
 
 {width=40%}
 ![Molecule's logo](images/13-molecule-logo.png)
@@ -771,7 +771,7 @@ The example in this chapter is actively in use in this book's GitHub repository:
 
 ### Automated testing in other CI environments
 
-Molecule has extended documentation with examples for integration with many different CI environments, like Travis CI, GitLab CI, Jenkins, and Tox; see the [Molecule Continuous Integration](https://molecule.readthedocs.io/en/latest/ci.html) documentation for more examples.
+Molecule has extended documentation with examples for integration with many different CI environments, like Travis CI, GitLab CI, Jenkins, and Tox; see the [Molecule Continuous Integration](https://ansible.readthedocs.io/projects/molecule/ci/) documentation for more examples.
 
 ### Real-world examples
 
@@ -793,11 +793,10 @@ There's a lot of debate over whether well-written Ansible playbooks themselves (
 
 Consider this: a truly idempotent Ansible playbook is already a great testing tool if it uses Ansible's robust core modules and `fail`, `assert`, `wait_for` and other tests to ensure a specific state for your server. If you use Ansible's `user` module to ensure a given user exists and is in a given group, and run the same playbook with `--check` and get `ok` for the same task, isn't that a good enough test your server is configured correctly?
 
-This book will not provide a detailed guide for using Serverspec or Testinfra, but here are a few resources in case you'd like to use one of them:
+This book will not provide a detailed guide for using Serverspec, but here are resources in case you'd like to use one of them:
 
   - [A brief introduction to server testing with Serverspec](https://www.debian-administration.org/article/703/A_brief_introduction_to_server-testing_with_serverspec)
   - [Testing infrastructure with serverspec](https://vincent.bernat.ch/en/blog/2014-serverspec-test-infrastructure)
-  - [Molecule's testinfra verifier configuration](https://molecule.readthedocs.io/en/latest/configuration.html#testinfra)
 
 ## Summary
 
