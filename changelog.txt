@@ -13,6 +13,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   5. [#545](https://github.com/geerlingguy/ansible-for-devops/issues/545): Molecule CI installation requires molecule-plugins[docker] install in chapter 13.
   6. [#531](https://github.com/geerlingguy/ansible-for-devops/issues/531): When testing with Molecule, systemd in containers requires cgroupns mode set to host, and a read-write volume.
   7. [#542](https://github.com/geerlingguy/ansible-for-devops/issues/542): Fix various broken documentation links for Ansible Lint and Molecule (thanks to cristisulighetean!).
+  8. [#539](https://github.com/geerlingguy/ansible-for-devops/issues/539): Fixed old reference to RHEL where Rocky Linux is being used (thanks to dropsignal!).
 
 ## Version 2.1 (2022-04-15)
 

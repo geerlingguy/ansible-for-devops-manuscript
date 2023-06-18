@@ -255,7 +255,7 @@ Finally, the playbook will need to do something on the hosts, so we add a `tasks
 
 Adding extra package repositories (dnf or apt) is one thing many admins will do before any other work on a server to ensure that certain packages are available, or are at a later version than the ones in the base installation.
 
-In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running RHEL 8 as the `root` user):
+In the shell script below, we want to add both the EPEL and Remi repositories, so we can get some packages like Node.js or later versions of other necessary software (these examples presume you're running Rocky Linux as the `root` user):
 
 {lang="bash"}
 ```
