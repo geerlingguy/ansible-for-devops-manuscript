@@ -10,7 +10,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   2. [#505](https://github.com/geerlingguy/ansible-for-devops/issues/505): Update package name for Debian/Ubuntu python software properties in chapter 1. (thanks to mbart13!)
   3. Removed deprecated `warn: false` option from Hubot example in chapter 15.
   4. Update all Vagrant VM host-only private network IP ranges to `192.168.56.0/21`.
-  5. [#545](https://github.com/geerlingguy/ansible-for-devops/issues/545): Molecule CI installation requires molecule-plugins[docker] install.
+  5. [#545](https://github.com/geerlingguy/ansible-for-devops/issues/545): Molecule CI installation requires molecule-plugins[docker] install in chapter 13.
+  6. [#531](https://github.com/geerlingguy/ansible-for-devops/issues/531): When testing with Molecule, systemd in containers requires cgroupns mode set to host, and a read-write volume.
 
 ## Version 2.1 (2022-04-15)
 

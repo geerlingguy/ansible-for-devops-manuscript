@@ -542,7 +542,8 @@ platforms:
     image: "geerlingguy/docker-${MOLECULE_DISTRO:-rockylinux8}-ansible:latest"
     command: ""
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     privileged: true
     pre_build_image: true
 ```
@@ -551,7 +552,7 @@ This configuration makes four changes to the default Molecule file: one change (
 
   - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-rockylinux8}` in the image name. This will allow substitution for other distros, like Debian, later.
   - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured `COMMAND`, which in this case starts the systemd init system and keeps the container running.
-  - Add a necessary volume mount to allow processes to be managed inside the container.
+  - Add a necessary volume mount to allow processes to be managed inside the container, as well as setting the `cgroupns_mode` to `host` so Docker will work with systemd support.
   - Set the `privileged` flag on the container, so systemd can initialize properly.
 
 W> The `privileged` flag should be used with care; don't run Docker images or software you don't trust using `privileged`, because that mode allows software running inside the Docker image to run as if it were running on the host machine directly, bypassing many of the security benefits of using containers. It is convenient but potentially dangerous. If necessary, consider maintaining your own testing container images if you need to run with `privileged` and wish to test with Docker.
