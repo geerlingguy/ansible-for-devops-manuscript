@@ -19,6 +19,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   11. [#471](https://github.com/geerlingguy/ansible-for-devops/pull/471): Update Kubernetes example to 1.23 in chapter 16 (thanks to hippogriffin!).
   12. [#512](https://github.com/geerlingguy/ansible-for-devops/issues/512), [#500](https://github.com/geerlingguy/ansible-for-devops/issues/500), and [#491](https://github.com/geerlingguy/ansible-for-devops/issues/491): Fixed minor grammatical and URL errors in chapters 13, 2, and 14 (thanks to tphbrok, cateee, and daniel-robitaille!).
   13. [#498](https://github.com/geerlingguy/ansible-for-devops/issues/498): Remove unneccessary reference to a `command` that is no longer in use in Flask MySQL container configuration in chapter 15 (thanks to hubertbanas!).
+  14. [#507](https://github.com/geerlingguy/ansible-for-devops/issues/507): Update `molecule init` command example for creating a new role in chapter 13 (thanks to elexwiz!).
 
 ## Version 2.1 (2022-04-15)
 
