@@ -109,7 +109,7 @@ Once the `Vagrantfile` is ready, you should add an `inventory` file to tell Ansi
 {lang="text"}
 ```
 [k8s-master]
-master ansible_host=192.168.56.2 kubernetes_role=master
+master ansible_host=192.168.56.2 kubernetes_role=control_plane
 
 [k8s-nodes]
 node1 ansible_host=192.168.56.3 kubernetes_role=node
@@ -185,7 +185,8 @@ We also need to add some configuration to ensure we have swap disabled and Docke
 swap_file_state: absent
 swap_file_path: /dev/mapper/packer--debian--9--amd64--vg-swap_1
 
-docker_package: docker-ce=5:18.09.0~3-0~debian-stretch
+docker_packages:
+  - docker-ce=5:18.09.0~3-0~debian-stretch
 docker_install_compose: False
 ```
 
