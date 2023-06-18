@@ -98,7 +98,7 @@ Ansible just took the simple playbook you defined, parsed the YAML syntax, and r
 ---
 ```
 
-This first line is a marker showing that the rest of the document will be formatted in YAML (read a [getting started guide for YAML](https://yaml.org/start.html)).
+This first line is a marker showing that the rest of the document will be formatted in YAML (read [an introduction to YAML](https://yaml.org/spec/1.2.2/)).
 
 {lang="yaml",starting-line-number=2}
 ```

@@ -16,6 +16,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   8. [#539](https://github.com/geerlingguy/ansible-for-devops/issues/539): Fixed old reference to RHEL where Rocky Linux is being used (thanks to dropsignal!).
   9. [#526](https://github.com/geerlingguy/ansible-for-devops/pull/526) (see also [#484](https://github.com/geerlingguy/ansible-for-devops/pull/484)): Update Drupal example to PHP 8.2 and Drush 11 in chapter 4 (thanks to thescalaguy and Brain2life!).
   10. [#533](https://github.com/geerlingguy/ansible-for-devops/pull/533): Fix Kubernetes example using new role configuration variables for `control_plane` and `docker_packages` in chapter 16 (thanks to weshouman!).
+  11. [#471](https://github.com/geerlingguy/ansible-for-devops/pull/471): Update Kubernetes example to 1.23 in chapter 16 (thanks to hippogriffin!).
+  12. Fixed minor grammatical and URL errors in chapters 13, 2, and 14 (thanks to tphbrok, cateee, and daniel-robitaille!).
 
 ## Version 2.1 (2022-04-15)
 

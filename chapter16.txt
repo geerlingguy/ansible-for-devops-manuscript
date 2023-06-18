@@ -192,7 +192,7 @@ docker_install_compose: False
 
 The `swap_file_path` is specific to the 64-bit Debian 9 Vagrant box used in the `Vagrantfile`, so if you want to use a different OS or install on a cloud server, the default system swap file may be at a different location.
 
-It's a best practice to specify a Docker version that's been well-tested with a particular version of Kubernetes, and in this case, the latest version of Kubernetes at the time of this writing---1.13---works well with Docker 18.09, so we lock in that package version using the `docker_package` variable.
+It's a best practice to specify a Docker version that's been well-tested with a particular version of Kubernetes, and in this case, the latest version of Kubernetes at the time of this writing works well with this Docker version, so we lock in that package version using the `docker_package` variable.
 
 Back in the `main.yml` playbook, we'll put the last role necessary to get Kubernetes up and running on the cluster:
 
@@ -219,15 +219,15 @@ As a final step, before building the cluster with `vagrant up`, we need to set a
 
 {lang="text",starting-line-number=8}
 ```
-kubernetes_version: '1.13'
+kubernetes_version: '1.23'
 kubernetes_allow_pods_on_master: False
 kubernetes_pod_network_cidr: '10.244.0.0/16'
 kubernetes_packages:
-  - name: kubelet=1.13.8-00
+  - name: kubelet=1.23.5-00
     state: present
-  - name: kubectl=1.13.8-00
+  - name: kubectl=1.23.5-00
     state: present
-  - name: kubeadm=1.13.8-00
+  - name: kubeadm=1.23.5-00
     state: present
   - name: kubernetes-cni
     state: present

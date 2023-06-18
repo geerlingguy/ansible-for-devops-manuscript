@@ -2,7 +2,7 @@
 
 Before deploying any infrastructure changes, you should test the changes in a non-production environment (just like you would with application releases). At a minimum, you should have the ability to run a playbook in a local or development environment to make sure it does what you expect.
 
-Since all your infrastructure is defined in code, you can automating unit, functional, and integration tests on your infrastructure, just like you do for your applications.
+Since all your infrastructure is defined in code, you can automate unit, functional, and integration tests on your infrastructure, just like you do for your applications.
 
 This chapter covers different levels of infrastructure testing, and highlights tools and techniques that help you test and develop Ansible content.
 

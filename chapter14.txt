@@ -411,7 +411,7 @@ To make sure the `nginx_docroot` exists, add a task to the `tasks` section of th
         state: directory
 ```
 
-I> Since `/var/www` should already exist on an Ubuntu server, this is all we need. If the parent directory heirarchy didn't exist (e.g. we had `nginx_docroot` set to `/var/www/example/html`), this task may also need `recurse: true` to ensure the parent directories exist.
+I> Since `/var/www` should already exist on an Ubuntu server, this is all we need. If the parent directory hierarchy didn't exist (e.g. we had `nginx_docroot` set to `/var/www/example/html`), this task may also need `recurse: true` to ensure the parent directories exist.
 
 Now we need an HTML file inside the docroot so Nginx can serve it, otherwise Nginx will return a 404 Not Found. Create a simple HTML file named `files/index.html` in your project directory, with the following contents:
 
