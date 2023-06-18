@@ -14,6 +14,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   6. [#531](https://github.com/geerlingguy/ansible-for-devops/issues/531): When testing with Molecule, systemd in containers requires cgroupns mode set to host, and a read-write volume.
   7. [#542](https://github.com/geerlingguy/ansible-for-devops/issues/542): Fix various broken documentation links for Ansible Lint and Molecule (thanks to cristisulighetean!).
   8. [#539](https://github.com/geerlingguy/ansible-for-devops/issues/539): Fixed old reference to RHEL where Rocky Linux is being used (thanks to dropsignal!).
+  9. [#526](https://github.com/geerlingguy/ansible-for-devops/pull/526) (see also [#484](https://github.com/geerlingguy/ansible-for-devops/pull/484)): Update Drupal example to PHP 8.2 and Drush 11 in chapter 4 (thanks to thescalaguy and Brain2life!).
 
 ## Version 2.1 (2022-04-15)
 
