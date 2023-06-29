@@ -56,16 +56,16 @@ $ pip install ansible
 
 Using pip allows you to upgrade Ansible with `pip install --upgrade ansible`.
 
-*Fedora/Red Hat Enterprise Linux/CentOS:*
+### Fedora/Red Hat Enterprise Linux
 
-The easiest way to install Ansible on a Fedora-like system is to use the official dnf package. If you're running Red Hat Enterprise Linux (RHEL) or CentOS/Rocky/Alma Linux, you need to install EPEL's RPM before you install Ansible (see the info section below for instructions):
+The easiest way to install Ansible on an RPM-based OS is to use the official dnf package. If you're running Red Hat Enterprise Linux (RHEL) or CentOS/Rocky/Alma Linux, you need to install EPEL's RPM before you install Ansible (see the info section below for instructions):
 
 {lang="text",linenos=off}
 ```
 $ dnf -y install ansible
 ```
 
-I> On RHEL/CentOS systems, `python-pip` and `ansible` are available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `dnf repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following commands:
+I> On RPM-based systems, `python-pip` and `ansible` are available via the [EPEL repository](https://fedoraproject.org/wiki/EPEL). If you run the command `dnf repolist | grep epel` (to see if the EPEL repo is already available) and there are no results, you need to install it with the following commands:
 I>
 I> {lang="text",linenos=off}
 I> ~~~
@@ -78,7 +78,7 @@ I> # If you're on RHEL 8+/Fedora:
 I> $ dnf install epel-release
 I> ~~~
 
-*Debian/Ubuntu:*
+### Debian/Ubuntu
 
 The easiest way to install Ansible on a Debian or Ubuntu system is to use the official apt package.
 
