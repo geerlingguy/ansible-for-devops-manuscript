@@ -20,8 +20,8 @@ If you wish to make any more structural changes, please discuss them in an issue
 
 ## License
 
-<img src="images/by-sa.png" width="140" height="49" alt="CC BY-SA" />  
-[CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
+<img src="images/by-sa.png" width="140" height="49" alt="CC BY-SA" /><br>
+Creative Commons <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA</a>
 
 ## Author
 
