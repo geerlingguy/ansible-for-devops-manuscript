@@ -1,6 +1,6 @@
 # Changelog
 
-This log will track changes between releases of the book. Until version 1.0, each release number will correlate to the amount complete, so 'Version 0.75' equals 75% complete. After the final, complete book, major version numbers will track editions.
+This log will track changes between releases of the book. Until version 1.0, each release number correlates to the amount complete, so 'Version 0.75' equals 75% complete. After that, major version numbers track editions.
 
 Hopefully these notes will help readers figure out what's changed since the last time they've downloaded the book.
 

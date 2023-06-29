@@ -4,11 +4,6 @@
 
 See README file inside the `ansible-for-devops publicity/Published Editions` directory.
 
-## General TODO
-
-  - Import people from LeanPub mailing list into MailChimp Mailing List.
-  - Create favicon.ico for website.
-
 ## Editing notes:
 
   - Spellcheck.
@@ -33,10 +28,6 @@ See README file inside the `ansible-for-devops publicity/Published Editions` dir
   - [Zero to 95,688: How I wrote Game Programming Patterns](http://journal.stuffwithstuff.com/2014/04/22/zero-to-95688-how-i-wrote-game-programming-patterns/)
   - [The Last Starving Author Has Died](http://www.luckyisgood.com/starving-authors-begone/)
 
-## Cowsay
-
-  - TODO
-
 ## Improvements/new chapter ideas
 
   - VPN/Bastion/Jump host usage with Ansible (SSH)
@@ -44,51 +35,9 @@ See README file inside the `ansible-for-devops publicity/Published Editions` dir
     - Profiling roles / tasks with callback plugins (see Sam Doran's blog post)
     - https://www.jeffgeerling.com/blog/2017/slow-ansible-playbook-check-ansiblecfg
     - `synchronize` vs `copy`
-  - Testing with [Molecule](https://github.com/geerlingguy/ansible-for-devops/issues/101)
-  - `reboot` module
-  - Ansible AWX:
-    - Difference between tower and AWX
-    - Getting started with AWX vs Tower?
-  - 2.0: Playbook Execution Strategies (`linear`, `free`, etc.).
   - Networking (routers? other stuff?)
   - Windows and Ansible (maybe?)
   - Security and Secret management
-    - SSH private key management and security (see emails to/from Erik-jan Reimers)
+    - SSH private key management and security
     - Sudo auth via SSH keys (http://blather.michaelwlucas.com/archives/1106)
   - Playbooks, Roles, and Variables - organization for large teams and large projects
-    - Specifically asked about this by Guy Matz (Guy.Matz.CFT@jcrew.com)
-
-## Publisher Offers
-
-### O'Reilly
-
-  - August 13, 2014
-  - Met Greg D. at velocityconf, want to do some Ansible content
-  - O'Reilly CTO was reading book, really liked it
-  - Lots of early-release stuff (like Manning, other publishers), starting on 2nd chapter
-  - Things they do:
-    - Video products (sell standalone tutorials, get video content for config management tools, other devops tools...)
-      - Filmed in studio, 3+ hour videos, available on Safari (owned by O'Reilly)
-    - Content on Radar blog (authors write post on blog sometimes, write about other things, video podcast stuff)
-    - Conferences (often speakers are authors/video people)
-    - Interactive content
-      - Create a useful learning environment (better than just a 'codeschool python thing')
-      - Bring over some tutorials in book to docker so people can follow examples more closely
-  - Learning Chef: Written from a dev background, reviewed by ops people
-    - Ops guys wanted "show us how to do it", less the theory/principles
-  - If interested in video, I could do a webcast as kind of a trial of how I work on video/audience...
-
-### Manning Publications
-
-  - Michael Stephens - mist@manning.com; June 26, 2014 (responded that I'm not currently interested).
-  - Erin Twohey - ertw@manning.com; November 7, 2014
-
-### Apress
-
-  - Steve Anglin - steveanglin@apress.com; September 14, 2016 (responded that I'm not interested).
-  - Offer:
-    - Royalties: 10-20% range per print and ebook sales; 27.5% for licensing.
-    - Apress offers you a $ 3,000 bonus for signing.
-    - Apress offers 10 free Print copies of your book for personal use.
-    - Apress can offer as many free electronic copies of your book as needed to qualified Reviewers, as you and our PR team may determine.
-    - Plus future considerations.
