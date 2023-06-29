@@ -20,7 +20,7 @@ If you wish to make any more structural changes, please discuss them in an issue
 
 ## License
 
-![CC BY-SA](https://raw.githubusercontent.com/geerlingguy/ansible-for-devops-manuscript/by-sa.png)
+![CC BY-SA](https://raw.githubusercontent.com/geerlingguy/ansible-for-devops-manuscript/images/by-sa.png) 
 [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
 
 ## Author
