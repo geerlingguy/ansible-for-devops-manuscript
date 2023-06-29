@@ -1,4 +1,4 @@
-# Ansible for DevOps
+# Ansible for DevOps - Manuscript
 
 [![Ansible for DevOps Cover](https://s3.amazonaws.com/titlepages.leanpub.com/ansible-for-devops/medium)](https://www.ansiblefordevops.com/)
 
@@ -16,7 +16,7 @@ For any issues with the book's text, code, or examples, please see the [Issue tr
 
 If you wish to submit any corrections or bugfixes, please feel free to submit a pull request.
 
-If you wish to make any more structural changes, please discuss them in an issue on the Examples repository before submitting a pull request.
+If you wish to make any more structural changes, please open a discussion first to talk about the change before you commit a lot of work and effort into a pull request.
 
 ## License
 
