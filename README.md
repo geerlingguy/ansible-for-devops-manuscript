@@ -20,7 +20,7 @@ If you wish to make any more structural changes, please discuss them in an issue
 
 ## License
 
-![CC BY-SA](images/by-sa.png) 
+<img src="images/by-sa.png" width="140" height="49" alt="CC BY-SA" />  
 [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/)
 
 ## Author
