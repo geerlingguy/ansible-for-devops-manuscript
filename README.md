@@ -21,7 +21,7 @@ If you wish to make any more structural changes, please open a discussion first 
 ## License
 
 <img src="images/by-sa.png" width="140" height="49" alt="CC BY-SA" /><br>
-Creative Commons <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA</a>
+Creative Commons <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
 
 ## Author
 
