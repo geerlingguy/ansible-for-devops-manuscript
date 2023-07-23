@@ -707,7 +707,7 @@ After lots of experience building playbooks, roles, and managing inventories, yo
   - Dynamic and static inventory sources should contain a minimum of variables, especially as these variables are often less visible to those maintaining a particular playbook.
   - Command line variables (`-e`) should be avoided when possible. One of the main use cases is when doing local testing or running one-off playbooks where you aren't worried about the maintainability or idempotence of the tasks you're running.
 
-See Ansible's [Variable Precedence](http://docs.ansible.com/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable) documentation for more detail and examples, especially if you use older versions of Ansible (since older versions were not as strict about the precedence).
+See Ansible's [Variable Precedence](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence) documentation for more detail and examples, especially if you use older versions of Ansible (since older versions were not as strict about the precedence).
 
 ## If/then/when - Conditionals
 
