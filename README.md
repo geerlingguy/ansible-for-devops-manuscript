@@ -23,6 +23,8 @@ If you wish to make any more structural changes, please open a discussion first 
 <img src="images/by-sa.png" width="140" height="49" alt="CC BY-SA" /><br>
 Creative Commons <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
 
+You can also grab a free copy of the published work on LeanPub using this coupon link: [https://leanpub.com/ansible-for-devops/c/CTVMPCbEeXd3](https://leanpub.com/ansible-for-devops/c/CTVMPCbEeXd3).
+
 ## Author
 
 [Jeff Geerling](https://www.jeffgeerling.com).
