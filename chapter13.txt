@@ -86,8 +86,6 @@ TASK [Print a message if a command resulted in a change.] ***********
 ok: [127.0.0.1] => {
     "msg": "Command resulted in a change!"
 }
-nge!"
-}
 
 PLAY RECAP **********************************************************
 127.0.0.1            : ok=3    changed=1    unreachable=0    failed=0
