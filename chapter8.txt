@@ -352,7 +352,7 @@ Create a new playbook named `provision.yml`, with the following contents:
         name: ansible-test
         private_networking: yes
         size: 1gb
-        image_id: centos-7-x64
+        image_id: centos-stream-9-x64
         region: nyc3
         # Customize this for your account.
         ssh_keys:
@@ -403,19 +403,19 @@ ok: [127.0.0.1] => {
                 ],
                 "id": 201562655,
                 "image": {
-                    "created_at": "2019-08-14T17:00:31Z",
-                    "description": "7.6 x64",
+                    "created_at": "2024-08-14T17:00:31Z",
+                    "description": "9.0 x64",
                     "distribution": "CentOS",
                     "id": 50903182,
                     "min_disk_size": 20,
-                    "name": "7.6 x64",
+                    "name": "7.0 x64",
                     "public": true,
                     "regions": [
                         "nyc3",
                         ...
                     ],
                     "size_gigabytes": 0.43,
-                    "slug": "centos-7-x64",
+                    "slug": "centos-stream-9-x64",
                     "status": "available",
                     "tags": [],
                     "type": "base"

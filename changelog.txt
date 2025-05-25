@@ -10,6 +10,8 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Changed `digital_ocean_droplet` state for deletion from `deleted` to `absent` in chapter 8.
   - Changed errant `running` state to `started` in Apache example in chapter 5.
   - Use `npx` to find Node.js apps instead of a hardcoded path in chapter 4.
+  - Update the DigitalOcean CentOS image for the provisioning example in chapter 8.
+  - Update links and historical information in Introduction having to do with Ansible's origins (countering linkrot).
   - Various smaller typo and grammar fixes.
 
 ## Version 2.2 (2023-06-17)
