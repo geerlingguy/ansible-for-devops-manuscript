@@ -6,7 +6,7 @@ Hopefully these notes will help readers figure out what's changed since the last
 
 ## Current Version
 
-  - No changes yet.
+  - Revamp molecule instructions in chapter 13 as things have changed quite a bit.
 
 ## Version 2.2 (2023-06-17)
 
