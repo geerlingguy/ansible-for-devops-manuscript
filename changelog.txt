@@ -13,6 +13,7 @@ Hopefully these notes will help readers figure out what's changed since the last
   - Update the DigitalOcean CentOS image for the provisioning example in chapter 8.
   - Update links and historical information in Introduction having to do with Ansible's origins (countering linkrot).
   - Fix Jenkins provisioning example in chapter 12 using a pre-task to update Apt caches.
+  - Replaced usage of `:private_network` with `"private_network"` in Vagrant VM configuration.
   - Various smaller typo and grammar fixes.
 
 ## Version 2.2 (2023-06-17)
