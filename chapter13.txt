@@ -480,13 +480,14 @@ So first, run `molecule init scenario` to initialize a default Molecule scenario
 {lang="none",linenos=off}
 ```
 $ molecule init scenario
---> Initializing new scenario default...
-Initialized scenario in ~/playbook/molecule/default successfully.
+INFO     Initializing new scenario default...
+...
+INFO     Initialized scenario in molecule/default successfully.
 ```
 
 Since we're going to test a playbook and not a role, we need to clean up some files and make a few changes.
 
-Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, and delete the existing `tasks:` section. Make the Converge play prepare the environment in its `tasks:` section, then run the `main.yml` playbook by importing it:
+Go ahead and delete the `create.yml` and `destroy.yml` files. Then open the `converge.yml` file, and delete the existing `tasks:` section. Make the Converge play prepare the environment in its `tasks:` section, then run the `main.yml` playbook by importing it:
 
 {lang="yaml"}
 ```
@@ -501,7 +502,21 @@ Go ahead and delete the `INSTALL.rst` file. Then open the `converge.yml` file, a
         cache_valid_time: 3600
       when: ansible_os_family == 'Debian'
 
-- import_playbook: ../../main.yml
+- name: Import playbook
+  ansible.builtin.import_playbook: ../../main.yml
+```
+
+Then configure molecule to run the playbook in a fresh Docker container. Edit the `molecule.yml` file to configure it:
+
+{lang="yaml"}
+```
+---
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: "geerlingguy/docker-rockylinux9-ansible:latest"
+    pre_build_image: true
 ```
 
 At this point, you can try testing the playbook with Molecule. As I mentioned earlier, I like to use `molecule converge` when developing, so I can see where something breaks, then fix it, then run `molecule converge` again to re-run the playbook.
@@ -509,27 +524,16 @@ At this point, you can try testing the playbook with Molecule. As I mentioned ea
 {lang="text",linenos=off}
 ```
 $ molecule converge
---> Test matrix
-
-└── default
-    ├── dependency
-    ├── create
-    ├── prepare
-    └── converge
-
---> Scenario: 'default'
+INFO     default scenario test matrix: dependency, create, prepare, converge
 ...
-    TASK [Ensure Apache is running and starts at boot.] ***********
-fatal: [instance]: FAILED! => {"changed": false, "msg": "Could
-not find the requested service httpd: "}
+TASK [Ensure Apache is running and starts at boot.] ****************************
+fatal: [instance]: FAILED! => {"changed": false, "msg": "Service is in unknown state", "status": {}}
 
-    RUNNING HANDLER [restart apache] ******************************
-
-    PLAY RECAP ****************************************************
-    instance  : ok=5  changed=2  unreachable=0  failed=1  skipped=1
+PLAY RECAP *********************************************************************
+instance                   : ok=5    changed=2    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0
 ```
 
-Uh oh, something definitely went wrong if the Apache service can't be found!
+Uh oh, something definitely went wrong with Apache's service!
 
 This playbook is pretty simple, though, and it doesn't seem like there are any errors with it. We should debug this problem by logging into the test environment, and checking out what's wrong with the `httpd` service:
 
@@ -537,7 +541,8 @@ This playbook is pretty simple, though, and it doesn't seem like there are any e
 ```
 $ molecule login
 [root@instance /]# systemctl status httpd
-Failed to get D-Bus connection: Operation not permitted
+System has not been booted with systemd as init system (PID 1). Can't operate.
+Failed to connect to bus: Host is down
 ```
 
 Ah, it looks like systemd is not working properly. And, rather than lead you down a rabbit hole of trying to debug systemd inside a Docker container, and how to get everything working properly so you can test services running inside containers, I'll skip to the end and show you how I test my playbooks correctly when they manage services like `httpd`.
@@ -569,7 +574,7 @@ platforms:
     pre_build_image: true
 ```
 
-This configuration makes four changes to the default Molecule file: one change (the `image`), and three additions:
+This configuration makes one change (the `image`), and three additions:
 
   - Set the `image` to a dynamically-defined image that I maintain, which has Python and Ansible installed on it, as well as a properly configured systemd, so I can run services inside the container. Molecule allows bash-style variables and defaults, so I set `${MOLECULE_DISTRO:-rockylinux9}` in the image name. This will allow substitution for other distros, like Debian, later.
   - Override the `command` Molecule sets for the Docker container, so the container image uses its own preconfigured `COMMAND`, which in this case starts the systemd init system and keeps the container running.
@@ -578,18 +583,16 @@ This configuration makes four changes to the default Molecule file: one change (
 
 W> The `privileged` flag should be used with care; don't run Docker images or software you don't trust using `privileged`, because that mode allows software running inside the Docker image to run as if it were running on the host machine directly, bypassing many of the security benefits of using containers. It is convenient but potentially dangerous. If necessary, consider maintaining your own testing container images if you need to run with `privileged` and wish to test with Docker.
 
-Now, if you run `molecule converge` or `molecule test`, the entire playbook should succeed, and idempotence should also pass.
+Now, if you run `molecule converge` or `molecule test`, the entire playbook should succeed, and idempotence should also pass. Run `molecule destroy` to reset the test environment.
 
 The last step is to make sure the playbook also runs correctly on Debian-based systems. Since there exists a `geerlingguy/docker-debian10-ansible` container (see a full list of the [Docker Ansible test containers I maintain](https://ansible.jeffgeerling.com/#container-images-testing)), you can run the Molecule tests under that operating system as well:
 
 {lang="none",linenos=off}
 ```
-$ MOLECULE_DISTRO=debian10 molecule test
+$ MOLECULE_DISTRO=debian12 molecule test
 ...
-    RUNNING HANDLER [restart apache] ******************************
-
-    PLAY RECAP ****************************************************
-    instance  : ok=7  changed=4  unreachable=0  failed=0  skipped=1
+PLAY RECAP *********************************************************************
+localhost                  : ok=3    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
 ```
 
 #### Verifying a playbook with Molecule
