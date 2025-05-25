@@ -641,8 +641,8 @@ Next we need to add a task to create the droplets, using the `droplets` list as 
         state: "{{ item.state | default('present') }}"
         name: "{{ item.name }}"
         private_networking: yes
-        size: "{{ item.size | default('1gb') }}"
-        image: "{{ item.image | default('centos-7-x64') }}"
+        size: "{{ item.size | default('s-1vcpu-1gb') }}"
+        image: "{{ item.image | default('centos-stream-9-x64') }}"
         region: "{{ item.region | default('nyc3') }}"
         # Customize this default for your account.
         ssh_keys:

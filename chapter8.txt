@@ -351,7 +351,7 @@ Create a new playbook named `provision.yml`, with the following contents:
         state: present
         name: ansible-test
         private_networking: yes
-        size: 1gb
+        size: s-1vcpu-1gb
         image_id: centos-stream-9-x64
         region: nyc3
         # Customize this for your account.
@@ -470,11 +470,11 @@ ok: [127.0.0.1] => {
                         "ams2",
                         ...
                     ],
-                    "slug": "1gb",
+                    "slug": "s-1vcpu-1gb",
                     "transfer": 2.0,
                     "vcpus": 1
                 },
-                "size_slug": "1gb",
+                "size_slug": "s-1vcpu-1gb",
                 "snapshot_ids": [],
                 "status": "active",
                 "tags": [],
