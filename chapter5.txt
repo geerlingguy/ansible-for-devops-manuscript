@@ -196,7 +196,7 @@ Variables can be passed in via the command line, when calling `ansible-playbook`
 ansible-playbook example.yml --extra-vars "foo=bar"
 ```
 
-You can also pass in extra variables using quoted JSON, YAML, or even by passing a JSON or YAML file directly, like `--extra-vars "@even_more_vars.json"` or `--extra-vars "@even_more_vars.yml`, but at this point, you might be better off using one of the other methods below.
+You can also pass in extra variables using quoted JSON, YAML, or even by passing a JSON or YAML file directly, like `--extra-vars "@even_more_vars.json"` or `--extra-vars "@even_more_vars.yml"`, but at this point, you might be better off using one of the other methods below.
 
 Variables may be included inline with the rest of a playbook, in a `vars` section:
 
